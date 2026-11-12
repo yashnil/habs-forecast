@@ -13,7 +13,8 @@ import { SPEED_CLASSES } from "@/lib/basemap";
  *   a scaled symbol of direction and RELATIVE speed, never the water's real speed or a path.
  * - Speed is encoded three ways at once, all from the cell's own observed speed: a faster current's streak
  *   is longer (its trail covers more ground in the same time), brighter, and lighter in the conditions
- *   (sky) family. v10 rework: fewer particles that live longer (2.4-4.4 s) with trails of about 1.1 s, so
+ *   (sky) family; the chart's streak layer caps the drawn length at about one cell (`trailCap`), so there speed
+ *   reads from brightness and width once a streak reaches the cap. v10 rework: fewer particles that live longer (2.4-4.4 s) with trails of about 1.1 s, so
  *   the field reads as flow structure rather than static; at harbour zoom a streak still spans only a few
  *   2 km cells.
  * Positions are Web Mercator, 0..1 (georeferenced: they move with the map while it pans).
@@ -26,6 +27,15 @@ export const LIFE_MIN = 2.4;
 export const LIFE_SPREAD = 2;
 /** The speed (m/s) at which a streak reaches full brightness and the lightest colour; faster keeps it. */
 export const SPEED_FULL = 0.6;
+/**
+ * A streak's drawn length is capped at about ONE published cell (v13 lead decision 7): a trail that runs across
+ * several 2 km cells is a path integrated through the field, which reads as where the water will travel (T27).
+ * One cell is the measurement's own footprint. Zoomed far out a cell is only a few pixels, so the cap never goes
+ * under TRAIL_MIN_PX on screen, or the mark would vanish; `trailCap` is in Mercator units.
+ */
+export const TRAIL_MIN_PX = 10;
+export const trailCap = (cell: number, worldPx: number) => Math.max(cell, TRAIL_MIN_PX / worldPx);
+
 /** Floats per drawn segment: ax ay bx by alpha r g b. */
 export const SEG = 8;
 
@@ -100,6 +110,8 @@ export class FlowSim {
   private rand: () => number;
   /** the smaller side of a cell, in Mercator units (the sub-step bound) */
   private cell = 1;
+  /** the longest a drawn trail may be, in Mercator units (Infinity: uncapped, the legacy map) */
+  private cap = Infinity;
 
   constructor(max: number, rand: () => number = Math.random) {
     this.max = max;
@@ -156,6 +168,40 @@ export class FlowSim {
       if (lat >= b.south && lat <= b.north && lon >= b.west && lon <= b.east) out.push(k);
     }
     this.visible = Int32Array.from(out);
+  }
+
+  /** The smaller side of a published cell, in Mercator units. */
+  get cellSize(): number {
+    return this.cell;
+  }
+
+  /** Cap every drawn trail at this length (Mercator units), measured back from the head. */
+  setTrailCap(cap: number) {
+    this.cap = cap > 0 ? cap : Infinity;
+  }
+
+  /**
+   * Where particle `i`'s drawn trail starts under the cap: the first sample kept (`j0`) and the point the
+   * trail is cut at (on the segment that crosses the cap), walking back from the head.
+   */
+  private trailStart(i: number): { j0: number; x: number; y: number } {
+    const m = this.hn[i];
+    const h = i * HIST * 2;
+    if (this.cap === Infinity || m === 0) return { j0: 0, x: this.hist[h], y: this.hist[h + 1] };
+    let acc = 0;
+    let bx = this.px[i], by = this.py[i];
+    for (let j = m - 1; j >= 0; j--) {
+      const ax = this.hist[h + j * 2], ay = this.hist[h + j * 2 + 1];
+      const len = Math.hypot(bx - ax, by - ay);
+      if (acc + len >= this.cap) {
+        const t = len > 0 ? (this.cap - acc) / len : 0;
+        return { j0: j, x: bx + (ax - bx) * t, y: by + (ay - by) * t };
+      }
+      acc += len;
+      bx = ax;
+      by = ay;
+    }
+    return { j0: 0, x: this.hist[h], y: this.hist[h + 1] };
   }
 
   setCount(n: number) {
@@ -266,14 +312,17 @@ export class FlowSim {
       const base = Math.max(0, a0) * (0.22 + 0.73 * Math.sqrt(speedShare(this.spd[i]))) * o.alpha;
       const [cr, cg, cb] = o.colour ? RAMP_RGB[speedBucket(this.spd[i])] : skyColour(this.spd[i]);
       const h = i * HIST * 2;
-      for (let j = 0; j < m; j++) {
+      // under the cap the trail starts part-way along: only its last cell's worth is drawn
+      const st = this.trailStart(i);
+      const drawn = m - st.j0;
+      for (let j = st.j0; j < m; j++) {
         if ((n + 1) * SEG > out.length) return n;
         const q = n * SEG;
-        out[q] = this.hist[h + j * 2];
-        out[q + 1] = this.hist[h + j * 2 + 1];
+        out[q] = j === st.j0 ? st.x : this.hist[h + j * 2];
+        out[q + 1] = j === st.j0 ? st.y : this.hist[h + j * 2 + 1];
         out[q + 2] = j + 1 < m ? this.hist[h + (j + 1) * 2] : this.px[i];
         out[q + 3] = j + 1 < m ? this.hist[h + (j + 1) * 2 + 1] : this.py[i];
-        out[q + 4] = base * ((j + 1) / m);
+        out[q + 4] = base * ((j - st.j0 + 1) / drawn);
         out[q + 5] = cr;
         out[q + 6] = cg;
         out[q + 7] = cb;
@@ -299,7 +348,7 @@ export class FlowSim {
         const by = j + 1 < m ? this.hist[h + (j + 1) * 2 + 1] : this.py[i];
         len += Math.hypot(bx - this.hist[h + j * 2], by - this.hist[h + j * 2 + 1]);
       }
-      out.push({ speed: this.spd[i], px: len * worldPx });
+      out.push({ speed: this.spd[i], px: Math.min(len, this.cap) * worldPx });
     }
     return out;
   }

@@ -3391,7 +3391,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/latest-2026-10-12-04f404c139/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/latest-2026-10-12-92714dea62/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3407,14 +3407,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -3491,7 +3491,8 @@
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
         "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
-        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -3526,6 +3527,11 @@
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "416 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3556,6 +3562,11 @@
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "157 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3584,11 +3595,16 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "0 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 13159,
-        "valid_fraction": 0.120216,
+        "n_valid": 12671,
+        "valid_fraction": 0.115758,
         "value_min": 0.009999297310040017,
         "value_max": 297.9865075625561
       },
@@ -3605,7 +3621,7 @@
         "request_urls": [],
         "upstream_metadata": {
           "days": "2026-10-05, 2026-10-06, 2026-10-07",
-          "processing": "satellite-processing-4"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3616,14 +3632,14 @@
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.205,
+        "domain_observed_fraction": 0.2011,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.2876,
-            "observed_km2": 815.7,
+            "observed_fraction": 0.2823,
+            "observed_km2": 785.5,
             "reference_cells": 372
           }
         ]
@@ -3652,7 +3668,7 @@
             "observed_times": [
               "2026-10-06T18:50:40Z"
             ],
-            "pixels_used": 8734
+            "pixels_used": 8577
           },
           {
             "date": "2026-10-05",
@@ -3662,21 +3678,21 @@
             "observed_times": [
               "2026-10-05T19:15:21Z"
             ],
-            "pixels_used": 4425
+            "pixels_used": 4094
           }
         ],
         "age_histogram": [
           {
             "age_days": 6,
-            "fraction": 0.6637
+            "fraction": 0.6769
           },
           {
             "age_days": 7,
-            "fraction": 0.3363
+            "fraction": 0.3231
           }
         ],
         "age_grid": {
-          "url": "satellite/olci300/latest-2026-10-12-04f404c139/age/{row}_{col}.u16.gz",
+          "url": "satellite/olci300/latest-2026-10-12-92714dea62/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 341,
           "height": 321,
@@ -3692,14 +3708,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/olci300/latest-2026-10-12-04f404c139/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -3758,7 +3774,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-05-81cc990737/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-05-e20c14b221/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3774,14 +3790,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-05-81cc990737/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-05-e20c14b221/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-05-81cc990737/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-05-e20c14b221/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -3857,7 +3873,8 @@
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
         "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
-        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -3890,11 +3907,16 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "416 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 12028,
-        "valid_fraction": 0.109884,
+        "n_valid": 11612,
+        "valid_fraction": 0.106083,
         "value_min": 0.035233814269304276,
         "value_max": 315.6449890136719
       },
@@ -3913,7 +3935,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z",
-          "processing": "satellite-processing-4"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3924,14 +3946,14 @@
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.1877,
+        "domain_observed_fraction": 0.1839,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.2634,
-            "observed_km2": 745.7,
+            "observed_fraction": 0.2581,
+            "observed_km2": 719.9,
             "reference_cells": 372
           }
         ]
@@ -3972,7 +3994,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-06-4b7aa0d9c1/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-06-2b38ec1aa0/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3988,14 +4010,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-06-4b7aa0d9c1/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-06-2b38ec1aa0/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-06-4b7aa0d9c1/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-06-2b38ec1aa0/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4071,7 +4093,8 @@
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
         "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
-        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -4104,13 +4127,18 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "157 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 8734,
-        "valid_fraction": 0.079791,
+        "n_valid": 8577,
+        "valid_fraction": 0.078357,
         "value_min": 0.009999999776482582,
-        "value_max": 138.30592346191406
+        "value_max": 137.43399047851562
       },
       "provenance": {
         "source_id": "satellite_chl",
@@ -4127,7 +4155,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z",
-          "processing": "satellite-processing-4"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4138,14 +4166,14 @@
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.1322,
+        "domain_observed_fraction": 0.1303,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.1855,
-            "observed_km2": 541.1,
+            "observed_fraction": 0.1828,
+            "observed_km2": 531.4,
             "reference_cells": 372
           }
         ]
@@ -4240,7 +4268,8 @@
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
         "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
-        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -4273,6 +4302,11 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "0 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
@@ -4296,7 +4330,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z",
-          "processing": "satellite-processing-4"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4360,7 +4394,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/viirs750/latest-2026-10-08-3171349c1c/grid/{row}_{col}.u16.gz",
+        "url": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 114,
         "height": 107,
@@ -4376,14 +4410,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4713,9 +4747,9 @@
         ],
         "upstream_metadata": {
           "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04",
-          "processing": "satellite-processing-4",
+          "processing": "satellite-processing-5",
           "scenes": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-01T19:02:52Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-01T19:06:26Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-02T19:28:03Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-02T19:35:10Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-03T19:11:16Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-03T19:20:30Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-04T19:37:51Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-04T19:02:17Z",
-          "platform_grid": "satellite/viirs750/latest-2026-10-08-3171349c1c/platform/{row}_{col}.u16.gz",
+          "platform_grid": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/platform/{row}_{col}.u16.gz",
           "platform_codes": "1=NOAA-21, 2=NOAA-20; a cell without a value has no code. Same chunks (512 x 512 cells) and lattice as the value grid; one platform per cell, never averaged.",
           "platform_rule": "NOAA-21 first; NOAA-20 only in cells the platforms before it have no value for. No averaging, no bias correction.",
           "pixels_by_platform": "NOAA-21 5048, NOAA-20 3365",
@@ -4818,7 +4852,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/viirs750/latest-2026-10-08-3171349c1c/age/{row}_{col}.u16.gz",
+          "url": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 114,
           "height": 107,
@@ -4834,14 +4868,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/viirs750/latest-2026-10-08-3171349c1c/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 10,
           "legend_url": null,
@@ -4908,7 +4942,7 @@
       "image": null,
       "grid": null,
       "tiles": {
-        "url_template": "satellite/multisensor/latest-2026-10-12-2d2d3fda82/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/multisensor/latest-2026-10-12-80be571ff7/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4993,7 +5027,7 @@
           {
             "name": "one_sensor_per_pixel",
             "passed": true,
-            "detail": "13159 pixels Sentinel-3, 62376 pixels VIIRS (on the 300 m lattice); no pixel combines values"
+            "detail": "12671 pixels Sentinel-3, 62790 pixels VIIRS (on the 300 m lattice); no pixel combines values"
           },
           {
             "name": "members_unchanged",
@@ -5002,8 +5036,8 @@
           }
         ],
         "n_cells": 109461,
-        "n_valid": 75535,
-        "valid_fraction": 0.690063,
+        "n_valid": 75461,
+        "valid_fraction": 0.689387,
         "value_min": 0.009999297310040017,
         "value_max": 297.9865075625561
       },
@@ -5041,7 +5075,7 @@
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "observed_fraction": 0.9866,
-            "observed_km2": 3324.0,
+            "observed_km2": 3319.4,
             "reference_cells": 372
           }
         ]
@@ -5067,7 +5101,7 @@
           }
         ],
         "sensor_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-2d2d3fda82/sensor-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-80be571ff7/sensor-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5091,7 +5125,7 @@
           ]
         },
         "age_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-2d2d3fda82/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-80be571ff7/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5119,31 +5153,31 @@
             "region_id": "domain",
             "label": "Whole domain",
             "reference_cells": 522,
-            "primary_fraction": 0.205,
+            "primary_fraction": 0.2011,
             "secondary_fraction": 0.9789,
             "combined_fraction": 0.9866,
-            "secondary_only_fraction": 0.7816
+            "secondary_only_fraction": 0.7855
           },
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "reference_cells": 372,
-            "primary_fraction": 0.2876,
+            "primary_fraction": 0.2823,
             "secondary_fraction": 0.9812,
             "combined_fraction": 0.9866,
-            "secondary_only_fraction": 0.699
+            "secondary_only_fraction": 0.7043
           }
         ],
         "shown": [
           {
             "order": 0,
-            "pixels": 13159,
+            "pixels": 12671,
             "median_age_days": 6.0,
             "max_age_days": 7
           },
           {
             "order": 1,
-            "pixels": 62376,
+            "pixels": 62790,
             "median_age_days": 9.0,
             "max_age_days": 10
           }
@@ -9139,6 +9173,6 @@
   "ports_url": "ports-9e81ebe6cd.geojson",
   "official_url": "official-d3bc6fbc55.json",
   "port_intel_url": "port-intel-dbcc522fbd.json",
-  "observations_url": "observations-e4ca12aea2.json",
+  "observations_url": "observations-aa033df115.json",
   "fisheries_url": "fisheries-3da88e0b2f.json"
 }

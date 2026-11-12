@@ -4,6 +4,7 @@ import { useState } from "react";
 import { NOW } from "./data";
 import { SectionsA } from "./SectionsA";
 import { SectionsB } from "./SectionsB";
+import { SectionsC } from "./SectionsC";
 import s from "./catalog.module.css";
 
 export const INDEX: Array<[string, string]> = [
@@ -25,6 +26,13 @@ export const INDEX: Array<[string, string]> = [
   ["overlays", "Popover, Dialog, Tooltip"],
   ["icons", "Icons"],
   ["states", "Designed states"],
+  ["desk", "Desk (v13)"],
+  ["controls", "Controls (v13)"],
+  ["figure", "Figure"],
+  ["datastate", "DataState, Availability"],
+  ["plot", "Plot kit"],
+  ["money", "Waterfall, grid, sweep"],
+  ["gates", "GateList, Advisories"],
 ];
 
 export function Catalog({ initialMode }: { initialMode: ChartMode }) {
@@ -41,7 +49,7 @@ export function Catalog({ initialMode }: { initialMode: ChartMode }) {
         <header className={s.masthead}>
           <div className={s.mastLeft}>
             <p className={s.wordmark}>Neritic</p>
-            <p className={s.mastNote}>Chart design system · v12</p>
+            <p className={s.mastNote}>Chart design system · v12 and v13</p>
           </div>
           <Segmented label="Chart mode" hideLabel options={CHART_MODES.map((m) => ({ value: m, label: CHART_MODE_LABEL[m] }))} value={mode} onChange={choose} />
         </header>
@@ -65,6 +73,7 @@ export function Catalog({ initialMode }: { initialMode: ChartMode }) {
             </div>
             <SectionsA mode={mode} />
             <SectionsB />
+            <SectionsC />
           </main>
         </div>
       </TooltipProvider>

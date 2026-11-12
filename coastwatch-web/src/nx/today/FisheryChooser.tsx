@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import type { FisheryId } from "@/pilot/contracts";
 import { FISHERY_OPTIONS } from "@/pilot/facts";
 import { pan, press } from "@/nx/ds/motion";
-import { Loading } from "@/nx/ds/States";
+import { Skeleton } from "@/nx/ds/DataState";
 import { PORT_NAME_LAYOUT } from "./layout";
 import { suggestFisheries, type TodayInputs } from "./model";
 import s from "./today.module.css";
@@ -21,6 +21,7 @@ export function FisheryChooser({ port, inputs, onChoose }: { port: { key: string
   const rest = FISHERY_OPTIONS.filter((f) => !suggested.includes(f.id));
   const option = (id: FisheryId, label: string) => (
     <li key={id}>
+      {/* design-lint-allow raw-button: a full-width list row that presses with Motion (`press`); ds OptionList is a radio group, and choosing here is an action that leaves the list */}
       <motion.button type="button" className={s.option} onClick={() => onChoose(id)} data-fishery={id} {...press}>
         {label}
       </motion.button>
@@ -31,9 +32,10 @@ export function FisheryChooser({ port, inputs, onChoose }: { port: { key: string
       <motion.h1 id="nx-today-title" layoutId={PORT_NAME_LAYOUT} className={s.chooserTitle} transition={pan}>
         {port.name}
       </motion.h1>
-      <p className={s.chooserLead}>What do you fish from here? Today leads with it.</p>
+      <p className={s.chooserLead}>What do you fish from here? Today leads with it, and you can change it at any time under Others.</p>
       {inputs === undefined ? (
-        <Loading className={s.block}>Reading what Neritic has for {port.name}</Loading>
+        // the list's own geometry while the port's records are read: a head and its rows
+        <Skeleton className={s.block} label={`Reading what Neritic has for ${port.name}`} lines={6} />
       ) : suggested.length ? (
         <>
           <h2 className={s.groupHead}>Suggested: Neritic has records for these here</h2>

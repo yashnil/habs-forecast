@@ -1,8 +1,9 @@
 "use client";
 
 import { RampLegend } from "@/nx/ds";
+import { ADJACENT_KEY } from "./adjacency";
 import type { CurrentFrame, ExploreFrame, ExploreProduct } from "./model";
-import { CHL_DOMAIN, CHL_STEPS, CHL_TICKS, currentsCaption, legendCaption, PROB_STEPS } from "./words";
+import { CHL_DOMAIN, CHL_STEPS, CHL_TICKS, currentsCaption, legendCaption, OUTSIDE_KEY, PROB_STEPS } from "./words";
 import s from "./explore.module.css";
 
 /**
@@ -23,11 +24,45 @@ function HatchSwatch({ spacing, past }: { spacing: number; past?: boolean }) {
   );
 }
 
+/** The key for water a model or an outlook has no cell for: level rules, as the chart draws it (FieldLayer outsideModel). */
+function OutsideKey() {
+  return (
+    <li data-testid="nx-key-outside">
+      <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+        <rect x="0.5" y="0.5" width="39" height="15" className={s.swatchFrame} />
+        <g className={s.swatchRule}>
+          {[4, 8, 12].map((y) => (
+            <line key={y} x1={0} y1={y} x2={40} y2={y} />
+          ))}
+        </g>
+      </svg>
+      <span>{OUTSIDE_KEY}</span>
+    </li>
+  );
+}
+
 export function ExploreLegend({ product, frame, currents }: { product: ExploreProduct; frame: ExploreFrame; currents: CurrentFrame | null }) {
   const caption = legendCaption(product, frame);
   let body;
   if (product.id === "chl") {
-    body = <RampLegend title="Chlorophyll" unit="mg/m³" steps={CHL_STEPS} domain={CHL_DOMAIN} scale="log" ticks={CHL_TICKS} caption={caption} noView className={s.legend} />;
+    body = (
+      <>
+        <RampLegend title="Chlorophyll" unit="mg/m³" steps={CHL_STEPS} domain={CHL_DOMAIN} scale="log" ticks={CHL_TICKS} caption={caption} noView className={s.legend} />
+        {frame.besideLandLeftOut ? (
+          <ul className={s.keys} aria-label="Marks">
+            {/* its own key: not cloud ("no view") and not a model's footprint ("outside the model") */}
+            <li data-testid="nx-key-beside-land">
+              <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+                <rect x="0.5" y="0.5" width="39" height="15" className={s.swatchFrame} />
+                <path d="M0,11 C10,7 18,13 28,8 C33,6 37,7 40,6" className={s.swatchShore} />
+                <path d="M0,7 C10,3 18,9 28,4 C33,2 37,3 40,2" className={s.swatchShoreRing} />
+              </svg>
+              <span>{ADJACENT_KEY}</span>
+            </li>
+          </ul>
+        ) : null}
+      </>
+    );
   } else if (product.id === "outlook") {
     body = (
       <>
@@ -44,6 +79,7 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
             </svg>
             <span>No signal</span>
           </li>
+          <OutsideKey />
         </ul>
         <p className={s.caption}>{caption}</p>
       </>
@@ -68,6 +104,7 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
             <HatchSwatch spacing={8} past={product.pastRun} />
             <span>Hatched: a model{product.pastRun ? ", past run drawn lighter" : ""}</span>
           </li>
+          <OutsideKey />
         </ul>
         <p className={s.caption}>{caption}</p>
       </>

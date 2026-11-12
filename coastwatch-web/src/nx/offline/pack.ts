@@ -22,7 +22,7 @@ export const FIELD_RECORD = "/__field__/record.json";
 const RECORD_KEY = "nx-field-v1";
 const SW_URL = `/sw.js${process.env.NEXT_PUBLIC_NERITIC_BUILD ? `?b=${process.env.NEXT_PUBLIC_NERITIC_BUILD}` : ""}`;
 
-export type PackPage = { id: "today" | "notices" | "coast" | "explore" | "research"; label: string; path: string; ok: boolean };
+export type PackPage = { id: "today" | "notices" | "coast" | "explore" | "research" | "alerts" | "trip"; label: string; path: string; ok: boolean };
 export type PackFrame = { layer: string; label: string; stamp: string; ok: boolean };
 export type FieldRecord = {
   v: 1;
@@ -182,8 +182,13 @@ export async function saveFieldPack(port: SavePort, opts: { researchPath?: strin
       { id: "today", label: "Today", path: `/today?place=${place}` },
       { id: "notices", label: "Official notices", path: `/notices?place=${place}` },
       { id: "coast", label: "My Coast", path: `/coast?place=${place}` },
+      // My Coast's two views are two documents: the worker serves a page only at the address it was rendered
+      // for (public/sw.js packNavigate), so the trip workspace is saved under its own, as the app links to it
+      { id: "trip", label: "My Coast's trip worksheet", path: `/coast?place=${place}&view=trip` },
       { id: "explore", label: "Explore", path: `/explore?place=${place}` },
       { id: "research", label: "Research", path: researchPath },
+      // the alerts this device already made are in its own storage: the saved page reads them with no connection
+      { id: "alerts", label: "Alerts", path: `/alerts?place=${place}` },
     ];
     const plan = await fetch(`/explore/files?place=${place}`, { cache: "no-store" })
       .then((r) => (r.ok ? (r.json() as Promise<{ ok: boolean; frames: Array<{ layer: string; label: string; stamp: string; files: string[] }> }>) : null))
@@ -276,7 +281,8 @@ export async function saveFieldPack(port: SavePort, opts: { researchPath?: strin
 /** What a page says it has offline, and what it cannot have. Pure (tests read it). */
 export function packWords(r: FieldRecord | null, page: string): { saved: string | null; notSaved: string } {
   const notSaved: Record<string, string> = {
-    today: "Newer tests, notices and forecasts, Alerts and Ask wait for a connection.",
+    today: "Newer tests, notices and forecasts, new alert checks and Ask wait for a connection.",
+    alerts: "The alerts already on this device are listed. A new check of the ports you follow waits for a connection.",
     notices: "Notices issued or changed since then wait for a connection; call the agencies to be sure.",
     coast: "A newer sea window waits for a connection. The worksheet works as usual and stays on this device.",
     explore: "Only each layer's latest frame is saved, as a still picture: earlier frames, temperature lines, currents and tapping the water wait for a connection.",
@@ -284,7 +290,7 @@ export function packWords(r: FieldRecord | null, page: string): { saved: string 
     home: "Newer records wait for a connection.",
   };
   if (!r) return { saved: null, notSaved: notSaved[page] ?? notSaved.home };
-  const parts = r.pages.filter((p) => p.ok && p.id !== "notices").map((p) => (p.id === "explore" ? "Explore's latest frames" : p.id === "research" ? "Research's record" : p.label));
+  const parts = r.pages.filter((p) => p.ok && p.id !== "notices" && p.id !== "alerts" && p.id !== "trip").map((p) => (p.id === "explore" ? "Explore's latest frames" : p.id === "research" ? "Research's record" : p.label));
   return { saved: parts.length ? `Saved for ${r.port.name}: ${list(parts)}.` : null, notSaved: notSaved[page] ?? notSaved.home };
 }
 

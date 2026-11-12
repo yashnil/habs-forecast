@@ -4,18 +4,63 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { capability, noteContextLoss, type GraphicsTier } from "@/lib/capability";
 import { EASE_CHART, pan } from "@/nx/ds/motion";
+import { paneJustChanged } from "@/nx/ds/layout/pane";
 import { alignIn, coverCamera, fillZoom, fitAtZoom, fitBounds, keepInFrame, NO_INSETS, scaleBar, screenRect, slideWithin, unproject, type Bounds, type Camera, type Insets, type Viewport, latY, lngX, worldSize, xLng, yLat } from "./mercator";
 import { placeAll, type Anchor, type Rect } from "./placement";
-import { allMarks, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
-import { getScene, subscribeScene, type ChartScene } from "./scene";
-import { setChartMap } from "./control";
-import { measureCovers, onCoversChange } from "./cover";
+import { allMarks, getFrame, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
+import { getScene, subscribeScene, useScene, type ChartScene } from "./scene";
+import { keepChartPointInView, onChartCommand, refitChart, setChartMap, zoomChart, fitChartBounds, type ChartCommand } from "./control";
+import { drawnObstacles, measureCovers, onCoversChange } from "./cover";
+import { Icon } from "@/nx/ds/Icon";
 import { chartStyle, CHART_FRAME, modePaint, posterImages, posterLandEast, readPalette } from "./style";
 import { Neatline } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
 import { RegulationLayer } from "./RegulationLayer";
+import { useChartHighlight } from "./highlight";
 
-type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null } };
+/** The place lit from outside the chart (highlight.ts): a ring at its point, redrawn with the camera. */
+function Highlight({ cam }: { cam: Camera | null }) {
+  const h = useChartHighlight();
+  const f = getFrame();
+  if (!h || !f || !cam) return null;
+  const p = f.project(h.lon, h.lat);
+  return (
+    <span className="n12-highlight" style={{ transform: `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)` }} data-testid="nx-highlight" aria-hidden="true">
+      {h.label ? <span className="n12-port-name">{h.label}</span> : null}
+    </span>
+  );
+}
+
+/**
+ * The chart's own buttons: zoom in, zoom out, back to the page's view, and a page's "fit the data" when its
+ * scene names one. Only where the reader may move the chart; each is a 44 px target with its name.
+ */
+function ChartControls() {
+  const scene = useScene();
+  if (!scene || scene.interactive === false || scene.controls === false || "cover" in scene.view) return null;
+  const fit = scene.controls?.fit;
+  return (
+    <div className="n12-controls" role="group" aria-label="Chart view" data-testid="nx-chart-controls">
+      <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(1)} aria-label="Zoom in" title="Zoom in" data-testid="nx-zoom-in">
+        <Icon name="plus" size={20} />
+      </button>
+      <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(-1)} aria-label="Zoom out" title="Zoom out" data-testid="nx-zoom-out">
+        <Icon name="minus" size={20} />
+      </button>
+      <button type="button" onClick={refitChart} aria-label={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} title={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} data-testid="nx-refit">
+        <Icon name="port" size={20} />
+      </button>
+      {fit ? (
+        <button type="button" className="n12-controls-word" onClick={() => fitChartBounds(fit.bounds)} aria-label={fit.label} title={fit.label} data-testid="nx-fit-data">
+          <span className="n12-controls-words">{fit.label}</span>
+          <Icon name="layers" size={20} className="n12-controls-icon" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView } };
 
 const bezier = (t: number) => {
   // cubic-bezier(EASE_CHART) solved for y at x = t
@@ -70,15 +115,18 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets): Camer
     return { center: unproject(c, free, free.width / 2, free.height / 2 + cover.bottom / 2), zoom: c.zoom };
   }
   const ins = sceneInsets(vp, cover);
-  let cam = fitBounds(scene.view.bounds, vp, ins, scene.view.maxZoom ?? 12.5);
-  if (scene.view.fill) cam = fitAtZoom(scene.view.bounds, vp, ins, Math.min(scene.view.maxZoom ?? 12.5, fillZoom(scene.view.bounds, vp, ins)));
+  // a tall, narrow free area (a desk page's chart pane) takes the view's own box for that shape when it has one
+  const freeW = vp.width - ins.left - ins.right, freeH = vp.height - ins.top - ins.bottom;
+  const box = scene.view.tall && freeH >= freeW * 1.25 ? scene.view.tall : scene.view.bounds;
+  let cam = fitBounds(box, vp, ins, scene.view.maxZoom ?? 12.5);
+  if (scene.view.fill) cam = fitAtZoom(box, vp, ins, Math.min(scene.view.maxZoom ?? 12.5, fillZoom(box, vp, ins)));
   // a box too large for this sheet (the whole coast on a phone) is shown from the zoom the chart's extent allows,
   // centred on the box (then aligned), rather than left for the map's clamp to crop at random
   const frame = frameFor(cover, minZoomOf(scene));
   const inFrame = keepInFrame(cam, vp, frame);
-  if (inFrame.zoom > cam.zoom) cam = fitAtZoom(scene.view.bounds, vp, ins, inFrame.zoom);
-  if (scene.view.align) cam = alignIn(cam, scene.view.bounds, vp, ins, scene.view.align);
-  if (scene.view.within) cam = slideWithin(cam, vp, scene.view.bounds, scene.view.within, cover);
+  if (inFrame.zoom > cam.zoom) cam = fitAtZoom(box, vp, ins, inFrame.zoom);
+  if (scene.view.align) cam = alignIn(cam, box, vp, ins, scene.view.align);
+  if (scene.view.within) cam = slideWithin(cam, vp, box, scene.view.within, cover);
   return keepInFrame(cam, vp, frame);
 }
 
@@ -130,6 +178,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   /** when the pan now travelling lands (performance.now() ms); a refinement of the same view glides on until then */
   const panUntil = useRef(0);
   const frameRefLatest = useRef<ChartFrame | null>(null);
+  /** where the zoom buttons are heading while the camera travels */
+  const zoomGoal = useRef<number | null>(null);
 
   // ---------------------------------------------------------------- placement of everything on the chart
   const placeNow = useCallback(() => {
@@ -146,6 +196,14 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     if (scale) obstacles.push({ x0: ins.left, y0: H - ins.bottom - scale.offsetHeight - 16, x1: ins.left + scale.offsetWidth + 24, y1: H });
     const attrib = frameEl.querySelector<HTMLElement>(".n12-attrib");
     if (attrib && attrib.offsetWidth) obstacles.push({ x0: W - ins.right - attrib.offsetWidth - 20, y0: H - ins.bottom - attrib.offsetHeight - 16, x1: W - ins.right, y1: H - ins.bottom });
+    // the chart's own buttons, and whatever a page drew on the chart and asked lettering to keep clear of
+    // (a transect line, a read cell: cover.ts registerChartObstacle)
+    const controls = frameEl.querySelector<HTMLElement>(".n12-controls");
+    if (controls && controls.offsetWidth) {
+      const fr = frameEl.getBoundingClientRect(), cr = controls.getBoundingClientRect();
+      obstacles.push({ x0: cr.left - fr.left - 6, y0: cr.top - fr.top - 6, x1: cr.right - fr.left + 6, y1: cr.bottom - fr.top + 6 });
+    }
+    obstacles.push(...drawnObstacles(f.project));
     const canyon = frameEl.querySelector<SVGGraphicsElement>(".n12-canyon-name text");
     if (canyon && canyon.getAttribute("visibility") !== "hidden") {
       const b = canyon.getBBox();
@@ -156,6 +214,11 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       if (t.getAttribute("visibility") === "hidden") return;
       const b = t.getBBox();
       if (b.width) obstacles.push({ x0: b.x - 2, y0: b.y - 2, x1: b.x + b.width + 2, y1: b.y + b.height + 2 });
+    });
+    // a zone's boundary line (a parallel of latitude): a name is never set across it, struck through
+    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg path.n12-reg-line, .n12-reg path.n12-reg-limitline").forEach((ln) => {
+      const b = ln.getBBox();
+      if (b.width > 24 && b.height < 3) obstacles.push({ x0: b.x, y0: b.y - 7, x1: b.x + b.width, y1: b.y + b.height + 7 });
     });
     const z = f.camera.zoom;
     const entries = allMarks().filter((e) => (e.spec.minZoom ?? -1) <= z && z <= (e.spec.maxZoom ?? 99));
@@ -252,6 +315,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     const w = window as Win;
     w.__nxChart ??= { inits: 0, map: null, tier: c.tier, camera: null, scene: null };
     w.__nxChart.tier = c.tier;
+    // for tests: the page-facing camera request, as a page would call it
+    w.__nxChart.keep = keepChartPointInView;
     const mo = new MutationObserver(() => setMode(chartModeOf()));
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-chart-mode"] });
     const mq = matchMedia("(prefers-reduced-motion: reduce)");
@@ -456,11 +521,74 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   useEffect(() => {
     const m = mapRef.current;
     if (m && vp) m.resize();
-    applyScene(false);
+    // the reader resized or reopened the chart pane: the same view glides to its new fit (`pan`); any other
+    // change of size (the window, a rotation) refits at once
+    applyScene(paneJustChanged());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vp?.width, vp?.height]);
 
   useEffect(() => onMarksChange(schedule), [schedule]);
+
+  // ---------------------------------------------------------------- commands (control.ts): the chart's buttons and a page's requests
+  useEffect(
+    () =>
+      onChartCommand((c: ChartCommand) => {
+        const m = mapRef.current;
+        const el = frameRef.current;
+        if (!m || !el || !vp) return;
+        const duration = reduced ? 0 : tier === "reduced" ? 300 : (pan.duration as number) * 1000;
+        const go = (center: [number, number], zoom: number) => {
+          // a view the reader or the page asked for may lie outside the scene's own zoom limits
+          m.setMinZoom(Math.min(m.getMinZoom(), zoom));
+          m.setMaxZoom(Math.max(m.getMaxZoom(), zoom));
+          if (duration) m.easeTo({ center, zoom, duration, easing: bezier, essential: true });
+          else m.jumpTo({ center, zoom });
+        };
+        if (c.type === "refit") {
+          zoomGoal.current = null;
+          return applyScene(true);
+        }
+        if (c.type === "zoom") {
+          // steps add up while the camera is still travelling (two quick presses are two steps), inside the
+          // view's own zoom limits, so a view that keeps the coast in sight still does
+          const from = zoomGoal.current ?? m.getZoom();
+          const z = Math.min(m.getMaxZoom(), Math.max(m.getMinZoom(), from + c.by));
+          zoomGoal.current = z;
+          m.once("moveend", () => {
+            if (Math.abs(m.getZoom() - z) < 0.01) zoomGoal.current = null;
+          });
+          const ctr = m.getCenter();
+          if (duration) m.easeTo({ center: [ctr.lng, ctr.lat], zoom: z, duration: Math.min(duration, 300), easing: bezier, essential: true });
+          else m.jumpTo({ center: [ctr.lng, ctr.lat], zoom: z });
+          return;
+        }
+        zoomGoal.current = null;
+        if (c.type === "fit") {
+          const cover = covered(el).insets;
+          const cam = fitBounds(c.bounds, vp, sceneInsets(vp, cover), c.maxZoom ?? 12.5);
+          return go(cam.center, cam.zoom);
+        }
+        // keep: the free area is what the covers leave now. The phone sheet is measured where it stands (its
+        // present detent), not at its resting height, so a reading under a raised sheet is brought above it
+        const fr = el.getBoundingClientRect();
+        const cover = { ...covered(el).insets };
+        const sheetEl = document.querySelector<HTMLElement>(".n12-margin[data-detent]");
+        if (sheetEl) cover.bottom = Math.max(cover.bottom, Math.min(fr.height * 0.8, fr.bottom - sheetEl.getBoundingClientRect().top));
+        const pad = c.margin ?? 56;
+        const p = m.project([c.lon, c.lat]);
+        const x0 = cover.left + pad, x1 = fr.width - cover.right - pad, y0 = cover.top + pad, y1 = fr.height - cover.bottom - pad;
+        // brought a few px inside the edge, so a place already brought clear is clear when asked again
+        const IN = 6;
+        const dx = p.x < x0 ? p.x - x0 - IN : p.x > x1 ? p.x - x1 + IN : 0;
+        const dy = p.y < y0 ? p.y - y0 - IN : p.y > y1 ? p.y - y1 + IN : 0;
+        if (!dx && !dy) return;
+        // the chart's extent reaches past its drawing by what covers it now (a raised sheet covers more than a resting one)
+        m.setMaxBounds(frameFor(cover, m.getMinZoom()));
+        const ctr = m.unproject([fr.width / 2 + dx, fr.height / 2 + dy]);
+        go([ctr.lng, ctr.lat], m.getZoom());
+      }),
+    [applyScene, vp, reduced, tier],
+  );
 
   // a panel or the phone sheet arriving, leaving or changing size: the camera refits into the free part of the
   // sheet (gliding, since it is the same view) and the names are placed again
@@ -508,6 +636,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           <svg className="n12-leaders" aria-hidden="true" />
           <ChartLabels ports={ports} />
           <div id="nx-chart-marks" className="n12-marks" />
+          <Highlight cam={cam} />
         </div>
         {scale ? (
           <div className="n12-scale" aria-label={`Scale bar ${scale.label}. Not for navigation.`}>
@@ -520,10 +649,11 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
             <span className="n12-scale-text">{scale.label}. Not for navigation.</span>
           </div>
         ) : null}
+        {tier !== "static" && mapReady ? <ChartControls /> : null}
         <p className="n12-attrib">
           Depth NOAA ETOPO, CRM · Coast © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
         </p>
-        <Neatline camera={cam} viewport={vp} band={neat.band} label={neat.label} pane={{ left: coverRef.current.left, right: coverRef.current.right }} />
+        <Neatline camera={cam} viewport={vp} band={neat.band} label={neat.label} pane={{ left: coverRef.current.left, right: coverRef.current.right, bottom: coverRef.current.bottom }} />
       </div>
     </div>
   );

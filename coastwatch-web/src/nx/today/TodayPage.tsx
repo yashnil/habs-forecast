@@ -22,7 +22,8 @@ export function TodayPage({ initial }: { initial: Initial }) {
   const { key, fromUrl } = current;
   const pending = !seeded && current.pending;
   useEffect(() => {
-    if (fromUrl && key) savePort(key);
+    // the address named this port (a link, a tab): it is the port last opened, never a new home port
+    if (fromUrl && key) savePort(key, { chosen: false });
   }, [key, fromUrl]);
   if (port) return <TodayView port={{ key: port.key, name: port.name, lon: port.lon, lat: port.lat }} initial={initial} />;
   if (pending) return <section className={s.today} data-testid="nx-today" />;

@@ -4,7 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Conditions } from "@/lib/conditions";
 import { loadToday } from "@/pilot/today/load";
 import { snapFacts } from "@/pilot/facts";
-import { buildToday, comingThatMatter, othersLine, parseWindow, scopeWords, splitHeadline, suggestFisheries, type TodayInputs } from "@/nx/today/model";
+import { alertWords, buildToday, comingThatMatter, othersLine, parseWindow, periodNameWords, scopeWords, splitHeadline, suggestFisheries, windWords, type TodayInputs } from "@/nx/today/model";
+import { advisoriesOf, buildGates, gateHrefs, orderSeaFacts, RELATION, type GateFact } from "@/nx/today/gates";
 import { changeLine, sinceWords } from "@/nx/today/change";
 import { distanceKm, phoneBounds, todayBounds } from "@/nx/today/camera";
 import { kindOfFact, provenanceOf, shortSource } from "@/nx/today/provenance";
@@ -206,7 +207,7 @@ describe("models behind a tap (T3, T5, T9–T12)", () => {
   it("an outlook about usual is said as no signal", () => {
     const o = { ...inputs.outlook!, value: 1, typical: 1 };
     const v = buildToday({ ...inputs, outlook: o }, { fishery: "dungeness_commercial", sea: null, place });
-    expect(v.models.value).toBe("No signal");
+    expect(v.models.value).toBe("Algae about usual for the season, not toxin");
     expect(v.models.outlook?.headline).toMatch(/^No signal/);
   });
 
@@ -287,5 +288,155 @@ describe("provenance", () => {
     expect(shortSource("NOAA National Weather Service")).toBe("NWS");
     expect(shortSource("CDPH Summary of Domoic Acid Levels in Crab")).toBe("CDPH");
     expect(provenanceOf({ id: "x", place_id: "p", kind: "status", severity: "info", headline: "h", basis: "official", verified: false, source: { name: "CDFW", url: "/x" }, as_of: null }, "t")).toBeNull();
+  });
+});
+
+describe("the three gates (v13 lead decision 6)", () => {
+  /** the same fixture a month and a half later: the Sep 28 test is past TEST_STALE_DAYS */
+  const later = () => ({ ...inputs, now: "2026-11-12T18:00:00Z" });
+  const withAlert = (): Conditions => {
+    const c = JSON.parse(JSON.stringify(sea)) as Conditions;
+    const a = (c as unknown as { alerts: { status: string; data: unknown[] } }).alerts;
+    if (a?.status === "ok" && Array.isArray(a.data) && !a.data.length) a.data.push({ event: "Small Craft Advisory", headline: "Small Craft Advisory in effect from Thursday morning through Friday morning", url: "https://www.weather.gov/mtr/", ends: "2026-10-14T16:00:00Z", severity: "Minor" });
+    return c;
+  };
+
+  it("whale, then domoic acid, then sea; each with its source, date and age, and every in-app step keeps the port", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_commercial", sea, place });
+    expect(v.gates.map((g) => g.id)).toEqual(["whale", "domoic", "sea"]);
+    const [whale, domoic, seaGate] = v.gates;
+    expect(whale).toMatchObject({ authority: "CDFW RAMP", dateRole: "assessed", state: "ok" });
+    expect(whale.headline).toBe("Zone 4: Fleet Advisory, no depth or gear limit on record");
+    expect(whale.facts[0].text).toMatch(/^Next whale assessment, subject to change: Dec 15–18$/);
+    // CDFW's own clauses for the reader's sector, quoted, and never the recreational rule (T42)
+    expect(whale.facts.find((f) => f.id === "cdfw")!.text).toMatch(/^CDFW, for commercial crabbers: “Commercial season delayed/);
+    expect(whale.facts.map((f) => f.text).join(" ")).not.toMatch(/recreational/i);
+    // the port's other CDPH sites sit in the domoic gate, highest result first, with their age
+    expect(domoic.facts.find((f) => /rock crab/.test(f.text))!.text).toMatch(/highest 20 ppm of 30.*14 days ago\.$/);
+    expect(whale.relation).toEqual([RELATION.whaleDecides]);
+    // the three-line summary under the status: a few words each, never a verdict
+    expect(v.gates.map((g) => g.summary)).toEqual(["Delay · next Dec 15–18", "Test 14 days ago", expect.stringMatching(/^Seas \d+–\d+ ft forecast$/)]);
+    for (const g of v.gates) expect(g.summary.length).toBeLessThanOrEqual(25);
+    // the whale stamp's sheet: the reader's own clauses first, the whole official sentence labelled (T42)
+    const wp = whale.provenance!;
+    expect(wp.value).not.toMatch(/recreational/i);
+    expect(wp.caveats![0]).toMatch(/^For commercial crabbers, in CDFW's words: “Commercial season delayed/);
+    expect(wp.caveats![0]).not.toMatch(/recreational/i);
+    expect(wp.caveats![1]).toMatch(/^Full CDFW text \(all sectors\): “.*recreational/i);
+    expect(domoic).toMatchObject({ authority: "CDPH tests", dateRole: "sampled", date: "2026-09-28", age: "14 days ago", state: "ok" });
+    expect(domoic.headline).toBe("Dungeness test, Monterey Bay, Sep 28: highest 9.8 of 30 ppm, 6 samples");
+    expect(seaGate).toMatchObject({ authority: "NWS and NDBC", dateRole: "issued", state: "ok" });
+    for (const g of v.gates) {
+      expect(g.actions.length).toBeGreaterThan(0);
+      for (const a of g.actions) expect(a.external ? /^https:\/\//.test(a.href) : a.href.includes("place=port-592")).toBe(true);
+    }
+    expect(domoic.actions.find((a) => a.id === "research")!.href).toBe("/research?place=port-592&var=pDA");
+    expect(seaGate.actions.find((a) => a.id === "explore")!.href).toBe("/explore?place=port-592&layer=sst");
+    expect(seaGate.actions.find((a) => a.id === "trip")!.href).toBe("/coast?place=port-592&view=trip");
+  });
+
+  it("a test never softens the whale delay (T44): the fixed sentence is on the domoic gate whatever the result", () => {
+    const d = buildToday(inputs, { fishery: "dungeness_commercial", sea: null, place }).gates.find((g) => g.id === "domoic")!;
+    expect(d.relation).toContain(RELATION.testDoesNotLift);
+    expect(d.relation).toContain(RELATION.testWhoDecides);
+    expect(d.relation.join(" ")).toMatch(/usually/);
+    // a fishery RAMP does not govern has no whale gate and no whale sentence
+    const r = buildToday(inputs, { fishery: "rock_crab", sea: null, place });
+    expect(r.gates.map((g) => g.id)).toEqual(["domoic", "sea"]);
+    expect(r.gates[0].relation).not.toContain(RELATION.testDoesNotLift);
+  });
+
+  it("a test older than 30 days is history: worded as old in its gate and its row, never a figure on the chart", () => {
+    const v = buildToday(later(), { fishery: "dungeness_commercial", sea: null, place });
+    expect(v.soundings.find((s) => s.id === "test")).toBeUndefined();
+    const d = v.gates.find((g) => g.id === "domoic")!;
+    expect(d.state).toBe("old");
+    expect(d.summary).toBe("Test 45 days ago");
+    expect(d.age).toBe("45 days ago");
+    expect(d.relation[0]).toBe("This test is older than 30 days: it is history, not a reading of the water now.");
+    expect(d.headline).toMatch(/highest 9\.8 of 30 ppm/);
+    // its words are not lost with the figure: the tests row now names it, with (old)
+    const r = v.rows.find((x) => x.id === "tests");
+    if (!r || r.state === "unavailable") throw new Error("expected a tests row");
+    expect(r.state).toBe("stale");
+    expect(r.value).toBe("2 sites nearby");
+    expect(r.detail.some((x) => /Dungeness/.test(x.text) && /\(old\)/.test(x.text))).toBe(true);
+    // the fresh test stays where it was
+    expect(buildToday(inputs, { fishery: "dungeness_commercial", sea: null, place }).soundings.map((s) => s.id)).toEqual(["test"]);
+  });
+
+  it("an NWS advisory leads the sea gate and the page, stamped with NWS and its issue time, never 'not verified'", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_commercial", sea: withAlert(), place });
+    const g = v.gates.find((x) => x.id === "sea")!;
+    expect(g.facts[0].role).toBe("advisory");
+    expect(g.headline).toBe("NWS Small Craft Advisory in effect from Thursday morning through Friday morning");
+    expect(alertWords("Small craft advisory", "Small craft advisory in effect until 3 PM.")).toBe("NWS Small craft advisory in effect until 3 PM");
+    expect(alertWords("Gale Warning", "Winds 35 kt expected")).toBe("NWS Gale Warning: Winds 35 kt expected");
+    expect(v.advisories.map((a) => a.id)).toEqual(["alert-Small Craft Advisory"]);
+    expect(g.summary).toBe("Small Craft Advisory");
+    expect(v.advisories[0].provenance).toMatchObject({ kind: "advisory", source: "NWS", dateRole: "issued" });
+    expect(v.agenda.find((a) => a.id === "alert-Small Craft Advisory")!.provenance?.kind).toBe("advisory");
+    // only the "official" kind carries "not verified" on its stamp (ds Stamp): an advisory never does
+    expect(v.advisories[0].provenance!.kind).not.toBe("official");
+    expect(buildToday(inputs, { fishery: "dungeness_commercial", sea, place }).advisories).toEqual([]);
+  });
+
+  it("advisories sort first whatever order the facts arrive in", () => {
+    const f = (id: string, role: GateFact["role"]): GateFact => ({ id, role, text: id });
+    expect(orderSeaFacts([f("tide", "predicted"), f("waves", "measured"), f("sca", "advisory"), f("nws", "forecast"), f("gale", "advisory")]).map((x) => x.id)).toEqual(["sca", "gale", "nws", "waves", "tide"]);
+    const gates = buildGates({ place: "p", whale: null, test: { state: "none" }, sea: { state: "ok", facts: [f("waves", "measured"), f("sca", "advisory")], marineUrl: null, issued: null, age: null } });
+    expect(advisoriesOf(gates).map((x) => x.id)).toEqual(["sca"]);
+  });
+
+  it("the measured waves are in the sea gate and in a row for phones, where the chart drops the buoy figure", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_commercial", sea, place });
+    const waves = v.gates.find((g) => g.id === "sea")!.facts.find((f) => f.id === "waves")!;
+    expect(waves.text).toMatch(/^Waves \d+\.\d ft( at \d+ s)? at buoy 46236$/);
+    expect(waves.provenance?.kind).toBe("measured");
+    const row = v.rows.find((r) => r.id === "waves");
+    if (!row || row.state === "unavailable") throw new Error("expected a waves row");
+    expect(row.compactOnly).toBe(true);
+    expect(row.value).toMatch(/^\d+\.\d ft( at \d+ s)?, buoy 46236$/);
+  });
+
+  it("states that are not values: a sea still loading, a sea that failed, no CDPH sidecar", () => {
+    expect(buildToday(inputs, { fishery: "dungeness_commercial", sea: null, place }).gates.find((g) => g.id === "sea")!.state).toBe("loading");
+    const e = buildToday(inputs, { fishery: "dungeness_commercial", sea: "error", place }).gates.find((g) => g.id === "sea")!;
+    expect(e.state).toBe("unavailable");
+    expect(e.actions[0]).toMatchObject({ id: "nws", external: true });
+    const t = buildToday({ ...inputs, biotoxin: null }, { fishery: "dungeness_commercial", sea: null, place }).gates.find((g) => g.id === "domoic")!;
+    expect(t.state).toBe("unavailable");
+    expect(t.date).toBeNull();
+  });
+
+  it("gate addresses keep the port, encoded", () => {
+    expect(gateHrefs.trip("port 5/92")).toBe("/coast?place=port%205%2F92&view=trip");
+    expect(gateHrefs.alerts("port-592")).toBe("/alerts?place=port-592");
+  });
+
+  it("no forbidden verdict words in any gate (T36)", () => {
+    for (const s of [sea, withAlert(), null, "error"] as const) {
+      const words = JSON.stringify(buildToday(later(), { fishery: "dungeness_commercial", sea: s, place }).gates.map((g) => [g.title, g.headline, g.relation, g.facts.map((f) => f.text), g.actions.map((a) => a.label)]));
+      expect(words).not.toMatch(/\b(safe|all clear|no-go|good day|hotspot|best spot|recommended|low risk|toxicity|toxin forecast|clean)\b/i);
+    }
+  });
+});
+
+describe("small words (v13)", () => {
+  it("the other fisheries keep their sector, so a recreational rule never reads as the commercial one (T42)", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_commercial", sea: null, place });
+    const line = othersLine(v.others);
+    if (/^Dungeness/.test(line)) expect(line).toMatch(/^Dungeness crab, recreational: /);
+    expect(othersLine([{ fishery: "dungeness_recreational", label: "Dungeness crab (recreational)", word: "Restricted", headline: "", flagged: true, provenance: null }, { fishery: "groundfish", label: "Groundfish", word: "No restriction on record", headline: "", flagged: false, provenance: null }])).toBe("Dungeness crab, recreational: restricted, 1 more");
+  });
+
+  it("NWS period names keep a weekday's capital; calm wind has no direction", () => {
+    expect(periodNameWords("Tonight")).toBe("tonight");
+    expect(periodNameWords("This Afternoon")).toBe("this afternoon");
+    expect(periodNameWords("Thu")).toBe("Thu");
+    expect(periodNameWords("Thursday Night")).toBe("Thursday night");
+    expect(windWords(0.3, "E")).toBe("Calm");
+    expect(windWords(6.2, "NW")).toBe("NW 6 kt");
+    expect(windWords(12, null)).toBe("12 kt");
   });
 });

@@ -1,0 +1,144 @@
+/* GateList and Advisories (v13 README §3). Tokens only. */
+.gates {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--rule) solid var(--ink);
+}
+.gate {
+  padding: var(--s-12) 0 var(--s-16);
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.gateHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s-12);
+}
+.gateTitle {
+  margin: 0;
+  font: 600 var(--type-body) / var(--lh-snug) var(--font-sans);
+}
+.gateAuthority {
+  color: var(--ink-2);
+}
+.gateState {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  margin-left: auto;
+  color: var(--ink-2);
+}
+.gateHeadline {
+  margin: var(--s-4) 0 0;
+  font: 500 var(--type-head) / var(--lh-snug) var(--font-serif);
+  text-wrap: balance;
+}
+.gate[data-tone="regulation"] .gateHeadline {
+  color: var(--reg-text);
+}
+.gate[data-tone="closure"] .gateHeadline {
+  color: var(--closure);
+}
+/* an old or missing gate is quieter, and says why in its state word */
+.gate[data-state="old"] .gateHeadline,
+.gate[data-state="none"] .gateHeadline,
+.gate[data-state="unavailable"] .gateHeadline,
+.gate[data-state="loading"] .gateHeadline {
+  font-family: var(--font-sans);
+  font-size: var(--type-lead);
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.gateDate {
+  margin: var(--s-4) 0 0;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.facts {
+  margin: var(--s-8) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--s-8);
+}
+.fact {
+  display: grid;
+  gap: 0;
+  line-height: var(--lh-snug);
+}
+.fact[data-role="advisory"] {
+  font-weight: 600;
+  padding-left: var(--s-12);
+  border-left: 3px solid var(--ink);
+}
+.factStamp {
+  font-size: var(--type-small);
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.old {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+.relation {
+  margin: var(--s-8) 0 0;
+  color: var(--ink-2);
+  line-height: var(--lh-snug);
+  max-width: var(--measure);
+}
+.gateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s-24);
+  margin-top: var(--s-8);
+}
+/* each link is its own 44 px target in the flow, so stacked links never share a hit area (the quiet button's
+   own centred 48 px target would reach into the link above and below) */
+.gateActions > * {
+  min-height: 44px;
+  align-items: center;
+}
+.gateActions > *::after {
+  display: none;
+}
+
+.advisories {
+  margin: 0 0 var(--s-16);
+  padding: var(--s-12) var(--s-16);
+  border: var(--rule) solid var(--ink);
+  background: var(--wash);
+}
+.advHead {
+  margin: 0 0 var(--s-4);
+  font: 600 var(--type-small) / var(--lh-snug) var(--font-sans);
+  color: var(--ink-2);
+}
+.advList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--s-12);
+}
+.advText {
+  margin: 0;
+  font: 600 var(--type-lead) / var(--lh-snug) var(--font-sans);
+}
+.advText a {
+  color: inherit;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.advArea {
+  font-weight: 400;
+}
+.advSource {
+  margin: var(--s-4) 0 0;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.advNone {
+  margin: 0;
+  color: var(--ink-2);
+}

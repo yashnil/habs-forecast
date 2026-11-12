@@ -5,9 +5,16 @@ import { OK } from "./ports";
 /**
  * Ask Neritic (/ask) on the port facts Today shows (src/pilot/today/portToday.ts; here the test
  * fixture, labelled "Sample data"), readiness "demo" (no ANTHROPIC_API_KEY, no TWILIO_*):
- * deterministic grounded answers, citations as chips, data age, safety templates, the
- * SMS preview, and axe at phone and desktop widths. Keep the number of questions low: /api/ask is
- * rate limited per client (30 / 10 min) and every test here shares one server.
+ * deterministic grounded answers, citations as chips, data age, the fixed refusal templates, and axe at
+ * phone and desktop widths. Keep the number of questions low: /api/ask is rate limited per client
+ * (30 / 10 min) and every test here shares one server.
+ *
+ * v13: Ask is a page of the v13 shell (src/nx/ask). Two things changed on purpose:
+ *  - the text-message preview is no longer asserted here. These servers have no Twilio configuration at all
+ *    (texts "not connected"), and a preview of a text nobody can receive implied a delivery that does not
+ *    exist. The preview is shown only where texts are in their demo state (readiness "demo"); the wording
+ *    of the SMS reply itself is still covered by tests/unit/ask/sms.test.ts.
+ *  - a port outside the pilot is named as not covered instead of being answered as Moss Landing.
  */
 
 async function serious(page: Page) {
@@ -24,13 +31,15 @@ async function ask(page: Page, question: string) {
 }
 
 test.describe("desktop", () => {
-  test("answers a common question with citations, data age and an SMS preview", async ({ page }) => {
+  test("answers a common question with citations and data age, in the v13 shell", async ({ page }) => {
     await page.goto(`${OK}/ask?place=port-592`);
     await expect(page.getByRole("heading", { level: 1, name: "Ask Neritic" })).toBeVisible();
     await expect(page.getByTestId("ask-readiness")).toContainText("Pilot demo — answers are assembled from Neritic's data without an AI model");
     await expect(page.getByTestId("ask-sample")).toHaveText("Sample data");
     await expect(page.getByTestId("ask-disclaimer")).toContainText("not an official source");
-    await expect(page.getByTestId("ask-sms-label")).toHaveText("SMS in carrier review — preview only");
+    // texts are not connected on this server: nothing about text messages is shown, and nothing asks for a number
+    await expect(page.getByTestId("ask-sms-preview")).toHaveCount(0);
+    await expect(page.locator('input[type="tel"]')).toHaveCount(0);
 
     await page.getByTestId("ask-suggestions").getByRole("button", { name: "What's the status of Dungeness crab?" }).click();
     const a = page.getByTestId("ask-answer").last();
@@ -59,7 +68,6 @@ test.describe("desktop", () => {
     await expect(detail.getByRole("link", { name: /Open CDFW/ })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
     await expect(detail.getByRole("link", { name: "See it on Today" })).toHaveAttribute("href", "/today?place=port-592#fact-status%3Adungeness_commercial");
 
-    await expect(page.getByTestId("ask-sms-text")).toContainText("[Src: CDFW 10/12, unverified]");
     expect(await serious(page)).toEqual([]);
 
     // a yes/no question about one fishery gets its answer as the first word (the notice is not repeated on a second answer)
@@ -67,7 +75,6 @@ test.describe("desktop", () => {
     await expect(b.getByTestId("ask-lead")).toContainText("No — Dungeness crab: commercial season delayed to at least Jan 1, 2027 (humpback whale entanglements).");
     await expect(b.getByTestId("ask-lines").locator("p")).toHaveCount(4);
     await expect(b.getByTestId("ask-notice")).toHaveCount(0);
-    await expect(page.getByTestId("ask-sms-text")).toContainText("No - Dungeness crab: commercial season delayed to at least Jan 1, 2027");
   });
 
   test("safety questions get the fixed template and official referrals, never 'safe'", async ({ page }) => {
@@ -93,6 +100,37 @@ test.describe("desktop", () => {
     const b = await ask(page, "What's the crab status in Crescent City?");
     await expect(b).toHaveAttribute("data-outcome", "out_of_area");
     await expect(b).toContainText("only Moss Landing");
+  });
+
+  test("a port outside the pilot is named as not covered: no question box, no other port's answer, until a pilot port is chosen", async ({ page }) => {
+    const posts: string[] = [];
+    page.on("request", (r) => r.method() === "POST" && r.url().includes("/api/ask") && posts.push(r.postData() ?? ""));
+    await page.goto(`${OK}/ask?place=port-473`);
+    await expect(page.getByTestId("nx-app")).toBeVisible();
+    const note = page.getByTestId("ask-uncovered");
+    await expect(note).toContainText("Ask Neritic does not cover Bodega Bay yet.");
+    await expect(note).toContainText("Moss Landing, Monterey, Santa Cruz and Princeton / Half Moon Bay");
+    await expect(page.getByTestId("ask-uncovered-today")).toHaveAttribute("href", "/today?place=port-473");
+    // nothing is preselected and nothing can be asked: Moss Landing is not offered as though it were Bodega Bay
+    await expect(page.getByTestId("ask-port")).toHaveValue("");
+    await expect(page.getByTestId("ask-input")).toHaveCount(0);
+    await expect(page.getByTestId("ask-suggestions")).toHaveCount(0);
+    await expect(page.getByTestId("ask-chat")).not.toContainText("Common questions for");
+    expect(posts).toEqual([]);
+    // the reader's own choice of a pilot port opens the conversation, and the note goes
+    await page.getByTestId("ask-port").selectOption("port-550");
+    await expect(note).toHaveCount(0);
+    await expect(page.getByTestId("ask-chat")).toContainText("Common questions for Monterey");
+    const a = await ask(page, "What's the status of Dungeness crab?");
+    await expect(a.getByTestId("ask-lead")).toContainText("Dungeness crab");
+    expect(JSON.parse(posts[0]).place).toBe("port-550");
+  });
+
+  test("with no port in the address, a saved port outside the pilot is named the same way", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("nx-port-v1", JSON.stringify({ v: 1, place: "port-473", for: "all", species: "any", lastPort: "port-473", fisheries: [], vessel: null })));
+    await page.goto(`${OK}/ask`);
+    await expect(page.getByTestId("ask-uncovered")).toContainText("does not cover Bodega Bay yet");
+    await expect(page.getByTestId("ask-input")).toHaveCount(0);
   });
 
   test("what changed compares with this device's previous visit", async ({ page }) => {

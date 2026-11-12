@@ -24,6 +24,11 @@ export type SceneView =
       align?: [number, number];
       /** fill the free area with the box, cropping its longer side (CSS `cover`), instead of fitting it whole */
       fill?: boolean;
+      /**
+       * the box to fit instead when the free area is tall and narrow (a desk page's chart pane: at least 1.25 times
+       * taller than wide): a run of coast up and down from the place rather than a wide box that would show mostly land
+       */
+      tall?: Bounds;
     }
   /** cover the whole sheet with this box, as CSS `cover` would (the opening's still registers to it) */
   | { cover: Bounds; position?: [number, number] };
@@ -45,6 +50,11 @@ export type ChartScene = {
   named?: { name: string; lon: number; lat: number }[];
   /** how far the reader may zoom out and in on this view (the chart's own limits otherwise), so context is never lost */
   zoomRange?: [number, number];
+  /**
+   * the chart's own buttons on this view (zoom in, zoom out, back to the page's view), on by default where the
+   * reader may pan; `fit` adds one more that fits a box of data ("Whole layer")
+   */
+  controls?: false | { fit?: { label: string; bounds: Bounds } };
 };
 
 let current: ChartScene | null = null;
@@ -86,4 +96,9 @@ export function boundsAround([lon, lat]: LngLat, kmX: number, kmY = kmX): Bounds
     [lon - dLon, lat - dLat],
     [lon + dLon, lat + dLat],
   ];
+}
+
+/** A run of coast for a tall, narrow pane: `kmAlong` up and down the coast from the place, `kmAcross` each side (default a third). */
+export function tallBoundsAround(at: LngLat, kmAlong: number, kmAcross = kmAlong / 3): Bounds {
+  return boundsAround(at, kmAcross, kmAlong);
 }

@@ -1,6 +1,7 @@
 "use client";
 import { scaleLinear, scaleLog, scaleUtc } from "d3-scale";
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useImperativeHandle, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent, type Ref } from "react";
+import { windowAround } from "../plot/model";
 import { day, monthYear } from "../format";
 import { useElementWidth } from "../useMedia";
 import { cx } from "../util";
@@ -24,11 +25,20 @@ export interface BrushProps {
   minDays?: number;
   /** What the window filters: "every strip above". */
   label: string;
+  /** Where the track starts and ends inside the brush, px, so it lines up with the plot above it (default 84 and 12). */
+  inset?: { left: number; right: number };
+  /** An imperative handle: `jumpTo` moves the window to hold a moment (the latest sample), keeping its width. */
+  handle?: Ref<BrushHandle>;
   className?: string;
 }
 
-const LEFT = 84;
-const RIGHT = 12;
+export interface BrushHandle {
+  /** Moves the window so it holds `t` (ms), centred and kept inside the record; `width` (ms) changes its width too. */
+  jumpTo: (t: number, width?: number) => void;
+}
+
+const LEFT_DEFAULT = 84;
+const RIGHT_DEFAULT = 12;
 /** The frame is never drawn narrower than this, px: a 90-day window on a 12-year record is about 5 px (critic 15). */
 export const MIN_FRAME = 20;
 
@@ -52,7 +62,9 @@ export function clampWindow([a, b]: [number, number], [lo, hi]: [number, number]
  * One brush for a stack of strips: drag the window, drag either edge, or click to centre. Each edge and the
  * window are sliders for the keyboard (arrows: a month; with Shift: a year).
  */
-export function Brush({ extent, value, onChange, points = [], scale = "log", height = 56, minDays = 30, label, className }: BrushProps) {
+export function Brush({ extent, value, onChange, points = [], scale = "log", height = 56, minDays = 30, label, inset, handle, className }: BrushProps) {
+  const LEFT = inset?.left ?? LEFT_DEFAULT;
+  const RIGHT = inset?.right ?? RIGHT_DEFAULT;
   const [ref, width] = useElementWidth<HTMLDivElement>(640);
   const drag = useRef<{ mode: "a" | "b" | "pan"; x0: number; v0: [number, number] } | null>(null);
   const plotW = Math.max(120, width - LEFT - RIGHT);
@@ -68,6 +80,7 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
   const years = x.ticks(Math.min(12, Math.max(2, Math.round(plotW / 90))));
 
   const set = (v: [number, number]) => onChange(clampWindow(v, extent, minMs));
+  useImperativeHandle(handle, () => ({ jumpTo: (t, w) => onChange(clampWindow(windowAround(extent, value, t, w), extent, minMs)) }), [extent, value, minMs, onChange]);
 
   const start = (mode: "a" | "b" | "pan") => (e: PointerEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -113,6 +126,10 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
   };
 
   const H = height;
+  // a narrow frame (a year on a 21-year record is about 30 px): the handles stand outside it, facing outward, so
+  // the start and end never share a hit area and the frame between them still pans
+  const narrow = xb - xa < 72;
+  const OUT = 40;
   return (
     <div className={cx(s.brush, className)}>
       <div ref={ref} style={{ position: "relative", height: H + 24 }} onPointerDown={centre}>
@@ -135,7 +152,7 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
         <button
           type="button"
           className={s.brushPan}
-          style={{ left: xa + 12, width: Math.max(0, xb - xa - 24), height: H }}
+          style={narrow ? { left: xa + 4, width: Math.max(12, xb - xa - 8), height: H } : { left: xa + 12, width: Math.max(0, xb - xa - 24), height: H }}
           role="slider"
           aria-label={`Window for ${label}`}
           aria-valuemin={extent[0]}
@@ -151,7 +168,8 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
         <button
           type="button"
           className={s.brushHandle}
-          style={{ left: xa, height: H }}
+          style={narrow ? ({ left: xa - OUT, width: OUT + 4, marginLeft: 0, height: H, "--tick": `${OUT}px` } as CSSProperties) : { left: xa, height: H }}
+          data-outward={narrow || undefined}
           role="slider"
           aria-label="Window start"
           aria-valuemin={extent[0]}
@@ -167,7 +185,8 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
         <button
           type="button"
           className={s.brushHandle}
-          style={{ left: xb, height: H }}
+          style={narrow ? ({ left: xb - 4, width: OUT + 4, marginLeft: 0, height: H, "--tick": "4px" } as CSSProperties) : { left: xb, height: H }}
+          data-outward={narrow || undefined}
           role="slider"
           aria-label="Window end"
           aria-valuemin={value[0]}

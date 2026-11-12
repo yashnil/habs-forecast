@@ -335,7 +335,7 @@ function Account({ todays, sample }: { todays: PortToday[]; sample: boolean }) {
         )}
       </Section>
 
-      <Section id="trips" title="Trip log (optional)" lede="A few taps after a trip helps us learn whether Neritic is useful. No catch numbers or fishing spots.">
+      <Section id="trips" title="Trip feedback (pilot)" lede="A few taps after a trip tells the pilot team whether Neritic was useful. It is sent only when you are signed in. No catch numbers or fishing spots.">
         <TripLogForm defaultPlace={account.home_place_id} />
       </Section>
 
@@ -415,32 +415,18 @@ function SignIn({ account, hydrated }: { account: LocalAccount; hydrated: boolea
 
   if (!hydrated) return <p className="text-[14.5px] text-n-ink-2">Loading…</p>;
 
-  // ------------------------------------------------------------- accounts not configured: this device
+  // ------------------------------------------------------------- accounts not configured
+  // Nothing to set up: with no account there is no age confirmation and no phone number to give. The page is
+  // only served where accounts are connected (src/app/account/pilot/page.tsx); this is the safe answer if not.
   if (!configured) {
     return (
-      <div data-testid="device-setup">
-        {attested && (
-          <p className="mb-3 text-[15px] text-n-ink" data-testid="device-setup-done">
-            Set up on this device on {new Date(account.age_13_plus!.at).toLocaleDateString("en-US", { dateStyle: "medium" })}.
-            {account.sms ? ` Text alerts requested for ${account.sms.phone_e164} (not sent yet).` : ""}
-          </p>
-        )}
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const err = applyConsents();
-            setMsg(err ? { tone: "error", text: err } : { tone: "ok", text: "Saved on this device." });
-            if (!err) setSmsOn(false);
-          }}
-        >
-          {consentFields}
-          <button type="submit" className={primary} data-testid="device-setup-save">
-            Save on this device
-          </button>
-        </form>
-        <Msg msg={msg} />
-      </div>
+      <p className="text-[15px] text-n-ink" data-testid="device-setup">
+        Accounts are not connected here, so there is nothing to sign in to. Your ports, alerts and preferences are kept in this browser:{" "}
+        <a href="/account" className={link}>
+          Your data and preferences
+        </a>
+        .
+      </p>
     );
   }
 

@@ -7,6 +7,7 @@ import { allPast, isPastRun } from "@/lib/modelTime";
 import type { StationLite } from "@/lib/data";
 import { day, pacificYmd, range, time } from "@/nx/ds/format";
 import { gridBounds, type FieldGrid } from "@/nx/chart/layers/grid";
+import { appliesAdjacency } from "./adjacency";
 
 /**
  * What Explore shows, built on the server from the published manifest and the derived index (no field is added
@@ -47,9 +48,13 @@ export type ExploreFrame = {
   /** latest views: each pixel's age in days before `referenceDate` */
   ageGrid?: GridSpec | null;
   referenceDate?: string | null;
+  /** a model run's or an outlook's issue date (a readout dates an outlook by its window and this, never by its last day) */
+  issued?: string | null;
   /** outlook: each cell's usual value for the period (equal means "no signal") */
   typicalGrid?: GridSpec | null;
   sensor: string;
+  /** the pipeline left the pixel beside land out of this frame (its QC says so): a no-value cell there is not cloud */
+  besideLandLeftOut?: boolean;
 };
 
 export type Track = {
@@ -89,13 +94,23 @@ export type CurrentFrame = {
   v: GridSpec;
 };
 
-export type ExploreStation = { id: string; name: string; lat: number; lon: number; last: string | null };
+/**
+ * `latest`: the station's own newest measured value per variable, in the shape Research's `stationsMeasuring`
+ * reads (src/lib/observations.ts). The slim list knows particulate domoic acid and the two Pseudo-nitzschia
+ * groups only; for any other variable a station is "not known to measure it", never assumed to.
+ */
+export type ExploreStation = { id: string; name: string; lat: number; lon: number; last: string | null; latest: { variable: string; value: number | null; date: string; n_last_365d: number }[] };
+
+/** A layer the product offers but this data run does not hold: it stays in the switch, disabled, with the reason. */
+export type MissingLayer = { id: ProductId; label: string; why: string };
 
 export type ExploreModel = {
   now: string;
   today: string;
   baseUrl: string;
   products: ExploreProduct[];
+  /** layers absent from this run (never silently dropped) */
+  missing: MissingLayer[];
   currents: { frames: CurrentFrame[]; defaultFrame: string; source: string; sourceUrl: string | null; days: { date: string; volume: number; hours: number }[] } | null;
   stations: ExploreStation[];
   /** the rail's span, Pacific days [first, last] */
@@ -153,12 +168,13 @@ function chlProduct(m: Manifest, now: Date): ExploreProduct | null {
       ageGrid: gridSpec(c?.age_grid),
       referenceDate: c?.reference_date ?? null,
       sensor: "Sentinel-3 OLCI, 300 m",
+      besideLandLeftOut: appliesAdjacency(olci),
     });
   }
   for (const d of days) {
     const date = d.time.observed_date;
     if (!date || !d.grid) continue;
-    frames.push({ id: `olci:${date}`, product: "chl", track: "olci", label: day(date), stamp: `seen ${day(date)}`, start: date, end: date, kind: "measured", past: false, volume: coverage(d), fresh: freshOf(d.freshness, date, now), grid: gridSpec(d.grid), sensor: "Sentinel-3 OLCI, 300 m" });
+    frames.push({ id: `olci:${date}`, product: "chl", track: "olci", label: day(date), stamp: `seen ${day(date)}`, start: date, end: date, kind: "measured", past: false, volume: coverage(d), fresh: freshOf(d.freshness, date, now), grid: gridSpec(d.grid), sensor: "Sentinel-3 OLCI, 300 m", besideLandLeftOut: appliesAdjacency(d) });
   }
   if (olci || days.length) tracks.push({ id: "olci", product: "chl", label: "OLCI 300 m", days: days.filter((d) => d.time.observed_date).map((d) => ({ date: d.time.observed_date!, volume: d.grid ? (coverage(d) ?? 0) : 0 })) });
   const viirs = satelliteLatest(m, "viirs750");
@@ -196,6 +212,7 @@ function charmProduct(m: Manifest, today: string, now: Date): ExploreProduct | n
       volume: 1,
       fresh: freshOf(l.freshness, l.time.issued_date ?? null, now),
       grid: gridSpec(l.grid),
+      issued: run?.issued_date ?? l.time.issued_date ?? null,
       sensor: "C-HARM v3.1",
     });
   });
@@ -225,16 +242,31 @@ function outlookProduct(d: DerivedIndex | null, today: string): ExploreProduct |
   const typ = o.typical_grid && o.typical_grid.width === o.grid.width && o.typical_grid.height === o.grid.height ? gridSpec(o.typical_grid) : null;
   // T3: once every day of its window has passed, the outlook is a past run, worded and drawn like C-HARM's
   const past = isPastRun(o.valid_from, o.valid_to, today);
-  const frame: ExploreFrame = { id: "outlook", product: "outlook", track: "outlook", label: range(o.valid_from, o.valid_to), stamp: `mean of ${range(o.valid_from, o.valid_to)}, issued ${day(o.issued)}`, start: o.valid_from, end: o.valid_to, kind: "outlook", past, volume: null, fresh: past ? "historical" : "current", grid: gridSpec(o.grid), typicalGrid: typ, sensor: "Neritic outlook" };
+  const frame: ExploreFrame = { id: "outlook", product: "outlook", track: "outlook", label: range(o.valid_from, o.valid_to), stamp: `mean of ${range(o.valid_from, o.valid_to)}, issued ${day(o.issued)}`, start: o.valid_from, end: o.valid_to, kind: "outlook", past, volume: null, fresh: past ? "historical" : "current", grid: gridSpec(o.grid), issued: o.issued, typicalGrid: typ, sensor: "Neritic outlook" };
   return { id: "outlook", name: "Chlorophyll outlook", unit: "mg/m³", kind: "outlook", source: "Neritic, from NASA MODIS-Aqua 8-day", sourceUrl: null, frames: [frame], tracks: [{ id: "outlook", product: "outlook", label: "Outlook", days: [] }], defaultFrame: frame.id, pastRun: past, runIssued: o.issued };
 }
 
-function sstProduct(d: DerivedIndex | null): ExploreProduct | null {
+/**
+ * The temperature's freshness limits (T17). The derived index publishes no policy for it yet, so one the layer
+ * carries wins; otherwise the daily analysis's own cadence: MUR is daily with about two days' latency
+ * (E-science-and-perf.md §1), so three days is current and a week is the stale limit.
+ */
+export const SST_FRESHNESS: FreshnessPolicy = { basis: "observed_date", current_max_age_days: 3, stale_max_age_days: 7, note: "JPL MUR is a daily analysis published about two days behind." } as FreshnessPolicy;
+
+function sstPolicy(s: object): FreshnessPolicy {
+  const f = (s as { freshness?: Partial<FreshnessPolicy> | null }).freshness;
+  return f && typeof f.current_max_age_days === "number" && typeof f.stale_max_age_days === "number" ? (f as FreshnessPolicy) : SST_FRESHNESS;
+}
+
+/** A source's short name for a legend line: the product, without its expansion or its route ("…, via NOAA CoastWatch …"). */
+export const shortSensor = (source: string) => source.replace(/\s*\([^)]*\)/g, "").replace(/,?\s+via\s.*$/i, "").trim();
+
+function sstProduct(d: DerivedIndex | null, now: Date): ExploreProduct | null {
   const s = derivedSst(d);
   if (!s) return null;
   const date = s.observed_dates[s.observed_dates.length - 1];
   const kind: FrameKind = sstIsAnalysis(s) ? "analysis" : "measured";
-  const frame: ExploreFrame = { id: "sst", product: "sst", track: "sst", label: day(date), stamp: kind === "analysis" ? `analysis for ${day(date)}` : `seen ${day(date)}`, start: date, end: date, kind, past: false, volume: null, fresh: "current", grid: gridSpec(s.grid), sensor: s.source.replace(/\s*\(fixture\)/i, "") };
+  const frame: ExploreFrame = { id: "sst", product: "sst", track: "sst", label: day(date), stamp: kind === "analysis" ? `analysis for ${day(date)}` : `seen ${day(date)}`, start: date, end: date, kind, past: false, volume: null, fresh: freshOf(sstPolicy(s), date, now), grid: gridSpec(s.grid), sensor: shortSensor(s.source) };
   return { id: "sst", name: "Sea temperature", unit: "°C", kind, source: s.source, sourceUrl: null, frames: [frame], tracks: [{ id: "sst", product: "sst", label: "Temperature", days: [{ date, volume: 1 }] }], defaultFrame: frame.id };
 }
 
@@ -271,9 +303,14 @@ function currentsModel(m: Manifest, now: Date): ExploreModel["currents"] {
   };
 }
 
+const LAYER_ORDER: ProductId[] = ["chl", "sst", "charm", "outlook"];
+const MISSING_LABEL: Record<ProductId, string> = { chl: "Chlorophyll", sst: "Temperature", charm: "C-HARM", outlook: "Outlook" };
+
 export function buildExploreModel({ manifest, derived, stations, baseUrl, now }: { manifest: Manifest; derived: DerivedIndex | null; stations: StationLite[] | null; baseUrl: string; now: Date }): ExploreModel {
   const today = pacificYmd(now);
-  const products = [chlProduct(manifest, now), sstProduct(derived), charmProduct(manifest, today, now), outlookProduct(derived, today)].filter((p): p is ExploreProduct => !!p);
+  const built: Record<ProductId, ExploreProduct | null> = { chl: chlProduct(manifest, now), sst: sstProduct(derived, now), charm: charmProduct(manifest, today, now), outlook: outlookProduct(derived, today) };
+  const products = LAYER_ORDER.map((id) => built[id]).filter((p): p is ExploreProduct => !!p);
+  const missing: MissingLayer[] = LAYER_ORDER.filter((id) => !built[id]).map((id) => ({ id, label: MISSING_LABEL[id], why: "Not in this data run" }));
   const currents = currentsModel(manifest, now);
   const dates = [...products.flatMap((p) => p.frames.flatMap((f) => [f.start, f.end])), ...products.flatMap((p) => p.tracks.flatMap((t) => t.days.map((d) => d.date))), ...(currents?.frames.map((f) => f.date) ?? [])].filter(Boolean).sort();
   const floor = addDays(today, -16);
@@ -286,8 +323,9 @@ export function buildExploreModel({ manifest, derived, stations, baseUrl, now }:
     today,
     baseUrl,
     products,
+    missing,
     currents,
-    stations: (stations ?? []).map((s) => ({ id: s.station_id, name: s.name, lat: s.lat, lon: s.lon, last: s.latest.map((x) => x.date).sort().pop() ?? null })),
+    stations: (stations ?? []).map((s) => ({ id: s.station_id, name: s.name, lat: s.lat, lon: s.lon, last: s.latest.map((x) => x.date).sort().pop() ?? null, latest: s.latest.map((x) => ({ variable: x.variable, value: x.value, date: x.date, n_last_365d: x.n_last_365d })) })),
     axis: [first, addDays(last, 1)],
     extent: g ? gridBounds(g) : null,
   };

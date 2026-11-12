@@ -1,0 +1,607 @@
+/* Research, v13 (docs/coastwatch/v13/design-system/README.md): the variable rail, the one large plot, the
+   inspector. Tokens only; plots are the ds plot kit's. */
+
+.block {
+  margin-top: var(--s-24);
+}
+.block:first-child {
+  margin-top: 0;
+}
+.h2 {
+  margin: 0;
+  font: 600 var(--type-head) / var(--lh-snug) var(--font-sans);
+}
+.h3 {
+  margin: var(--s-16) 0 var(--s-4);
+  font: 600 var(--type-body) / var(--lh-snug) var(--font-sans);
+}
+.quiet {
+  margin: var(--s-4) 0 0;
+  color: var(--ink-2);
+}
+.small {
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-small);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ---------------------------------------------------------------- the station and compare selects */
+.stationPick,
+.cmpPick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  font-size: var(--type-body);
+}
+.stationPick label,
+.cmpPick label {
+  color: var(--ink-2);
+}
+.stationPick,
+.cmpPick {
+  min-width: 0;
+  max-width: 100%;
+}
+.selectWrap {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+.selectWrap::after {
+  content: "";
+  position: absolute;
+  right: var(--s-8);
+  top: 50%;
+  width: var(--s-8);
+  height: var(--s-8);
+  border-right: var(--rule) solid var(--ink);
+  border-bottom: var(--rule) solid var(--ink);
+  transform: translateY(-75%) rotate(45deg);
+  pointer-events: none;
+}
+.select {
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s-32) 0 var(--s-8);
+  border: 0;
+  border-bottom: var(--rule) solid var(--ink);
+  border-radius: 0;
+  background-color: transparent;
+  color: var(--ink);
+  font: 600 var(--type-body) / 1.2 var(--font-sans);
+  appearance: none;
+  background-image: none;
+  cursor: pointer;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+.select option {
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- the variable rail */
+.rail {
+  border-top: var(--rule) solid var(--ink);
+}
+/* the header's sentence on one line beside the station picker, so the plot below never moves down a line */
+.oneLine {
+  display: block;
+  max-width: min(100%, 60ch);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+.onlyPhone,
+.pickCell {
+  display: none;
+}
+.unitWords {
+  font-weight: 400;
+  font-size: var(--type-body);
+  color: var(--ink-2);
+}
+.plotTitle {
+  margin: 0 0 var(--s-4);
+  font: 600 var(--type-body) / var(--lh-snug) var(--font-sans);
+}
+.railRow {
+  display: grid;
+  grid-template-columns: minmax(0, 330px) minmax(96px, 1fr) 250px 112px;
+  align-items: center;
+  gap: 0 var(--s-16);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--s-8) 0 var(--s-12);
+  border: 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  border-left: 4px solid transparent;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.railRow:hover {
+  background: var(--wash);
+}
+.railRow[aria-checked="true"] {
+  border-left-color: var(--ink);
+  background: var(--sel);
+}
+.railName {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
+  min-width: 0;
+  white-space: nowrap;
+}
+.railUnit {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.railLabel {
+  font-weight: 600;
+  font-size: var(--type-body);
+  line-height: var(--lh-snug);
+}
+.railUnit,
+.railAge {
+  font-size: var(--type-small);
+  line-height: var(--lh-snug);
+  color: var(--ink-2);
+}
+.railTicks {
+  width: 100%;
+  height: 16px;
+  overflow: visible;
+}
+.railWindow {
+  fill: var(--sel);
+  stroke: var(--ink);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.tickValue,
+.tickZero,
+.tickRejected,
+.tickAbsent {
+  fill: none;
+  stroke: var(--ink);
+  vector-effect: non-scaling-stroke;
+}
+.tickValue {
+  stroke-width: 1;
+  stroke: var(--ink-2);
+}
+.tickZero {
+  stroke-width: 1;
+  stroke: var(--ink-2);
+}
+.tickRejected {
+  stroke-width: 1.5;
+  stroke-dasharray: 1 1;
+}
+.tickAbsent {
+  stroke: var(--ink-2);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.railLast {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
+  min-width: 0;
+  white-space: nowrap;
+}
+.railLastDate {
+  font-size: var(--type-body);
+  line-height: var(--lh-snug);
+  font-variant-numeric: tabular-nums;
+}
+.railCount {
+  font-size: var(--type-body);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.railRow[data-empty] .railCount {
+  color: var(--ink-2);
+}
+/* ---------------------------------------------------------------- the record: range, plots, brush */
+.record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "title range" "plots plots" "under under" "copy copy";
+  align-items: end;
+  gap: 0 var(--s-24);
+  margin-top: var(--s-12);
+}
+.titleCell {
+  grid-area: title;
+  min-width: 0;
+}
+/* one line each beside the range controls, whatever the range says ("Custom" is wider): the plot never moves down */
+.titleCell .h2,
+.titleCell .windowLine {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rangeCell {
+  grid-area: range;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.copyCell {
+  grid-area: copy;
+}
+.windowLine {
+  margin: 0;
+  font-size: var(--type-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.plots {
+  grid-area: plots;
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--s-4);
+  min-width: 0;
+}
+.main,
+.second {
+  min-width: 0;
+}
+.second {
+  margin-top: var(--s-12);
+  padding-top: var(--s-8);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.main > * {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+/* The plot's box is fixed in the stylesheet (plot 360 + its axis room), not by the plot's own script: the server's
+   HTML and the hydrated page take the same room at every width, so nothing below it moves (CLS). */
+.main {
+  height: 402px;
+}
+.main[data-empty] {
+  height: auto;
+  min-height: 360px;
+  display: grid;
+}
+/* the comparison's and the model's plots: 130 and 110 px and their axis room, whatever the screen */
+.cmpBox {
+  height: 172px;
+}
+.modelBox {
+  height: 152px;
+}
+.drawing {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  border: var(--hair) dashed var(--rule-soft);
+  color: var(--ink-2);
+  font-size: var(--type-body);
+}
+.mainRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-24);
+  min-width: 0;
+}
+.mainRow[data-inspecting] {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+}
+.inspCell {
+  height: 402px;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.thresholdLine {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+.thresholdGround {
+  fill: var(--paper);
+}
+.thresholdLabel {
+  font: 500 var(--type-small) / 1 var(--font-sans);
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+.emptyActions {
+  max-width: 100%;
+  min-width: 0;
+}
+.wrapBtn {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  text-align: left;
+}
+.brush {
+  order: 9;
+  margin-top: var(--s-12);
+  padding-top: var(--s-4);
+  border-top: var(--hair) solid var(--rule-soft);
+  touch-action: none;
+}
+.collapsed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4) var(--s-16);
+  margin: 0;
+  font-size: var(--type-body);
+  line-height: 1.45;
+}
+.modelWords {
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-body);
+  line-height: 1.45;
+}
+.under {
+  grid-area: under;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8) var(--s-24);
+  margin-top: var(--s-12);
+}
+.flagRing {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+.tip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: var(--s-4);
+  max-width: min(280px, 70%);
+  padding: var(--s-8) var(--s-12);
+  background: var(--paper);
+  border: var(--hair) solid var(--ink);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.tipValue {
+  font-size: var(--type-lead);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+}
+.tipMeta {
+  font-size: var(--type-small);
+  line-height: var(--lh-snug);
+  color: var(--ink-2);
+}
+.stripsBox {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: var(--s-16);
+}
+
+/* ---------------------------------------------------------------- the inspector */
+.inspHint {
+  margin: var(--s-24) 0 0;
+  padding: var(--s-12) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  color: var(--ink-2);
+}
+.inspStep {
+  margin: var(--s-12) 0;
+}
+.inline {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.inspValue {
+  margin: var(--s-12) 0 0;
+  line-height: var(--lh-tight);
+}
+.inspFigure {
+  font: 600 var(--figure-l) / var(--lh-tight) var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.inspUnit {
+  font-size: var(--type-lead);
+  color: var(--ink-2);
+}
+.inspState {
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-body);
+  line-height: 1.45;
+  max-width: var(--measure);
+}
+.inspLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-24);
+  margin: var(--s-12) 0 0;
+  font-weight: 600;
+}
+.inspLinks a {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.inspOthers,
+.inspChecks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--type-body);
+  line-height: 1.45;
+}
+.inspOthers li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-16);
+  padding: var(--s-4) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.inspOthers li[data-state="absent"] {
+  color: var(--ink-2);
+}
+.inspChecks li {
+  padding: var(--s-4) 0;
+  font-size: var(--type-small);
+}
+.inspLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-24);
+  margin: var(--s-12) 0 0;
+  font-weight: 600;
+}
+.inspLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* ---------------------------------------------------------------- the detail groups */
+.group {
+  margin-top: var(--s-32);
+}
+.group > .h2 {
+  margin-bottom: var(--s-8);
+}
+
+/* ---------------------------------------------------------------- phone */
+@media (max-width: 720px) {
+  .onlyWide {
+    display: none;
+  }
+  .onlyPhone {
+    display: revert;
+  }
+  .stationPick.onlyPhone {
+    display: inline-flex;
+  }
+  /* the plot's box on a phone: 240 + its axis room; clipped, so the taller plot of the server's HTML never pushes
+     the page before the script sets the phone's height */
+  .main {
+    height: 282px;
+    overflow: hidden;
+    /* brought into view under the condensed header (jump to the latest sample) */
+    scroll-margin-top: 104px;
+  }
+  .main[data-empty] {
+    min-height: 282px;
+    overflow: visible;
+  }
+  /* the card is the ds one, pinned above the destinations: it must be a child of the tall column, not of a cell */
+  .mainRow,
+  .mainRow[data-inspecting],
+  .inspCell {
+    display: contents;
+  }
+  .inspCell[data-closed] {
+    display: none;
+  }
+  .inspCard {
+    order: 20;
+  }
+  .arrivedSample.onlyPhone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-8) var(--s-16);
+    margin: var(--s-16) 0 0;
+    padding-top: var(--s-12);
+    border-top: var(--rule) solid var(--ink);
+    font-weight: 600;
+  }
+  /* the plot first: a compact selector over it, then the range, the sentence, and the full list with its ticks */
+  .railBlock {
+    order: 2;
+    margin-top: var(--s-24);
+  }
+  .record {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "pick" "plots" "range" "title" "under" "copy";
+    margin-top: 0;
+  }
+  .pickCell {
+    grid-area: pick;
+    display: flex;
+  }
+  .pickCell .selectWrap,
+  .pickCell .select {
+    flex: 1;
+    width: 100%;
+  }
+  .titleCell {
+    margin-top: var(--s-8);
+  }
+  .titleCell .h2 {
+    font-size: var(--type-body);
+  }
+  .titleCell .h2,
+  .titleCell .windowLine {
+    white-space: normal;
+  }
+  .railRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name count" "ticks ticks" "last last";
+    padding-block: var(--s-8);
+  }
+  .railName {
+    grid-area: name;
+    display: grid;
+    white-space: normal;
+  }
+  .railCount {
+    grid-area: count;
+    align-self: start;
+  }
+  .railTicks {
+    grid-area: ticks;
+    height: 20px;
+  }
+  .railLast {
+    grid-area: last;
+    justify-content: space-between;
+    font-size: var(--type-small);
+  }
+  .railLastDate {
+    font-size: var(--type-small);
+  }
+}

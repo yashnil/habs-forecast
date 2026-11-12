@@ -52,7 +52,10 @@ test("Journey 2: Today at / at once, the change line from the last visit, proven
   await expect(page.locator("[data-nx-sounding=buoy]")).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("nx-change")).toHaveCount(0);
 
-  // the next visit: nothing changed, said in one line
+  // the next visit: nothing changed, said in one line. A reload in the same tab is the SAME visit (one change
+  // line per visit, src/nx/today/useChangeLine.ts), so the tab's visit record is ended first
+  const nextVisit = () => page.evaluate(() => sessionStorage.removeItem("nx-today-visit-v1:port-592"));
+  await nextVisit();
   await page.reload();
   await expect(page.getByTestId("nx-change")).toHaveText(/^Since \d{1,2}:\d\d (AM|PM) PT: no change in season status, tests, notices or models\.$/);
 
@@ -64,11 +67,12 @@ test("Journey 2: Today at / at once, the change line from the last visit, proven
     s.facts = s.facts.map((f: { id: string; value: string; headline: string }) => (f.id === "status:dungeness_commercial" ? { ...f, value: "No restriction on record", headline: "Dungeness crab (commercial): No closure or restriction on record here." } : f));
     localStorage.setItem(k, JSON.stringify(s));
   });
+  await nextVisit();
   await page.reload();
   const change = page.getByTestId("nx-change");
   await expect(change).toContainText("Since Oct 8: Dungeness crab (commercial) is now delayed.");
   await page.waitForTimeout(800);
-  await change.click();
+  await page.getByTestId("nx-change-more").click();
   await expect(page.getByText("Before: Dungeness crab (commercial): No closure or restriction on record here.")).toBeVisible();
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, "journey-2-changed-1440x900.png") });
@@ -97,8 +101,11 @@ test("Journey 2: Today at / at once, the change line from the last visit, proven
   // the next steps carry the port
   const today = page.getByTestId("nx-today");
   await expect(today.getByRole("link", { name: "Read CDFW’s notice" })).toHaveAttribute("href", "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries");
-  await expect(today.getByRole("link", { name: "Plan a trip" })).toHaveAttribute("href", "/coast?place=port-592");
-  await expect(today.getByRole("link", { name: "Alerts" })).toHaveAttribute("href", "/account?place=port-592#alerts");
+  // v13: each gate carries its own next steps
+  await expect(today.getByRole("link", { name: "Plan a trip (hypothetical)" })).toHaveAttribute("href", "/coast?place=port-592&view=trip");
+  await expect(today.getByRole("link", { name: "Alerts for Moss Landing" })).toHaveAttribute("href", "/alerts?place=port-592");
+  await expect(today.getByRole("link", { name: "Water samples nearby in Research" })).toHaveAttribute("href", "/research?place=port-592&var=pDA");
+  await expect(today.getByRole("link", { name: "Conditions on the chart in Explore" })).toHaveAttribute("href", "/explore?place=port-592&layer=sst");
   await page.waitForTimeout(600);
   const video = page.video();
   await ctx.close();

@@ -1,0 +1,18 @@
+/* The Follow line on Today. Tokens only. */
+.following {
+  margin: 0;
+  font-size: var(--type-small);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+.offer {
+  display: grid;
+  gap: var(--s-8);
+  justify-items: start;
+}
+.link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.2em;
+}

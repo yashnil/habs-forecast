@@ -51,11 +51,11 @@
         "Chlorophyll is algae biomass, not toxin. It does not identify Pseudo-nitzschia or say whether shellfish or fish are safe.",
         "Next to the shore and in bays the error is larger (typically a factor of 2.5-4). In the outermost ~300 m strip the satellite almost never sees, the error was measured on the nearest pixels it does see; the strip itself cannot be checked against satellite data.",
         "Turbid bays and river plumes: the satellite chlorophyll algorithm reads sediment and dissolved matter as chlorophyll there, so estimates inherit that bias.",
-        "The background needs recent views: after a long cloudy spell (no view for several weeks) pixels stay empty rather than guessed. Coverage this run: 95.9% of the 0-0.6 km strip gaps and 100.0% of bay gaps were filled."
+        "The background needs recent views: after a long cloudy spell (no view for several weeks) pixels stay empty rather than guessed. Coverage this run: 95.5% of the 0-0.6 km strip gaps and 100.0% of bay gaps were filled."
       ],
       "uncertainty_units": "RMSE log10(mg m-3) measured for the pixel's class (distance band, open coast or bay, own or borrowed background)",
       "grid": {
-        "url": "derived/estimate-2026-10-08-8188251001/values/{row}_{col}.u16.gz",
+        "url": "derived/estimate-2026-10-08-c47d692aa6/values/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -71,14 +71,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "derived/estimate-2026-10-08-8188251001/values/{row}_{col}.u16.gz",
+          "url_template": "derived/estimate-2026-10-08-c47d692aa6/values/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "uncertainty_grid": {
-        "url": "derived/estimate-2026-10-08-8188251001/uncertainty/{row}_{col}.u16.gz",
+        "url": "derived/estimate-2026-10-08-c47d692aa6/uncertainty/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -94,14 +94,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "derived/estimate-2026-10-08-8188251001/uncertainty/{row}_{col}.u16.gz",
+          "url_template": "derived/estimate-2026-10-08-c47d692aa6/uncertainty/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "class_grid": {
-        "url": "derived/estimate-2026-10-08-8188251001/class/{row}_{col}.u16.gz",
+        "url": "derived/estimate-2026-10-08-c47d692aa6/class/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -117,7 +117,7 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "derived/estimate-2026-10-08-8188251001/class/{row}_{col}.u16.gz",
+          "url_template": "derived/estimate-2026-10-08-c47d692aa6/class/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]

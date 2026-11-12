@@ -206,7 +206,8 @@ test.describe("addresses", () => {
       await page.goto(`${OK}${path}`);
       await expect(page.getByTestId(id)).toBeVisible();
     }
-    for (const path of ["/about", "/privacy", "/terms", "/sources", "/ask", "/account", "/sms-terms", "/fisheries", "/coast/kept"]) {
+    // v13: /ask, /account and /alerts moved into the shell (tests/e2e/v13/personal.spec.ts, alerts.spec.ts)
+    for (const path of ["/about", "/privacy", "/terms", "/sources", "/sms-terms", "/fisheries", "/coast/kept"]) {
       const r = await page.goto(`${OK}${path}`);
       expect(r!.status(), path).toBe(200);
       await expect(page.getByTestId("nx-app"), path).toHaveCount(0);
@@ -296,17 +297,23 @@ test.describe("phone", () => {
     await expect(page.getByTestId("nx-bar").locator(".n12-dest")).toBeHidden();
     await expect(page.getByTestId("nx-port-control")).toContainText("Moss Landing");
     for (const a of await tabs.getByRole("link").all()) expect((await a.boundingBox())!.height).toBeGreaterThanOrEqual(48);
-    await tabs.getByRole("link", { name: "Research" }).click();
-    await expect(page).toHaveURL(/\/research\?place=port-592$/);
-    // the margin is the ds MarginSheet: it rests with the page's statement above the tab bar, More raises it
+    // a chart page (Explore): the margin is a sheet. It rests with the page's statement above the tab bar, More raises it
     const margin = page.getByTestId("nx-margin");
-    await expect(page.getByTestId("research-title")).toBeInViewport();
+    await expect(page.getByTestId("nx-explore-lead")).toBeInViewport();
     const rest = (await margin.boundingBox())!.y;
     expect(rest).toBeGreaterThan(844 * 0.4);
+    // the chart frames its scene in the part the resting sheet leaves free
+    await expect.poll(async () => parseFloat(await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom")))).toBeGreaterThan(200);
     await margin.getByRole("button", { name: "Show more of this page" }).click();
     await expect.poll(async () => (await margin.boundingBox())!.y).toBeLessThan(rest - 100);
-    // the chart frames its scene in the part the resting sheet leaves free
-    const cover = await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom"));
-    expect(parseFloat(cover)).toBeGreaterThan(200);
+    // a desk page (Research, v13): the same element is the page itself under a chart strip; no sheet, nothing covers the chart
+    await tabs.getByRole("link", { name: "Research" }).click();
+    await expect(page).toHaveURL(/\/research\?place=port-592$/);
+    await expect(page.getByTestId("research-title")).toBeInViewport();
+    await expect(margin.getByRole("button", { name: "Show more of this page" })).toBeHidden();
+    const pane = (await page.getByTestId("nx-pane").boundingBox())!;
+    expect(pane.y).toBeGreaterThanOrEqual(52 - 1);
+    expect((await page.getByTestId("research-title").boundingBox())!.y).toBeGreaterThanOrEqual(pane.y + pane.height - 1);
+    await expect.poll(async () => parseFloat(await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom")))).toBe(0);
   });
 });

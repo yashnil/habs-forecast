@@ -1,6 +1,6 @@
 "use client";
 
-import { Loading, MarginRow, MarginRows, Stamp, Unavailable, type Provenance } from "@/nx/ds";
+import { MarginRow, MarginRows, Skeleton, Stamp, Unavailable, type Provenance } from "@/nx/ds";
 import { day, sig } from "@/nx/ds/format";
 import { cx } from "@/nx/ds/util";
 import type { CoastGates, TestGate } from "./brief";
@@ -15,13 +15,8 @@ import s from "./coast.module.css";
  */
 export function Gates({ gates, fishery }: { gates: Loadable<CoastGates>; fishery: CoastFishery }) {
   if (gates.state === "idle") return null;
-  // the loading line holds about the gates' own height, so the sea window and worksheet do not jump down when they land (CLS)
-  if (gates.state === "loading")
-    return (
-      <div className={s.gatesLoading}>
-        <Loading>Reading the season list, whale measures and CDPH tests…</Loading>
-      </div>
-    );
+  // a placeholder at the gates' own height (three ruled rows), so nothing under them moves when they land
+  if (gates.state === "loading") return <Skeleton label="Reading the season list, whale measures and CDPH tests…" lines={9} className={s.gatesLoading} />;
   if (gates.state === "error")
     return (
       <Unavailable

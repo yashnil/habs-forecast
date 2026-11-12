@@ -5,10 +5,11 @@
  * when every lead is before today (T3); the outlook its typical error and "no signal" (T14, E finding 2); the
  * temperature "analysis" (T1); currents "relative speed" and "no streak is no data, not calm" (T24, T19).
  */
-import { day, range } from "@/nx/ds/format";
+import { day, fixed, range, sig } from "@/nx/ds/format";
 import { runKindWord } from "@/lib/modelTime";
 import type { FreshnessState } from "@/lib/freshness";
-import type { CurrentFrame, ExploreFrame, ExploreProduct } from "./model";
+import type { CurrentFrame, ExploreFrame, ExploreProduct, ProductId } from "./model";
+import { cellSizeWords, type GapPosition } from "./read";
 
 export const CHL_DOMAIN: [number, number] = [0.05, 50];
 export const CHL_TICKS = [0.1, 1, 10];
@@ -38,7 +39,7 @@ export function legendCaption(p: ExploreProduct, f: ExploreFrame): string {
     case "chl":
       return `Measured · ${f.sensor} · ${f.label === "Latest" ? `latest view, ${f.stamp}` : f.stamp}${oldMark(f.fresh)}. Algae, not toxin.`;
     case "sst":
-      return `${cap(KIND_LABEL[f.kind])} · ${f.sensor} · ${day(f.end)}.${f.kind === "analysis" ? " Blended from satellites and buoys, not a measurement at a point." : ""}`;
+      return `${cap(KIND_LABEL[f.kind])} · ${f.sensor} · ${day(f.end)}${oldMark(f.fresh)}.${f.kind === "analysis" ? " Blended from satellites and buoys, not a measurement at a point." : ""}`;
     case "charm":
       // design-lint-allow forbidden-word: T37 requires "does not mean open or safe" within one glance of a low probability
       return `Model · ${p.source} · ${f.stamp}.${p.pastRun ? " Past run: every day it covers is before today." : ""} Probability of conditions in the water, not toxin in seafood. Classes are display steps, not risk levels; a lower probability does not mean open or safe.`;
@@ -52,9 +53,87 @@ export const isOld = (fresh: FreshnessState) => fresh === "stale" || fresh === "
 /** " (old)", set beside the date or value itself (T17). */
 export const oldMark = (fresh: FreshnessState) => (isOld(fresh) ? " (old)" : "");
 
+/** The legend's key for water a model or an outlook has no cell for (the footprint is the model's, not a low value). */
+export const OUTSIDE_KEY = "Ruled: outside the model, no value";
+
+/** A currents frame that is drawn still: an hour past the radar's stale limit (T17), and the 24 h mean (lead decision 7). */
+export const currentsStill = (c: Pick<CurrentFrame, "fresh" | "mean">) => isOld(c.fresh) || c.mean;
+
+/** "The radar measured 12 % of the coastal ocean this hour.", when the frame publishes its coverage. */
+export function coverageWords(c: Pick<CurrentFrame, "volume" | "mean">): string | null {
+  if (c.volume == null) return null;
+  const p = Math.round(c.volume * 100);
+  return `The radar measured ${p < 1 && c.volume > 0 ? "under 1" : p} % of the coastal ocean ${c.mean ? "over these 24 hours" : "this hour"}.`;
+}
+
 export function currentsCaption(c: CurrentFrame): string {
   const old = isOld(c.fresh);
-  return `Streaks: measured surface currents · HF radar, 2 km · ${c.stamp}${oldMark(c.fresh)}.${old ? " Older than the radar's own freshness limit, so drawn still." : ""} Relative speed; fainter where the radar measured the cell in fewer hours. No streak is no data, not calm.`;
+  const still = old ? " Older than the radar's own freshness limit, so drawn still." : c.mean ? " A mean of 24 hours is not one moment of the water, so it is drawn still." : "";
+  const cov = coverageWords(c);
+  return `Streaks: measured surface currents · HF radar, 2 km · ${c.stamp}${oldMark(c.fresh)}.${still}${cov ? ` ${cov}` : ""} Relative speed; fainter where the radar measured the cell in fewer hours. No streak is no data, not calm.`;
+}
+
+/** What the reader is told about the streaks: nothing is claimed that is not drawn. */
+export type CurrentsState = "off" | "over-model" | "static" | "loading" | "failed" | "empty" | "on";
+
+/** The currents switch's second line. A failed or empty hour says so; it never reads "on, measured" with nothing drawn. */
+export function currentsToggleWords(state: CurrentsState, c: Pick<CurrentFrame, "fresh" | "mean"> | null): string {
+  switch (state) {
+    case "off":
+      return "off";
+    case "over-model":
+      return "not over a model";
+    case "static":
+      return "not on a still picture";
+    case "loading":
+      return "reading the radar";
+    case "failed":
+      return "unavailable: this hour could not be read";
+    case "empty":
+      return "no measurement in this hour";
+    case "on":
+      return `on, measured${c ? oldMark(c.fresh) : ""}${c?.mean ? ", 24 h mean" : ""}`;
+  }
+}
+
+/** A reading's figure without its unit: chlorophyll to two figures, the outlook to one (T15), a probability as a whole percent, °F to a tenth. */
+export function valueWords(id: ProductId, v: number): string {
+  if (id === "chl") return sig(v, 2);
+  if (id === "outlook") return aboutWords(v).replace("about ", "");
+  if (id === "charm") return String(Math.round(v * 100));
+  return fixed(v * 1.8 + 32, 1);
+}
+export const unitOf = (id: ProductId) => (id === "charm" ? "%" : id === "sst" ? "°F" : "mg/m³");
+
+/**
+ * Why a cell of a model, an outlook or an analysis has no value, from where the gap really is in the layer's own
+ * grid (read.ts `gapPosition`), in the layer's own name. Never one fixed sentence for every gap.
+ */
+export function noValueWords(p: Pick<ExploreProduct, "id" | "kind">, pos: GapPosition | "outside-grid"): string {
+  const what = p.id === "charm" ? "C-HARM" : p.id === "outlook" ? "the outlook" : p.kind === "analysis" ? "the analysis" : "this layer";
+  const where =
+    pos === "outside-grid"
+      ? `Outside the area ${what} covers`
+      : pos === "shoreward"
+        ? `Between ${what}'s cells and the shore: ${what === "C-HARM" ? "the model leaves out the nearshore band and the bays" : `${what} has no cell this close to land`}`
+        : pos === "seaward"
+          ? `Beyond the seaward edge of ${what} at this latitude`
+          : pos === "inside"
+            ? `A gap inside the area ${what} covers`
+            : `${what.charAt(0).toUpperCase() + what.slice(1)} has no cells at this latitude`;
+  return `${where}. No value is not a low value.`;
+}
+
+/**
+ * What a readout's stamp says a value's date is. A measured pixel has its own day; a model lead its valid day;
+ * an outlook is ONE mean over a window, so it is dated by its issue and names the window beside its source,
+ * never by the window's last day (which reads as "measured on that day").
+ */
+export function readingStamp(f: Pick<ExploreFrame, "kind" | "start" | "end" | "issued" | "sensor">, pixel: string | null): { date: string; dateRole: "measured" | "valid" | "issued" | undefined; source: string } {
+  if (f.kind === "outlook") return { date: f.issued ?? f.end, dateRole: f.issued ? "issued" : undefined, source: `${f.sensor}, mean of ${range(f.start, f.end)}` };
+  if (f.kind === "model") return { date: f.end, dateRole: "valid", source: f.issued ? `${f.sensor}, run of ${day(f.issued)}` : f.sensor };
+  if (f.kind === "measured") return { date: pixel ?? f.end, dateRole: "measured", source: f.sensor };
+  return { date: f.end, dateRole: undefined, source: f.sensor };
 }
 
 /**
@@ -94,4 +173,24 @@ export function aboutWords(v: number): string {
 
 export function frameSpanWords(f: ExploreFrame): string {
   return f.start === f.end ? day(f.start) : range(f.start, f.end);
+}
+
+/** "Chlorophyll in this 300 m cell": a reading is one cell of the layer's grid, and its title says which. */
+export function readoutTitle(id: ProductId, cell: { widthKm: number; heightKm: number } | null): string {
+  const what = id === "chl" ? "Chlorophyll" : id === "sst" ? "Sea temperature" : id === "charm" ? "C-HARM" : "Outlook";
+  return cell ? `${what} in this ${cellSizeWords(cell)} cell` : `${what} here`;
+}
+
+/** The layer's kind and date in a few words, for the line that stays above a reading: "measured, latest view Nov 2–7 (old)". */
+export function contextWords(p: Pick<ExploreProduct, "kind" | "pastRun">, f: ExploreFrame): string {
+  const kind = p.pastRun && (p.kind === "model" || p.kind === "outlook") ? `${p.kind}, past run` : p.kind;
+  const when = f.label === "Latest" && f.start !== f.end ? `latest view ${range(f.start, f.end)}` : f.kind === "outlook" ? `mean of ${range(f.start, f.end)}` : f.kind === "model" ? `valid ${day(f.end)}` : day(f.end);
+  return `${kind}, ${when}${oldMark(f.fresh)}`;
+}
+
+const latWords = (lat: number) => `${Math.floor(Math.abs(lat))}°${String(Math.round((Math.abs(lat) % 1) * 60)).padStart(2, "0")}′ ${lat < 0 ? "S" : "N"}`;
+
+/** A layer that has no cells at the reader's port: what is missing, and where the layer does have cells. */
+export function coverageNote(layer: string, portName: string, box: [number, number, number, number]): string {
+  return `${layer} is not published for the water at ${portName} in this data run: its cells run from ${latWords(box[1])} to ${latWords(box[3])}. The chart is on ${portName}; "Fit the data" on the chart goes to where the layer is.`;
 }

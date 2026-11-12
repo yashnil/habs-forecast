@@ -112,3 +112,30 @@ export function productSpan(p: ExploreProduct): { first: string; last: string; d
   const days = new Set(p.tracks.flatMap((t) => t.days.filter((d) => d.volume > 0).map((d) => d.date)));
   return { first: dates[0], last: dates[dates.length - 1], days: days.size };
 }
+
+/**
+ * The hours whose masks say how steadily the radar measured each cell (the streaks' faintness): at most `n`,
+ * the ones nearest the hour on show, in time order. Read one after another once the streaks are drawn, never
+ * every published hour at once (a day of hours is 24 requests before the first streak on a phone).
+ */
+export function qualityHours<T extends { id: string; time: string; mean: boolean }>(frames: T[], currentId: string | null, n = 8): T[] {
+  const hours = frames.filter((f) => !f.mean).sort((a, b) => a.time.localeCompare(b.time));
+  if (hours.length <= n) return hours;
+  const i = Math.max(0, hours.findIndex((h) => h.id === currentId));
+  const from = Math.max(0, Math.min(hours.length - n, i - Math.floor(n / 2)));
+  return hours.slice(from, from + n);
+}
+
+/**
+ * Where the frame on show sits among the frames that play: "day 2 of 6", or "hour 5 of 24" while the radar's
+ * hours are the ones stepping. A latest view (which mixes days), a model lead and the 24 h mean are not steps
+ * of a sequence, so they have no count.
+ */
+export function frameCount(p: ExploreProduct, frameId: string, hours: CurrentFrame[], hourId: string | null): string | null {
+  const hs = playHours(hours);
+  const hi = hs.findIndex((h) => h.id === hourId);
+  if (hs.length > 1 && hi >= 0) return `hour ${hi + 1} of ${hs.length}`;
+  const days = playFrames(p);
+  const di = days.findIndex((f) => f.id === frameId);
+  return di >= 0 ? `day ${di + 1} of ${days.length}` : null;
+}

@@ -13,20 +13,36 @@
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   line-height: 1.5;
   font-feature-settings: normal;
   -webkit-font-smoothing: antialiased;
 }
 :where(.n12-app) a { color: inherit; }
 .n12-app :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* a native checkbox, drawn in the system's terms in every chart mode: an empty ruled box when unticked, an ink
+   box with a paper tick when ticked (the browser's own, on a dark scheme, drew the empty box solid) */
+:where(.n12-app) input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; position: relative; flex: none; width: 20px; height: 20px; margin: 0;
+  border: var(--rule) solid var(--ink); border-radius: var(--r-1); background: var(--paper); cursor: pointer; vertical-align: middle;
+}
+:where(.n12-app) input[type="checkbox"]:checked { background: var(--ink); }
+:where(.n12-app) input[type="checkbox"]:checked::after {
+  content: ""; position: absolute; inset: 2px; background: var(--paper);
+  clip-path: polygon(14% 52%, 27% 39%, 42% 55%, 74% 20%, 88% 33%, 43% 82%);
+}
+:where(.n12-app) input[type="checkbox"]:disabled { border-style: dashed; border-color: var(--ink-2); cursor: not-allowed; }
+:where(.n12-app) input[type="checkbox"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 :where(.n12-app) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; border-radius: var(--r-0); }
 
 /* the chart is never part of a route's snapshot: only the margin is (React <ViewTransition name="nx-margin">) */
 :root:has(.n12-app) { view-transition-name: none; }
-::view-transition-old(.nx-margin-swap),
-::view-transition-new(.nx-margin-swap) { animation-duration: 180ms; animation-timing-function: cubic-bezier(0.2, 0, 0, 1); }
-::view-transition-group(.nx-margin-swap) { animation-duration: 180ms; }
+/* `swap` (ds/motion): the old page out, then the new one in. In sequence, so two pages are never legible at once. */
+::view-transition-old(.nx-margin-swap) { animation-duration: var(--dur-swap-out); animation-timing-function: linear; animation-fill-mode: both; }
+::view-transition-new(.nx-margin-swap) { animation-duration: var(--dur-swap-in); animation-delay: var(--dur-swap-out); animation-timing-function: var(--ease-out); animation-fill-mode: both; }
+::view-transition-group(.nx-margin-swap) { animation-duration: var(--dur-swap-out); }
+::view-transition-image-pair(.nx-margin-swap) { isolation: auto; }
+::view-transition-old(.nx-margin-swap), ::view-transition-new(.nx-margin-swap) { mix-blend-mode: normal; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(.nx-margin-swap), ::view-transition-new(.nx-margin-swap), ::view-transition-group(.nx-margin-swap) { animation: none; }
 }
@@ -47,12 +63,20 @@
 .n12-chev { flex: none; }
 .n12-dest { display: flex; gap: var(--s-4); margin-left: auto; }
 .n12-dest-link, .n12-bar-link {
-  display: inline-flex; align-items: center; min-height: var(--bar-h); padding: 0 var(--s-12);
+  position: relative; display: inline-flex; align-items: center; min-height: var(--bar-h); padding: 0 var(--s-12);
   text-decoration: none; white-space: nowrap; color: var(--ink-2); font-weight: 500;
   border-bottom: 2px solid transparent; transition: color var(--dur-quick) linear, border-color var(--dur-quick) linear;
 }
-.n12-dest-link:hover, .n12-bar-link:hover { color: var(--ink); }
-.n12-dest-link[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+.n12-dest-link:hover, .n12-bar-link:hover { color: var(--ink); background: var(--wash); }
+.n12-dest-link:active, .n12-bar-link:active, .n12-port-control:active { background: var(--sel); }
+.n12-port-control { padding: 0 var(--s-8); margin: 0 calc(-1 * var(--s-8)); transition: background-color var(--dur-quick) linear; }
+.n12-port-control:hover { background: var(--wash); }
+.n12-menu-links a:hover, .n12-mode-option:hover { background: var(--wash); }
+.n12-dest-link[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.n12-dest-link[aria-current="page"]:not(:has(.n12-dest-on)) { border-bottom-color: var(--ink); }
+.n12-dest-on { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink); }
+/* the unread count beside Alerts: ink on paper, a figure and nothing else (no dot, no hue) */
+.n12-unread { margin-left: var(--s-4); min-width: 20px; padding: 0 var(--s-4); border: var(--hair) solid var(--ink); font-size: var(--type-small); font-weight: 700; line-height: 18px; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
 .n12-bar-end { display: flex; align-items: center; gap: var(--s-4); }
 
 .n12-menu { position: relative; }
@@ -65,25 +89,81 @@
 .n12-mode legend { font-weight: 600; margin-bottom: var(--s-8); }
 .n12-mode-option { display: flex; align-items: center; gap: var(--s-12); min-height: var(--target); cursor: pointer; }
 .n12-mode-option input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; }
-.n12-mode-option small { display: block; font-size: var(--t-14); color: var(--ink-2); }
+.n12-mode-option small { display: block; font-size: var(--type-small); color: var(--ink-2); }
 .n12-menu-links { display: grid; border-top: var(--hair) solid var(--rule-soft); padding-top: var(--s-8); }
 .n12-menu-links a { min-height: 44px; display: flex; align-items: center; text-decoration: none; }
 
-/* ------------------------------------------------------------------ the margin */
-/* phone, after hydration: the ds MarginSheet, stacked under the bars; the resting detent is a cover the
-   chart frames its scenes around (src/nx/chart/cover.ts) */
-.n12-app .n12-margin-sheet { z-index: 6; }
-.n12-margin-main { display: block; outline: none; }
-.n12-margin-rest { position: absolute; left: 0; right: 0; pointer-events: none; visibility: hidden; }
+/* ------------------------------------------------------------------ the workspace (v13 README §1) */
+/* One grid under the bar: the page (a margin, or a desk), the divider, the chart pane. The page's mode is a
+   hidden marker in its own HTML (ds/layout PageLayout), so this lays out before any script runs. */
+.n12-work {
+  --pane-w: clamp(320px, 28vw, 440px);
+  position: absolute; top: var(--bar-h); left: 0; right: 0; bottom: 0; z-index: 1;
+  display: grid; grid-template-columns: var(--margin-w) 0 minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+}
+.n12-margin-rest { position: absolute; left: 0; right: 0; bottom: var(--tabbar-h); pointer-events: none; visibility: hidden; display: none; }
 .n12-margin {
-  position: absolute; top: var(--bar-h); left: 0; bottom: 0; width: var(--margin-w); z-index: 5;
+  grid-column: 1; grid-row: 1; position: relative; z-index: 5; min-width: 0; min-height: 0;
   display: flex; flex-direction: column; background: var(--paper);
   outline: none;
 }
-.n12-margin-scroll { flex: 1; overflow: auto; padding: var(--s-24) var(--s-24) var(--s-32) var(--s-24); overscroll-behavior: contain; }
+.n12-margin-scroll { scroll-padding: var(--s-24) 0 var(--s-32); flex: 1; min-height: 0; overflow: auto; padding: var(--s-24) var(--s-24) var(--s-32) var(--s-24); overscroll-behavior: contain; }
 .n12-margin-page { min-height: 100%; }
+.n12-sheet-top { display: none; }
+.n12-divider { display: none; grid-column: 2; grid-row: 1; }
+.n12-pane { --frame-l: calc(var(--neat-label) + var(--neat-band) + 6px); --frame-r: calc(var(--neat-band) + var(--s-16)); grid-column: 3; grid-row: 1; position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--paper); }
+.n12-dock-slot { flex: none; min-width: 0; }
+.n12-pane-rail, .n12-pane-bar, .n12-pane-close { display: none; }
 
-.n12-kicker { margin: 0 0 var(--s-12); font-size: var(--t-16); font-weight: 600; color: var(--ink); }
+/* ---- desk mode: the page's work takes the space, the chart is a pane the reader sizes */
+.n12-app:has([data-nx-layout="desk"]) .n12-margin-scroll { padding: 0 var(--s-32); }
+.n12-app:has([data-nx-layout="desk"]) .n12-margin-page { display: flex; flex-direction: column; }
+.n12-app:has([data-nx-layout="desk"]) .n12-margin-page > [data-nx-desk] { flex: 1 1 auto; }
+
+@media (min-width: 1100px) and (min-height: 520px) {
+  .n12-app:has([data-nx-layout="desk"]) .n12-work { grid-template-columns: minmax(0, 1fr) 16px var(--pane-w); }
+  .n12-work[data-pane="split"] { --pane-w: 50%; }
+  .n12-work[data-pane="chart"] { --pane-w: calc(100% - 436px); }
+  .n12-work[data-pane="rail"] { --pane-w: 48px; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-divider {
+    display: block; position: relative; cursor: col-resize; touch-action: none; background: var(--paper);
+  }
+  /* the rule the hand takes: a hairline, heavier on hover, focus and while it is dragged */
+  .n12-divider::after { content: ""; position: absolute; top: var(--s-16); bottom: var(--s-16); left: 7px; width: var(--hair); background: var(--rule-soft); transition: background-color var(--dur-quick) linear; }
+  .n12-divider:hover::after, .n12-divider:focus-visible::after, .n12-work[data-pane-resizing] .n12-divider::after { left: 6px; width: 3px; background: var(--ink); }
+  .n12-divider:focus-visible { outline: none; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-pane { overflow: hidden; }
+  /* while the divider is dragged the chart keeps its size and is only clipped: it resizes once, on release */
+  .n12-work[data-pane-resizing] .n12-sheet { width: var(--pane-hold); align-self: flex-end; }
+  .n12-work[data-pane-resizing] { user-select: none; }
+  /* collapsed to the rail: the chart keeps a size (and its one map instance) out of sight */
+  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane="rail"] .n12-sheet { width: 360px; align-self: flex-start; visibility: hidden; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane="rail"] .n12-dock-slot { display: none; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane="rail"] .n12-pane-rail {
+    display: flex; flex-direction: column; align-items: center; gap: var(--s-8); position: absolute; inset: 0; padding-top: var(--s-16);
+    border-left: var(--hair) solid var(--rule-soft); font-weight: 600; color: var(--ink);
+  }
+  .n12-pane-rail:hover { background: var(--wash); }
+  .n12-pane-rail span { white-space: nowrap; }
+  .n12-pane-rail span { writing-mode: vertical-rl; }
+}
+
+/* ---- narrow or short (a small laptop, a phone on its side): the desk has the width; the chart opens over it */
+@media (min-width: 721px) and (max-width: 1099px), (min-width: 721px) and (max-height: 519px) {
+  .n12-app:has([data-nx-layout="desk"]) .n12-work { grid-template-columns: minmax(0, 1fr) 0 0; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-pane {
+    /* an absolutely placed grid item is placed against its grid area: the whole grid here */
+    grid-column: 1 / -1; position: absolute; top: 0; right: 0; bottom: 0; left: auto; width: min(60%, 560px); z-index: 8;
+    border-left: var(--rule) solid var(--ink); visibility: hidden;
+  }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] .n12-pane { visibility: visible; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] .n12-pane-close {
+    display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; z-index: 3;
+    width: var(--target); height: var(--target); background: var(--paper); color: var(--ink);
+  }
+}
+
+.n12-kicker { margin: 0 0 var(--s-12); font-size: var(--type-body); font-weight: 600; color: var(--ink); }
 .n12-statement { margin: 0; font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.012em; color: var(--ink); text-wrap: balance; }
 .n12-statement-l { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
 .n12-statement-m { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
@@ -114,17 +194,68 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
     position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 10;
     padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--paper); border-top: var(--hair) solid var(--rule-soft);
   }
-  .n12-tab { display: flex; align-items: center; justify-content: center; min-height: var(--target); text-decoration: none; color: var(--ink-2); font-weight: 500; border-top: 2px solid transparent; white-space: nowrap; }
-  .n12-tab[aria-current="page"] { color: var(--ink); font-weight: 600; border-top-color: var(--ink); }
+  .n12-tab { position: relative; display: flex; align-items: center; justify-content: center; min-height: var(--target); text-decoration: none; color: var(--ink-2); font-weight: 500; border-top: 2px solid transparent; white-space: nowrap; }
+  .n12-tab[aria-current="page"] { color: var(--ink); font-weight: 600; }
+  .n12-tab[aria-current="page"]:not(:has(.n12-tab-on)) { border-top-color: var(--ink); }
+  .n12-tab-on { position: absolute; left: 0; right: 0; top: -2px; height: 2px; background: var(--ink); }
 
-  /* the margin becomes a sheet over the chart's lower part: it rests showing the statement, opens to read on */
+  /* chart mode: the chart fills the work area and the margin is a sheet over its lower part: it rests showing
+     the statement and is dragged or stepped up to read on. The same element at every width: before hydration
+     it stands at the resting height; after, Motion gives it its reading height and slides it down to a detent. */
+  .n12-work { display: block; }
+  .n12-pane { --frame-l: calc(var(--neat-label) + var(--neat-band) + 4px); --frame-r: calc(var(--neat-band) + var(--s-8)); position: absolute; top: 0; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+  .n12-margin-rest { display: block; }
+  /* fixed, as a sheet is: the part of it below the screen at a low detent must not become scrollable overflow */
   .n12-margin {
-    top: auto; width: auto; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    position: fixed; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 6;
     height: var(--n12-rest); border-top: var(--rule) solid var(--ink);
   }
-  /* before hydration the same rest the sheet takes: handle row, then the page from its first line */
-  .n12-margin-scroll { padding: var(--s-32) var(--s-16) var(--s-24); overflow: hidden; }
+  .n12-sheet-top { position: relative; flex: none; display: flex; align-items: center; justify-content: center; min-height: var(--s-32); touch-action: none; cursor: grab; }
+  .n12-sheet-handle { display: block; width: var(--s-48); height: var(--s-4); background: var(--ink-2); }
+  /* the hand has more than the row to take hold of: the grab area reaches 12 px above the sheet's edge */
+  .n12-sheet-top::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 12px; }
+  .n12-sheet-top:active { cursor: grabbing; }
+  .n12-sheet-top:active .n12-sheet-handle { background: var(--ink); }
+  .n12-tab:active { background: var(--sel); }
+  .n12-sheet-more {
+    position: absolute; right: var(--s-8); top: calc((var(--s-32) - var(--target)) / 2);
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-4);
+    min-width: var(--target); min-height: var(--target); padding: 0 var(--s-4); font-weight: 600; line-height: 1;
+  }
+  /* the sheet is as tall as its reading height and slid down to its detent: the scroller ends where the visible
+     sheet ends (above the destinations bar), so the last control is always reached by scrolling at any detent */
+  .n12-margin-scroll { padding: 0 var(--s-16) var(--s-24); margin-bottom: var(--sheet-hidden, 0px); }
   .n12-margin-page { min-height: 0; }
+
+  /* desk mode: the page is the page. The chart is a strip at its top that scrolls away to a bar; no sheet. */
+  .n12-app:has([data-nx-layout="desk"]) .n12-work {
+    --strip-h: 32svh; --strip-bar: 48px; --desk-sticky-top: var(--strip-bar);
+    display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
+    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] { --strip-h: 62svh; }
+  /* the pane follows the page in the document, so on a long page the page can be painted before the pane has
+     been parsed: until it is there, the page starts where it will start, under the strip's place (no shift) */
+  .n12-app:has([data-nx-layout="desk"]) .n12-work:not(:has(> .n12-pane)) .n12-margin { margin-top: var(--strip-h); }
+  .n12-app:has([data-nx-layout="desk"]) .n12-pane {
+    position: sticky; top: calc(var(--strip-bar) - var(--strip-h)); bottom: auto; order: -1; flex: none; z-index: 7;
+    height: var(--strip-h); border-bottom: var(--rule) solid var(--ink);
+  }
+  /* a locator until the reader enlarges it: touches on it scroll the page */
+  .n12-app:has([data-nx-layout="desk"]) .n12-work:not([data-pane-open]) .n12-map { pointer-events: none; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work:not([data-pane-open]) .n12-controls { display: none; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-pane-bar {
+    flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-8);
+    height: var(--strip-bar); padding: 0 var(--s-8) 0 var(--s-16); background: var(--paper); border-top: var(--hair) solid var(--rule-soft);
+  }
+  .n12-pane-bar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .n12-pane-bar-btn { flex: none; display: inline-flex; align-items: center; gap: var(--s-4); min-height: var(--target); padding: 0 var(--s-8); font-weight: 600; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-margin-rest { display: none; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-margin {
+    position: relative; bottom: auto; height: auto; flex: none; border-top: 0; z-index: 1;
+  }
+  .n12-app:has([data-nx-layout="desk"]) .n12-sheet-top { display: none; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-margin-scroll { overflow: visible; padding: 0 var(--s-16); margin-bottom: 0; }
   .n12-kicker { margin-bottom: var(--s-8); }
   .n12-statement-l { font-size: var(--t-28); }
   .n12-statement-m { font-size: var(--t-28); }
@@ -134,9 +265,9 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
 }
 @media (max-width: 360px) {
   .n12-port-control-name { max-width: 96px; }
-  .n12-wordmark { font-size: var(--t-18); }
+  .n12-wordmark { font-size: var(--type-lead); }
   .n12-statement-l, .n12-statement-m { font-size: var(--t-22); line-height: 1.15; }
-  .n12-tab { font-size: var(--t-14); }
+  .n12-tab { font-size: var(--type-small); }
 }
 @media (max-height: 480px) and (min-width: 721px) {
   .n12-margin-scroll { padding: var(--s-16); }
@@ -144,5 +275,5 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
   }
 
 .n12-menu-narrow { display: none !important; }
-.n12-menu-note { margin: var(--s-12) 0 0; font-size: var(--t-14); color: var(--ink-2); }
+.n12-menu-note { margin: var(--s-12) 0 0; font-size: var(--type-small); color: var(--ink-2); }
 @media (max-width: 380px) { .n12-menu-narrow { display: flex !important; } }

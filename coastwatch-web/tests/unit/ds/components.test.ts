@@ -23,6 +23,10 @@ vi.mock("@/nx/ds/chart/legend.module.css", () => css);
 vi.mock("@/nx/ds/chart/readout.module.css", () => css);
 vi.mock("@/nx/ds/series/series.module.css", () => css);
 vi.mock("@/nx/ds/worksheet/worksheet.module.css", () => css);
+vi.mock("@/nx/ds/controls.module.css", () => css);
+vi.mock("@/nx/ds/layout/Desk.module.css", () => css);
+vi.mock("@/nx/ds/plot/plot.module.css", () => css);
+vi.mock("@/nx/ds/gates.module.css", () => css);
 import {
   Agenda,
   BigDate,
