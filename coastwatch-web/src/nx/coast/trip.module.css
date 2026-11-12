@@ -358,11 +358,40 @@
   min-height: var(--target);
   cursor: pointer;
 }
+/* The Compare box. The saved trips drawer is drawn outside the app's root (a portal on <body>), where the
+   shell's checkbox rule does not reach, and the browser's own box on a dark scheme draws the empty state solid.
+   So it is drawn here in the system's terms, in every chart mode: an empty ruled box when unticked, an ink box
+   with a paper tick when ticked, a dashed one when a third trip cannot be picked. */
 .pick input {
+  appearance: none;
+  position: relative;
+  flex: none;
   width: 20px;
   height: 20px;
   margin: 0;
-  accent-color: var(--ink);
+  border: var(--rule) solid var(--ink);
+  border-radius: var(--r-1);
+  background: var(--paper);
+  cursor: pointer;
+}
+.pick input:checked {
+  background: var(--ink);
+}
+.pick input:checked::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: var(--paper);
+  clip-path: polygon(14% 52%, 27% 39%, 42% 55%, 74% 20%, 88% 33%, 43% 82%);
+}
+.pick input:disabled {
+  border-style: dashed;
+  border-color: var(--ink-2);
+  cursor: not-allowed;
+}
+.pick input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 .rename {
   display: grid;
@@ -454,22 +483,17 @@
   :is([data-condensed], [data-measuring]) .carried {
     display: none;
   }
-  /* the way back to the gates stays in the condensed header, small, on the fishery's own line */
-  .pinned > .compact {
-    font-size: var(--type-small);
-  }
+
   /* a phone opens with the first input in reach: the column's own heading gives way to the group's */
   .aside > .h2 {
     display: none;
   }
-  /* the fishery and the way back share one line on a phone: the select says "fishery" by what it holds */
+  /* the fishery has the header's whole width on a phone, so its name is never cut: the select says "fishery"
+     by what it holds */
   .pinned > :first-child {
-    flex: 0 1 auto;
+    flex: 1 1 100%;
     display: block;
-    max-width: 55%;
-  }
-  .pinned {
-    column-gap: var(--s-12);
+    max-width: 100%;
   }
   .pinned > :first-child > label {
     position: absolute;
@@ -496,6 +520,28 @@
 }
 
 /* ---------------------------------------------------------------- the header's pinned context (CoastPage) */
+/* the context line: what this is, and (in the trip) the way back to the gates beside it */
+.ctx {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-16);
+  max-width: 100%;
+  vertical-align: middle;
+}
+.ctxLink {
+  min-height: var(--s-32);
+  font-size: var(--type-small);
+  font-weight: 400;
+}
+@media (max-width: 360px) {
+  .ctxWord {
+    display: none;
+  }
+  .ctx {
+    column-gap: var(--s-12);
+  }
+}
 .pinned {
   display: flex;
   flex-wrap: wrap;
