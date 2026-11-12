@@ -130,6 +130,16 @@ test("the reading is the cell that was read: its centre in the header, its outli
   const lb = (await legend.boundingBox())!, mb = (await page.getByTestId("nx-margin").boundingBox())!;
   expect(lb.y).toBeGreaterThanOrEqual(mb.y - 1);
   await expect(readout(page).getByTestId("nx-coast-link")).toBeInViewport();
+  // the same on the chlorophyll ramp: whole, under the bar, never cut by it, with the reading scrolled to its end
+  await page.getByTestId("nx-layer-chl").click();
+  await fieldDrawn(page, "olci:latest");
+  await expect(readout(page)).toContainText("Chlorophyll in this 300 m cell");
+  await readout(page).getByTestId("nx-coast-link").scrollIntoViewIfNeeded();
+  const ramp = page.getByTestId("nx-legend-sticky");
+  await expect(ramp).toContainText("mg/m³");
+  await expect(page.getByTestId("nx-legend")).toBeInViewport({ ratio: 1 });
+  const bar = (await page.locator(".n12-bar, [data-testid=nx-bar]").first().boundingBox()) ?? { y: 0, height: 0 };
+  expect((await page.getByTestId("nx-legend").boundingBox())!.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
 });
 
 test("a reading moves into My Coast with the port, the cell and its date", async ({ page }) => {
@@ -432,6 +442,34 @@ test("phone: with a reading open, the layer switch and Play are in reach at the 
     await expect.poll(() => page.getByTestId("nx-explore").getAttribute("data-frame"), { timeout: 8000 }).not.toBe(before);
     await page.getByTestId("nx-play").click();
     expect((await sheet.boundingBox())!.y).toBeGreaterThan(size.height * 0.5);
+    // at every height of the sheet, from its top: the switch and Play stay above the destinations bar, and the
+    // chart's own buttons never sit over the sheet or over the read cell
+    const tabs = (await page.locator(".n12-dests, [data-testid=nx-dests], nav[aria-label='Destinations']").first().boundingBox()) ?? { y: size.height, height: 0 };
+    const more = sheet.getByRole("button", { name: /Show (more|less) of this page/ });
+    const seen = new Set<string>();
+    for (let i = 0; i < 5; i++) {
+      const detent = (await sheet.getAttribute("data-detent")) ?? "";
+      if (seen.has(detent)) break;
+      seen.add(detent);
+      await page.locator(".n12-margin-scroll").evaluate((el) => el.scrollTo(0, 0));
+      await page.waitForTimeout(300);
+      for (const id of ["nx-layers", "nx-play"]) {
+        const b = (await page.getByTestId(id).first().boundingBox())!;
+        expect(b.y + b.height, `${size.width} ${detent}: ${id} above the destinations`).toBeLessThanOrEqual(tabs.y + 0.5);
+        expect(b.y, `${size.width} ${detent}: ${id} on screen`).toBeGreaterThanOrEqual(0);
+      }
+      const ctl = await page.getByTestId("nx-chart-controls").boundingBox();
+      const st = (await sheet.boundingBox())!.y;
+      if (ctl && detent === "peek") {
+        expect(ctl.y + ctl.height, `${size.width}: chart buttons clear of the sheet`).toBeLessThanOrEqual(st + 1);
+        const c = (await hook(page, (h) => h.cell ?? null))!;
+        const q = await project(page, c.lat, c.lon);
+        expect(q.x >= ctl.x - 8 && q.x <= ctl.x + ctl.width + 8 && q.y >= ctl.y - 8 && q.y <= ctl.y + ctl.height + 8, `${size.width}: the read cell is not under the chart buttons`).toBe(false);
+      }
+      await more.click();
+      await page.waitForTimeout(500);
+    }
+    expect(seen.size).toBeGreaterThanOrEqual(3);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
