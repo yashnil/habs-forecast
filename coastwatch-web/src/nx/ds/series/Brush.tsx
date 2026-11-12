@@ -29,6 +29,16 @@ export interface BrushProps {
 
 const LEFT = 84;
 const RIGHT = 12;
+/** The frame is never drawn narrower than this, px: a 90-day window on a 12-year record is about 5 px (critic 15). */
+export const MIN_FRAME = 20;
+
+/** Where the frame is drawn, px: the window's own edges, widened about its centre to `MIN_FRAME` and kept inside the track. */
+export function frameEdges(xa: number, xb: number, lo: number, hi: number, min = MIN_FRAME): [number, number] {
+  if (xb - xa >= min) return [xa, xb];
+  const w = Math.min(min, hi - lo);
+  const a = Math.min(Math.max((xa + xb) / 2 - w / 2, lo), hi - w);
+  return [r2(a), r2(a + w)];
+}
 const DAY = 86_400_000;
 const utcYear = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", year: "numeric" });
 
@@ -53,8 +63,8 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
   const y = (v: number) => r2(ys(v));
   const minMs = minDays * DAY;
   const msPerPx = (extent[1] - extent[0]) / plotW;
-  const xa = x(new Date(value[0]));
-  const xb = x(new Date(value[1]));
+  // drawn edges: dragging still works in time (msPerPx), so widening the drawn frame changes no value
+  const [xa, xb] = frameEdges(x(new Date(value[0])), x(new Date(value[1])), LEFT, LEFT + plotW);
   const years = x.ticks(Math.min(12, Math.max(2, Math.round(plotW / 90))));
 
   const set = (v: [number, number]) => onChange(clampWindow(v, extent, minMs));

@@ -227,6 +227,19 @@ button.stripName[aria-pressed="true"] {
   font-size: var(--t-14);
   color: var(--ink-2);
 }
+/* a threshold strip: name and reading on the first line, the unit and the dashes' meaning wrapped below */
+.stripHead[data-wrap] {
+  flex-wrap: wrap;
+  align-content: flex-start;
+  row-gap: 0;
+}
+.stripHead[data-wrap] .stripUnit {
+  order: 3;
+  flex-basis: 100%;
+  overflow: visible;
+  white-space: normal;
+  line-height: 18px;
+}
 .stripReading {
   flex: none;
   margin-left: auto;

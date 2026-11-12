@@ -1,7 +1,7 @@
 "use client";
 
 import type { Strip } from "./model";
-import { layoutStrips } from "./RecordStrips";
+import { layoutStrips, stripHead } from "./RecordStrips";
 
 /** Save a file the page made (a CSV, a figure) through the browser. */
 export function download(name: string, text: string, type: string) {
@@ -48,7 +48,8 @@ export function svgFigure(svg: SVGSVGElement, o: { title: string; strips: Strip[
   const font = getComputedStyle(svg).getPropertyValue("font-family");
   const paper = getComputedStyle(document.querySelector("[data-chart-mode]") ?? document.body).getPropertyValue("--paper").trim() || "none";
   const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const heads = layoutStrips(o.strips, o.plotH, o.folded).rows.map((r) => `<text x="0" y="${top + r.top + 20}" style="font-family:${font};font-size:15px;font-weight:600;fill:${ink}">${esc(`${r.strip.kind === "model" ? "Model · " : ""}${r.strip.label}`)} <tspan style="font-weight:400">${esc(r.folded ? "no sample in this window" : r.strip.unit)}</tspan></text>`);
+  // the same header heights as on screen, so each name sits over its own plot
+  const heads = layoutStrips(o.strips, o.plotH, o.folded, (st) => stripHead(st, w)).rows.map((r) => `<text x="0" y="${top + r.top + 20}" style="font-family:${font};font-size:15px;font-weight:600;fill:${ink}">${esc(`${r.strip.kind === "model" ? "Model · " : ""}${r.strip.label}`)} <tspan style="font-weight:400">${esc(r.folded ? "no sample in this window" : r.strip.unit)}</tspan></text>${!r.folded && r.strip.threshold ? `<text x="0" y="${top + r.top + 38}" style="font-family:${font};font-size:14px;fill:${ink}">${esc(`Dashes: ${r.strip.threshold.label}`)}</text>` : ""}`);
   const lines = wrap(o.caption, Math.max(40, Math.floor(w / 7.4)));
   const foot = lines.map((l, i) => `<text x="0" y="${top + h + 22 + i * 18}" style="font-family:${font};font-size:14px;fill:${ink}">${esc(l)}</text>`);
   const H = top + h + 22 + lines.length * 18 + 8;

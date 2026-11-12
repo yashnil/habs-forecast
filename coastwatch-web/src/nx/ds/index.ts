@@ -30,7 +30,7 @@ export { anchorTranslate, anchorAlign, byPriority, type Anchor } from "./chart/p
 export * from "./series/series";
 export { SeriesChart, type SeriesChartProps } from "./series/SeriesChart";
 export { SmallMultiples, type Strip, type SmallMultiplesProps } from "./series/SmallMultiples";
-export { Brush, clampWindow, type BrushProps } from "./series/Brush";
+export { Brush, clampWindow, frameEdges, MIN_FRAME, type BrushProps } from "./series/Brush";
 export { Field, Stepper, Segmented, Toggle, type FieldProps, type StepperProps, type SegmentedProps, type ToggleProps } from "./worksheet/Inputs";
 export { Waterfall, SensitivityTable, type WaterfallProps, type SensitivityTableProps } from "./worksheet/Waterfall";
 export { layoutWaterfall, type WaterfallStep, type WaterfallLayout, type Bar, type StepKind } from "./worksheet/waterfallLayout";

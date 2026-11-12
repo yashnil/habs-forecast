@@ -44,7 +44,7 @@ import {
   inWin,
   type RangeId,
 } from "./model";
-import { RecordStrips, LEFT, layoutStrips, type RecordStripsHandle } from "./RecordStrips";
+import { RecordStrips, LEFT, layoutStrips, stripHead, type RecordStripsHandle } from "./RecordStrips";
 import { SampleLog } from "./SampleLog";
 import { StationMarks } from "./StationMarks";
 import { useSettledWindow } from "./useSettledWindow";
@@ -174,10 +174,14 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   // ------------------------------------------------------------ the record's size (wide: fill the panel's height)
   const stripsBox = useRef<HTMLDivElement>(null);
   const [room, setRoom] = useState<number | null>(null);
+  const [roomW, setRoomW] = useState(600);
   useEffect(() => {
     const el = stripsBox.current;
     if (!el || !wide) return setRoom(null);
-    const ro = new ResizeObserver(([e]) => setRoom(Math.round(e.contentRect.height)));
+    const ro = new ResizeObserver(([e]) => {
+      setRoom(Math.round(e.contentRect.height));
+      setRoomW(Math.round(e.contentRect.width));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [wide]);
@@ -187,9 +191,10 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     if (!wide || room == null) return 76;
     // the tallest plots that fit the panel without scrolling; below 34 px the panel scrolls instead
     let h = 34;
-    while (h < 160 && layoutStrips(strips, h + 2, folded).height <= room - 4) h += 2;
+    // (a threshold strip's header takes extra lines for what its dashes mean: RecordStrips stripHead)
+    while (h < 160 && layoutStrips(strips, h + 2, folded, (st) => stripHead(st, roomW)).height <= room - 4) h += 2;
     return h;
-  }, [wide, room, strips, folded]);
+  }, [wide, room, roomW, strips, folded]);
 
   // ------------------------------------------------------------ the chart: the station in the free part of the sheet, its neighbours around it
   // on a wide screen the record panel lies over the sheet's right side: registered as a cover, so the chart

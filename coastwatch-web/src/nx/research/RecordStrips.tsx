@@ -28,28 +28,61 @@ function xTickLabel(d: Date, spanDays: number): string {
   return d.getUTCMonth() === 0 ? utcYear.format(d) : utcMonth.format(d);
 }
 
-export type StripLayout = { strip: Strip; top: number; plotTop: number; plotH: number; laneTop: number | null; bottom: number; folded: boolean };
+export type StripLayout = { strip: Strip; top: number; head: number; plotTop: number; plotH: number; laneTop: number | null; bottom: number; folded: boolean };
+
+/** One header line, px; each wrapped line of a threshold strip's unit adds another. */
+export const HEAD_LINE = 18;
+
+let ctx2d: CanvasRenderingContext2D | null | undefined;
+/** Text width in px with the page's sans at `size`/`weight` (canvas); off the browser, about 0.5 em a character. */
+function textWidth(text: string, size: number, weight = 400): number {
+  if (typeof document === "undefined") return text.length * size * 0.5;
+  if (ctx2d === undefined) ctx2d = document.createElement("canvas").getContext("2d");
+  if (!ctx2d) return text.length * size * 0.5;
+  // the system's sans, read where the tokens apply (the body itself is not set in it)
+  const root = document.querySelector("[data-chart-mode]") ?? document.documentElement;
+  const family = getComputedStyle(root).getPropertyValue("--font-sans").trim() || "sans-serif";
+  ctx2d.font = `${weight} ${size}px ${family}`;
+  return ctx2d.measureText(text).width;
+}
+
+/**
+ * A strip's header height at a width: one line for most; a strip with a dashed threshold puts its unit and what
+ * the dashes mean on lines of their own under the name, as many as the words need, so nothing is cut with an
+ * ellipsis (critic 15). The name shares its line with the reading when both fit.
+ */
+export function stripHead(strip: Strip, width: number): number {
+  if (!strip.threshold) return HEAD;
+  const room = Math.max(160, width - 8);
+  const name = textWidth(`${strip.kind === "model" ? "Model · " : ""}${strip.label}`, 16, 600) + 8 + textWidth("not measured that day", 16);
+  const words = textWidth(`${strip.unit}; dashes: ${strip.threshold.label}`, 14);
+  // a little over the bare width: wrapping at word breaks leaves the end of each line short
+  const lines = Math.min(4, Math.max(1, Math.ceil((words * 1.06) / room)));
+  return HEAD * (name > room ? 2 : 1) + lines * HEAD_LINE;
+}
 
 /**
  * Where each strip sits: header, plot, the censored lane when its record has any reported 0 or rejected sample.
  * A strip with nothing in the window folds to its header line, which says so.
  */
-export function layoutStrips(strips: Strip[], plotH: number, folded: ReadonlySet<string> = new Set()): { rows: StripLayout[]; height: number } {
+export function layoutStrips(strips: Strip[], plotH: number, folded: ReadonlySet<string> = new Set(), headOf: (strip: Strip) => number = () => HEAD): { rows: StripLayout[]; height: number } {
   let y = 0;
   const rows = strips.map((strip) => {
     if (folded.has(strip.id)) {
       const top = y;
       y = top + HEAD + GAP;
-      return { strip, top, plotTop: top + HEAD, plotH: 0, laneTop: null, bottom: top + HEAD, folded: true };
+      return { strip, top, head: HEAD, plotTop: top + HEAD, plotH: 0, laneTop: null, bottom: top + HEAD, folded: true };
     }
     const h = strip.kind === "model" ? Math.max(36, Math.round(plotH * 0.66)) : plotH;
     const lane = strip.points.some((p) => p.cls !== "value");
     const top = y;
-    const plotTop = top + HEAD + 4;
+    const head = headOf(strip);
+    // a wrapped unit line ends at the header's foot: the top tick label (centred on plotTop) needs the extra room
+    const plotTop = top + head + (head > HEAD ? 10 : 4);
     const laneTop = lane ? plotTop + h : null;
     const bottom = plotTop + h + (lane ? LANE : 0);
     y = bottom + GAP;
-    return { strip, top, plotTop, plotH: h, laneTop, bottom, folded: false };
+    return { strip, top, head, plotTop, plotH: h, laneTop, bottom, folded: false };
   });
   return { rows, height: (rows.at(-1)?.bottom ?? 0) + AXIS };
 }
@@ -88,7 +121,7 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
   const [said, setSaid] = useState("");
   const plotW = Math.max(120, width - LEFT - RIGHT);
   const x = useMemo(() => scaleLinear().domain(win).range([LEFT, LEFT + plotW]), [win, plotW]);
-  const { rows, height } = useMemo(() => layoutStrips(strips, plotH, folded), [strips, plotH, folded]);
+  const { rows, height } = useMemo(() => layoutStrips(strips, plotH, folded, (st) => stripHead(st, width)), [strips, plotH, folded, width]);
   const spanDays = (win[1] - win[0]) / 86_400_000;
   const xTicks = useMemo(() => {
     const u = scaleUtc().domain([new Date(win[0]), new Date(win[1])]);
@@ -146,7 +179,7 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
         const reading = cursor != null ? readingAt(st, cursor) : null;
         const focused = st.id === focus;
         return (
-          <div key={st.id} className={s.stripHead} style={{ top: row.top }} data-strip={st.id} data-folded={row.folded || undefined}>
+          <div key={st.id} className={s.stripHead} style={{ top: row.top, height: row.head }} data-strip={st.id} data-folded={row.folded || undefined} data-wrap={(!row.folded && row.head > HEAD) || undefined}>
             {st.kind === "measured" ? (
               <button type="button" className={s.stripName} aria-pressed={focused} onClick={() => onFocus(st.id)} data-testid={`strip-${st.id}`}>
                 <StripLabel strip={st} />
@@ -160,9 +193,10 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
                 <span>Model · {st.label}</span>
               </span>
             )}
+            {/* a strip with a dashed threshold says what the dashes are on a line of its own, wrapped, never cut (critic 15) */}
             <span className={s.stripUnit} title={st.threshold ? `${st.unit}; dashed line: ${st.threshold.label}` : st.unit}>
               {st.unit}
-              {st.threshold ? `; dashes: ${st.threshold.label}` : ""}
+              {st.threshold && !row.folded ? `; dashes: ${st.threshold.label}` : ""}
             </span>
             <span className={s.stripReading} data-testid={`reading-${st.id}`}>
               {row.folded ? "none in this window" : cursor == null ? "" : reading ? valueWords(st, reading) : st.kind === "model" ? "no run kept that day" : "not measured that day"}
