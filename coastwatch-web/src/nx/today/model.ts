@@ -482,13 +482,19 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
     const wp = provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed" });
     whaleIn = {
       zone: w.zone,
-      short: whaleMeasures(w, sectorOf(o.fishery)).short,
+      // the status above already states a whale delay: the gate does not repeat that clause (one home per fact)
+      short: whaleMeasures(w, sectorOf(o.fishery), { seasonSaysIt: whaleDelay }).short,
       decidesSeason: whaleDelay,
       assessed: w.fact.as_of ?? null,
       age: w.fact.as_of ? ageWords(w.fact.as_of, now) : null,
       sourceUrl: w.source_url ?? null,
       provenance: wp,
       next: decision && /whale assessment/i.test(decision.label) ? `${decision.label}: ${range(decision.start, decision.end ?? decision.start)}` : null,
+      record: (() => {
+        const full = whaleMeasures(w, sectorOf(o.fishery));
+        const text = [full.quote ? `CDFW, for ${sectorOf(o.fishery)} crabbers: “${full.quote}”` : null, ...full.fields].filter(Boolean).join(" ");
+        return [...(text ? [{ id: "cdfw", role: "record" as const, text, provenance: wp }] : []), { id: "zone", role: "note" as const, text: `Zone ${w.zone}: ${w.label}.` }];
+      })(),
     };
   }
   let testIn: TestInput;
@@ -507,6 +513,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       progress: test.showProgress ? test.progressWords : null,
       sourceUrl: test.fact.source.url ?? null,
       provenance: testProvenance(test),
+      others: model.tests.filter((t) => t !== test && t.latest).map((t) => ({ id: `site-${t.site.id}`, role: "measured" as const, text: `${t.sentence} ${cap1(ageWords(t.latest!.date, now))}.`, old: t.stale, provenance: testProvenance(t) })),
     };
   }
   const gates = buildGates({ place: o.place.key, whale: whaleIn, test: testIn, sea: seaInput(model, sea, now, today) });
@@ -541,7 +548,13 @@ function wavesWords(b: { waveFt: number | null; periodS: number | null }): strin
  * time. "Not verified" belongs to agency notices transcribed by machine (T38), not to it (lead decision 6).
  */
 function alertProvenance(f: Parameters<typeof provenanceOf>[0], event: string): Provenance | null {
-  return provenanceOf(f, `NWS ${event}`, { kind: "prediction", dateRole: "issued" });
+  return provenanceOf(f, `NWS ${event}`, { kind: "advisory", dateRole: "issued" });
+}
+
+/** "NWS Small Craft Advisory in effect from Thursday morning": NWS's headline, its event named once. */
+export function alertWords(event: string, headline: string): string {
+  const h = strip(headline);
+  return h.toLowerCase().startsWith(event.toLowerCase()) ? `NWS ${event}${h.slice(event.length)}` : `NWS ${event}: ${h}`;
 }
 
 /** The sea gate's lines: advisories, today's forecast, then what was measured and the tide (gates.ts orders them). */
@@ -551,7 +564,7 @@ function seaInput(model: TodayModel, sea: TodayModel["sea"], now: string, today:
   const facts: GateFact[] = [];
   for (const a of sea.alerts) {
     const f = model.today.facts.find((x) => x.id.startsWith("weather:alert:") && x.headline.includes(a.event));
-    facts.push({ id: `alert-${a.event}`, role: "advisory", text: `NWS ${a.event}: ${strip(a.headline)}`, provenance: f ? alertProvenance(f, a.event) : null });
+    facts.push({ id: `alert-${a.event}`, role: "advisory", text: alertWords(a.event, a.headline), provenance: f ? alertProvenance(f, a.event) : null });
   }
   const nws = fact("weather:nws");
   const first = sea.lanes.find((l) => !l.date || l.date === today) ?? sea.lanes[0];
@@ -568,7 +581,7 @@ function seaInput(model: TodayModel, sea: TodayModel["sea"], now: string, today:
   const wb = sea.windBuoy ?? (b && b.windKt != null && b.at ? { id: b.id, windKt: b.windKt, windDir: b.windDir } : null);
   if (wb) {
     const f = fact(sea.windBuoy ? "sea:wind" : "sea:buoy");
-    facts.push({ id: "wind", role: "measured", text: `Wind ${windWords(wb.windKt, wb.windDir).toLowerCase()} at buoy ${wb.id}`, provenance: f ? provenanceOf(f, `Wind, buoy ${wb.id}`) : null });
+    facts.push({ id: "wind", role: "measured", text: `Wind ${windWords(wb.windKt, wb.windDir).replace(/^Calm$/, "calm")} at buoy ${wb.id}`, provenance: f ? provenanceOf(f, `Wind, buoy ${wb.id}`) : null });
   }
   if (sea.water) {
     const f = fact("sea:water");

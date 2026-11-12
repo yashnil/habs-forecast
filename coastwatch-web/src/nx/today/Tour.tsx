@@ -11,13 +11,13 @@ import s from "./today.module.css";
 
 /**
  * "Show me around" (journeys.md, Help without a tutorial): optional, four steps, one sentence each, in order
- * the status, a sounding, the dated list and the provenance stamp. A ruled frame marks each in place; no
+ * the status, a sounding, the gates and the provenance stamp. A ruled frame marks each in place; no
  * scrim, no arrows. Ending it, or "Don't show again", dismisses it for good on this device.
  */
 const STEPS: Array<{ target: string; text: string }> = [
   { target: "status", text: "The season status for your fishery, in the agency's own words, with the day Neritic last checked it." },
-  { target: "sounding", text: "Readings sit where they were measured: the latest crab test at its test area, the buoy out on the water." },
-  { target: "agenda", text: "The dates, in order: what has happened sits above today's line, what is coming sits below it." },
+  { target: "sounding", text: "Fresh readings sit where they were measured: the buoy out on the water, a recent crab test at its test area." },
+  { target: "gates", text: "What decides a trip, in parts: whale measures, toxin tests and the sea. Each says who decides, how old it is and what to do next." },
   { target: "stamp", text: "Every value carries a line like this. Tap it for the source, the date and what to read it with." },
 ];
 

@@ -7,6 +7,7 @@
 .lead { margin: 0; font: 400 var(--t-18) / 1.4 var(--font-serif); color: var(--ink); max-width: 34em; }
 
 /* ---------------------------------------------------------------- legend-as-title */
+.coverage { margin: 0; padding: var(--s-8) 0 var(--s-8) var(--s-12); border-left: var(--rule) solid var(--ink); font-size: var(--type-body); line-height: var(--lh-snug); }
 .legendBlock { display: grid; gap: var(--s-12); }
 .legend { max-width: none; }
 .legend figcaption span:first-child { font-size: var(--t-28); line-height: 1.1; font-weight: 500; letter-spacing: -0.01em; }
@@ -98,6 +99,8 @@
 .railAlsoSub { color: var(--ink-2); }
 
 /* ---------------------------------------------------------------- readout and transect */
+/* the layer, unit and date of the reading, at the margin's foot (ds MarginSticky) */
+.context { margin: 0; font-size: var(--type-small); line-height: var(--lh-snug); }
 .readoutSlot { scroll-margin-bottom: var(--s-24); }
 /* the next frame's value is being read: the last one stays, stepped back (no "Reading…" flash while playing) */
 .readoutSlot[data-updating="1"] { opacity: 0.55; }
@@ -126,6 +129,11 @@
 .chartHover { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
 .chartPointRing { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .chartPointDot { fill: var(--ink); }
+/* the cell that was read, at its own footprint: an ink line on a paper casing, so it holds over any field */
+.chartCellCase { fill: none; stroke: var(--paper); stroke-width: 4; stroke-linejoin: round; }
+.chartCell { fill: none; stroke: var(--ink); stroke-width: 1.75; stroke-linejoin: round; }
+/* with the cell outlined, the ring steps back to the dot at its centre */
+.chartPoint[data-cell="outlined"] .chartPointRing { display: none; }
 /* top right: inland, clear of the water and the coastal town names the bottom corner covered (critic 12) */
 .locator { position: absolute; top: calc(var(--nx-cover-top, 0px) + var(--s-8)); right: calc(var(--nx-cover-right, 0px) + var(--s-8)); display: block; pointer-events: none; }
 .locatorGround { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
@@ -139,4 +147,11 @@
 .isoLabel {
   display: block; font: 600 var(--t-14) / 1 var(--font-sans); color: var(--ink); font-variant-numeric: tabular-nums;
   text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo);
+}
+
+.railCount { font-weight: 600; white-space: nowrap; }
+
+/* phone: an open reading leads the sheet, so the peek detent shows its value and date over the chart */
+@media (max-width: 720px) {
+  .readoutSlot[data-open="1"] { order: -1; }
 }

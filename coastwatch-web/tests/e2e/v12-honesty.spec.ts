@@ -38,13 +38,14 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await expect(m).toContainText("Official, not verified");
   });
 
-  test("a test is a named lab result with its age; the agenda keeps it as a dated line (T6, T8, T17)", async ({ page }) => {
+  test("a test is a named lab result with its age, in the domoic acid gate (T6, T8, T17)", async ({ page }) => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
-    // the agenda opens on what is next; the earlier dates are one control away
-    await m.getByRole("button", { name: /^All \d+ dates, earlier and later$/ }).click();
-    await expect(m).toContainText("CDPH test, Monterey Bay Dungeness");
-    await expect(m).toContainText("All 6 under the action level. 14 days ago.");
+    // v13: the test is held by the gate it informs (CDPH tests), with the highest result, the count and the age
+    const gate = m.getByTestId("gate-domoic");
+    await expect(gate).toContainText("CDPH tests");
+    await expect(gate).toContainText("Dungeness test, Monterey Bay, Sep 28: highest 9.8 of 30 ppm, 6 samples");
+    await expect(gate).toContainText("14 days ago");
     await expect(m.getByRole("button", { name: /^Measured · CDPH · sampled Sep 28/ }).first()).toBeVisible();
     // the figure set on the chart names the action level beside it, never a bare number
     await expect(page.locator("[data-nx-sounding=test]")).toContainText("of 30 ppm", { timeout: 15_000 });
@@ -63,7 +64,8 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
     await expect(m.getByRole("heading", { level: 1 })).toBeVisible();
-    for (const name of ["Whale", "Tests", "Models", "Others"]) await m.getByRole("button", { name: new RegExp(`^${name}`) }).click();
+    // v13: CDFW's own clauses and the other test sites are lines of their gates; models and others are rows
+    for (const name of ["Models", "Others"]) await m.getByRole("button", { name: new RegExp(`^${name}`) }).click();
     const text = await m.innerText();
     expect(text).not.toMatch(FORBIDDEN);
     for (const w of ["Measured", "Model or prediction", "Official, not verified", "No view: no data, not a low value", "(old)"]) await expect(m).toContainText(w);
@@ -127,7 +129,8 @@ test.describe("Explore", () => {
     await expect(m).toContainText("a lower probability does not mean open or safe");
     await expect(m).toContainText("Past run: every day it covers is before today.");
     await expect(m).toContainText("Currents");
-    await expect(m).toContainText("not over a model");
+    // v13: the time rail (and its "Also" line) runs along the foot of the chart, outside the margin
+    await expect(page.getByTestId("nx-timerail")).toContainText("not over a model");
     expect(await m.innerText()).not.toMatch(FORBIDDEN);
   });
 

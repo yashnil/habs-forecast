@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Conditions } from "@/lib/conditions";
 import { loadToday } from "@/pilot/today/load";
 import { snapFacts } from "@/pilot/facts";
-import { buildToday, comingThatMatter, othersLine, parseWindow, periodNameWords, scopeWords, splitHeadline, suggestFisheries, windWords, type TodayInputs } from "@/nx/today/model";
+import { alertWords, buildToday, comingThatMatter, othersLine, parseWindow, periodNameWords, scopeWords, splitHeadline, suggestFisheries, windWords, type TodayInputs } from "@/nx/today/model";
 import { advisoriesOf, buildGates, gateHrefs, orderSeaFacts, RELATION, type GateFact } from "@/nx/today/gates";
 import { changeLine, sinceWords } from "@/nx/today/change";
 import { distanceKm, phoneBounds, todayBounds } from "@/nx/today/camera";
@@ -306,8 +306,13 @@ describe("the three gates (v13 lead decision 6)", () => {
     expect(v.gates.map((g) => g.id)).toEqual(["whale", "domoic", "sea"]);
     const [whale, domoic, seaGate] = v.gates;
     expect(whale).toMatchObject({ authority: "CDFW RAMP", dateRole: "assessed", state: "ok" });
-    expect(whale.headline).toBe("Zone 4: Commercial season delayed to at least Jan 1, 2027, Fleet Advisory, no depth or gear limit on record");
+    expect(whale.headline).toBe("Zone 4: Fleet Advisory, no depth or gear limit on record");
     expect(whale.facts[0].text).toMatch(/^Next whale assessment, subject to change: Dec 15–18$/);
+    // CDFW's own clauses for the reader's sector, quoted, and never the recreational rule (T42)
+    expect(whale.facts.find((f) => f.id === "cdfw")!.text).toMatch(/^CDFW, for commercial crabbers: “Commercial season delayed/);
+    expect(whale.facts.map((f) => f.text).join(" ")).not.toMatch(/recreational/i);
+    // the port's other CDPH sites sit in the domoic gate, highest result first, with their age
+    expect(domoic.facts.find((f) => /rock crab/.test(f.text))!.text).toMatch(/highest 20 ppm of 30.*14 days ago\.$/);
     expect(whale.relation).toEqual([RELATION.whaleDecides]);
     expect(domoic).toMatchObject({ authority: "CDPH tests", dateRole: "sampled", date: "2026-09-28", age: "14 days ago", state: "ok" });
     expect(domoic.headline).toBe("Dungeness test, Monterey Bay, Sep 28: highest 9.8 of 30 ppm, 6 samples");
@@ -354,10 +359,14 @@ describe("the three gates (v13 lead decision 6)", () => {
     const v = buildToday(inputs, { fishery: "dungeness_commercial", sea: withAlert(), place });
     const g = v.gates.find((x) => x.id === "sea")!;
     expect(g.facts[0].role).toBe("advisory");
-    expect(g.headline).toBe("NWS Small Craft Advisory: Small Craft Advisory in effect from Thursday morning through Friday morning");
+    expect(g.headline).toBe("NWS Small Craft Advisory in effect from Thursday morning through Friday morning");
+    expect(alertWords("Small craft advisory", "Small craft advisory in effect until 3 PM.")).toBe("NWS Small craft advisory in effect until 3 PM");
+    expect(alertWords("Gale Warning", "Winds 35 kt expected")).toBe("NWS Gale Warning: Winds 35 kt expected");
     expect(v.advisories.map((a) => a.id)).toEqual(["alert-Small Craft Advisory"]);
-    expect(v.advisories[0].provenance).toMatchObject({ kind: "prediction", source: "NWS", dateRole: "issued" });
-    expect(v.agenda.find((a) => a.id === "alert-Small Craft Advisory")!.provenance?.kind).toBe("prediction");
+    expect(v.advisories[0].provenance).toMatchObject({ kind: "advisory", source: "NWS", dateRole: "issued" });
+    expect(v.agenda.find((a) => a.id === "alert-Small Craft Advisory")!.provenance?.kind).toBe("advisory");
+    // only the "official" kind carries "not verified" on its stamp (ds Stamp): an advisory never does
+    expect(v.advisories[0].provenance!.kind).not.toBe("official");
     expect(buildToday(inputs, { fishery: "dungeness_commercial", sea, place }).advisories).toEqual([]);
   });
 
@@ -391,7 +400,7 @@ describe("the three gates (v13 lead decision 6)", () => {
 
   it("gate addresses keep the port, encoded", () => {
     expect(gateHrefs.trip("port 5/92")).toBe("/coast?place=port%205%2F92&view=trip");
-    expect(gateHrefs.alerts("port-592")).toBe("/account?place=port-592#alerts");
+    expect(gateHrefs.alerts("port-592")).toBe("/alerts?place=port-592");
   });
 
   it("no forbidden verdict words in any gate (T36)", () => {

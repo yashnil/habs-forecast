@@ -5,14 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, ChartDock, MarginSticky, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { openMargin } from "@/nx/shell/Margin";
 import { StaticField } from "./StaticField";
 import { ChartScene } from "@/nx/chart/scene";
 import { ChartMarks } from "@/nx/chart/Labels";
-import { whenChartReady } from "@/nx/chart/control";
+import { keepChartPointInView, whenChartReady } from "@/nx/chart/control";
 import { addChartLayer } from "@/nx/chart/layers/registry";
 import { modeColours, onModeChange } from "@/nx/chart/layers/colors";
 import { createFieldLayer, type FieldController, type FieldStyle } from "@/nx/chart/layers/FieldLayer";
@@ -20,7 +20,8 @@ import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLaye
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, boxAround } from "./codes";
-import { EXPLORE_ZOOM, exploreBounds, extentBounds } from "./camera";
+import { coversPort, EXPLORE_ZOOM, exploreBounds, withinFor } from "./camera";
+import { gridBounds } from "@/nx/chart/layers/grid";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
@@ -28,7 +29,7 @@ import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isoth
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, unitOf, valueWords, type CurrentsState } from "./words";
+import { aboutWords, CHL_DOMAIN, contextWords, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
@@ -361,10 +362,21 @@ export function Explore({ model }: { model: ExploreModel }) {
   // readout scrolls into view wherever the margin is
   useEffect(() => {
     if (reading?.status !== "ready") return;
-    if (phone) openMargin("half");
-    const t = window.setTimeout(() => readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" }), phone ? 360 : 0);
+    // phone: the sheet drops to a peek (the reading leads it, see explore.module.css) and the chart pans just
+    // enough to keep the read cell clear of the sheet, so the next tap can land on the water beside it
+    if (phone) openMargin("peek");
+    const cell = reading.cell;
+    const t = window.setTimeout(
+      () => {
+        readoutRef.current?.scrollIntoView({ block: phone ? "start" : "nearest", behavior: reduce || phone ? "auto" : "smooth" });
+        keepChartPointInView(cell.lon, cell.lat);
+      },
+      phone ? 380 : 0,
+    );
     return () => window.clearTimeout(t);
-  }, [reading?.status, reduce, phone]);
+    // one move per reading: a new cell, not every frame of a playback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reading?.status, reading?.status === "ready" ? reading.cell.row : null, reading?.status === "ready" ? reading.cell.col : null, reduce, phone]);
 
   // ------------------------------------------------------------- choosing and playing frames (cuts, never tweens: T26)
   const chooseFrame = useCallback((p: ExploreProduct, f: ExploreFrame) => {
@@ -413,9 +425,12 @@ export function Explore({ model }: { model: ExploreModel }) {
       id: `explore:${port?.key ?? "coast"}`,
       // the view stops at the data's own edge rather than showing a sliver of chart past it
       // the data's water fills the free area (the box's longer side cropped) rather than leaving inland hills beside it
-      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: extentBounds(extent), fill: !!extent },
+      // a port the data does not reach is framed as itself, never slid to another bay's data (camera.ts coversPort)
+      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: withinFor(extent, port ? { lon: port.lon, lat: port.lat } : null), fill: !!extent && coversPort(extent, port ? { lon: port.lon, lat: port.lat } : null) },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
+      // the chart's own buttons, with a way back to everything the layers hold
+      controls: extent ? { fit: { label: "Fit the data", bounds: [[extent[0], extent[1]], [extent[2], extent[3]]] as [[number, number], [number, number]] } } : undefined,
     }),
     [port, extent],
   );
@@ -439,7 +454,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   let readout = null;
   if (pt && r) {
-    const title = product.id === "chl" ? "Chlorophyll here" : product.id === "sst" ? "Sea temperature here" : product.id === "charm" ? "C-HARM here" : "Outlook here";
+    // the reading is one cell of the layer's grid: its title says so, with the cell's size once it is known
+    const title = readoutTitle(product.id, r.status === "ready" ? r.cell : null);
     const onClose = () => {
       setAt(null);
       setHover(null);
@@ -447,7 +463,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     if (r.status === "loading") readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="loading" message={`Reading ${LAYER_LABEL[product.id].toLowerCase()} at this point…`} onClose={onClose} />;
     else if (r.status === "error") readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="error" message="This point couldn't be read. Check the connection and tap again." onClose={onClose} />;
     else if (r.status === "outside")
-      readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="noview" message={frame.kind === "measured" ? `Outside this layer's area: ${frame.sensor} has no cells here. No value is not a low value.` : noValueWords(product, "outside-grid")} onClose={onClose} />;
+      readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="outside" message={frame.kind === "measured" ? `Outside this layer's area: ${frame.sensor} has no cells here. No value is not a low value.` : noValueWords(product, "outside-grid")} onClose={onClose} />;
     else {
       // while the next frame is being read, the value on show still belongs to the frame it was read from
       const rf = product.frames.find((f) => f.id === r.frame) ?? frame;
@@ -487,6 +503,8 @@ export function Explore({ model }: { model: ExploreModel }) {
                 : "Typical error about a factor of 2. Read as higher or lower than usual, not as a value. Algae, not toxin.";
       // a "nearby" record is within 25 km and measures the variable; a farther one is named with its distance
       const choice = stationFor(model.stations, r.cell.lat, r.cell.lon, RESEARCH_VAR[product.id]);
+      // what was sampled: one cell of the layer's own grid
+      const subtitle = `One cell of the ${rf.sensor} grid`;
       const action = (
         <span className={s.actions}>
           {choice.link ? (
@@ -498,6 +516,14 @@ export function Explore({ model }: { model: ExploreModel }) {
               No station within {NEARBY_KM} km measures this.{" "}
               <Link className={s.recordLink} href={researchHref({ station: choice.far.id, to: date, product: product.id, place: key })} data-testid="nx-record-far">
                 The nearest that does: {choice.far.name}, {sig(choice.far.km, 2)} km away
+              </Link>
+            </span>
+          ) : choice.unknown ? (
+            // the station list carries toxin and Pseudo-nitzschia only: for this measurement no pier is claimed
+            <span data-testid="nx-record-unknown">
+              Neritic&rsquo;s station list does not say which piers measure this.{" "}
+              <Link className={s.recordLink} href={researchHref({ station: choice.unknown.id, to: date, product: product.id, place: key })} data-testid="nx-record-look">
+                Look in the nearest pier&rsquo;s record: {choice.unknown.name}, {sig(choice.unknown.km, 2)} km{choice.unknown.km > NEARBY_KM ? " away" : ""}
               </Link>
             </span>
           ) : (
@@ -515,7 +541,7 @@ export function Explore({ model }: { model: ExploreModel }) {
             points={xs}
             unit={unit}
             scale={product.id === "chl" || product.id === "outlook" ? "log" : "linear"}
-            label={`Along ${latLon(pt.lat, pt.lon).split(",")[0]}, west to east`}
+            label={`Along ${latLon(r.cell.lat, r.cell.lon).split(",")[0]}, west to east`}
             observed={rf.kind === "measured"}
             format={fmt}
             onHover={setHover}
@@ -528,7 +554,9 @@ export function Explore({ model }: { model: ExploreModel }) {
             title={title}
             lat={r.cell.lat}
             lon={r.cell.lon}
-            state="noview"
+            state={rf.kind === "measured" ? "noview" : "outside"}
+            subtitle={subtitle}
+            actions={action}
             message={rf.kind === "measured" ? `No view here (${rf.label === "Latest" ? `latest view, ${rf.stamp}` : rf.stamp}): cloud, fog or no pass. No value is not a low value.` : noValueWords(product, r.gap ?? "inside")}
             onClose={onClose}
           >
@@ -550,7 +578,8 @@ export function Explore({ model }: { model: ExploreModel }) {
                 {curLine ? <span className={s.curLine}>{curLine}</span> : null}
               </>
             }
-            action={action}
+            subtitle={subtitle}
+            actions={action}
             onClose={onClose}
           >
             {tr}
@@ -559,18 +588,28 @@ export function Explore({ model }: { model: ExploreModel }) {
     }
   }
 
-  const tStart = r?.status === "ready" && r.transect.length ? r.transect[0].lon : null;
-  const tEnd = r?.status === "ready" && r.transect.length ? r.transect[r.transect.length - 1].lon : null;
+  const cell = r?.status === "ready" ? r.cell : null;
+  // the line on the chart spans the water the transect has values for: never across land or past the grid's water
+  const valued = r?.status === "ready" ? r.transect.filter((p) => p.value !== null) : [];
+  const tStart = valued.length ? valued[0].lon : null;
+  const tEnd = valued.length ? valued[valued.length - 1].lon : null;
   return (
     <section className={s.explore} data-testid="nx-explore" data-product={product.id} data-frame={frame.id}>
       <ChartScene scene={scene} />
-      {pt ? <ReadingOnChart lat={pt.lat} lon={pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} /> : null}
+      {/* the mark sits on the cell that was read (its centre, its outline), not on the tap */}
+      {pt ? <ReadingOnChart lat={cell?.lat ?? pt.lat} lon={cell?.lon ?? pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} outline={cell?.outline ?? null} /> : null}
       {phone ? <Locator /> : null}
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
       <p className={s.lead} data-testid="nx-explore-lead">
         {leadSentence(product, frame)}
       </p>
+      {/* the layer has no cells at the reader's port: said in words, with where it does have them */}
+      {port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
+        <p className={s.coverage} data-testid="nx-coverage-note">
+          {coverageNote(LAYER_LABEL[product.id], port.name, gridBounds(frame.grid))}
+        </p>
+      ) : null}
       <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
       {tier === "static" && frame?.grid && product.id !== "sst" ? (
         <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
@@ -606,6 +645,8 @@ export function Explore({ model }: { model: ExploreModel }) {
           </button>
         ) : null}
       </div>
+      {/* wide: the rail runs along the foot of the chart it steps, full width; on a phone it reads in the sheet */}
+      <ChartDock label="Time" height={streaks ? 284 : 204} align="frame" variant="rail">
       <TimeRail
         model={model}
         product={product}
@@ -619,9 +660,18 @@ export function Explore({ model }: { model: ExploreModel }) {
         canPlay={canPlay}
         onPlay={() => setPlaying((p) => !p)}
       />
-      <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
+      </ChartDock>
+      <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-open={readout ? "1" : "0"} data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
         {readout ?? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p>}
       </div>
+      {/* what the reading is a reading of stays at the margin's foot while the legend scrolls away */}
+      {readout ? (
+        <MarginSticky data-testid="nx-context">
+          <p className={s.context}>
+            <strong>{LAYER_LABEL[product.id]}</strong> · {unit} · {contextWords(product, frame)}
+          </p>
+        </MarginSticky>
+      ) : null}
     </section>
   );
 }

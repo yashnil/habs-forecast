@@ -19,6 +19,19 @@ export const extentBounds = (extent: [number, number, number, number] | null): B
       ]
     : null;
 
+/**
+ * Does a box of published cells reach the water at a port? (Within a quarter of a degree: about 25 km.) A port
+ * the layers do not reach is still framed as itself: the view never slides to another bay's data under a bar
+ * that names this port.
+ */
+export function coversPort(box: [number, number, number, number] | null, port: { lon: number; lat: number } | null, pad = 0.25): boolean {
+  if (!box || !port) return !!box;
+  return port.lon >= box[0] - pad && port.lon <= box[2] + pad && port.lat >= box[1] - pad && port.lat <= box[3] + pad;
+}
+
+/** The data's extent as the scene's `within`, only when the reader's port is in it (or there is no port). */
+export const withinFor = (extent: [number, number, number, number] | null, port: { lon: number; lat: number } | null): Bounds | null => (coversPort(extent, port) ? extentBounds(extent) : null);
+
 export const EXPLORE_ZOOM: [number, number] = [5.2, 12.6];
 /** California's coast, Oregon to Mexico. */
 export const CA_COAST: Bounds = [
