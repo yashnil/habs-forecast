@@ -15,7 +15,7 @@
   font-optical-sizing: auto;
 }
 .unit {
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -42,7 +42,7 @@
 .ticks {
   position: relative;
   height: var(--s-24);
-  font: 600 var(--t-14) / 1 var(--font-sans);
+  font: 600 var(--type-small) / 1 var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 .tick {
@@ -87,13 +87,13 @@
 }
 .noViewLabel {
   padding-top: var(--s-8);
-  font: 600 var(--t-14) / 1 var(--font-sans);
+  font: 600 var(--type-small) / 1 var(--font-sans);
   white-space: nowrap;
 }
 
 .direction {
   margin: var(--s-4) 0 0;
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   line-height: 1.4;
 }
 .saysDarker {
@@ -104,6 +104,6 @@
 }
 .caption {
   margin: var(--s-4) 0 0;
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   line-height: 1.4;
 }

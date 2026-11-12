@@ -2,7 +2,7 @@
 
 import type { CustomLayerInterface, Map as MapLibreMap } from "maplibre-gl";
 import type { CurrentField } from "@/lib/currents";
-import { FlowSim, HIST, HIST_MS, SEG, mercX, mercY } from "@/lib/flowSim";
+import { FlowSim, HIST, HIST_MS, SEG, mercX, mercY, trailCap } from "@/lib/flowSim";
 
 
 import { noteSlowFrames } from "@/lib/capability";
@@ -14,7 +14,9 @@ import { coverageEdges } from "./grid";
  * The particle physics is lib/flowSim's, unchanged and tested: one measured hour, frozen; nearest cell; a
  * particle dies entering a cell without a measurement, so a streak never crosses or fills a gap; screen speed is
  * relative. This file only draws it, in the map's own context:
- * - each streak tapers: width and ink rise toward its head, and with the cell's speed;
+ * - each streak tapers: width and ink rise toward its head, and with the cell's speed; its drawn length is
+ *   capped at about one published cell (lib/flowSim `trailCap`), so it marks a cell's vector, never a path
+ *   across cells;
  * - a streak is fainter where the radar measured its cell in fewer of the published hours (`quality`, 0..1);
  * - the real edge of coverage is a hairline, so the end of the streaks reads as the end of the measurements;
  * - streak and casing colours are the mode's tokens (`--streak` on a `--halo` casing);
@@ -23,7 +25,7 @@ import { coverageEdges } from "./grid";
  */
 export type FlowTier = "full" | "reduced";
 export type FlowState = { still: boolean; paused: boolean };
-export type FlowDebug = { running: () => boolean; count: () => number; segments: () => number; edges: () => number; heads: () => [number, number][]; fieldId: () => string; frames: () => number };
+export type FlowDebug = { running: () => boolean; count: () => number; segments: () => number; edges: () => number; heads: () => [number, number][]; fieldId: () => string; frames: () => number; streaks: () => { speed: number; px: number }[]; capPx: () => number };
 
 /** Streaks move this many times faster than lib/flowSim's base rate (still proportional to the water's speed). */
 export const FLOW_TIME_SCALE = 4;
@@ -121,6 +123,8 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
     const b = map.getBounds();
     sim.setView({ west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() });
     const cellPx = (Math.abs(sim.field.g.lon_step) / 360) * worldPx();
+    // a streak is at most about one published cell long at this zoom (T27: a mark of the cell's own vector, not a path)
+    sim.setTrailCap(trailCap(sim.cellSize, worldPx()));
     sim.setCount(countFor(sim.visible.length, fps < 60 ? "reduced" : tier, cellPx));
   };
 
@@ -206,6 +210,8 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
       heads: () => sim.heads(),
       fieldId: () => fieldId,
       frames: () => frames,
+      streaks: () => (map ? sim.streaks(worldPx()) : []),
+      capPx: () => (map ? trailCap(sim.cellSize, worldPx()) * worldPx() : 0),
     },
     setField(id, f, q) {
       fieldId = id;

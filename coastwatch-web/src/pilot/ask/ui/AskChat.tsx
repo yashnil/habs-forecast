@@ -12,6 +12,8 @@ import { UNVERIFIED_LINE } from "../unverified";
 import { suggestionsFor } from "../suggestions";
 import { DEMO_LABEL, DISCLAIMER, LIVE_LABEL, SAMPLE_DATA_LABEL } from "../templates";
 import type { AskAnswer, AskMeta, Citation, SeenSnapshot } from "../types";
+import { savedCoverage, uncoveredWords, type AskPort } from "./coverage";
+import { savedPortKey } from "@/nx/shell/port";
 
 /**
  * Ask Neritic, the calm chat, in the pilot's Almanac voice (pilot.css). Used full-page on /ask (its
@@ -246,10 +248,16 @@ export type AskChatProps = {
   headingId?: string;
   /** no port was named in the link: open on the port the reader last opened in Today, if it is a pilot port */
   preferSaved?: boolean;
+  /** the port that was asked for is outside the pilot: say so and wait for the reader to choose a pilot port (`initialPlace` is then "") */
+  uncovered?: AskPort | null;
+  /** every port's name, to name the reader's saved port when it is outside the pilot */
+  portNames?: Record<string, string>;
 };
 
-export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, compact = false, headingId, preferSaved = false }: AskChatProps) {
-  const [place, setPlace] = useState(initialPlace);
+export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, compact = false, headingId, preferSaved = false, uncovered = null, portNames }: AskChatProps) {
+  const [place, setPlace] = useState(uncovered ? "" : initialPlace);
+  // the port the reader came from, when Ask does not cover it; cleared once they choose a pilot port
+  const [outside, setOutside] = useState<AskPort | null>(uncovered);
   const [meta, setMeta] = useState<AskMeta | null>(metaProp ?? null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [q, setQ] = useState("");
@@ -257,24 +265,31 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
   const prevSeen = useRef<SeenSnapshot | null>(null);
   const inputId = useId();
   const endRef = useRef<HTMLDivElement>(null);
-  const label = PILOT_PORTS.find((p) => p.place_id === place)?.label ?? "your port";
+  const label = PILOT_PORTS.find((p) => p.place_id === place)?.label ?? "a pilot port";
+  const waiting = !place;
 
-  const suggestions = sugProp && place === initialPlace ? sugProp : suggestionsFor(place);
+  const suggestions = waiting ? [] : sugProp && place === initialPlace ? sugProp : suggestionsFor(place);
 
   useEffect(() => {
-    prevSeen.current = readSeen(place);
+    prevSeen.current = place ? readSeen(place) : null;
   }, [place]);
 
   useEffect(() => {
     if (!preferSaved) return;
-    const saved = readTodayPlace();
-    if (saved && PILOT_PORTS.some((p) => p.place_id === saved)) setPlace(saved);
+    // the reader's own port: a pilot port opens; any other is named as not covered, never swapped for a pilot port
+    const c = savedCoverage(savedPortKey() ?? readTodayPlace(), portNames);
+    if (c?.state === "covered") setPlace(c.place);
+    else if (c?.state === "uncovered") {
+      setOutside(c.port);
+      setPlace("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preferSaved]);
 
   useEffect(() => {
     if (metaProp) return;
     let off = false;
-    fetch(`/api/ask?place=${encodeURIComponent(initialPlace)}`)
+    fetch(initialPlace ? `/api/ask?place=${encodeURIComponent(initialPlace)}` : "/api/ask")
       .then((r) => r.json())
       .then((m: AskMeta) => {
         if (!off) setMeta({ readiness: m.readiness, logging: m.logging, dataset: m.dataset });
@@ -287,7 +302,7 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
 
   async function ask(question: string) {
     const text = question.trim();
-    if (!text || busy) return;
+    if (!text || busy || !place) return;
     setBusy(true);
     setQ("");
     const first = turns.length === 0;
@@ -315,7 +330,18 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
       <label htmlFor={`${inputId}-port`} className="nx-caps">
         Port
       </label>
-      <select id={`${inputId}-port`} value={place} onChange={(e) => setPlace(e.target.value)} className="pilot-field nx-focus !w-auto !min-h-11" data-testid="ask-port">
+      <select
+        id={`${inputId}-port`}
+        value={place}
+        onChange={(e) => {
+          if (!e.target.value) return;
+          setPlace(e.target.value);
+          setOutside(null);
+        }}
+        className="pilot-field nx-focus !w-auto !min-h-11"
+        data-testid="ask-port"
+      >
+        {waiting ? <option value="">Choose a pilot port…</option> : null}
         {PILOT_PORTS.map((p) => (
           <option key={p.place_id} value={p.place_id}>
             {p.label}
@@ -327,13 +353,28 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
           Sample data
         </span>
       ) : null}
-      {!compact && (
+      {!compact && !waiting && (
         <Link href={`/today?place=${place}`} className="today-btn nx-focus nx-press nx-tint" data-testid="ask-today-link">
           Today at {label}
         </Link>
       )}
     </div>
   );
+
+  const words = outside ? uncoveredWords(outside) : null;
+  const notCovered = outside && words ? (
+    <div className="pilot-note amber mt-4" role="status" data-testid="ask-uncovered" data-port={outside.key}>
+      <p>
+        <strong className="font-semibold">{words.title}</strong> {words.body}
+      </p>
+      <p className="mt-2">
+        <Link href={`/today?place=${encodeURIComponent(outside.key)}`} className="pilot-link nx-focus" data-testid="ask-uncovered-today">
+          Today at {outside.name ?? "your port"}
+        </Link>{" "}
+        has its season status, tests and notices, each with its source.
+      </p>
+    </div>
+  ) : null;
 
   const header = compact ? (
     <header>
@@ -342,6 +383,7 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
         Ask Neritic
       </h2>
       <div className="mt-2">{meta ? <ReadinessBadge meta={meta} /> : null}</div>
+      {notCovered}
       {controls}
     </header>
   ) : (
@@ -353,6 +395,7 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
         </h1>
         <p className="pilot-lede mt-3">A plain question about {label}, answered only from the records on its Today page. Every line names its source and its date.</p>
         <div className="mt-4">{meta ? <ReadinessBadge meta={meta} /> : null}</div>
+        {notCovered}
         {controls}
       </div>
     </header>
@@ -395,6 +438,8 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
       </ol>
       <div ref={endRef} />
 
+      {waiting ? null : (
+      <>
       <div className={compact ? "mt-6" : "today-sec"}>
         <header className={compact ? "border-b border-n-line pb-2" : undefined}>
           <Sub className="today-h2" id={`${inputId}-sug`}>
@@ -427,6 +472,8 @@ export function AskChat({ initialPlace, meta: metaProp, suggestions: sugProp, co
           Ask
         </button>
       </form>
+      </>
+      )}
     </section>
   );
 

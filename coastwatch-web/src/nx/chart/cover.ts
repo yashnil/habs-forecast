@@ -67,3 +67,49 @@ export function measureCovers(frame: DOMRect): { insets: Insets; obstacles: Rect
   for (const k of ["top", "right", "bottom", "left"] as const) insets[k] = Math.max(0, Math.round(insets[k]));
   return { insets, obstacles };
 }
+
+/* ---------------------------------------------------------------- obstacles (v13) */
+
+/** An element the chart's lettering keeps clear of (a locator inset, a legend set on the water). Not camera padding. */
+export function useChartObstacle(id: string, ref: RefObject<HTMLElement | null>, active = true) {
+  useChartCover(id, ref, "none", active);
+}
+
+/**
+ * Something drawn on the chart in its own coordinates that lettering must keep clear of (a transect line, a
+ * read cell's outline): a function from the frame's projector to rects in frame px, asked at every placement,
+ * so it follows the camera. Return [] when there is nothing to avoid.
+ */
+export type ObstacleFn = (project: (lon: number, lat: number) => { x: number; y: number }) => Rect[];
+const drawn = new Map<string, ObstacleFn>();
+export function registerChartObstacle(id: string, fn: ObstacleFn) {
+  drawn.set(id, fn);
+  listeners.forEach((l) => l());
+  return () => {
+    if (drawn.get(id) === fn) drawn.delete(id);
+    listeners.forEach((l) => l());
+  };
+}
+export function drawnObstacles(project: (lon: number, lat: number) => { x: number; y: number }): Rect[] {
+  const out: Rect[] = [];
+  for (const fn of drawn.values()) {
+    try {
+      out.push(...fn(project));
+    } catch {
+      // a page's obstacle must never stop the chart placing its names
+    }
+  }
+  return out;
+}
+
+/** Rects along a line between two places, `pad` px to each side: for keeping names off a transect. */
+export function lineObstacle(a: { x: number; y: number }, b: { x: number; y: number }, pad = 8, step = 48): Rect[] {
+  const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / step));
+  const out: Rect[] = [];
+  for (let i = 0; i < n; i++) {
+    const x0 = a.x + ((b.x - a.x) * i) / n, y0 = a.y + ((b.y - a.y) * i) / n;
+    const x1 = a.x + ((b.x - a.x) * (i + 1)) / n, y1 = a.y + ((b.y - a.y) * (i + 1)) / n;
+    out.push({ x0: Math.min(x0, x1) - pad, y0: Math.min(y0, y1) - pad, x1: Math.max(x0, x1) + pad, y1: Math.max(y0, y1) + pad });
+  }
+  return out;
+}

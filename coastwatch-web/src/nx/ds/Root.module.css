@@ -3,7 +3,7 @@
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   line-height: 1.42;
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;

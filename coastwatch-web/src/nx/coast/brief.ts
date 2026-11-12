@@ -1,4 +1,4 @@
-import type { FisheryId } from "@/pilot/contracts";
+import type { FisheryId, StatusLevel } from "@/pilot/contracts";
 import type { SeaView, TodayModel } from "@/pilot/facts";
 import { windWords } from "@/pilot/today/marine";
 import { day } from "@/nx/ds/format";
@@ -19,6 +19,12 @@ export type SeasonGate = {
   /** the record's own sentence */
   text: string;
   tone: Tone;
+  /** the record's own level; "delayed" and "closed" are what make a planned trip one that cannot be made now */
+  level: StatusLevel | "unknown";
+  /** the record is in conflict with another of Neritic's sources (its level is then not relied on) */
+  conflict: boolean;
+  /** an ordinary closed season on the calendar, not an action taken this year */
+  seasonal: boolean;
   /** the agency the record quotes ("CDFW") */
   source: string;
   url: string | null;
@@ -108,6 +114,9 @@ export function gatesFrom(m: TodayModel, f: CoastFishery, opts: { now: string; f
     ? {
         text: row.conflict ? `Sources differ about this fishery here; awaiting a person's review.` : sentence(row.headline),
         tone: row.conflict ? "regulation" : row.seasonal ? "ink" : (TONE[row.level] ?? "ink"),
+        level: row.level,
+        conflict: !!row.conflict,
+        seasonal: !!row.seasonal,
         source: row.source?.name ?? "CDFW",
         url: row.source?.url ?? null,
         checked: row.checked_at,

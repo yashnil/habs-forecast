@@ -37,6 +37,21 @@ export const COAST_FISHERIES: CoastFishery[] = [
 
 export const coastFishery = (id: string | null | undefined): CoastFishery | null => COAST_FISHERIES.find((f) => f.id === id) ?? null;
 
+/**
+ * Recreational trips My Coast can plan: a cost-only worksheet (fuel, supplies, a split between the people
+ * aboard). A recreational catch is not sold, so there is no price, gross, crew pay or net anywhere on it.
+ * Listed apart from the commercial fisheries so nothing that reads `COAST_FISHERIES` gains a trip with no gross.
+ */
+export const RECREATIONAL_FISHERIES: CoastFishery[] = [
+  { id: "dungeness_recreational", label: "Dungeness crab, recreational", preset: null, priceKey: null, unit: "lb", ramp: false, supplies: "Bait and ice" },
+];
+
+export type TripAudience = "commercial" | "recreational";
+export const TRIP_FISHERIES: CoastFishery[] = [...COAST_FISHERIES, ...RECREATIONAL_FISHERIES];
+/** Any fishery a trip can be planned for, commercial or recreational. */
+export const tripFishery = (id: string | null | undefined): CoastFishery | null => TRIP_FISHERIES.find((f) => f.id === id) ?? null;
+export const audienceOf = (f: CoastFishery | null | undefined): TripAudience => (f && RECREATIONAL_FISHERIES.some((r) => r.id === f.id) ? "recreational" : "commercial");
+
 /** The first of the reader's followed fisheries that My Coast plans for (Today's list, nx-port-v1); none is assumed. */
 export function defaultFishery(followed: readonly string[]): FisheryId | null {
   return followed.map(coastFishery).find((f): f is CoastFishery => !!f)?.id ?? null;

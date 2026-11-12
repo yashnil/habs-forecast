@@ -13,7 +13,7 @@
 .imprint {
   margin-top: auto;
   padding-top: var(--s-16);
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   line-height: 1.4;
   color: var(--ink-2);
 }

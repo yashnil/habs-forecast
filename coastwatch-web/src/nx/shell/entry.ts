@@ -2,8 +2,9 @@
  * One entry (docs/coastwatch/v12/design-system/journeys.md, Architecture; research C §6 "One canonical entry").
  * An inline script, run before the first paint of every page in the route group, decides what `/` is:
  *
- *   data-nx-entry="today"   a reader with a saved port (nx-port-v1, or the keys it migrates from): Today
- *                           at that port renders at `/` directly, with no redirect and no flash of home;
+ *   data-nx-entry="today"   a reader with a saved port (nx-port-v1: the home port, else the port last opened;
+ *                           or the keys it migrates from): Today at that port renders at `/` directly, with
+ *                           no redirect and no flash of home;
  *   data-nx-entry="home"    everyone else: the statement and Find your port on the chart;
  *   data-nx-opening="on"    added for a first visit only (nx-opening-seen-v1 unset), with motion allowed,
  *                           a graphics-capable browser and no deep-link parameters: the opening plays once.
@@ -20,8 +21,8 @@ export type ChartMode = "day" | "dusk" | "night";
 export const ENTRY_SCRIPT = `(function(){try{var d=document.documentElement,l=window.localStorage,g=function(k){try{return l.getItem(k)}catch(e){return null}};
 var m=g("${CHART_MODE_KEY}");if(m!=="day"&&m!=="dusk"&&m!=="night")m=matchMedia("(prefers-color-scheme: dark)").matches?"dusk":"day";d.setAttribute("data-chart-mode",m);
 if(location.pathname!=="/")return;
-var P=/^port-\\d{1,4}$/,port=null;try{var r=JSON.parse(g("nx-port-v1")||"null");if(r&&r.v===1)port=P.test(r.lastPort||"")?r.lastPort:P.test(r.place||"")?r.place:null;else if(r&&r.v>1)port=null}catch(e){}
-if(!port){var t=g("nx-today-place-v1");if(P.test(t||""))port=t;else{var h=g("cw-home-port")||"",x=/"?place"?\\s*:?\\s*"?(port-\\d{1,4})\\b/.exec(h)||/^(port-\\d{1,4})$/.exec(h);if(x)port=x[1]}}
+var P=/^port-\\d{1,4}$/,port=null;try{var r=JSON.parse(g("nx-port-v1")||"null");if(r&&r.v===1)port=P.test(r.place||"")?r.place:P.test(r.lastPort||"")?r.lastPort:null;else if(r&&r.v>1)port=null}catch(e){}
+if(!port){var h=g("cw-home-port")||"",x=/"?place"?\\s*:?\\s*"?(port-\\d{1,4})\\b/.exec(h)||/^(port-\\d{1,4})$/.exec(h);if(x)port=x[1];else{var t=g("nx-today-place-v1");if(P.test(t||""))port=t}}
 if(port){d.setAttribute("data-nx-entry","today");d.setAttribute("data-nx-port",port);return}
 d.setAttribute("data-nx-entry","home");
 var q=location.search.slice(1).split("&").filter(function(s){return s&&!/^(utm_[a-z_]+|fbclid|gclid|msclkid|ref|source)=/i.test(s)});

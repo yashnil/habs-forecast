@@ -22,6 +22,7 @@
 .swatchHatch line { stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .swatchHatchPast line { stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.8; }
 .swatchDot { fill: var(--ink-2); }
+.swatchRule line { stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .isoKey { display: flex; align-items: center; gap: var(--s-12); margin-top: var(--s-8); font-size: var(--t-14); font-weight: 600; }
 .isoSvg { width: 96px; height: 24px; flex: none; }
 .isoMajor { fill: none; stroke: var(--ink); stroke-width: 1.9; }
@@ -45,6 +46,10 @@
 .switchItem[aria-checked="true"] span { font-weight: 700; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 5px; }
 .switchItem[role="switch"][aria-checked="true"] span { text-decoration: none; }
 .switchItem:active { transform: scale(0.97); }
+/* a layer this data run does not hold: in its place, not selectable */
+.switchItem[data-missing="1"] { color: var(--ink-2); cursor: default; }
+.switchItem[data-missing="1"]:active { transform: none; }
+.switchItem[data-missing="1"] span { text-decoration: line-through; text-decoration-thickness: var(--hair); }
 
 /* ---------------------------------------------------------------- the time rail */
 .rail { display: grid; gap: var(--s-8); }
@@ -94,6 +99,9 @@
 
 /* ---------------------------------------------------------------- readout and transect */
 .readoutSlot { scroll-margin-bottom: var(--s-24); }
+/* the next frame's value is being read: the last one stays, stepped back (no "Reading…" flash while playing) */
+.readoutSlot[data-updating="1"] { opacity: 0.55; }
+.actions { display: grid; justify-items: start; }
 .prompt { margin: 0; padding-top: var(--s-12); border-top: var(--rule) solid var(--ink); font-weight: 600; }
 .curLine { display: block; margin-top: var(--s-8); }
 .recordLink { display: inline-flex; align-items: center; min-height: var(--target); font-weight: 600; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 5px; }

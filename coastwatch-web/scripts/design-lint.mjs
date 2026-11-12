@@ -28,7 +28,20 @@ export const RULES = {
   "font-family": "Type must use --font-serif or --font-sans; no monospace, no other families",
   "space-scale": "Spacing must come from the scale 4, 8, 12, 16, 24, 32, 48, 64 (--s-*)",
   "allow-reason": "design-lint-allow needs a rule and a reason",
+  // v13 (docs/coastwatch/v13/design-system/README.md section 10)
+  "fixed-position": "position: fixed belongs to the shell and the design system; a page lays out in its Desk, margin or a ChartDock",
+  "margin-width": "--margin-w is the workspace's; a page never sizes itself by the margin column",
+  "raw-chart": "Charts are drawn with the plot kit (src/nx/ds/plot); d3 is imported only in src/nx/ds and src/nx/chart",
+  "one-primary": "One primary button per view; make the others secondary or quiet",
+  "raw-button": "A hand-styled <button>; use Button, IconButton, Segmented, Disclosure or OptionList from src/nx/ds",
+  "small-text": "Many uses of 14 px text in one stylesheet; 14 px is for provenance, axis ticks and footnotes (--type-small)",
 };
+
+/** Reported and counted, but they do not fail the run: pages are moving onto the v13 parts (README section 10 says when each becomes an error). */
+export const WARN_RULES = new Set(["fixed-position", "raw-chart", "one-primary", "raw-button", "small-text"]);
+/** Where the shell's and the design system's own layout and controls live: the page rules do not apply there. */
+const SYSTEM_DIR = /src\/nx\/(ds|shell|chart)\/|src\/app\/system\//;
+const SMALL_TEXT_BUDGET = 6;
 
 const TOKEN_FILES = [/src\/nx\/ds\/tokens\.css$/, /src\/nx\/ds\/palette\.ts$/];
 const MOTION_HOME = /src\/nx\/ds\/motion\.ts$/;
@@ -115,6 +128,8 @@ function textChecks(s, { copy, style, iso }) {
 
 function lintCss(file, text, tokenFile, inDs) {
   const out = [];
+  const system = SYSTEM_DIR.test(file);
+  const small = [];
   const clean = text.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
   if (!inDs) {
     const kf = /@(?:-webkit-)?keyframes\b/g;
@@ -167,12 +182,16 @@ function lintCss(file, text, tokenFile, inDs) {
       if (/^(transition|transition-duration|animation|animation-duration)$/.test(prop)) {
         if (durationsMs(value).some((x) => x > 200)) add("motion", value);
       }
+      if (!system && prop === "position" && /^fixed\b/.test(value)) add("fixed-position");
+      if (!system && /var\(--margin-w\b/.test(value)) add("margin-width", prop);
+      if (!system && /var\(--(t-14|type-small)\)/.test(value) && /^font(-size)?$/.test(prop)) small.push(line);
       if (/^(margin|padding|gap|row-gap|column-gap)(-(top|right|bottom|left|inline|block)(-start|-end)?)?$/.test(prop)) {
         const bad = value.split(/\s+/).map(pxValue).filter((v) => v !== null && !SCALE.has(Math.abs(v)));
         if (bad.length) add("space-scale", value);
       }
     }
   }
+  if (small.length > SMALL_TEXT_BUDGET) out.push({ file, line: small[SMALL_TEXT_BUDGET], rule: "small-text", message: `${RULES["small-text"]} (${small.length} uses; the budget is ${SMALL_TEXT_BUDGET})` });
   return out;
 }
 
@@ -200,7 +219,19 @@ function lintTs(file, text, tokenFile, inDs) {
   const isDirective = (n) => ts.isExpressionStatement(n.parent) && n.parent.parent === sf;
   const propName = (n) => (n && (ts.isIdentifier(n) || ts.isStringLiteral(n)) ? n.text : null);
 
+  const system = SYSTEM_DIR.test(file);
+  const primaries = [];
+  const buttons = [];
   const visit = (node) => {
+    if (!system && ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && /^d3-(scale|shape)$/.test(node.moduleSpecifier.text)) add(node, "raw-chart", node.moduleSpecifier.text);
+    if (!system && (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node))) {
+      const tag = node.tagName.getText(sf);
+      if (tag === "button" || tag === "motion.button") buttons.push(node);
+      if (tag === "Button") {
+        const v = node.attributes.properties.find((a) => ts.isJsxAttribute(a) && a.name.getText(sf) === "variant");
+        if (v && v.initializer && ts.isStringLiteral(v.initializer) && v.initializer.text === "primary") primaries.push(node);
+      }
+    }
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node) || ts.isJsxText(node)) {
       if (!inType(node) && !isDirective(node)) {
         const s = node.text;
@@ -232,6 +263,8 @@ function lintTs(file, text, tokenFile, inDs) {
     ts.forEachChild(node, visit);
   };
   visit(sf);
+  for (const n of primaries.slice(1)) add(n, "one-primary", `${primaries.length} in this file`);
+  if (buttons.length) add(buttons[0], "raw-button", `${buttons.length} in this file`);
   if (!inDs && /@keyframes/.test(text)) {
     const line = lineOf(text, text.indexOf("@keyframes"));
     out.push({ file, line, rule: "motion", message: `${RULES.motion} (@keyframes)` });
@@ -251,6 +284,7 @@ export function lintSource(file, text) {
     const ok = allow.get(x.line);
     if (!(ok && ok.has(x.rule))) out.push(x);
   }
+  for (const x of out) if (WARN_RULES.has(x.rule)) x.level = "warn";
   return out.sort((a, b) => a.line - b.line);
 }
 
@@ -276,18 +310,28 @@ export function scopeFiles(root) {
   return [...walk(join(root, "src", "nx")), ...app];
 }
 
-export function lintRoot(root) {
+/** Every finding, warnings included (each carries `level: "warn"`). */
+export function lintAll(root) {
   return scopeFiles(root).flatMap((p) => lintSource(relative(root, p), readFileSync(p, "utf8")));
+}
+
+/** The findings that fail the run. */
+export function lintRoot(root) {
+  return lintAll(root).filter((x) => x.level !== "warn");
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
   const files = scopeFiles(root);
-  const found = lintRoot(root);
+  const all = lintAll(root);
+  const found = all.filter((x) => x.level !== "warn");
+  const warned = all.filter((x) => x.level === "warn");
   for (const x of found) console.log(`${x.file}:${x.line}  ${x.rule}  ${x.message}`);
+  if (process.argv.includes("--warnings")) for (const x of warned) console.log(`${x.file}:${x.line}  warning  ${x.rule}  ${x.message}`);
   if (found.length) {
-    console.error(`\nlint:design: ${found.length} problem${found.length === 1 ? "" : "s"} in ${new Set(found.map((x) => x.file)).size} file(s) of ${files.length}. Rules: docs/coastwatch/v12/design-system/README.md section 3.`);
+    console.error(`\nlint:design: ${found.length} problem${found.length === 1 ? "" : "s"} in ${new Set(found.map((x) => x.file)).size} file(s) of ${files.length}. Rules: docs/coastwatch/v12/design-system/README.md section 3 and v13 section 10.`);
     process.exit(1);
   }
-  console.log(`lint:design: ${files.length} files clean.`);
+  const byRule = [...new Set(warned.map((x) => x.rule))].map((r) => `${r} ${warned.filter((x) => x.rule === r).length}`).join(", ");
+  console.log(`lint:design: ${files.length} files clean.${warned.length ? ` ${warned.length} warning${warned.length === 1 ? "" : "s"} (${byRule}); list them with --warnings.` : ""}`);
 }

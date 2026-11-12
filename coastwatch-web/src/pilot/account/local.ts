@@ -1,6 +1,7 @@
 import { PILOT_PORTS, type FisheryId } from "@/pilot/contracts";
 import { LEGACY_HOME_KEY, LEGACY_TODAY_FISHERIES_KEY, LEGACY_TODAY_PLACE_KEY, PORT_KEY, isPortKey, readPortRecord, resetPortMemory, updatePortRecord, type PortRecord } from "@/lib/portRecord";
 import { TRIGGERS, type AlertTrigger } from "@/pilot/alerts/diff";
+import { forgetEverything, forgetStorage, type Forgotten } from "@/nx/personal/forget";
 import { readJSON, removeKeys, writeJSON } from "./storage";
 
 /**
@@ -162,8 +163,16 @@ export function placeLabel(id: string): string {
   return PILOT_PORTS.find((p) => p.place_id === id)?.label ?? id;
 }
 
-/** Forget everything this feature kept on this device (account, inbox, snapshots, feedback, trips). */
-export function forgetDevice(): void {
-  resetPortMemory();
+/**
+ * "Delete everything on this device": every key Neritic keeps in this browser's storage, and every page and
+ * file saved for offline use (src/nx/personal/forget.ts; the registry of what each key holds is keys.ts).
+ * The storage is cleared before this returns; the saved-for-offline caches follow, and the promise says what
+ * went. A signed-in account's session is left (signing out ends it), as is the app's own code cache.
+ */
+export function forgetDevice(): Promise<Forgotten> {
+  forgetStorage();
+  // the pilot's own keys again by name: clears what a blocked browser was holding in memory, and tells its pages
   removeKeys([ACCOUNT_KEY, "nrt-pilot-inbox-v1", "nrt-pilot-alert-snap-v1", "nrt-pilot-feedback-v1", "nrt-pilot-trips-v1", PORT_KEY, LEGACY_HOME_KEY, LEGACY_TODAY_PLACE_KEY, LEGACY_TODAY_FISHERIES_KEY]);
+  resetPortMemory();
+  return forgetEverything();
 }

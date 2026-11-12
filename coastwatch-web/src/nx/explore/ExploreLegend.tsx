@@ -2,7 +2,7 @@
 
 import { RampLegend } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreProduct } from "./model";
-import { CHL_DOMAIN, CHL_STEPS, CHL_TICKS, currentsCaption, legendCaption, PROB_STEPS } from "./words";
+import { CHL_DOMAIN, CHL_STEPS, CHL_TICKS, currentsCaption, legendCaption, OUTSIDE_KEY, PROB_STEPS } from "./words";
 import s from "./explore.module.css";
 
 /**
@@ -20,6 +20,23 @@ function HatchSwatch({ spacing, past }: { spacing: number; past?: boolean }) {
       <rect x="0.5" y="0.5" width="39" height="15" className={s.swatchFrame} />
       <g className={past ? s.swatchHatchPast : s.swatchHatch}>{lines}</g>
     </svg>
+  );
+}
+
+/** The key for water a model or an outlook has no cell for: level rules, as the chart draws it (FieldLayer outsideModel). */
+function OutsideKey() {
+  return (
+    <li data-testid="nx-key-outside">
+      <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+        <rect x="0.5" y="0.5" width="39" height="15" className={s.swatchFrame} />
+        <g className={s.swatchRule}>
+          {[4, 8, 12].map((y) => (
+            <line key={y} x1={0} y1={y} x2={40} y2={y} />
+          ))}
+        </g>
+      </svg>
+      <span>{OUTSIDE_KEY}</span>
+    </li>
   );
 }
 
@@ -44,6 +61,7 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
             </svg>
             <span>No signal</span>
           </li>
+          <OutsideKey />
         </ul>
         <p className={s.caption}>{caption}</p>
       </>
@@ -68,6 +86,7 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
             <HatchSwatch spacing={8} past={product.pastRun} />
             <span>Hatched: a model{product.pastRun ? ", past run drawn lighter" : ""}</span>
           </li>
+          <OutsideKey />
         </ul>
         <p className={s.caption}>{caption}</p>
       </>

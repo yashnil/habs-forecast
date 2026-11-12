@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, day, fixed, latLon, pct, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { openMargin } from "@/nx/shell/Margin";
@@ -24,11 +24,11 @@ import { EXPLORE_ZOOM, exploreBounds, extentBounds } from "./camera";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
-import { compassWord, isothermLabels, KNOTS, nearestCurrent, type IsoLabel, nearestStation, pixelDate, readPoint, researchHref, transect, type NearestCurrent, type TransectPoint } from "./read";
-import { nextOf, playFrames, playHours } from "./timeline";
+import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isothermLabels, KNOTS, NEARBY_KM, nearestCurrent, type CellGeometry, type GapPosition, type IsoLabel, pixelDate, readPoint, researchHref, RESEARCH_VAR, stationFor, transect, type TransectPoint } from "./read";
+import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, currentsByDefault, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, oldMark } from "./words";
+import { aboutWords, CHL_DOMAIN, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
@@ -63,7 +63,24 @@ type Reading =
   | { status: "loading" }
   | { status: "outside" }
   | { status: "error" }
-  | { status: "ready"; value: number | null; typical: number | null; cellLat: number; cellLon: number; pixel: string | null; transect: TransectPoint[]; current: NearestCurrent; station: ReturnType<typeof nearestStation> };
+  | {
+      status: "ready";
+      /** the tap this reading answers (a new tap starts over; a new frame at the same tap updates in place) */
+      at: { lat: number; lon: number };
+      /** the layer and the frame the value was read from */
+      product: ProductId;
+      frame: string;
+      value: number | null;
+      typical: number | null;
+      /** the cell that was read: its centre, size and outline (what the value stands for) */
+      cell: CellGeometry;
+      /** where a cell without a value sits in its layer's grid */
+      gap: GapPosition | null;
+      pixel: string | null;
+      transect: TransectPoint[];
+      /** the next frame's value is being read: the last one stays, dimmed (no "Reading…" flash while playing) */
+      updating: boolean;
+    };
 
 /** URL state: ?layer=chl&frame=olci:latest&cur=0&hour=<id>&at=36.80,-121.95 (with the shell's place). */
 function readUrl(model: ExploreModel, sp: URLSearchParams) {
@@ -109,6 +126,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const fieldRef = useRef<FieldController | null>(null);
   const flowRef = useRef<FlowController | null>(null);
   const [field, setField] = useState<CurrentField | null>(null);
+  // "ready" with `cells` 0 is an hour the radar published with no measurement in it
+  const [fieldState, setFieldState] = useState<{ status: "idle" | "loading" | "failed" } | { status: "ready"; cells: number }>({ status: "idle" });
   const [isoLabels, setIsoLabels] = useState<IsoLabel[]>([]);
   const readoutRef = useRef<HTMLDivElement>(null);
 
@@ -182,35 +201,62 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
   }, [map, product, frame, model.baseUrl]);
 
-  // currents: the hour's field (and how steadily each cell was measured across the published hours)
+  // currents: the hour's field, read only while streaks are asked for (never on a still picture, never with the
+  // switch off); a failure is a state the switch and the legend say, never streaks promised and not drawn
   useEffect(() => {
-    // the static tier draws no streaks and reads no point, so it never fetches the hour's vectors
-    if (!current || !tier || tier === "static") return setField(null);
+    if (!current || !streaks) {
+      setField(null);
+      setFieldState({ status: "idle" });
+      return;
+    }
     let live = true;
+    setFieldState({ status: "loading" });
     loadCurrent(model.baseUrl, current)
-      .then((f) => live && setField(f))
-      .catch(() => live && setField(null));
+      .then((f) => {
+        if (!live) return;
+        let cells = 0;
+        for (let i = 0; i < f.u.length; i++) if (Number.isFinite(f.u[i]) && Number.isFinite(f.v[i])) cells++;
+        setField(f);
+        setFieldState({ status: "ready", cells });
+      })
+      .catch(() => {
+        if (!live) return;
+        setField(null);
+        setFieldState({ status: "failed" });
+      });
     return () => {
       live = false;
     };
-  }, [current, model.baseUrl, tier]);
+  }, [current, model.baseUrl, streaks]);
 
+  // how steadily each cell was measured: a few hours around the one on show, read one after another once the
+  // streaks are drawn (never every published hour at once)
   const [quality, setQuality] = useState<Float32Array | null>(null);
+  const fieldReady = fieldState.status === "ready";
   useEffect(() => {
-    if (!currentsOn || !model.currents || quality || !tier || tier === "static") return;
+    if (!streaks || !model.currents || quality || !fieldReady) return;
     let live = true;
-    const hours = model.currents.frames.filter((f) => !f.mean);
-    Promise.all(hours.map((h) => loadCodes(model.baseUrl, h.u).then((c) => Uint8Array.from(c.codes, (x) => (x === h.u.nodata ? 0 : 1)))))
-      .then((masks) => live && setQuality(persistence(masks, masks[0]?.length ?? 0)))
-      .catch(() => undefined);
+    (async () => {
+      const masks: Uint8Array[] = [];
+      for (const h of qualityHours(model.currents!.frames, hourId)) {
+        const c = await loadCodes(model.baseUrl, h.u);
+        if (!live) return;
+        masks.push(Uint8Array.from(c.codes, (x) => (x === h.u.nodata ? 0 : 1)));
+      }
+      if (live && masks.length) setQuality(persistence(masks, masks[0].length));
+    })().catch(() => undefined);
     return () => {
       live = false;
     };
-  }, [currentsOn, model, quality, tier]);
+    // the hours are chosen around the hour on show when the streaks first draw; a later hour keeps the mask
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streaks, model, quality, fieldReady]);
 
   // an hour past the radar's current limit is drawn still and labelled "(old)", never animated as if live (T17)
   const currentOld = !!current && isOld(current.fresh);
-  const flowState = useMemo(() => ({ still: reduce || currentOld, paused: false }), [reduce, currentOld]);
+  // and the 24 h mean is not one moment of the water: drawn still too (lead decision 7)
+  const drawnStill = !!current && currentsStill(current);
+  const flowState = useMemo(() => ({ still: reduce || drawnStill, paused: false }), [reduce, drawnStill]);
   // the streak layer is added once while currents are on; a new hour swaps its field (a cut)
   useEffect(() => {
     if (!map || !streaks || !tier) return;
@@ -269,7 +315,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   useEffect(() => {
     if (!at || !frame?.grid) return setReading(null);
     let live = true;
-    setReading({ status: "loading" });
+    // the same tap on a new frame (playback, a layer change): the last value stays, dimmed, until the next arrives
+    setReading((prev) => (prev?.status === "ready" && prev.at === at && prev.product === frame.product ? { ...prev, updating: true } : { status: "loading" }));
     const g = frame.grid;
     const box = boxAround(at.lon, at.lat, 0.6, 0.05);
     (async () => {
@@ -287,14 +334,28 @@ export function Explore({ model }: { model: ExploreModel }) {
         const t = await loadCodes(model.baseUrl, frame.typicalGrid);
         typical = readPoint(frame.typicalGrid, t.codes, at.lat, at.lon)?.value ?? null;
       }
-      const cur = field && streaks ? nearestCurrent(field.g as unknown as GridSpec, field.u, field.v, at.lat, at.lon) : null;
       if (!live) return;
-      setReading({ status: "ready", value: pt.value, typical, cellLat: pt.lat, cellLon: pt.lon, pixel, transect: transect(g, c.codes, at.lat, at.lon), current: cur, station: nearestStation(model.stations, at.lat, at.lon) });
+      setReading({
+        status: "ready",
+        at,
+        product: frame.product,
+        frame: frame.id,
+        value: pt.value,
+        typical,
+        cell: cellGeometry(g, pt.row, pt.col),
+        gap: pt.value === null && frame.kind !== "measured" ? gapPosition(g, c.codes, pt.row, pt.col) : null,
+        pixel,
+        transect: transect(g, c.codes, at.lat, at.lon),
+        updating: false,
+      });
     })().catch(() => live && setReading({ status: "error" }));
     return () => {
       live = false;
     };
-  }, [at, frame, model, field, streaks]);
+  }, [at, frame, model]);
+
+  // the nearest measured current to the tapped point, from the hour already on the chart (no second read)
+  const nearCurrent = useMemo(() => (at && field && streaks ? nearestCurrent(field.g as unknown as GridSpec, field.u, field.v, at.lat, at.lon) : null), [at, field, streaks]);
 
   // a reading arrives: on a phone the sheet rises to half (the tapped point stays in view above it), then the
   // readout scrolls into view wherever the margin is
@@ -343,8 +404,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   // the e2e hook: what is drawn, read from the page
   useEffect(() => {
-    (window as Win).__nxExplore = { ...(window as Win).__nxExplore, product: productId, frame: frameId, hour: streaks ? hourId : null, at };
-  }, [productId, frameId, hourId, streaks, at]);
+    (window as Win).__nxExplore = { ...(window as Win).__nxExplore, product: productId, frame: frameId, hour: streaks ? hourId : null, at, cell: reading?.status === "ready" ? reading.cell : null };
+  }, [productId, frameId, hourId, streaks, at, reading]);
 
   const extent = model.extent;
   const scene = useMemo(
@@ -372,8 +433,9 @@ export function Explore({ model }: { model: ExploreModel }) {
   const r = reading;
   const pt = at;
   const nowIso = model.now;
-  const valueWords = (v: number) => (product.id === "chl" ? sig(v, 2) : product.id === "outlook" ? aboutWords(v).replace("about ", "") : product.id === "charm" ? pct(v * 100).replace(" %", "") : fixed(v * 1.8 + 32, 1));
-  const unit = product.id === "charm" ? "%" : product.id === "sst" ? "°F" : "mg/m³";
+  const unit = unitOf(product.id);
+  const fmt = (v: number) => valueWords(product.id, v);
+  const currentsState: CurrentsState = !currentsOn ? "off" : overModel ? "over-model" : tier === "static" ? "static" : fieldState.status === "failed" ? "failed" : fieldState.status === "ready" ? (fieldState.cells ? "on" : "empty") : "loading";
 
   let readout = null;
   if (pt && r) {
@@ -384,24 +446,31 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
     if (r.status === "loading") readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="loading" message={`Reading ${LAYER_LABEL[product.id].toLowerCase()} at this point…`} onClose={onClose} />;
     else if (r.status === "error") readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="error" message="This point couldn't be read. Check the connection and tap again." onClose={onClose} />;
-    else if (r.status === "outside") readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="noview" message={`Outside this layer's area: ${frame.sensor} has no cells here. No value is not a low value.`} onClose={onClose} />;
+    else if (r.status === "outside")
+      readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="noview" message={frame.kind === "measured" ? `Outside this layer's area: ${frame.sensor} has no cells here. No value is not a low value.` : noValueWords(product, "outside-grid")} onClose={onClose} />;
     else {
-      const date = r.pixel ?? frame.end;
+      // while the next frame is being read, the value on show still belongs to the frame it was read from
+      const rf = product.frames.find((f) => f.id === r.frame) ?? frame;
+      // the record's window ends on the reading's own day; the stamp says what that day is (words.ts readingStamp)
+      const date = r.pixel ?? rf.end;
+      const stamp = readingStamp(rf, r.pixel);
       const noSignal = product.id === "outlook" && r.value !== null && r.typical !== null && Math.abs(Math.log10(r.value) - Math.log10(r.typical)) < 0.002;
       const prov: Provenance = {
-        kind: frame.kind === "outlook" ? "outlook" : frame.kind,
+        kind: rf.kind === "outlook" ? "outlook" : rf.kind,
         title: LAYER_LABEL[product.id],
-        value: r.value !== null ? `${valueWords(r.value)} ${unit}` : undefined,
-        source: frame.sensor,
+        value: r.value !== null ? `${fmt(r.value)} ${unit}` : undefined,
+        source: stamp.source,
         sourceUrl: product.sourceUrl ?? undefined,
-        date,
-        dateRole: frame.kind === "measured" ? "measured" : frame.kind === "model" ? "valid" : undefined,
-        place: latLon(r.cellLat, r.cellLon),
-        stale: frame.fresh === "stale" || frame.fresh === "historical",
+        date: stamp.date,
+        dateRole: stamp.dateRole,
+        // the cell that was read, not the tap
+        place: latLon(r.cell.lat, r.cell.lon),
+        resolution: `one ${cellSizeWords(r.cell)} cell`,
+        stale: rf.fresh === "stale" || rf.fresh === "historical",
       };
-      const cur = r.current;
+      const cur = nearCurrent;
       const curLine =
-        streaks && current
+        streaks && current && fieldState.status === "ready"
           ? cur
             ? `Nearest measured current ${cur.km < 1 ? "here" : `${sig(cur.km, 2)} km away`}: ${sig(cur.speed * KNOTS, 2)} kt toward the ${compassWord(cur.dirTo)} (HF radar, ${current.mean ? current.label : current.stamp}${oldMark(current.fresh)}).`
             : `No measured current within 6 km in ${current.mean ? "the 24 h mean" : "this hour"}.`
@@ -410,18 +479,35 @@ export function Explore({ model }: { model: ExploreModel }) {
         product.id === "chl"
           ? `Algae, not toxin.${r.pixel ? ` This pixel was seen ${day(r.pixel)}, ${age(r.pixel, nowIso)}.` : ""}`
           : product.id === "sst"
-            ? `${r.value !== null ? `${fixed(r.value, 1)} °C. ` : ""}${frame.kind === "analysis" ? "An analysis blended from satellites and buoys, not a measurement at this point." : ""}`
+            ? `${r.value !== null ? `${fixed(r.value, 1)} °C. ` : ""}${rf.kind === "analysis" ? "An analysis blended from satellites and buoys, not a measurement at this point." : ""}`
             : product.id === "charm"
-              ? `Probability of conditions in the water, not toxin in seafood.${frame.past ? ` Past run: valid ${day(frame.end)}, before today.` : ""}`
+              ? `Probability of conditions in the water, not toxin in seafood.${rf.past ? ` Past run: valid ${day(rf.end)}, before today.` : ""}`
               : noSignal
                 ? `No signal: here the outlook equals the usual for this time of year (${aboutWords(r.typical!)} mg/m³); there was no recent view to start from.`
                 : "Typical error about a factor of 2. Read as higher or lower than usual, not as a value. Algae, not toxin.";
-      const st = r.station;
-      const action = st ? (
-        <Link className={s.recordLink} href={researchHref({ station: st.id, to: date, product: product.id, place: key })} data-testid="nx-record-link">
-          See the record nearby: {st.name}, {sig(st.km, 2)} km
-        </Link>
-      ) : null;
+      // a "nearby" record is within 25 km and measures the variable; a farther one is named with its distance
+      const choice = stationFor(model.stations, r.cell.lat, r.cell.lon, RESEARCH_VAR[product.id]);
+      const action = (
+        <span className={s.actions}>
+          {choice.link ? (
+            <Link className={s.recordLink} href={researchHref({ station: choice.link.id, to: date, product: product.id, place: key })} data-testid="nx-record-link">
+              See the record nearby: {choice.link.name}, {sig(choice.link.km, 2)} km
+            </Link>
+          ) : choice.far ? (
+            <span data-testid="nx-record-none">
+              No station within {NEARBY_KM} km measures this.{" "}
+              <Link className={s.recordLink} href={researchHref({ station: choice.far.id, to: date, product: product.id, place: key })} data-testid="nx-record-far">
+                The nearest that does: {choice.far.name}, {sig(choice.far.km, 2)} km away
+              </Link>
+            </span>
+          ) : (
+            <span data-testid="nx-record-none">No monitoring station measures this.</span>
+          )}
+          <Link className={s.recordLink} href={coastHref({ place: key, lat: r.cell.lat, lon: r.cell.lon, date })} data-testid="nx-coast-link">
+            Use this place in My Coast
+          </Link>
+        </span>
+      );
       const xs = r.transect;
       const tr =
         xs.length > 2 ? (
@@ -430,8 +516,8 @@ export function Explore({ model }: { model: ExploreModel }) {
             unit={unit}
             scale={product.id === "chl" || product.id === "outlook" ? "log" : "linear"}
             label={`Along ${latLon(pt.lat, pt.lon).split(",")[0]}, west to east`}
-            observed={frame.kind === "measured"}
-            format={(v) => valueWords(v)}
+            observed={rf.kind === "measured"}
+            format={fmt}
             onHover={setHover}
             hoverKm={hover?.km ?? null}
           />
@@ -440,10 +526,10 @@ export function Explore({ model }: { model: ExploreModel }) {
         r.value === null ? (
           <Readout
             title={title}
-            lat={pt.lat}
-            lon={pt.lon}
+            lat={r.cell.lat}
+            lon={r.cell.lon}
             state="noview"
-            message={frame.kind === "measured" ? `No view here (${frame.label === "Latest" ? `latest view, ${frame.stamp}` : frame.stamp}): cloud, fog or no pass. No value is not a low value.` : `Outside the model's area here (it leaves out the nearshore band and the bays). No value is not a low value.`}
+            message={rf.kind === "measured" ? `No view here (${rf.label === "Latest" ? `latest view, ${rf.stamp}` : rf.stamp}): cloud, fog or no pass. No value is not a low value.` : noValueWords(product, r.gap ?? "inside")}
             onClose={onClose}
           >
             {tr}
@@ -451,10 +537,10 @@ export function Explore({ model }: { model: ExploreModel }) {
         ) : (
           <Readout
             title={title}
-            lat={pt.lat}
-            lon={pt.lon}
+            lat={r.cell.lat}
+            lon={r.cell.lon}
             state="value"
-            value={noSignal ? "No signal" : product.id === "outlook" ? aboutWords(r.value) : valueWords(r.value)}
+            value={noSignal ? "No signal" : product.id === "outlook" ? aboutWords(r.value) : fmt(r.value)}
             unit={noSignal ? undefined : unit}
             provenance={prov}
             now={nowIso}
@@ -485,7 +571,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       <p className={s.lead} data-testid="nx-explore-lead">
         {leadSentence(product, frame)}
       </p>
-      <ExploreLegend product={product} frame={frame} currents={streaks ? current : null} />
+      <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
       {tier === "static" && frame?.grid && product.id !== "sst" ? (
         <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
       ) : null}
@@ -506,10 +592,17 @@ export function Explore({ model }: { model: ExploreModel }) {
             <small>{p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
           </button>
         ))}
+        {/* a layer this data run does not hold stays in the switch, disabled, with the reason (never dropped silently) */}
+        {model.missing.map((m) => (
+          <button key={m.id} type="button" role="radio" aria-checked={false} disabled className={s.switchItem} data-missing="1" data-testid={`nx-layer-${m.id}`}>
+            <span>{m.label}</span>
+            <small>{m.why.toLowerCase()}</small>
+          </button>
+        ))}
         {model.currents ? (
           <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
             <span>Currents</span>
-            <small>{!currentsOn ? "off" : overModel ? "not over a model" : tier === "static" ? "not on a still picture" : `on, measured${current ? oldMark(current.fresh) : ""}`}</small>
+            <small data-state={currentsState}>{currentsToggleWords(currentsState, current)}</small>
           </button>
         ) : null}
       </div>
@@ -526,7 +619,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         canPlay={canPlay}
         onPlay={() => setPlaying((p) => !p)}
       />
-      <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout">
+      <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
         {readout ?? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p>}
       </div>
     </section>

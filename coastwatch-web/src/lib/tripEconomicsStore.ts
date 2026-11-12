@@ -41,12 +41,26 @@ export type Draft = {
   baitUsdPerPot: number | null;
   /** where each value came from: "preset" (its source), "cdfw" / "eia" (a reference copied in), else the user's own */
   basis: Record<string, "preset" | "cdfw" | "eia">;
+  /** how the worksheet was being filled in, where the inputs alone cannot say (absent = the defaults) */
+  view?: DraftView;
 };
+
+/**
+ * What the calculator's inputs cannot carry. The crew share is always stored as the crew's total; `shareBasis`
+ * "each" only says the reader typed it per person. `payerUnset` lists the cost lines whose payer (shared off
+ * the top, or the boat) has not been chosen: the stored `shared` flag of those lines means nothing yet.
+ */
+export type DraftView = { shareBasis?: "each"; fuelRoute?: "distance"; payerUnset?: number[] };
+
+/** The longest name a saved trip keeps. */
+export const MAX_NAME = 90;
 
 export type BaseRecord = { schema: number; id: string; createdAt: string; updatedAt: string };
 export type ScenarioRecord = BaseRecord & { name: string; placeKey: string; species: string; draft: Draft; refs: RefSnapshot[] };
 export type VesselRecord = BaseRecord & { name: string; cruiseKt: number | null; steamGph: number | null; fishingGph: number | null; crew: number | null; pots: number | null };
-export type Meta = { schema: number; unit: Unit; drafts: Record<string, { draft: Draft; updatedAt: string }> };
+/** `openId`: the saved trip the working draft was opened from, so saving after a reload updates it instead of adding a copy. */
+export type WorkingDraft = { draft: Draft; updatedAt: string; openId?: string };
+export type Meta = { schema: number; unit: Unit; drafts: Record<string, WorkingDraft> };
 
 export type StoreStatus = {
   available: boolean;
@@ -114,13 +128,27 @@ export function sanitizeDraft(v: unknown, schema: number = SCHEMA): Draft {
   const inputs = sanitizeInputs(raw as Parameters<typeof sanitizeInputs>[0]);
   const kind = storedCrewKind(raw.crew, schema);
   const anglers = clampNum(raw.anglers, "people");
+  const view = sanitizeView(d.view, inputs.costs?.length ?? 0);
   return {
     preset,
     inputs: unchosenFuelShare({ ...inputs, crew: { ...inputs.crew, kind, ...(kind === "none" ? { pct: null } : {}) }, ...(anglers !== null ? { anglers } : {}) }, raw.fuelShared),
     pots: clampNum(d.pots, "pots"),
     baitUsdPerPot: clampNum(d.baitUsdPerPot, "usdPerDay"),
     basis,
+    ...(view ? { view } : {}),
   };
+}
+
+function sanitizeView(v: unknown, costLines: number): DraftView | null {
+  if (!isObj(v)) return null;
+  const out: DraftView = {};
+  if (v.shareBasis === "each") out.shareBasis = "each";
+  if (v.fuelRoute === "distance") out.fuelRoute = "distance";
+  if (Array.isArray(v.payerUnset)) {
+    const idx = [...new Set(v.payerUnset.filter((n): n is number => Number.isInteger(n) && n >= 0 && n < costLines))].sort((a, b) => a - b);
+    if (idx.length) out.payerUnset = idx;
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 function sanitizeRefs(v: unknown): RefSnapshot[] {
@@ -151,7 +179,7 @@ export function migrateRecord(v: unknown, kind: "scenario" | "vessel", now: stri
   // schema 0 kept the inputs at the top level as `inputs`, without a draft wrapper
   const draftSrc = isObj(v.draft) ? v.draft : schema === 0 && isObj(v.inputs) ? { inputs: v.inputs, preset: v.preset } : null;
   if (!draftSrc) return null;
-  return { ...base, name: str(v.name, 60) || "Scenario", placeKey: str(v.placeKey, 60), species: str(v.species, 30), draft: sanitizeDraft(draftSrc, schema), refs: sanitizeRefs(v.refs) };
+  return { ...base, name: str(v.name, MAX_NAME) || "Scenario", placeKey: str(v.placeKey, 60), species: str(v.species, 30), draft: sanitizeDraft(draftSrc, schema), refs: sanitizeRefs(v.refs) };
 }
 
 // ---------------------------------------------------------------- the store
@@ -178,6 +206,15 @@ export function defaultMeta(): Meta {
 }
 
 export type TripStore = ReturnType<typeof createTripStore>;
+
+/** "Name (copy)", then "Name (copy 2)", …: never a name already in the list. */
+export function copyName(name: string, taken: readonly string[]): string {
+  const base = name.replace(/ \(copy(?: \d+)?\)$/, "");
+  const fit = (suffix: string) => `${base.slice(0, MAX_NAME - suffix.length)}${suffix}`;
+  let out = fit(" (copy)");
+  for (let n = 2; taken.includes(out) && n < 100; n++) out = fit(` (copy ${n})`);
+  return out;
+}
 
 export function createTripStore(kv: KV | null, clock: () => Date = () => new Date()) {
   const nowIso = () => clock().toISOString();
@@ -223,7 +260,7 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
         const drafts: Meta["drafts"] = {};
         if (isObj(rm.parsed.drafts)) {
           for (const [k, v] of Object.entries(rm.parsed.drafts).slice(0, MAX_DRAFTS)) {
-            if (isObj(v)) drafts[k.slice(0, 100)] = { draft: sanitizeDraft(v.draft, schema), updatedAt: iso(v.updatedAt, now) };
+            if (isObj(v)) drafts[k.slice(0, 100)] = { draft: sanitizeDraft(v.draft, schema), updatedAt: iso(v.updatedAt, now), ...(typeof v.openId === "string" && v.openId ? { openId: v.openId.slice(0, 40) } : {}) };
           }
         }
         out.meta = { schema: SCHEMA, unit: rm.parsed.unit === "kg" ? "kg" : "lb", drafts };
@@ -278,7 +315,7 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
         id: existing?.id ?? newId("s"),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
-        name: input.name.trim().slice(0, 60) || "Scenario",
+        name: input.name.trim().slice(0, MAX_NAME) || "Scenario",
         placeKey: input.placeKey,
         species: input.species,
         draft: sanitizeDraft(input.draft),
@@ -296,9 +333,21 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
       if (!src) return { ok: false, reason: "unavailable" };
       if (d.scenarios.length >= MAX_SCENARIOS) return { ok: false, reason: "full" };
       const now = nowIso();
-      const rec: ScenarioRecord = { ...src, id: newId("s"), name: `${src.name} (copy)`.slice(0, 60), createdAt: now, updatedAt: now };
+      const rec: ScenarioRecord = { ...src, id: newId("s"), name: copyName(src.name, d.scenarios.map((s) => s.name)), createdAt: now, updatedAt: now };
       const r = putScenarios([rec, ...d.scenarios]);
       return r.ok ? { ok: true, id: rec.id } : r;
+    },
+
+    /** Put back a trip that was just deleted, exactly as it was (its id, name and times). Does nothing if it is already there. */
+    restoreScenario(rec: ScenarioRecord): WriteResult {
+      const d = load();
+      const g = guard(d);
+      if (g) return g;
+      if (d.scenarios.some((s) => s.id === rec.id)) return { ok: true };
+      if (d.scenarios.length >= MAX_SCENARIOS) return { ok: false, reason: "full" };
+      const back = migrateRecord(rec, "scenario", nowIso());
+      if (!back || back === "newer") return { ok: false, reason: "unavailable" };
+      return putScenarios([...d.scenarios, back as ScenarioRecord]);
     },
 
     renameScenario(id: string, name: string): WriteResult {
@@ -306,7 +355,7 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
       const g = guard(d);
       if (g) return g;
       const now = nowIso();
-      return putScenarios(d.scenarios.map((s) => (s.id === id ? { ...s, name: name.trim().slice(0, 60) || s.name, updatedAt: now } : s)));
+      return putScenarios(d.scenarios.map((s) => (s.id === id ? { ...s, name: name.trim().slice(0, MAX_NAME) || s.name, updatedAt: now } : s)));
     },
 
     deleteScenario(id: string): WriteResult {
@@ -336,15 +385,26 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
     },
 
     /** The working draft for a place and species (autosaved as it is edited). */
-    saveDraft(key: string, draft: Draft): WriteResult {
+    saveDraft(key: string, draft: Draft, openId?: string | null): WriteResult {
       const d = load();
       const g = guard(d);
       if (g) return g;
       const now = nowIso();
-      const entries = Object.entries({ ...d.meta.drafts, [key]: { draft: sanitizeDraft(draft), updatedAt: now } })
+      const entries = Object.entries({ ...d.meta.drafts, [key]: { draft: sanitizeDraft(draft), updatedAt: now, ...(openId ? { openId } : {}) } })
         .sort((a, b) => b[1].updatedAt.localeCompare(a[1].updatedAt))
         .slice(0, MAX_DRAFTS);
       return write("meta", { ...d.meta, drafts: Object.fromEntries(entries) });
+    },
+
+    /** Forget the working draft for a place and fishery (Clear). */
+    clearDraft(key: string): WriteResult {
+      const d = load();
+      const g = guard(d);
+      if (g) return g;
+      if (!(key in d.meta.drafts)) return { ok: true };
+      const { [key]: _gone, ...rest } = d.meta.drafts;
+      void _gone;
+      return write("meta", { ...d.meta, drafts: rest });
     },
 
     setUnit(unit: Unit): WriteResult {
@@ -449,6 +509,8 @@ export function encodeShare(d: Draft): string {
     // "" = how crew is paid is not chosen yet
     m: [i.crew?.kind ?? "", n(i.crew?.pct), n(i.crew?.crew), n(i.crew?.usdPerDay), n(i.crew?.days)],
     ...(i.anglers != null ? { a: n(i.anglers) } : {}),
+    // how it was filled in (per-person share, distance route, payers not chosen): still numbers and flags only
+    ...(d.view ? { w: [d.view.shareBasis === "each" ? 1 : 0, d.view.fuelRoute === "distance" ? 1 : 0, d.view.payerUnset ?? []] } : {}),
   };
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   let bin = "";
@@ -486,6 +548,7 @@ export function decodeShare(s: string): Draft | null {
         crew: { kind: m[0], pct: m[1], crew: m[2], usdPerDay: m[3], days: m[4] },
         anglers: p.a,
       },
+      ...(Array.isArray(p.w) ? { view: { shareBasis: p.w[0] === 1 ? "each" : undefined, fuelRoute: p.w[1] === 1 ? "distance" : undefined, payerUnset: p.w[2] } } : {}),
     }, SCHEMA);
   } catch {
     return null;

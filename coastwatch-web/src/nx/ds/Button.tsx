@@ -8,7 +8,9 @@ import { Icon, type IconName } from "./Icon";
 import { cx } from "./util";
 import s from "./Button.module.css";
 
-export type ButtonVariant = "primary" | "secondary" | "text";
+/** `text` is the v12 name for `quiet` and is kept as an alias. */
+export type ButtonVariant = "primary" | "secondary" | "quiet" | "text";
+export type ButtonSize = "m" | "l";
 
 /** `data-*` attributes pass through to the element (test ids, tour anchors). */
 type DataAttributes = { [key: `data-${string}`]: string | number | boolean | undefined };
@@ -16,7 +18,11 @@ type DataAttributes = { [key: `data-${string}`]: string | number | boolean | und
 interface Common extends AriaAttributes, DataAttributes {
   variant?: ButtonVariant;
   children: ReactNode;
+  /** m: 48 px (default); l: 56 px, for the one action a view leads with. */
+  size?: ButtonSize;
   icon?: IconName;
+  /** An icon after the words (a chevron for "opens below", share for "leaves the page"). */
+  iconEnd?: IconName;
   /** Disabled stays focusable (aria-disabled) so its reason can be read. */
   disabled?: boolean;
   /** Busy: the label becomes `busyLabel` (worded, never a spinner alone). */
@@ -35,18 +41,21 @@ export type ButtonProps = AsButton | AsLink;
 const MotionLink = motion.create(Link);
 
 /**
- * Three kinds and no more: primary (ink, one per view), secondary (ruled), text (an underlined link).
- * Every control presses with the `press` preset.
+ * Three kinds and no more: primary (ink, one per view), secondary (ruled; hover is a wash and a heavier foot
+ * rule, never an inversion), quiet (an underlined link). Two sizes, 48 and 56 px. Every control presses with
+ * the `press` preset.
  */
 export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(function Button(props, ref) {
-  const { variant = "secondary", children, icon, disabled, busy, busyLabel, full, className } = props;
+  const { variant: asked = "secondary", size = "m", children, icon, iconEnd, disabled, busy, busyLabel, full, className } = props;
+  const variant = asked === "text" ? "quiet" : asked;
   const reduce = useReducedMotion();
   const inert = disabled || busy;
-  const cls = cx(s.btn, s[variant], full && s.full, className);
+  const cls = cx(s.btn, s[variant], size === "l" && s.large, full && s.full, className);
   const body = (
     <>
-      {icon && variant !== "text" ? <Icon name={icon} size={20} /> : null}
+      {icon && variant !== "quiet" ? <Icon name={icon} size={20} /> : null}
       <span>{busy && busyLabel ? busyLabel : children}</span>
+      {iconEnd ? <Icon name={iconEnd} size={20} /> : null}
       {busy ? (
         <motion.span
           aria-hidden

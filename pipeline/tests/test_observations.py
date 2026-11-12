@@ -113,6 +113,42 @@ def test_monterey_wharf_long_absence_is_reported_as_absence(out):
     assert sm.n_last_365d == 0 and sm.max_last_365d is None and sm.days_since_last > 1000
 
 
+def test_record_is_requested_from_2005_and_holds_each_stations_first_sample(out):
+    """The request window starts in 2005, before any of these stations' first published sample, so the
+    copy is the whole record (it used to start in 2014 and cut Monterey Wharf's 2005-2013 samples)."""
+    _, ds = run(out)
+    assert obs.WINDOW_START == "2005-01-01" and ds.window_start == obs.WINDOW_START
+    assert "time%3E=2005-01-01T00%3A00%3A00Z" in obs.request_url("MontereyWharf")
+    mw = station(ds, "Monterey Wharf")
+    assert mw.sample_times[0] == "2005-06-03T17:10:00Z"
+    pda = summary(mw, "pDA")
+    assert pda.first_date == "2010-11-10" and pda.last_date == "2022-08-31"
+    assert pda.n_measured == sum(1 for r in recorded_csv("MontereyWharf") if r["pDA"] != "NaN") > 165
+    # no station's first sample sits on the request start: nothing earlier was cut off
+    for st in ds.stations:
+        assert st.sample_times and st.sample_times[0][:10] > "2005-03-01", st.name
+
+
+def test_a_temperature_only_visit_is_null_for_every_other_variable(out):
+    """Monterey Wharf's recent visits publish temperature and NaN for everything else: each of those is
+    'not measured' (null), never zero, never a qualifier, and never counted as a sample of that variable."""
+    _, ds = run(out)
+    mw = station(ds, "Monterey Wharf")
+    rows = recorded_csv("MontereyWharf")
+    assert len(rows) == len(mw.sample_times)
+    recent = [i for i, t in enumerate(mw.sample_times) if t >= "2025-10-08"]
+    assert len(recent) >= 45
+    others = ["pDA", "dDA", "tDA", "pn_seriata", "pn_delicatissima", "chl_extracted"]
+    for i in recent:
+        assert rows[i]["Temp"] != "NaN" and series(mw, "temp").values[i] == pytest.approx(float(rows[i]["Temp"]), rel=1e-6)
+        for v in others:
+            assert rows[i][obs.VAR_BY_ID[v].source_variable] == "NaN"
+            assert series(mw, v).values[i] is None and str(i) not in series(mw, v).qualifiers
+    for v in others:
+        assert summary(mw, v).n_last_365d == 0 and summary(mw, v).max_last_365d is None
+    assert summary(mw, "temp").n_last_365d == len(recent)
+
+
 def test_fractions_and_groups_are_never_combined(out):
     _, ds = run(out)
     ids = [v.id for v in ds.variables]

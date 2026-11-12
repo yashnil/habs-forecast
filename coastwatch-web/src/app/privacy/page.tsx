@@ -21,10 +21,19 @@ export default async function PrivacyPage() {
         <h2 id="collect">What we collect</h2>
         <h3>Kept only in your browser (no account)</h3>
         <ul>
-          <li>Saved ports, fisheries, role, vessel length band, alert choices, your alert inbox, feedback answers and trip logs.</li>
-          <li>Your confirmation that you are 13 or older, and any text-alert consent you give, with the time and the words shown.</li>
+          <li>Your home port, the port you opened last, your fisheries and vessel length band, and the ports you follow with what should alert you at each.</li>
+          <li>Your alerts, and what each followed port&rsquo;s records said the last time this browser checked them. Alerts are made in your browser when you open Neritic; nothing checks your ports while it is closed, and no text, email or phone notification is sent.</li>
+          <li>What Today showed at each port on your last visit, so it can say what changed since.</li>
+          <li>Trips you save on My Coast: your vessels, costs, prices, catch and crew shares. These never leave your browser.</li>
+          <li>Pages, records and chart pictures you save for offline use.</li>
+          <li>Display choices (day, dusk or night chart; introductions you dismissed).</li>
+          <li>In the pilot account page: role, saved ports, feedback answers and trip feedback, and any confirmation or consent you gave there, with the time and the words shown.</li>
         </ul>
-        <p>These stay on your device (browser storage). We do not receive them. Clearing your browser data, or &ldquo;Delete everything on this device&rdquo; on the account page, removes them.</p>
+        <p>
+          These stay on your device (browser storage and the browser&rsquo;s offline cache). We do not receive them. &ldquo;Delete everything on this device&rdquo; on the <Link href="/account">account page</Link> removes all of
+          them, including saved trips and offline copies; so does clearing your browser&rsquo;s data for this site. The one exception is a question you type into Ask Neritic, which is sent to our server to be answered
+          (see Ask Neritic logs below).
+        </p>
         <h3>If you create an account</h3>
         <ul>
           <li><strong>Identifiers:</strong> your email address (to send sign-in codes) and an account id.</li>
@@ -82,7 +91,7 @@ export default async function PrivacyPage() {
         <h2 id="choices">Seeing, changing and deleting your information</h2>
         <ul>
           <li>The <Link href="/account">account page</Link> shows and lets you change everything you have given us.</li>
-          <li>&ldquo;Delete my account&rdquo; on that page deletes your account and every record linked to it immediately (backups as above). &ldquo;Delete everything on this device&rdquo; clears the browser copy.</li>
+          <li>&ldquo;Delete my account&rdquo; on that page deletes your account and every record linked to it immediately (backups as above). &ldquo;Delete everything on this device&rdquo; removes everything Neritic keeps in your browser: ports, fisheries, follows, alerts, saved trips, visit history and offline copies. If you are signed in, it does not sign you out or delete your account.</li>
           <li>To stop texts, reply STOP. To stop notifications, turn them off on the account page or in your browser settings.</li>
           <li>You can also email <strong>{OWNER_CONTACT}</strong> to ask for a copy of your information, a correction, or deletion. We will answer within 30 days.</li>
           <li>California residents have rights under the California Consumer Privacy Act where it applies; we honour access and deletion requests from anyone, wherever they live.</li>

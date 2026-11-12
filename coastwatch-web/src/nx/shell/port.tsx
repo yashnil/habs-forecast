@@ -25,10 +25,15 @@ function subscribe(l: () => void) {
   };
 }
 
-/** The saved port key (nx-port-v1: the port last opened, else a home that is a port), or null. */
-export function savedPortKey(): string | null {
+/** The home port the reader set (nx-port-v1 `place`, when it is a port), or null. Only `setHomePort` and a first choice change it. */
+export function homePortKey(): string | null {
   const r = readPortRecord();
-  return r.lastPort ?? (isPortKey(r.place) ? r.place : null);
+  return isPortKey(r.place) ? r.place : null;
+}
+
+/** The saved port key: the home port, else the port last opened, or null. `/` opens this one. */
+export function savedPortKey(): string | null {
+  return homePortKey() ?? readPortRecord().lastPort;
 }
 
 /** null on the server and during hydration (the first client render must match the server's HTML). */
@@ -49,9 +54,42 @@ export function useCurrentPort(): { port: ShellPort | null; key: string | null; 
   return { port: ports.find((p) => p.key === key) ?? null, key, fromUrl: isPortKey(urlKey), pending: saved === undefined && !isPortKey(urlKey) };
 }
 
-/** Make `key` the reader's port on this device (it stays in the browser). */
-export function savePort(key: string) {
+/** undefined on the server and during hydration, then the home port or null. */
+export function useHomePortKey(): string | null | undefined {
+  return useSyncExternalStore(subscribe, homePortKey, () => undefined);
+}
+
+/** The reader chose `key` themselves when the address does not already name it (a deep link's page reports the port its address names). */
+function chosenHere(key: string): boolean {
+  try {
+    return new URLSearchParams(window.location.search).get("place") !== key;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * `key` is the port last opened on this device (it stays in the browser). The first port a reader chooses
+ * themselves also becomes their home port; after that the home port changes only through `setHomePort`, so
+ * opening a link to another port never moves it.
+ */
+export function savePort(key: string, opts: { chosen?: boolean } = {}) {
   if (!isPortKey(key)) return;
-  updatePortRecord((r) => ({ ...r, lastPort: key }));
+  const chosen = opts.chosen ?? chosenHere(key);
+  updatePortRecord((r) => ({ ...r, lastPort: key, ...(chosen && r.place === null ? { place: key } : {}) }));
   notify();
+}
+
+/** The reader picked `key` in a port finder. */
+export const choosePort = (key: string) => savePort(key, { chosen: true });
+
+/** Set or clear the home port. A home that is a harvest site or a point (an earlier My Coast) is replaced only by a port, never cleared here. */
+export function setHomePort(key: string | null): boolean {
+  if (key !== null && !isPortKey(key)) return false;
+  const kept = updatePortRecord((r) => {
+    if (key === null) return isPortKey(r.place) ? { ...r, place: null, for: "all", species: "any" } : r;
+    return r.place === key ? r : { ...r, place: key, for: "all", species: "any" };
+  });
+  notify();
+  return kept;
 }

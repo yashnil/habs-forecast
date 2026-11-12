@@ -7,6 +7,7 @@ import { day } from "@/nx/ds/format";
 import { hatchSegments } from "@/nx/ds/Mark";
 import { ink } from "@/nx/ds/motion";
 import { useElementWidth } from "@/nx/ds/useMedia";
+import { lastWithValue } from "./availability";
 import { inWin, linearTicksFor, logTicksFor, readingAt, runsOf, tickLabel, valueWords, type RecPoint, type Strip } from "./model";
 import s from "./research.module.css";
 
@@ -180,7 +181,7 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
               {st.unit}
             </span>
             <span className={s.stripReading} data-testid={`reading-${st.id}`}>
-              {row.folded ? "none in this window" : cursor == null ? "" : reading ? valueWords(st, reading) : st.kind === "model" ? "no run kept that day" : "not measured that day"}
+              {row.folded ? foldedWords(st, win) : cursor == null ? "" : reading ? valueWords(st, reading) : st.kind === "model" ? "no run kept that day" : "not measured that day"}
             </span>
           </div>
         );
@@ -227,6 +228,17 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
     </div>
   );
 });
+
+/**
+ * A folded strip's line. Measured: "none in this window", with the quantity's last sample and its date, so an
+ * empty frame still says where the record is. Model: folded because the window has no model day, or because it
+ * has no measured value of the selected quantity to read the model beside.
+ */
+function foldedWords(strip: Strip, win: [number, number]): string {
+  if (strip.kind === "model") return strip.points.some((p) => inWin(p.t, win)) ? "not drawn: no measured value in this window to read it beside" : "no model day kept in this window";
+  const last = lastWithValue(strip.points);
+  return last ? `none in this window · last ${day(last.t, { year: true })}` : "none in this window";
+}
 
 /** The crosshair's day, set on the time axis where the line meets it (ink, paper type), clamped to the plot. */
 function AxisFlag({ x, y, min, max, text }: { x: number; y: number; min: number; max: number; text: string }) {

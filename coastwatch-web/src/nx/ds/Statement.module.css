@@ -4,7 +4,7 @@
 
 .scope {
   margin: 0 0 var(--s-8);
-  font: 600 var(--t-18) / 1.3 var(--font-sans);
+  font: 600 var(--type-lead) / 1.3 var(--font-sans);
 }
 
 .title {
@@ -57,7 +57,7 @@
 .body {
   margin-top: var(--s-12);
   max-width: 52ch;
-  font-size: var(--t-16);
+  font-size: var(--type-body);
 }
 .body > * + * {
   margin-top: var(--s-4);
@@ -74,9 +74,9 @@
     font-size: var(--t-28);
   }
   .why {
-    font-size: var(--t-18);
+    font-size: var(--type-lead);
   }
   .scope {
-    font-size: var(--t-16);
+    font-size: var(--type-body);
   }
 }

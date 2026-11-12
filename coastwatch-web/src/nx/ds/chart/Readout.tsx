@@ -4,16 +4,20 @@ import type { ReactNode } from "react";
 import { latLon } from "../format";
 import { Icon } from "../Icon";
 import { Mark } from "../Mark";
+import { DataStateMark } from "../DataState";
 import { registerFrom, registerTo, settle, sheet } from "../motion";
 import { Stamp, type Provenance } from "../Stamp";
 import { cx } from "../util";
 import s from "./readout.module.css";
 
-export type ReadoutState = "value" | "loading" | "noview" | "error";
+/** `outside`: the point is outside the product's footprint (no model there): its own mark and words, never the no-view hatch and never zero. */
+export type ReadoutState = "value" | "loading" | "noview" | "outside" | "error";
 
 export interface ReadoutProps {
   /** What was read: "Chlorophyll at this point". */
   title: string;
+  /** Under the title, before the position: what was sampled ("Cell 4 km, C-HARM grid", "300 m pixel"). */
+  subtitle?: ReactNode;
   lat: number;
   lon: number;
   state: ReadoutState;
@@ -27,6 +31,8 @@ export interface ReadoutProps {
   children?: ReactNode;
   /** The next step: "See the record nearby". */
   action?: ReactNode;
+  /** Two or three links for where to go with this place (the record, My Coast, the source), shown in every state. */
+  actions?: ReactNode;
   /** Loading / no view / error wording; each says what is missing and what to do. */
   message?: ReactNode;
   onClose?: () => void;
@@ -34,12 +40,13 @@ export interface ReadoutProps {
 }
 
 /** The result of tapping the water: value, kind, date, pixel age and a linked chart (spec section 9). */
-export function Readout({ title, lat, lon, state, value, unit, provenance, now, note, children, action, message, onClose, className }: ReadoutProps) {
+export function Readout({ title, subtitle, lat, lon, state, value, unit, provenance, now, note, children, action, actions, message, onClose, className }: ReadoutProps) {
   return (
     <motion.section className={cx(s.readout, className)} aria-label={title} aria-live="polite" initial={registerFrom} animate={registerTo} transition={sheet} data-state={state}>
       <header className={s.head}>
         <div>
           <h3 className={s.title}>{title}</h3>
+          {subtitle ? <p className={s.subtitle}>{subtitle}</p> : null}
           <p className={s.coord}>{latLon(lat, lon)}</p>
         </div>
         {onClose ? (
@@ -77,9 +84,15 @@ export function Readout({ title, lat, lon, state, value, unit, provenance, now, 
           <Mark kind="noview" />
           <p className={s.message}>{message ?? "No view here. No value is not a low value."}</p>
         </div>
+      ) : state === "outside" ? (
+        <div className={s.noview} data-testid="readout-outside">
+          <DataStateMark kind="outside-coverage" size={24} />
+          <p className={s.message}>{message ?? "Outside this product's coverage. Nothing was computed here: that is not a low value."}</p>
+        </div>
       ) : (
         <p className={s.message}>{message ?? "This point couldn't be read. Try again, or open the layer's source."}</p>
       )}
+      {actions ? <div className={s.actions}>{actions}</div> : null}
     </motion.section>
   );
 }

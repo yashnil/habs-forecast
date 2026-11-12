@@ -124,7 +124,17 @@ function bake(g: GridSpec, codes: Uint16Array, kind: Kind, past: boolean, domain
       let px: [number, number, number, number] = [0, 0, 0, 0];
       if (kind === "ramp" && edge < 1) px = over(px, ink2, 0.7);
       else if (v === null) {
-        if (kind !== "ramp") continue;
+        if (kind !== "ramp") {
+          // "outside the model": level rules over a paper veil, as the live layer draws it (FieldLayer outsideModel)
+          px = over(px, paper, 0.3);
+          if (y % 7 < 1.2) px = over(px, ink2, 0.42);
+          const k = (y * W + x) * 4;
+          img.data[k] = (px[0] / px[3]) * 255;
+          img.data[k + 1] = (px[1] / px[3]) * 255;
+          img.data[k + 2] = (px[2] / px[3]) * 255;
+          img.data[k + 3] = px[3] * 255;
+          continue;
+        }
         const inA = Math.min(1, edge / 24);
         px = over(px, paper, 0.22 * inA);
         if (line(11)) px = over(px, hatchCol, 0.32 * inA);

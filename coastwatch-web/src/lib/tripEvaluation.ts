@@ -504,7 +504,7 @@ export function evaluateTrip(scenario: TripScenario, opts: { audience?: Audience
   const beLbNeed: FieldKey[] = [...(primary && known(primary.usdPerLb) ? [] : [`catch.${pIdx}.usdPerLb` as FieldKey]), ...otherGaps, ...costGap, ...crewGap];
   let breakEvenCatch: Output;
   if (beLbNeed.length) breakEvenCatch = missing(beLbNeed, "Break-even catch needs the price per pound, the trip cost and how crew is paid (not the catch itself).", costAlt && !otherGaps.length && !crewGap.length && primary && known(primary.usdPerLb) ? costAlt : undefined);
-  else breakEvenCatch = fromBreakEven(ref.breakEvenLb, (v) => `Break-even catch ${w(v)}${unit}: net to boat reaches $0 at ${pw(primary!.usdPerLb!)}/${wu.unit}`, beA, "No catch covers the costs at this price: fees and crew pay take all of each pound's value.");
+  else breakEvenCatch = fromBreakEven(ref.breakEvenLb, (v) => `Break-even catch ${w(v)}${unit}: net to boat reaches $0 at ${pw(primary!.usdPerLb!)}/${wu.unit}`, beA, primary!.usdPerLb === 0 ? "No catch covers the costs at a price of $0." : "No catch covers the costs at this price: fees and crew pay take all of each pound's value.");
 
   const beUsdNeed: FieldKey[] = [...(primary && known(primary.lb) ? [] : [`catch.${pIdx}.lb` as FieldKey]), ...otherGaps, ...costGap, ...crewGap];
   let breakEvenPrice: Output;

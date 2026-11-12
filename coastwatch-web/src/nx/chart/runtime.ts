@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import type { Camera, Insets, Point, Viewport } from "./mercator";
 import { project as mercProject } from "./mercator";
 import type { Anchor, PlaceItem } from "./placement";
@@ -95,3 +96,25 @@ export function onMarksChange(l: () => void) {
 }
 
 export type { Anchor };
+
+/**
+ * The shape of the chart's free area (what the covers leave of the frame), for a page that chooses its scene by
+ * it: `tall` is true in a desk page's narrow pane (at least 1.25 times taller than wide). Null until measured.
+ * Most pages need only `view.tall` on their scene (scene.ts), which the host applies itself.
+ */
+export type ChartShape = { width: number; height: number; tall: boolean };
+let shape: ChartShape | null = null;
+function shapeNow(): ChartShape | null {
+  const f = frame;
+  if (!f) return shape;
+  const w = Math.round(f.viewport.width - f.insets.left - f.insets.right), h = Math.round(f.viewport.height - f.insets.top - f.insets.bottom);
+  if (!shape || shape.width !== w || shape.height !== h) shape = { width: w, height: h, tall: h >= w * 1.25 };
+  return shape;
+}
+export function useChartShape(): ChartShape | null {
+  return useSyncExternalStore(
+    (l) => onFrame(() => l()),
+    shapeNow,
+    () => null,
+  );
+}

@@ -31,6 +31,7 @@ export interface SoundingProps {
   /** The 3 px knockout halo; off only on plain paper. */
   halo?: boolean;
   size?: "lg" | "md";
+  /** Past its usual update: the figure is set lighter and a step smaller with "(old)" beside it, so an old reading never leads the chart (T17). */
   stale?: boolean;
   /** Opens the provenance sheet; the figure becomes a button. */
   onActivate?: () => void;
@@ -79,7 +80,8 @@ export function Sounding({ x, y, value, unit, label, caption, kind, anchor = "se
             </svg>
           ) : null}
           <Tag
-            className={cx(s.block, s.sounding, s[size], onActivate && s.activate)}
+            className={cx(s.block, s.sounding, s[size], stale && s.staleFig, onActivate && s.activate)}
+            data-stale={stale || undefined}
             style={box ? { textAlign: align } : { left: lx + gap.x, top: ly + gap.y, transform: anchorTranslate(anchor), textAlign: align, width }}
             onClick={onActivate}
             type={onActivate ? "button" : undefined}

@@ -16,7 +16,8 @@ import { Segmented } from "@/nx/ds/worksheet/Inputs";
 import { Stamp, type Provenance } from "@/nx/ds/Stamp";
 import { Unavailable } from "@/nx/ds/States";
 import { useMedia } from "@/nx/ds/useMedia";
-import { useChartCover } from "@/nx/chart/cover";
+import { Desk, DeskAside, DeskBody, DeskHeader, DeskMain, PageLayout } from "@/nx/ds/layout";
+import { ChartToggle } from "@/nx/ds/layout/ChartToggle";
 import { ChartScene, boundsAround, type ChartScene as Scene } from "@/nx/chart/scene";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { download, svgFigure } from "./dom";
@@ -44,7 +45,7 @@ import {
   inWin,
   type RangeId,
 } from "./model";
-import { RecordStrips, LEFT, layoutStrips, stripHead, type RecordStripsHandle } from "./RecordStrips";
+import { RecordStrips, LEFT, type RecordStripsHandle } from "./RecordStrips";
 import { SampleLog } from "./SampleLog";
 import { StationMarks } from "./StationMarks";
 import { useSettledWindow } from "./useSettledWindow";
@@ -64,8 +65,8 @@ export type ResearchProps = {
   now: string;
 };
 
-/** Desktop wide enough for the record beside the chart; anything narrower or shorter reads it in the margin. */
-const WIDE = "(min-width: 1180px) and (min-height: 620px)";
+/** The chart pane stands beside the desk (v13 README §1): tall and narrow, so the station's view runs along the coast. */
+const WIDE = "(min-width: 1100px) and (min-height: 520px)";
 
 /** The address, rewritten in place (no navigation, no scroll): the view is always shareable. */
 function writeAddress(qs: string) {
@@ -171,36 +172,13 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   };
   const chooseFocus = (id: string) => commit(committed, { v: id as ObsVariableId });
 
-  // ------------------------------------------------------------ the record's size (wide: fill the panel's height)
+  // ------------------------------------------------------------ the record's size (the desk gives the strips room)
   const stripsBox = useRef<HTMLDivElement>(null);
-  const [room, setRoom] = useState<number | null>(null);
-  const [roomW, setRoomW] = useState(600);
-  useEffect(() => {
-    const el = stripsBox.current;
-    if (!el || !wide) return setRoom(null);
-    const ro = new ResizeObserver(([e]) => {
-      setRoom(Math.round(e.contentRect.height));
-      setRoomW(Math.round(e.contentRect.width));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [wide]);
   // a strip with nothing in the window folds to its header line (decided on the settled window, so a drag never reflows)
   const folded = useMemo(() => new Set(strips.filter((x) => !x.points.some((p) => inWin(p.t, committed))).map((x) => x.id)), [strips, committed]);
-  const plotH = useMemo(() => {
-    if (!wide || room == null) return 76;
-    // the tallest plots that fit the panel without scrolling; below 26 px the panel scrolls instead
-    let h = 26;
-    // (a threshold strip's header takes extra lines for what its dashes mean: RecordStrips stripHead)
-    while (h < 160 && layoutStrips(strips, h + 2, folded, (st) => stripHead(st, roomW)).height <= room - 4) h += 2;
-    return h;
-  }, [wide, room, roomW, strips, folded]);
+  const plotH = wide ? 104 : 76;
 
   // ------------------------------------------------------------ the chart: the station in the free part of the sheet, its neighbours around it
-  // on a wide screen the record panel lies over the sheet's right side: registered as a cover, so the chart
-  // fits the station into what is left and writes no name (and not its sources) under the panel
-  const panelRef = useRef<HTMLElement>(null);
-  useChartCover("research-record", panelRef, "right", wide);
   const homeStation = port ? nearestStation(stations, port.lat, port.lon, port.key)?.station.station_id : DEFAULT_STATION;
   const sceneBase = port ? `research:${port.key}` : "research";
   const scene: Scene = useMemo(() => {
@@ -267,45 +245,47 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const legend = legendFor(strips, committed);
 
   return (
-    <section className={s.page} data-testid="nx-research" data-station={st.station_id} data-layout={wide ? "wide" : "inline"}>
+    <section className={s.page} data-testid="nx-research" data-station={st.station_id} data-layout="desk">
+      <PageLayout mode="desk" paneKey="research" />
       <ChartScene scene={scene} />
       <StationMarks stations={stations.map((x) => ({ id: x.station_id, name: x.name, lat: x.lat, lon: x.lon }))} selected={st.station_id} radiusKm={modelStrip ? radius : null} onPick={chooseStationId} leanLeft={wide} />
 
-      <p className="n12-kicker">Research</p>
-      <h1 className={s.title} data-testid="research-title">
-        {st.name}
-      </h1>
-      <p className={s.lead}>
-        Every water sample here since {first ? day(first, { year: true }) : "the first"}, with C-HARM&rsquo;s model beside it. The window under the strips sets what the log and the export hold.
-      </p>
-      {choice.arrival || askedMissing || query.askedVar || query.back ? (
-        <p className={s.arrived} data-testid="research-arrived">
-          {choice.arrival ? (
-            choice.arrival.near ? (
-              <span>
-                Nearest station to {choice.arrival.name}, {kmWords(choice.arrival.km)} away.
-              </span>
-            ) : (
-              <span>
-                No station is near {choice.arrival.name}: the nearest is {kmWords(choice.arrival.km)} away, so this record says nothing about that water.
-              </span>
-            )
+      <Desk>
+        <DeskHeader context="Research" title={st.name} titleProps={{ "data-testid": "research-title" }} actions={<ChartToggle />}>
+          <p className={s.lead}>
+            Every water sample here since {first ? day(first, { year: true }) : "the first"}, with C-HARM&rsquo;s model beside it. The window under the strips sets what the log and the export hold.
+          </p>
+          {choice.arrival || askedMissing || query.askedVar || query.back ? (
+            <p className={s.arrived} data-testid="research-arrived">
+              {choice.arrival ? (
+                choice.arrival.near ? (
+                  <span>
+                    Nearest station to {choice.arrival.name}, {kmWords(choice.arrival.km)} away.
+                  </span>
+                ) : (
+                  <span>
+                    No station is near {choice.arrival.name}: the nearest is {kmWords(choice.arrival.km)} away, so this record says nothing about that water.
+                  </span>
+                )
+              ) : null}
+              {askedMissing ? <span> {LABEL[askedMissing]} isn&rsquo;t measured at {st.name}; the strips show what is.</span> : null}
+              {query.askedVar ? <span> &ldquo;{query.askedVar}&rdquo; isn&rsquo;t a quantity a shore station measures; the strips show what this one does.</span> : null}
+              {query.back ? (
+                <Link href={query.back} className={s.back} data-testid="research-back">
+                  Back
+                </Link>
+              ) : null}
+            </p>
           ) : null}
-          {askedMissing ? <span> {LABEL[askedMissing]} isn&rsquo;t measured at {st.name}; the strips show what is.</span> : null}
-          {query.askedVar ? <span> &ldquo;{query.askedVar}&rdquo; isn&rsquo;t a quantity a shore station measures; the strips show what this one does.</span> : null}
-          {query.back ? (
-            <Link href={query.back} className={s.back} data-testid="research-back">
-              Back
-            </Link>
-          ) : null}
-        </p>
-      ) : null}
-      <div className={s.stamp}>
-        <Stamp provenance={provenance} now={now} />
-      </div>
+          <div className={s.stamp}>
+            <Stamp provenance={provenance} now={now} />
+          </div>
 
+        </DeskHeader>
+        <DeskBody layout="main-aside">
+          <DeskMain>
       {/* the record: in the margin on a phone; on a wide screen, a panel on the sheet beside the chart */}
-      <section ref={panelRef} className={s.panel} aria-label={`The record at ${st.name}`} data-testid="research-record">
+      <section className={s.panel} aria-label={`The record at ${st.name}`} data-testid="research-record">
         <header className={s.panelHead}>
           <p className={s.windowLine} data-testid="research-window">
             <span className={s.windowDates}>{range(win[0], win[1], { year: true })}</span>
@@ -350,7 +330,8 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
           </ul>
         </div>
       </section>
-
+          </DeskMain>
+          <DeskAside label="Export and the record's details">
       <div className={s.primary}>
         <Button variant="primary" icon="share" onClick={exportCsv} full aria-describedby="rx-export-what">
           Export the window as CSV
@@ -615,6 +596,9 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
       <p className={s.imprint}>
         Dataset generated {day(observations.generated_at, { ref: now })}. Water samples, not seafood tests. Not for navigation.
       </p>
+          </DeskAside>
+        </DeskBody>
+      </Desk>
       <span hidden data-testid="research-window-ms" data-from={committed[0]} data-to={committed[1]} />
     </section>
   );

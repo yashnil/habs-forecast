@@ -21,7 +21,7 @@ import { SPECIES } from "@/content/species";
 const FIX = path.resolve(__dirname, "../fixture-data/v1");
 const mf = JSON.parse(readFileSync(path.join(FIX, "manifest.json"), "utf8")) as { official_url: string; observations_url?: string };
 const official: OfficialDataset = JSON.parse(readFileSync(path.join(FIX, mf.official_url), "utf8"));
-const obs = JSON.parse(readFileSync(path.join(FIX, "observations-6d325da89a.json"), "utf8")) as ObservationDataset;
+const obs = JSON.parse(readFileSync(path.join(FIX, "observations-9dbbec5f83.json"), "utf8")) as ObservationDataset;
 const ports = (JSON.parse(readFileSync(path.join(FIX, "ports-53ac2a4e2e.geojson"), "utf8")) as { features: { geometry: { coordinates: [number, number] }; properties: { port_code: number; display_name: string } }[] }).features.map((f) => ({
   key: `port-${f.properties.port_code}`,
   name: f.properties.display_name,

@@ -4,7 +4,7 @@
 
 .label {
   margin: 0;
-  font: 600 var(--t-18) / 1.3 var(--font-sans);
+  font: 600 var(--type-lead) / 1.3 var(--font-sans);
 }
 
 .date {
@@ -26,7 +26,7 @@
 
 .then {
   margin: var(--s-8) 0 0;
-  font-size: var(--t-16);
+  font-size: var(--type-body);
 }
 
 .stamp {
@@ -41,6 +41,6 @@
     font-size: var(--t-40);
   }
   .label {
-    font-size: var(--t-16);
+    font-size: var(--type-body);
   }
 }

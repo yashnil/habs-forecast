@@ -2,7 +2,7 @@
 import { motion } from "motion/react";
 import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "../Icon";
-import { press, settle } from "../motion";
+import { press, select, settle } from "../motion";
 import { cx } from "../util";
 import s from "./worksheet.module.css";
 
@@ -144,21 +144,31 @@ export function Stepper({ label, value, onChange, min = 0, max = 99, step = 1, u
 
 export interface SegmentedProps<T extends string> {
   label: string;
-  options: Array<{ value: T; label: string }>;
+  options: Array<{ value: T; label: string; hint?: string }>;
+  /** Null: nothing chosen yet. The group then says so ("Choose one") and no segment looks chosen. */
   value: T | null;
   onChange: (v: T) => void;
   hideLabel?: boolean;
   disabled?: boolean;
+  /** equal: every segment the same width, across the container; content (default): each as wide as its words. */
+  fit?: "equal" | "content";
+  /** m: 48 px (default); s: 44 px, for a quiet range or filter. */
+  size?: "m" | "s";
+  /** Words shown beside the label while nothing is chosen (default "Choose one"). */
+  unsetWords?: string;
   className?: string;
 }
 
 /**
- * One choice from a few, side by side (a radio group). Arrow keys move and choose. A null value is allowed
- * where nothing may be assumed (who pays fuel, E2): no segment is chosen until the reader chooses.
+ * One choice from a few, side by side (a radio group). Arrow keys move and choose. The chosen segment is an ink
+ * block that slides to the new choice (`select`). A null value is allowed where nothing may be assumed (who
+ * pays fuel, E2): the frame is dashed, every segment is hollow and the group says "Choose one", so an unset
+ * choice never looks made.
  */
-export function Segmented<T extends string>({ label, options, value, onChange, hideLabel, disabled, className }: SegmentedProps<T>) {
+export function Segmented<T extends string>({ label, options, value, onChange, hideLabel, disabled, fit = "content", size = "m", unsetWords = "Choose one", className }: SegmentedProps<T>) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const at = options.findIndex((o) => o.value === value);
+  const unset = at === -1;
   const key = (i: number) => (e: KeyboardEvent<HTMLButtonElement>) => {
     const d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
     if (!d) return;
@@ -169,11 +179,17 @@ export function Segmented<T extends string>({ label, options, value, onChange, h
   };
   const id = useId();
   return (
-    <div className={cx(s.segWrap, disabled && s.isDisabled, className)}>
+    <div className={cx(s.segWrap, disabled && s.isDisabled, className)} data-fit={fit} data-size={size}>
       <span id={id} className={cx(s.label, hideLabel && s.vh)}>
         {label}
+        {unset ? (
+          <span className={s.segUnset} data-testid="segmented-unset">
+            {" "}
+            · {unsetWords}
+          </span>
+        ) : null}
       </span>
-      <div className={s.segmented} role="radiogroup" aria-labelledby={id}>
+      <div className={s.segmented} role="radiogroup" aria-labelledby={id} data-unset={unset || undefined}>
         {options.map((o, i) => (
           <motion.button
             key={o.value}
@@ -183,14 +199,18 @@ export function Segmented<T extends string>({ label, options, value, onChange, h
             type="button"
             role="radio"
             aria-checked={o.value === value}
-            tabIndex={o.value === value || (at === -1 && i === 0) ? 0 : -1}
+            tabIndex={o.value === value || (unset && i === 0) ? 0 : -1}
             className={s.segment}
             onClick={() => onChange(o.value)}
             onKeyDown={key(i)}
             disabled={disabled}
             {...press}
           >
-            {o.label}
+            {o.value === value ? <motion.span layoutId={`${id}-on`} className={s.segOn} transition={select} aria-hidden /> : null}
+            <span className={s.segWords}>
+              {o.label}
+              {o.hint ? <small className={s.segHint}>{o.hint}</small> : null}
+            </span>
           </motion.button>
         ))}
       </div>

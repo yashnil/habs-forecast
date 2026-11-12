@@ -10,7 +10,7 @@ import { formatDegrees, ticks, unproject, type Camera, type Viewport } from "./m
  * `pane` is the part of the sheet a panel takes on either side (Research's record): the neatline then frames only
  * the chart's own pane, and paper fills the rest, so no graduation runs on over the panel (critic finding 7).
  */
-export function Neatline({ camera, viewport, band, label, pane = { left: 0, right: 0 } }: { camera: Camera | null; viewport: Viewport | null; band: number; label: number; pane?: { left: number; right: number } }) {
+export function Neatline({ camera, viewport, band, label, pane = { left: 0, right: 0 } }: { camera: Camera | null; viewport: Viewport | null; band: number; label: number; pane?: { left: number; right: number; bottom?: number } }) {
   if (!camera || !viewport || viewport.width < 10) return null;
   const { width: SW, height: H } = viewport;
   const px0 = Math.max(0, pane.left), px1 = Math.max(px0 + 10, SW - Math.max(0, pane.right));
@@ -78,7 +78,8 @@ export function Neatline({ camera, viewport, band, label, pane = { left: 0, righ
         {lat.major.map((v) => (
           <g key={`aM${v}`}>
             <line className="n12-neat-tick" y1={y(v)} y2={y(v)} x1={-band} x2={-band - 6} />
-            {y(v) > 40 && y(v) < H - 40 ? (
+            {/* a label is written whole or not at all: never cut by the frame's corner or by a sheet resting over the chart's foot */}
+            {y(v) > 44 && y(v) < H - Math.max(0, pane.bottom ?? 0) - 44 ? (
               <text className="n12-neat-label" transform={`translate(${-band - 7} ${y(v)}) rotate(-90)`} textAnchor="middle">
                 {formatDegrees(v, "lat")}
               </text>
