@@ -27,6 +27,17 @@ const page = async (browser: import("@playwright/test").Browser, w = 1440, h = 9
 };
 
 const said = (p: Page) => p.getByTestId("trip-said");
+
+/** At the top of the page on a 1440 × 900 screen: the result and the whole waterfall are in the first screen. */
+async function firstScreen(p: Page, when: string) {
+  await p.locator(".n12-margin-scroll").evaluate((el) => (el.scrollTop = 0));
+  await p.waitForTimeout(250);
+  const fall = (await p.getByTestId("trip-waterfall").boundingBox())!;
+  expect(fall.width, when).toBeGreaterThanOrEqual(520);
+  expect(fall.height, when).toBeGreaterThanOrEqual(260);
+  expect(fall.y + fall.height, `the waterfall's foot is above the fold ${when}`).toBeLessThanOrEqual(900);
+  expect(await inView(p, p.getByTestId("trip-net")), `the result is in view ${when}`).toBe(true);
+}
 const result = (p: Page) => (p.viewportSize()!.width <= 720 ? p.getByTestId("trip-netbar-value") : p.getByTestId("trip-net"));
 
 test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the season status in view at every step", async ({ browser }) => {
@@ -66,6 +77,10 @@ test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the 
   }
   await expect(exact(p, "trip-gross")).toHaveText("$3,600.00");
   await expect(exact(p, "trip-operating")).toHaveText("$347.20");
+  // F-03: with some fields still blank the chart says what it waits for once, under it; a bar's place holds one word
+  await expect(p.getByTestId("trip-waterfall-waiting")).toHaveText("2 bars are not drawn yet: still waiting for how crew is paid.");
+  const labels = await p.getByTestId("trip-waterfall").locator("svg text").allInnerTexts();
+  expect(labels.filter((t) => /waiting for/.test(t))).toEqual([]);
   await p.getByRole("radio", { name: "After costs" }).click();
   await type(p, "Crew share", "20");
   await context("Crew share");
@@ -96,13 +111,25 @@ test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the 
   await expect(p.getByTestId("trip-be-fuel")).toHaveCount(0);
 
   // one screen at 1440 × 900: the result and the whole waterfall, with the first inputs beside them
-  const fall = (await p.getByTestId("trip-waterfall").boundingBox())!;
-  expect(fall.width).toBeGreaterThanOrEqual(520);
-  expect(fall.height).toBeGreaterThanOrEqual(260);
-  expect(fall.y + fall.height, "the waterfall's foot is above the fold").toBeLessThanOrEqual(900);
-  expect(await inView(p, p.getByTestId("trip-net"))).toBe(true);
+  await firstScreen(p, "with the owner's case entered");
+  // the page has one scroll: the inputs column does not scroll inside itself
+  expect(await p.getByRole("region", { name: "Trip inputs" }).evaluate((el) => getComputedStyle(el).overflowY)).toBe("visible");
+
+  // F-02: saving does not grow the header or push the waterfall off the first screen, and the name stays on one line
+  const headBefore = (await p.locator("[data-nx-desk-header]").boundingBox())!.height;
+  await p.getByTestId("trip-save-new").click();
+  await expect(said(p)).toContainText("Saved as “Dungeness crab, 400 lb at $9, 1 crew 20 % after costs,");
+  await firstScreen(p, "after Save as new");
+  const headAfter = (await p.locator("[data-nx-desk-header]").boundingBox())!.height;
+  expect(headAfter, "the header is no taller after saving").toBeLessThanOrEqual(headBefore + 1);
+  expect((await p.getByTestId("trip-name").boundingBox())!.height, "the saved name is on one line (its rename control is 44 px)").toBeLessThanOrEqual(48);
+  const buttons = await Promise.all(["trip-update", "trip-save-new", "trip-saved-open"].map(async (id) => (await p.getByTestId(id).boundingBox())!.y));
+  expect(new Set(buttons.map((y) => Math.round(y))).size, "the buttons are one row").toBe(1);
+  // the confirmation is said and then goes; the line it had stays, so nothing moves
+  await expect(said(p)).toHaveText("", { timeout: 9000 });
+  expect((await p.locator("[data-nx-desk-header]").boundingBox())!.height).toBe(headAfter);
+  await firstScreen(p, "once the confirmation has gone");
   await field(p, "Catch").scrollIntoViewIfNeeded();
-  expect(await inView(p, p.getByTestId("trip-waterfall")), "the inputs scroll on their own: the waterfall has not moved").toBe(true);
   await expect(p.getByTestId("trip-share-note")).toHaveText("20 % to your 1 crew.");
   // the fuel payment is the fuel bar's own worked sum
   await p.getByTestId("trip-waterfall").scrollIntoViewIfNeeded();
@@ -281,7 +308,9 @@ test("Save as new, Update, Duplicate, Rename, Delete and Undo: no accidental cop
   await type(p, "Catch", "450");
   await expect(p.getByTestId("trip-state")).toHaveText("Changes not saved");
   await p.getByTestId("trip-update").click();
-  await expect(said(p)).toContainText("Updated “");
+  // F-11: the name Neritic wrote follows the numbers
+  await expect(said(p)).toContainText("Updated “Dungeness crab, 450 lb at $9, 1 crew 20 % after costs,");
+  await expect(p.getByTestId("trip-name")).toContainText("Dungeness crab, 450 lb at $9");
   expect(await savedCount(p)).toBe(1);
   expect(await p.evaluate(() => JSON.parse(localStorage.getItem("nx-trip-v1:scenarios")!)[0].draft.inputs.catch[0].lb)).toBe(450);
 

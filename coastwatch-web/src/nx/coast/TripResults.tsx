@@ -96,6 +96,14 @@ export function TripResults({
   const main = rec ? shown.out.operating : shown.out.net;
   const share = shown.share;
   const perCrew = shown.out.perCrew;
+  // A bar that cannot be drawn yet says one word in its place; what it waits for is in its callout, and once
+  // for the whole chart in a sentence under it. (Six sentences side by side in a plot overprint each other.)
+  const bars = (r: TripResult) => r.steps.map((st) => (st.amount === null ? { ...st, waiting: "waiting", formula: st.waiting ? `${st.waiting.charAt(0).toUpperCase()}${st.waiting.slice(1)}` : undefined } : st));
+  const missingBars = result.steps.filter((st) => st.amount === null);
+  const stillWaiting =
+    missingBars.length && missingBars.length < result.steps.length && result.waiting.length
+      ? `${missingBars.length === 1 ? `${missingBars[0].label} is` : `${missingBars.length} bars are`} not drawn yet: still ${waitingWords({ status: "waiting", fields: result.waiting }, ws, fishery)}.`
+      : null;
   // a fuel break-even is a figure only where fuel could plausibly get there
   const beFuel = shown.out.breakEvenFuel;
   const fuelLimit = beFuel.status === "value" && beFuel.value <= FUEL_BREAK_EVEN_SHOWN_TO ? beFuel.value : null;
@@ -174,15 +182,21 @@ export function TripResults({
           <PlotState kind="missing" what={rec ? "The trip's costs" : "Gross to net to boat"} reason="Drawn as your numbers come in: each bar appears once its own fields are filled." height={220} />
         ) : (
         <WaterfallChart
-          steps={result.steps}
-          preview={moved ? shown.steps : null}
+          steps={bars(result)}
+          preview={moved ? bars(shown) : null}
           domain={domain}
           cents
           height={{ desktop: 260, phone: 240 }}
           label={rec ? "Fuel and costs up to the trip cost, hypothetical, from your numbers" : "Gross to net to boat, hypothetical, from your numbers"}
+          className={s.fallChart}
           data-testid="trip-waterfall"
         />
         )}
+        {stillWaiting ? (
+          <p className={s.fallWaiting} data-testid="trip-waterfall-waiting">
+            {stillWaiting}
+          </p>
+        ) : null}
         <p className={s.small}>Point at a bar, or use the arrow keys, to see how it was worked out.</p>
       </section>
 
