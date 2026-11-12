@@ -33,10 +33,10 @@ for (const s of shots) {
     }, s.mode ?? "");
     const page = await ctx.newPage();
     await page.goto(`${OK}/research?${s.q ?? Q}`);
-    await expect(page.getByTestId("research-strips")).toBeVisible();
+    await expect(page.getByTestId("research-record")).toBeVisible();
     await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 }).catch(() => undefined);
     if (s.mode) await page.evaluate((m) => document.documentElement.setAttribute("data-chart-mode", m), s.mode);
-    if (s.sheet) for (let i = 0; i < 2; i++) await page.getByRole("button", { name: "Show more of this page" }).click();
+    if (s.sheet) await page.getByTestId("research-chart").scrollIntoViewIfNeeded();
     if (s.open) await page.getByRole("button", { name: new RegExp(`^${s.open}`) }).click();
     await page.waitForTimeout(2200);
     await page.screenshot({ path: path.join(OUT, `${s.name}.png`) });
