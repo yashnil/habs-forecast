@@ -32,12 +32,12 @@ async function fill(p: Page, slow = 0) {
   await put("Bait and ice", "180");
   await put("Fees", "5");
   await put("Crew", "2");
-  await p.getByRole("radio", { name: "Share after costs" }).click();
+  await p.getByRole("radio", { name: "After costs" }).click();
   await put("Crew share", "30");
 }
 const payers = async (p: Page) => {
-  await p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared, off the top" }).click();
-  await p.getByRole("radiogroup", { name: "Who pays bait and ice" }).getByRole("radio", { name: "Shared, off the top" }).click();
+  await p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared" }).click();
+  await p.getByRole("radiogroup", { name: "Who pays bait and ice" }).getByRole("radio", { name: "Shared" }).click();
 };
 
 const status = (p: Page) => p.getByTestId("coast-status");
@@ -99,8 +99,8 @@ test("a trip from Moss Landing: gates, the sea, the money, a scenario, saved and
   await fill(p, MEDIA ? 70 : 0);
   await expect(exact(p, "trip-gross")).toHaveText("$3,800.00");
   // who pays has no default: the groups look unset and net waits for them
-  await expect(p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared, off the top" })).toHaveAttribute("aria-checked", "false");
-  await expect(p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "The boat" })).toHaveAttribute("aria-checked", "false");
+  await expect(p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared" })).toHaveAttribute("aria-checked", "false");
+  await expect(p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Boat" })).toHaveAttribute("aria-checked", "false");
   await expect(p.getByTestId("trip-net")).toContainText("waiting for who pays fuel and who pays bait and ice");
   await payers(p);
   // R = 3800, fees 190, D = 552 + 180 = 732, N = 2878, crew 863.40, net 2014.60
@@ -137,7 +137,7 @@ test("a trip from Moss Landing: gates, the sea, the money, a scenario, saved and
   await p.reload();
   await expect(p.getByTestId("trip-inputs")).toBeVisible();
   await expect(field(p, "Catch")).toHaveValue("800");
-  await expect(p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared, off the top" })).toHaveAttribute("aria-checked", "true");
+  await expect(p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared" })).toHaveAttribute("aria-checked", "true");
   await expect(exact(p, "trip-net")).toHaveText("$2,014.60");
   await expect(p.getByTestId("trip-state")).toContainText(/^Saved /);
   await p.getByTestId("trip-clear").click();

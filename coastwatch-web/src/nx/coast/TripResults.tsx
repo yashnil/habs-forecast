@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { AxisX, AxisY, BreakEvenMarker, Button, Crosshair, Figure, GridY, Hint, Line, NowRule, Plot, Points, PlotState, Segmented, SensitivityGrid, Tip, useMedia, WaterfallChart, type PlotPoint, type WaterfallStep } from "@/nx/ds";
+import { AxisX, AxisY, BreakEvenMarker, Button, Crosshair, Figure, GridY, Line, NowRule, Plot, Points, PlotState, Segmented, SensitivityGrid, Tip, useMedia, WaterfallChart, type PlotPoint } from "@/nx/ds";
 import { HYPOTHETICAL, type TripFlag } from "./context";
 import type { CoastFishery } from "./fisheries";
 import {
@@ -9,6 +9,7 @@ import {
   breakEvenCatchText,
   breakEvenFuelText,
   breakEvenPriceText,
+  FUEL_BREAK_EVEN_SHOWN_TO,
   gridValue,
   GRID_COLS,
   GRID_ROWS,
@@ -16,7 +17,6 @@ import {
   moneyExtent,
   sweep,
   waitingWords,
-  type OutputId,
   type Result,
   type Scale,
   type SweepVariable,
@@ -60,9 +60,6 @@ const VIEWS: Array<{ value: "grid" | "sweep"; label: string }> = [
   { value: "sweep", label: "One at a time" },
 ];
 
-/** The step ids of the waterfall and the output each one's worked sum comes from. */
-const STEP_OUTPUT: Record<string, OutputId> = { gross: "gross", fees: "fees", fuel: "fuel", crew: "crewPay", net: "net" };
-
 /**
  * The trip's results: the one figure the view exists for (net to boat, or a recreational trip's cost), what it
  * is made of, the waterfall from gross down to it, and what happens to it when the catch, the price or fuel
@@ -70,7 +67,25 @@ const STEP_OUTPUT: Record<string, OutputId> = { gross: "gross", fees: "fees", fu
  * says which fields it waits for, never 0. A previewed grid cell moves the hero, the figures and the waterfall
  * together, so the scenario is read where the result is.
  */
-export function TripResults({ ws, result, look, fishery, flag, strip }: { ws: Workspace; result: TripResult; look: TripPreview; fishery: CoastFishery | null; flag: TripFlag | null; /** the scenario strip, set between the figures and the waterfall */ strip?: ReactNode }) {
+export function TripResults({
+  ws,
+  result,
+  look,
+  fishery,
+  flag,
+  saving,
+  more,
+}: {
+  ws: Workspace;
+  result: TripResult;
+  look: TripPreview;
+  fishery: CoastFishery | null;
+  flag: TripFlag | null;
+  /** the saving controls, when the page has no room for them in its header (a phone): set under the figures */
+  saving?: ReactNode;
+  /** the quieter trip actions and the saved trips, set under the waterfall */
+  more?: ReactNode;
+}) {
   const unit = fishery?.unit ?? "lb";
   const rec = result.audience === "recreational";
   const { shown, moved, pinned, setHover, setPinned } = look;
@@ -80,97 +95,101 @@ export function TripResults({ ws, result, look, fishery, flag, strip }: { ws: Wo
   // on their own the bars take the whole height
   const domain = useMemo(() => (moved ? moneyExtent(ws, fishery) : undefined), [moved, ws, fishery]);
 
-  const steps = (r: TripResult): WaterfallStep[] =>
-    r.steps.map((st) => {
-      const o = STEP_OUTPUT[st.id] ? r.out[rec && st.id === "net" ? "operating" : STEP_OUTPUT[st.id]] : null;
-      return { ...st, formula: o && o.status === "value" ? o.formula : undefined };
-    });
-
   const fig = (r: Result) => ({ value: r.status === "value" ? r.value : null, waiting: r.status === "waiting" ? (waitingWords(r, ws, fishery) ?? undefined) : r.status === "none" ? r.reason : "does not apply" });
   const main = rec ? shown.out.operating : shown.out.net;
   const share = shown.share;
   const perCrew = shown.out.perCrew;
+  // a fuel break-even is a figure only where fuel could plausibly get there
+  const beFuel = shown.out.breakEvenFuel;
+  const fuelLimit = beFuel.status === "value" && beFuel.value <= FUEL_BREAK_EVEN_SHOWN_TO ? beFuel.value : null;
   const crewNote = perCrew.status === "value" && share && share.crew > 1 ? `${money(perCrew.value)} each of ${share.crew}` : perCrew.status === "value" && !share ? `${money(perCrew.value)} each` : perCrew.status === "na" ? "Nobody else is paid" : undefined;
 
   return (
     <div className={s.results} data-testid="trip-results">
       <section className={s.hero} aria-label={rec ? "Trip cost, hypothetical, from your numbers" : "Net to boat, hypothetical, from your numbers"} data-testid="trip-hero">
-        <p className={s.hypo}>
-          {HYPOTHETICAL}{" "}
-          <span aria-live="polite" data-testid="trip-showing">
-            {look.words}
-          </span>
-          {pinned && moved ? (
-            <Button variant="quiet" className={s.inlineButton} onClick={() => setPinned(null)}>
-              Back to your numbers
-            </Button>
-          ) : null}
+        <div className={s.heroRow} data-ready={main.status === "value" || undefined}>
+          <Figure
+            size="xl"
+            label={
+              <>
+                {rec ? "Trip cost" : "Net to boat"} <span className={s.hypo}>{HYPOTHETICAL}</span>{" "}
+                <span className={s.hypo} aria-live="polite" data-testid="trip-showing">
+                  {look.words}
+                </span>
+              </>
+            }
+            format="money"
+            cents
+            {...fig(main)}
+            data-testid="trip-net"
+          />
+          {rec ? (
+            <Figure size="l" label="Each person" format="money" cents {...fig(shown.out.perPerson)} data-testid="trip-per-person" />
+          ) : (
+            <div className={s.heroSide}>
+              <Figure size="m" layout="inline" label="Break-even catch" format={(v) => breakEvenCatchText(v, unit)} {...fig(shown.out.breakEvenCatch)} data-testid="trip-be-catch" />
+              <Figure size="m" layout="inline" label="Break-even price" format={(v) => breakEvenPriceText(v, unit)} {...fig(shown.out.breakEvenPrice)} data-testid="trip-be-price" />
+              <span className={s.heroSideNote}>Break-evens are rounded up.</span>
+            </div>
+          )}
+        </div>
+        {pinned && moved ? (
+          <Button variant="quiet" className={s.compact} onClick={() => setPinned(null)}>
+            Back to your numbers
+          </Button>
+        ) : null}
+        <p className={s.heroNote} data-testid="trip-note">
+          {rec ? "What the trip costs. A recreational catch is not sold: there is no price, gross or net." : "Before insurance, permits, upkeep, loans and your own pay. Not profit or take-home pay."}
         </p>
-        <Figure
-          size="xl"
-          label={rec ? "Trip cost" : "Net to boat"}
-          format="money"
-          cents
-          {...fig(main)}
-          note={rec ? "What the trip costs. A recreational catch is not sold: there is no price, gross or net." : "Before insurance, permits, maintenance, loan payments and your own pay. Not profit or take-home pay."}
-          data-testid="trip-net"
-        />
-      </section>
-
-      {flag || result.warnings.length ? (
-        <div className={s.notices}>
         {flag ? (
-          <Hint tone="caution" className={s.flag}>
-            <span data-testid="trip-flag">{flag.words}</span>
-          </Hint>
+          <p className={s.flag} role="note" data-testid="trip-flag">
+            {flag.words}
+          </p>
         ) : null}
         {result.warnings.map((w) => (
-          <Hint key={w} tone="caution">
-            <span data-testid="trip-warning">{w}</span>
-          </Hint>
+          <p key={w} className={s.flag} role="note" data-testid="trip-warning">
+            {w}
+          </p>
         ))}
-        </div>
-      ) : null}
+      </section>
 
       <div className={s.figures} data-testid="trip-figures">
         {rec ? (
           <>
-            <Figure size="l" label="Each person" format="money" cents {...fig(shown.out.perPerson)} data-testid="trip-per-person" />
-            <Figure size="l" label="Fuel" format="money" cents {...fig(shown.out.fuel)} data-testid="trip-fuel" />
-            <Figure size="l" label="Other costs" format="money" cents {...fig(shown.out.otherCosts)} data-testid="trip-other" />
+            <Figure size="m" label="Fuel" format="money" cents {...fig(shown.out.fuel)} data-testid="trip-fuel" />
+            <Figure size="m" label="Other costs" format="money" cents {...fig(shown.out.otherCosts)} data-testid="trip-other" />
           </>
         ) : (
           <>
-            <Figure size="l" label="Gross" format="money" cents {...fig(shown.out.gross)} data-testid="trip-gross" />
-            <Figure size="l" label="Operating costs" format="money" cents {...fig(shown.out.operating)} note="Fuel and the trip's cost lines" data-testid="trip-operating" />
-            <Figure size="l" label="Crew pay" format="money" cents {...fig(shown.out.crewPay)} note={crewNote} data-testid="trip-crew" />
-            <Figure size="l" label="Break-even catch" format={(v) => breakEvenCatchText(v, unit)} {...fig(shown.out.breakEvenCatch)} note="Rounded up" data-testid="trip-be-catch" />
-            <Figure size="l" label="Break-even price" format={(v) => breakEvenPriceText(v, unit)} {...fig(shown.out.breakEvenPrice)} note="Rounded up" data-testid="trip-be-price" />
+            <Figure size="m" label="Gross" format="money" cents {...fig(shown.out.gross)} data-testid="trip-gross" />
             {shown.out.fees.status === "value" && shown.out.fees.value > 0 ? <Figure size="m" label="Fees" format="money" cents {...fig(shown.out.fees)} data-testid="trip-fees" /> : null}
-            {shown.out.breakEvenFuel.status === "value" ? <Figure size="m" label="Fuel could cost up to" format={breakEvenFuelText} {...fig(shown.out.breakEvenFuel)} data-testid="trip-be-fuel" /> : null}
+            <Figure size="m" label="Operating costs" format="money" cents {...fig(shown.out.operating)} data-testid="trip-operating" />
+            <Figure size="m" label="Crew pay" format="money" cents {...fig(shown.out.crewPay)} note={crewNote} data-testid="trip-crew" />
+            {fuelLimit !== null ? <Figure size="m" label="Break-even fuel price" format={breakEvenFuelText} value={fuelLimit} data-testid="trip-be-fuel" /> : null}
           </>
         )}
       </div>
 
-      {strip}
+      {saving}
 
-      <section aria-labelledby="trip-waterfall">
-        <h3 id="trip-waterfall" className={s.h3}>
-          {rec ? "What the trip costs" : "From gross to net to boat"}
-        </h3>
+      <section aria-label={rec ? "What the trip costs" : "From gross to net to boat"} className={s.fall}>
+        {result.steps.every((st) => st.amount === null) ? (
+          <PlotState kind="missing" what={rec ? "The trip's costs" : "Gross to net to boat"} reason="Drawn as your numbers come in: each bar appears once its own fields are filled." height={220} />
+        ) : (
         <WaterfallChart
-          steps={steps(result)}
-          preview={moved ? steps(shown) : null}
+          steps={result.steps}
+          preview={moved ? shown.steps : null}
           domain={domain}
           cents
-          height={{ desktop: 320, phone: 240 }}
+          height={{ desktop: 260, phone: 240 }}
           label={rec ? "Fuel and costs up to the trip cost, hypothetical, from your numbers" : "Gross to net to boat, hypothetical, from your numbers"}
           data-testid="trip-waterfall"
-        >
-          {rec ? null : <BreakEvenMarker label="Net to boat $0" />}
-        </WaterfallChart>
+        />
+        )}
         <p className={s.small}>Point at a bar, or use the arrow keys, to see how it was worked out.</p>
       </section>
+
+      {more}
 
       {rec ? (
         result.fuelSwing ? (
@@ -270,7 +289,7 @@ function SweepPlot({ ws, fishery, variable, setVariable }: { ws: Workspace; fish
                 ? `Net to boat falls to $0 once fuel costs more than ${breakEvenFuelText(be)}.`
                 : `Net to boat reaches $0 at ${variable === "catch" ? breakEvenCatchText(be, unit) : breakEvenPriceText(be, unit)} (rounded up).`
               : variable === "fuelPrice"
-                ? "Net to boat stays above $0 across this range of fuel prices."
+                ? "Net to boat stays above $0 at every fuel price in this range."
                 : "Net to boat does not cross $0 in this range."}{" "}
             Each point is your trip worked again with only the {what} changed. It is arithmetic, not a forecast of catch or price.
           </p>

@@ -3,6 +3,19 @@
 .aside {
   font-variant-numeric: tabular-nums;
 }
+/* the inputs column holds its place under the header and scrolls inside itself, so typing in a lower field never
+   moves the results; its height follows the header's real height (set by the page as --desk-aside-top) */
+@container nx-desk (min-width: 880px) {
+  .aside {
+    max-height: calc(100dvh - var(--bar-h) - var(--desk-aside-top, 96px) - var(--s-16));
+    padding-right: var(--s-8);
+  }
+}
+.compact {
+  justify-self: start;
+  min-height: var(--s-32);
+  font-size: var(--type-small);
+}
 .h2 {
   margin: 0;
   font: 600 var(--type-head) / var(--lh-snug) var(--font-sans);
@@ -38,14 +51,14 @@
 .inputs {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-24);
-  margin-top: var(--s-16);
+  gap: var(--s-16);
+  margin-top: var(--s-12);
 }
 .group {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-8);
-  padding-top: var(--s-12);
+  gap: var(--s-4);
+  padding-top: var(--s-8);
   border-top: var(--rule) solid var(--ink);
 }
 .groupHead {
@@ -55,7 +68,11 @@
 .line {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-8);
+  gap: var(--s-4);
+}
+.derived {
+  margin: 0 0 var(--s-4);
+  line-height: var(--lh-snug);
 }
 .line + .line {
   padding-top: var(--s-8);
@@ -105,7 +122,7 @@
   grid-template-columns: minmax(0, 1fr);
   /* a figure or a bar's amount wider than a narrow screen is clipped here, never a sideways scroll of the page */
   overflow-x: clip;
-  gap: var(--s-24);
+  gap: var(--s-8);
   font-variant-numeric: tabular-nums;
 }
 .anchor {
@@ -114,16 +131,51 @@
 .hero {
   background: var(--paper);
 }
-.notices {
-  display: grid;
-  gap: var(--s-8);
+/* the one result, with the catch and the price that break even beside it */
+.heroRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-8) var(--s-32);
 }
-.hypo {
-  margin: 0 0 var(--s-4);
+.heroRow > * {
+  min-width: 0;
+}
+/* wide: the break-evens stand beside the result, not under it */
+@container nx-desk (min-width: 880px) {
+  /* once there is a result; while it waits, its words take the line and the break-evens go under */
+  .heroRow[data-ready] {
+    flex-wrap: nowrap;
+  }
+  .heroRow[data-ready] > :first-child {
+    flex: 0 1 auto;
+  }
+  .heroRow[data-ready] > .heroSide {
+    flex: 0 0 auto;
+  }
+}
+.heroSide {
+  display: grid;
+  gap: 0;
+  padding-bottom: var(--s-8);
+}
+.heroSideNote {
   font-size: var(--type-small);
   color: var(--ink-2);
-  /* room for the preview line, so the figure below never moves under the pointer */
-  min-height: calc(var(--type-small) * 1.5);
+}
+.heroNote {
+  margin: var(--s-4) 0 0;
+  font-size: var(--type-small);
+  line-height: var(--lh-snug);
+  color: var(--ink-2);
+}
+.fall {
+  min-width: 0;
+}
+.hypo {
+  font-size: var(--type-small);
+  font-weight: 400;
+  color: var(--ink-2);
 }
 .inlineButton {
   min-height: 0;
@@ -132,13 +184,20 @@
   vertical-align: baseline;
 }
 .flag {
-  max-width: var(--measure);
+  margin: var(--s-4) 0 0;
+  padding-left: var(--s-8);
+  border-left: var(--rule) solid var(--reg-text);
+  font-size: var(--type-small);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+  color: var(--reg-text);
 }
+/* what the result is made of: one compact row */
 .figures {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--s-16) var(--s-24);
-  padding: var(--s-16) 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-32);
+  padding: var(--s-4) 0;
   border-top: var(--hair) solid var(--rule-soft);
   border-bottom: var(--hair) solid var(--rule-soft);
 }
@@ -185,19 +244,34 @@
       position: sticky;
       top: var(--trip-top, 120px);
       z-index: 2;
-      padding: var(--s-8) 0 var(--s-12);
-      border-bottom: var(--hair) solid var(--rule-soft);
+      padding: var(--s-4) 0 var(--s-8);
     }
   }
 }
 
 /* ---------------------------------------------------------------- scenario strip, saved trips */
-.strip {
+.scBar {
   display: grid;
-  gap: var(--s-8);
-  padding: var(--s-16) 0;
-  border-top: var(--rule) solid var(--ink);
+  gap: var(--s-4);
+  min-width: 0;
+  max-width: 420px;
+}
+.scBar .said {
+  margin: 0;
+  line-height: var(--lh-snug);
+}
+.scMore {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-8) 0;
+  border-top: var(--hair) solid var(--rule-soft);
   border-bottom: var(--hair) solid var(--rule-soft);
+}
+.scMoreActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-24);
 }
 .stripHead {
   display: flex;
@@ -324,8 +398,43 @@
   .netBarShowing {
     color: var(--ink-2);
   }
-  .figures {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* thumbs: the quiet actions keep a full target on a phone */
+  .compact {
+    min-height: var(--target);
+    font-size: var(--type-body);
+  }
+  .scBar {
+    max-width: none;
+    padding: var(--s-8) 0;
+  }
+  /* a phone opens with the first input in reach: the column's own heading gives way to the group's */
+  .aside > .h2 {
+    display: none;
+  }
+  /* the fishery and the way back share one line on a phone: the select says "fishery" by what it holds */
+  .pinned > :first-child {
+    flex: 0 1 auto;
+    display: block;
+    max-width: 50%;
+  }
+  .pinned {
+    column-gap: var(--s-12);
+  }
+  .pinned > :first-child > label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pinned > :first-child > select {
+    max-width: 100%;
+    text-align: left;
+    padding-left: 0;
+  }
+  .inputs {
+    margin-top: var(--s-8);
   }
 }
 
@@ -334,7 +443,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--s-4) var(--s-24);
+  gap: 0 var(--s-24);
+}
+/* the fishery and the way back share a line; the season line takes its own, whole */
+.pinned > :first-child {
+  flex: 0 1 300px;
+  margin-top: 0;
+}
+.pinned .chip {
+  flex: 1 0 100%;
+  order: 3;
+}
+.pinned .carried {
+  flex: 1 0 100%;
+  order: 4;
 }
 .chip {
   justify-content: flex-start;

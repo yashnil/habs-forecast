@@ -2,7 +2,7 @@
 
 import { MotionConfig } from "motion/react";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { setChartHighlight } from "@/nx/chart/highlight";
 import { ChartRegulation, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene, tallBoundsAround, type ChartScene as Scene } from "@/nx/chart/scene";
@@ -91,7 +91,8 @@ export function CoastPage() {
     const ro = new ResizeObserver(set);
     ro.observe(head);
     return () => ro.disconnect();
-  }, []);
+    // each state renders its own header element
+  }, [view]);
 
   // a crab trip's water is its RAMP zone, drawn whole (already a tall box, as the pane beside the desk is);
   // otherwise the port's own water, with a run of coast either side of it for a tall pane
@@ -106,6 +107,73 @@ export function CoastPage() {
   // short enough to stay whole on a 320 px screen once the header condenses: the port is in the title beside it
   // and the fishery in the control under it, so all of them stay in view together
   const context = [trip ? "Hypothetical trip" : "My Coast", fishery ? (audience === "recreational" ? "Recreational, cost only" : "Commercial") : null].filter(Boolean).join(" · ");
+  /**
+   * The desk header, the same in both states: context, title, and pinned under it the fishery, the official season
+   * line (it opens the gates) and anything carried from Explore. The trip hands it its saving controls as actions;
+   * the brief leads with the way into the trip.
+   */
+  const header = (actions: ReactNode) => (
+    <DeskHeader
+      context={context}
+      title={port ? `A trip from ${port.name}` : "Plan a trip"}
+      titleProps={{ "data-testid": "coast-title" }}
+      status={trip ? undefined : "The gates for your fishery and the sea window. Then work the money out from your own numbers."}
+      actions={
+        <>
+          {actions}
+          <ChartToggle />
+        </>
+      }
+      pinned={
+        <div className={t.pinned}>
+          <div className={s.fishery}>
+            <label htmlFor={selectId} className={s.fisheryLabel}>
+              Fishery
+            </label>
+            <select id={selectId} className={s.select} value={fishery?.id ?? ""} onChange={(e) => e.target.value && setFishery(e.target.value as FisheryId)} data-testid="coast-fishery">
+              {fishery ? null : <option value="">Choose one</option>}
+              <optgroup label="Commercial">
+                {COAST_FISHERIES.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Recreational (cost only)">
+                {RECREATIONAL_FISHERIES.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+          {trip ? (
+            <Button variant="quiet" className={t.compact} onClick={() => setView("brief")} aria-label="Back to the gates and sea window" data-testid="coast-to-brief">
+              Gates and sea
+            </Button>
+          ) : null}
+          {chip ? (
+            <Button variant="quiet" className={t.chip} data-tone={chip.tone} onClick={() => setGatesOpen(true)} aria-haspopup="dialog" data-testid="coast-status">
+              {chip.words}
+            </Button>
+          ) : null}
+          {brought.point || brought.date ? (
+            <p className={t.carried} data-testid="coast-carried">
+              {[brought.point, brought.date].filter(Boolean).join(" · ")}
+            </p>
+          ) : null}
+        </div>
+      }
+    >
+      {trip ? null : (
+        <Button variant="primary" onClick={() => setView("trip")} data-testid="coast-to-trip">
+          Work out the money
+        </Button>
+      )}
+    </DeskHeader>
+  );
+
   return (
     <MotionConfig reducedMotion="user">
       <ChartScene scene={scene} />
@@ -114,62 +182,10 @@ export function CoastPage() {
       <PageLayout mode="desk" paneKey="coast" />
       <article className={s.page} data-testid="nx-coast" data-view={view} ref={page}>
         <Desk>
-          <DeskHeader
-            context={context}
-            title={port ? `A trip from ${port.name}` : "Plan a trip"}
-            titleProps={{ "data-testid": "coast-title" }}
-            status={trip ? "Your own numbers worked through. Nothing here is filled in, forecast or advised." : "The gates for your fishery and the sea window. Then work the money out from your own numbers."}
-            actions={<ChartToggle />}
-            pinned={
-              <div className={t.pinned}>
-                <div className={s.fishery}>
-                  <label htmlFor={selectId} className={s.fisheryLabel}>
-                    Fishery
-                  </label>
-                  <select id={selectId} className={s.select} value={fishery?.id ?? ""} onChange={(e) => e.target.value && setFishery(e.target.value as FisheryId)} data-testid="coast-fishery">
-                    {fishery ? null : <option value="">Choose one</option>}
-                    <optgroup label="Commercial">
-                      {COAST_FISHERIES.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Recreational (cost only)">
-                      {RECREATIONAL_FISHERIES.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
-                {chip ? (
-                  <Button variant="quiet" className={t.chip} data-tone={chip.tone} onClick={() => setGatesOpen(true)} aria-haspopup="dialog" data-testid="coast-status">
-                    {chip.words}
-                  </Button>
-                ) : null}
-                {brought.point || brought.date ? (
-                  <p className={t.carried} data-testid="coast-carried">
-                    {[brought.point, brought.date].filter(Boolean).join(" · ")}
-                  </p>
-                ) : null}
-              </div>
-            }
-          >
-            {trip ? (
-              <Button variant="secondary" onClick={() => setView("brief")} data-testid="coast-to-brief">
-                Back to the gates and sea window
-              </Button>
-            ) : (
-              <Button variant="primary" onClick={() => setView("trip")} data-testid="coast-to-trip">
-                Work out the money
-              </Button>
-            )}
-          </DeskHeader>
+          {trip ? null : header(null)}
 
           {trip ? (
-            <TripWorkspace fishery={fishery} placeKey={port?.key ?? ""} onFishery={onFishery} now={now} flag={flag} />
+            <TripWorkspace fishery={fishery} placeKey={port?.key ?? ""} onFishery={onFishery} now={now} flag={flag} header={header} />
           ) : (
             <DeskBody layout="main-aside" aside="start">
               <DeskAside label="Gates">

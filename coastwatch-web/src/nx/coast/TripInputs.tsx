@@ -29,21 +29,27 @@ import {
 import s from "./trip.module.css";
 
 const CREW_KINDS: Array<{ value: CrewKind; label: string }> = [
-  { value: "afterExpenses", label: "Share after costs" },
-  { value: "ofGross", label: "Share of gross" },
+  { value: "afterExpenses", label: "After costs" },
+  { value: "ofGross", label: "Of gross" },
   { value: "dayRate", label: "Day rate" },
 ];
+/** What each way of paying crew means, said under the control once it is chosen. */
+const CREW_WORDS: Record<CrewKind, string> = {
+  afterExpenses: "A share of what is left after fees and the shared costs.",
+  ofGross: "A share of gross, before any cost comes off.",
+  dayRate: "A day rate for each person, whatever the catch.",
+};
 const PAYERS: Array<{ value: Payer; label: string }> = [
-  { value: "shared", label: "Shared, off the top" },
-  { value: "boat", label: "The boat" },
+  { value: "shared", label: "Shared" },
+  { value: "boat", label: "Boat" },
 ];
 const ROUTES: Array<{ value: FuelRoute; label: string }> = [
   { value: "gallons", label: "Gallons" },
-  { value: "distance", label: "Distance and burn" },
+  { value: "distance", label: "Distance" },
 ];
 const BASES: Array<{ value: ShareBasis; label: string }> = [
-  { value: "total", label: "Crew's total" },
-  { value: "each", label: "Each person" },
+  { value: "total", label: "Total" },
+  { value: "each", label: "Each" },
 ];
 
 /**
@@ -108,7 +114,7 @@ export function TripInputs({ ws, edit, result, fishery, now }: { ws: Workspace; 
             );
           })}
           {ws.catch.length < MAX_CATCH_ROWS ? (
-            <Button variant="quiet" icon="plus" onClick={() => edit(addCatch)}>
+            <Button variant="quiet" icon="plus" className={s.compact} onClick={() => edit(addCatch)}>
               Add a species
             </Button>
           ) : null}
@@ -145,6 +151,11 @@ export function TripInputs({ ws, edit, result, fishery, now }: { ws: Workspace; 
           </>
         )}
         {payers && n.gallons !== 0 ? <Segmented label="Who pays fuel" options={PAYERS} value={ws.fuelPayer} onChange={(v) => edit((w) => ({ ...w, fuelPayer: v }))} fit="equal" /> : null}
+        {payers ? (
+          <p className={s.derived} data-testid="trip-payer-words">
+            Shared: taken off the top, before the crew&apos;s share is worked out. Boat: paid from the boat&apos;s own share.
+          </p>
+        ) : null}
 
         {ws.costs.map((c, i) => {
           const name = c.label || `Cost ${i + 1}`;
@@ -162,16 +173,16 @@ export function TripInputs({ ws, edit, result, fishery, now }: { ws: Workspace; 
           );
         })}
         {ws.costs.length < MAX_COST_ROWS ? (
-          <Button variant="quiet" icon="plus" onClick={() => edit(addCost)}>
+          <Button variant="quiet" icon="plus" className={s.compact} onClick={() => edit(addCost)}>
             Add a cost
           </Button>
         ) : null}
 
         {recreational ? null : (
           <>
-            <ScrubNumber label="Fees" value={ws.feesPct} onChange={scalar("feesPct")} unit="% of gross" step={0.5} decimals={1} size={4} {...note("feesPct", "Landing fees and buyer deductions; 0 if none.")} />
+            <ScrubNumber label="Fees" value={ws.feesPct} onChange={scalar("feesPct")} unit="% of gross" step={0.5} decimals={1} size={4} {...note("feesPct", "Landing and buyer fees; 0 if none.")} />
             {ws.feesPerUnit === null ? (
-              <Button variant="quiet" icon="plus" onClick={() => edit((w) => ({ ...w, feesPerUnit: "" }))}>
+              <Button variant="quiet" icon="plus" className={s.compact} onClick={() => edit((w) => ({ ...w, feesPerUnit: "" }))}>
                 Add a fee per {unit === "ton" ? "ton" : "pound"}
               </Button>
             ) : (
@@ -196,8 +207,13 @@ export function TripInputs({ ws, edit, result, fishery, now }: { ws: Workspace; 
           <h3 id="trip-in-crew" className={s.groupHead}>
             Crew pay
           </h3>
-          <ScrubNumber label="Crew" value={ws.crew} onChange={scalar("crew")} unit="people" step={1} size={3} {...note("crew", "Not counting you; 0 if nobody else is paid.")} />
+          <ScrubNumber label="Crew" value={ws.crew} onChange={scalar("crew")} unit="people" step={1} size={3} {...note("crew", "Not counting you; 0 if none are paid.")} />
           {n.crew === 0 ? null : <Segmented label="How crew is paid" options={CREW_KINDS} value={ws.crewKind} onChange={(v) => edit((w) => ({ ...w, crewKind: v }))} fit="equal" />}
+          {n.crew !== 0 && ws.crewKind ? (
+            <p className={s.derived} data-testid="trip-crew-words">
+              {CREW_WORDS[ws.crewKind]}
+            </p>
+          ) : null}
           {shareKind ? (
             <>
               {n.crew! > 1 ? <Segmented label="Crew share is" options={BASES} value={ws.shareBasis} onChange={(v) => edit((w) => setShareBasis(w, fishery, v))} fit="equal" /> : null}

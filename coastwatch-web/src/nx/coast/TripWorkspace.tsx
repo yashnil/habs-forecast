@@ -1,26 +1,30 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Button, DeskAside, DeskBody, DeskMain, DeskSticky } from "@/nx/ds";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Button, DeskAside, DeskBody, DeskMain, DeskSticky, usePhone } from "@/nx/ds";
 import type { TripFlag } from "./context";
 import { tripFishery, type CoastFishery } from "./fisheries";
 import { readShare } from "./scenarios";
 import { TripInputs } from "./TripInputs";
 import { TripResults, useTripPreview } from "./TripResults";
-import { TripScenarios } from "./TripScenarios";
+import { useTripScenarios } from "./TripScenarios";
 import { useTripWorkspace } from "./useTripWorkspace";
 import { breakEvenCatchText, money } from "./workspace";
 import s from "./trip.module.css";
 
 /**
- * The trip workspace (v13): inputs in the aside, the result and what it is made of in the main, both in view
- * together on a wide screen. On a phone the page scrolls inputs first and a bar above the destinations keeps
- * the result (and any previewed scenario) in reach. All of it is the headless model in ./useTripWorkspace;
+ * The trip workspace (v13): inputs in the aside, the result, what it is made of and the waterfall in the main,
+ * all in one screen on a wide display. The saving controls go in the desk header there (`header` is the page's
+ * header, which takes them as its actions), so the results column spends its height on the figures. On a phone
+ * the page scrolls inputs first, a bar above the destinations keeps the result (and any held scenario) in
+ * reach, and the saving controls sit with the results. All of it is the headless model in ./useTripWorkspace;
  * this file only lays it out.
  */
-export function TripWorkspace({ fishery, placeKey, onFishery, now, flag }: { fishery: CoastFishery | null; placeKey: string; onFishery: (id: string) => void; now: Date | null; flag: TripFlag | null }) {
+export function TripWorkspace({ fishery, placeKey, onFishery, now, flag, header }: { fishery: CoastFishery | null; placeKey: string; onFishery: (id: string) => void; now: Date | null; flag: TripFlag | null; header: (actions: ReactNode) => ReactNode }) {
   const trip = useTripWorkspace({ placeKey, fishery, onFishery });
   const look = useTripPreview(trip.result, trip.preview);
+  const saving = useTripScenarios({ trip, fishery, placeKey });
+  const phone = usePhone();
   const hero = useRef<HTMLDivElement>(null);
 
   // a numbers-only link (#trip=…): its numbers become the worksheet, for the fishery its query names
@@ -51,8 +55,11 @@ export function TripWorkspace({ fishery, placeKey, onFishery, now, flag }: { fis
       : be.status === "value"
         ? `Break-even ${breakEvenCatchText(be.value, fishery?.unit ?? "lb")}`
         : "Hypothetical";
+  // the saving controls wait for the device's storage (they describe it), then stand where the screen has room
+  const bar = ready ? saving.bar : null;
   return (
     <>
+      {header(phone ? null : bar)}
       <DeskBody layout="main-aside" aside="start">
         <DeskAside label="Trip inputs" sticky className={s.aside}>
           <h2 className={s.h2}>Your numbers</h2>
@@ -61,7 +68,7 @@ export function TripWorkspace({ fishery, placeKey, onFishery, now, flag }: { fis
         </DeskAside>
         <DeskMain>
           <div ref={hero} className={s.anchor} />
-          <TripResults ws={trip.ws} result={trip.result} look={look} fishery={fishery} flag={flag} strip={<TripScenarios trip={trip} fishery={fishery} placeKey={placeKey} />} />
+          <TripResults ws={trip.ws} result={trip.result} look={look} fishery={fishery} flag={flag} saving={phone ? bar : null} more={saving.more} />
         </DeskMain>
       </DeskBody>
       <DeskSticky className={s.netBar} data-testid="trip-netbar">

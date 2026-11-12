@@ -45,14 +45,14 @@ export async function fillOwner(p: Page, o: { payers?: boolean } = {}) {
   await type(p, "Bait and ice", "100");
   await type(p, "Fees", "0");
   await type(p, "Crew", "1");
-  await p.getByRole("radio", { name: "Share after costs" }).click();
+  await p.getByRole("radio", { name: "After costs" }).click();
   await type(p, "Crew share", "20");
   if (o.payers !== false) await choosePayers(p);
 }
 
 export async function choosePayers(p: Page) {
-  await p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared, off the top" }).click();
-  await p.getByRole("radiogroup", { name: "Who pays bait and ice" }).getByRole("radio", { name: "Shared, off the top" }).click();
+  await p.getByRole("radiogroup", { name: "Who pays fuel" }).getByRole("radio", { name: "Shared" }).click();
+  await p.getByRole("radiogroup", { name: "Who pays bait and ice" }).getByRole("radio", { name: "Shared" }).click();
 }
 
 /** Wholly inside the viewport, below the app bar and (on a phone) above the destinations bar. */

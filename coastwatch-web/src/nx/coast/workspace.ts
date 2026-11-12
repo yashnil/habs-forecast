@@ -348,7 +348,15 @@ export type Result =
   /** does not apply (per crew with no crew; anything about a sale on a recreational trip) */
   | { status: "na" };
 
-export type Step = { id: string; label: string; kind: "gross" | "cost" | "net"; amount: number | null; waiting?: string };
+export type Step = {
+  id: string;
+  label: string;
+  kind: "gross" | "cost" | "net";
+  amount: number | null;
+  waiting?: string;
+  /** how the amount was worked out, to the cent, from the reader's own entries: "20 % × ($3,600.00 − $347.20) = $650.56" */
+  formula?: string;
+};
 
 export type ShareNote = {
   basis: ShareBasis;
@@ -446,7 +454,7 @@ export function evaluateWorkspace(ws: Workspace, f: CoastFishery | null, scale: 
   const grid = out.net.status === "value" && ev.sensitivity.status === "value" ? ev.sensitivity.value : null;
   const fuelSwing = done.status === "value" && ev.fuelSensitivity.status === "value" ? ev.fuelSensitivity.value : null;
   const waiting = ordered(Object.values(out).flatMap((r) => (r.status === "waiting" ? r.fields : [])));
-  return { audience, out, grid, fuelSwing, waiting, errors, clamped, warnings: ev.warnings, steps: steps(ws, f, n, out, audience), share: shareNote(ws, n, out, audience), evaluation: ev };
+  return { audience, out, grid, fuelSwing, waiting, errors, clamped, warnings: ev.warnings, steps: steps(ws, f, n, out, audience, scale), share: shareNote(ws, n, out, audience), evaluation: ev };
 }
 
 const say = (fields: FieldId[], ws: Workspace, f: CoastFishery | null) => {
@@ -457,11 +465,68 @@ const say = (fields: FieldId[], ws: Workspace, f: CoastFishery | null) => {
 /** "waiting for price", "waiting for catch and price", "waiting for fees, fuel used and 3 more". */
 export const waitingWords = (r: Result, ws: Workspace, f: CoastFishery | null) => (r.status === "waiting" ? say(r.fields, ws, f) : null);
 
-function steps(ws: Workspace, f: CoastFishery | null, n: Numbers, out: Record<OutputId, Result>, audience: TripAudience): Step[] {
-  const step = (id: string, label: string, kind: Step["kind"], r: Result): Step => ({ id, label, kind, amount: r.status === "value" ? r.value : null, waiting: waitingWords(r, ws, f) ?? (r.status === "none" ? "no value" : undefined) });
-  const cost = ws.costs.map((c, i): Step => ({ id: `cost-${i}`, label: c.label || `Cost ${i + 1}`, kind: "cost", amount: n.costs[i], waiting: n.costs[i] === null ? `waiting for ${fieldWords(`cost.${i}.usd`, ws, f)}` : undefined }));
+function steps(ws: Workspace, f: CoastFishery | null, n: Numbers, out: Record<OutputId, Result>, audience: TripAudience, scale: Scale): Step[] {
+  const sums = workedSums(ws, f, n, out, audience, scale);
+  const step = (id: string, label: string, kind: Step["kind"], r: Result): Step => ({ id, label, kind, amount: r.status === "value" ? r.value : null, waiting: waitingWords(r, ws, f) ?? (r.status === "none" ? "no value" : undefined), formula: r.status === "value" ? sums[id] : undefined });
+  const cost = ws.costs.map((c, i): Step => ({ id: `cost-${i}`, label: c.label || `Cost ${i + 1}`, kind: "cost", amount: n.costs[i], waiting: n.costs[i] === null ? `waiting for ${fieldWords(`cost.${i}.usd`, ws, f)}` : undefined, formula: n.costs[i] === null ? undefined : sums[`cost-${i}`] }));
   if (audience === "recreational") return [step("fuel", "Fuel", "cost", out.fuel), ...cost, step("net", "Trip cost", "net", out.operating)];
   return [step("gross", "Gross", "gross", out.gross), step("fees", "Fees", "cost", out.fees), step("fuel", "Fuel", "cost", out.fuel), ...cost, step("crew", "Crew pay", "cost", out.crewPay), step("net", "Net to boat", "net", out.net)];
+}
+
+/**
+ * Each step's worked sum, to the cent. Written here, from the reader's entries and the engine's results, so the
+ * waterfall reads in the same cents as the figures (the engine's own sentences are in whole dollars). Every
+ * amount in a sentence is an input or an engine output; the one figure put together here is the shared costs
+ * (the lines marked "shared", fuel included), by the engine's own definition, and a test holds that
+ * share × (gross − fees − shared costs) is the engine's crew pay.
+ */
+function workedSums(ws: Workspace, f: CoastFishery | null, n: Numbers, out: Record<OutputId, Result>, audience: TripAudience, scale: Scale): Record<string, string> {
+  const unit = f?.unit ?? "lb";
+  const val = (r: Result) => (r.status === "value" ? r.value : null);
+  const num = (v: number, d = 2) => v.toLocaleString("en-US", { maximumFractionDigits: d });
+  const sums: Record<string, string> = {};
+  const gross = val(out.gross);
+  const fees = val(out.fees);
+  const fuel = val(out.fuel);
+  const gallons = val(out.gallons);
+  const crewPay = val(out.crewPay);
+  const net = val(out.net);
+  const operating = val(out.operating);
+
+  if (gross !== null) {
+    const lines = n.catch.map((c, i) => `${ws.catch.length > 1 ? `${ws.catch[i].label || `line ${i + 1}`}: ` : ""}${num(c.amount! * scale.catch)} ${unit} × ${money(c.price! * scale.price)}`);
+    sums.gross = `${lines.join(" + ")} = ${money(gross)}`;
+  }
+  if (fees !== null && gross !== null) {
+    const parts = [`${num(n.feesPct ?? 0)} % × ${money(gross)}`];
+    if (n.feesPerUnit !== null) parts.push(`${money(n.feesPerUnit)}/${unit} × ${num(n.catch.reduce((a, c) => a + c.amount! * scale.catch, 0))} ${unit}`);
+    sums.fees = `${parts.join(" + ")} = ${money(fees)}`;
+  }
+  if (fuel !== null && gallons !== null) {
+    const how = ws.fuelRoute === "distance" ? ` (${[n.roundTripNm ? `${num(n.roundTripNm)} nm ÷ ${num(n.cruiseKt!)} kt × ${num(n.steamGph!)} gal/h` : null, n.fishingHours ? `${num(n.fishingHours)} h × ${num(n.fishingGph!)} gal/h` : null].filter(Boolean).join(" + ") || "no steaming, no fishing time"})` : "";
+    sums.fuel = gallons === 0 ? "No fuel burned" : `${num(gallons, 1)} gal${how} × ${money(n.fuelPrice!)}/gal = ${money(fuel)}`;
+  }
+  const paying = payersMatter(ws, n, audience);
+  ws.costs.forEach((c, i) => {
+    if (n.costs[i] === null) return;
+    sums[`cost-${i}`] = `${money(n.costs[i]!)}, as entered${paying && c.payer ? (c.payer === "shared" ? "; shared, off the top" : "; paid by the boat") : ""}`;
+  });
+  if (audience === "recreational") {
+    if (operating !== null && fuel !== null) sums.net = `${money(fuel)} fuel + ${money(operating - fuel)} other costs = ${money(operating)}`;
+    return sums;
+  }
+  if (crewPay !== null) {
+    if (n.crew === 0) sums.crew = "Nobody else is paid";
+    else if (ws.crewKind === "dayRate") sums.crew = `${n.crew} crew × ${money(n.dayRate!)} a day × ${num(n.days!)} ${n.days === 1 ? "day" : "days"} = ${money(crewPay)}`;
+    else if (ws.crewKind === "ofGross" && gross !== null) sums.crew = `${num(n.totalPct!)} % × ${money(gross)} gross = ${money(crewPay)}`;
+    else if (ws.crewKind === "afterExpenses" && gross !== null && fees !== null) {
+      const shared = (ws.fuelPayer === "shared" ? (fuel ?? 0) : 0) + ws.costs.reduce((a, c, i) => a + (c.payer === "shared" ? (n.costs[i] ?? 0) : 0), 0);
+      const left = gross - fees - shared;
+      sums.crew = left > 0 ? `${num(n.totalPct!)} % × (${money(gross)} gross − ${money(fees)} fees − ${money(shared)} shared costs) = ${money(crewPay)}` : `Gross less fees and shared costs is ${money(left)}: nothing is left to share`;
+    }
+  }
+  if (net !== null && gross !== null && fees !== null && operating !== null && crewPay !== null) sums.net = `${money(gross)} gross − ${money(fees)} fees − ${money(operating)} trip costs − ${money(crewPay)} crew = ${money(net)}`;
+  return sums;
 }
 
 /** The crew share said both ways ("20 % in total, split 2 ways: 10 % each"), with the dollars once they exist. */
@@ -588,8 +653,14 @@ export function breakEvenPriceText(v: number, unit: "lb" | "ton"): string {
 
 /** The most fuel can cost before net to boat falls to $0, rounded down: a cent more would lose money. */
 export function breakEvenFuelText(v: number): string {
-  return v > 50 ? "over $50/gal" : `$${roundDown(v, 0.01).toFixed(2)}/gal`;
+  return `$${roundDown(v, 0.01).toFixed(2)}/gal`;
 }
+
+/**
+ * A fuel break-even is worth a figure only where fuel could plausibly get there: the worksheet takes a fuel
+ * price up to $50/gal, and a trip that still clears at ten times today's price says nothing by saying so.
+ */
+export const FUEL_BREAK_EVEN_SHOWN_TO = 50;
 
 // ---------------------------------------------------------------- assumptions, in plain words
 

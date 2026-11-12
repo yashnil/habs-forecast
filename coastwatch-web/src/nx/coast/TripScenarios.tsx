@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Button, ButtonGroup, Drawer, EditableText } from "@/nx/ds";
 import { usePorts } from "@/nx/shell/port";
 import type { CoastFishery } from "./fisheries";
@@ -13,12 +13,17 @@ import s from "./trip.module.css";
 type Said = { words: string; twin?: { id: string; name: string } } | null;
 
 /**
- * The scenario strip and the saved trips. What Save will do is said before it is pressed: "Update" exists
- * only while a saved trip is open, "Save as new" always adds one and refuses an exact copy (naming the trip
- * that already holds those numbers) unless the reader insists. The saved list is every port's, because the
- * device's limit counts them all; two of them can be set side by side.
+ * The trip's saving controls, in two parts the page places itself. `bar`: the trip's name, where it stands
+ * against the saved list, and the actions that change that list (it sits in the desk header on a wide screen,
+ * so it costs the results no height). `more`: the quieter actions, what was just undone or cleared, and the
+ * saved trips drawer.
+ *
+ * What Save will do is said before it is pressed: "Update" exists only while a saved trip is open; "Save as
+ * new" always adds one and refuses an exact copy (naming the trip that already holds those numbers) unless the
+ * reader insists. The saved list is every port's, because the device's limit counts them all; two of them can
+ * be set side by side.
  */
-export function TripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace; fishery: CoastFishery | null; placeKey: string }) {
+export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace; fishery: CoastFishery | null; placeKey: string }): { bar: ReactNode; more: ReactNode } {
   const ports = usePorts();
   const portName = useMemo(() => {
     const m = new Map(ports.map((p) => [p.key, p.name]));
@@ -48,7 +53,7 @@ export function TripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace
     } catch {
       // no clipboard here: the link is shown to copy by hand
       setLink(url);
-      setSaid({ words: "Copy this link. It carries the numbers only: no port, no trip name, nothing about you." });
+      setSaid({ words: "Copy the link below. It carries the numbers only: no port, no trip name, nothing about you." });
     }
   };
   const download = () => {
@@ -64,11 +69,11 @@ export function TripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace
   const b = picked.length === 2 ? trip.data?.scenarios.find((x) => x.id === picked[1]) : undefined;
   const cmp = a && b ? compareTrips(a, b, portName) : null;
 
-  return (
-    <section className={s.strip} aria-label="This trip and your saved trips" data-testid="trip-strip">
+  const bar = (
+    <section className={s.scBar} aria-label="This trip" data-testid="trip-strip">
       <div className={s.stripHead}>
         {isOpen ? (
-          <EditableText label="Trip name" value={st.name} maxLength={90} size="head" onChange={(name) => tell(trip.rename(st.id, name), (n) => `Renamed to “${n}”.`)} data-testid="trip-name" />
+          <EditableText label="Trip name" value={st.name} maxLength={90} size="body" onChange={(name) => tell(trip.rename(st.id, name), (n) => `Renamed to “${n}”.`)} data-testid="trip-name" />
         ) : (
           <p className={s.tripName} data-testid="trip-name">
             {entry ? "A trip not saved yet" : "A new trip"}
@@ -87,29 +92,9 @@ export function TripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace
         <Button variant={isOpen ? "secondary" : "primary"} disabled={!entry} onClick={() => tell(trip.saveAsNew(), (n) => `Saved as “${n}”. Kept on this device only.`)} data-testid="trip-save-new">
           Save as new
         </Button>
-        {isOpen ? (
-          <Button variant="secondary" onClick={() => tell(trip.duplicate(st.id), (n) => `Copied as “${n}”.`)} data-testid="trip-duplicate">
-            Duplicate
-          </Button>
-        ) : null}
         <Button variant="secondary" onClick={() => setOpen(true)} data-testid="trip-saved-open">
           Saved trips ({trip.capacity.used})
         </Button>
-        <Button variant="quiet" disabled={!entry} onClick={copyLink} data-testid="trip-copy-link">
-          Copy numbers-only link
-        </Button>
-        {entry || isOpen ? (
-          <Button
-            variant="quiet"
-            onClick={() => {
-              trip.clear();
-              setSaid({ words: isOpen ? "Started a new trip. The saved one is unchanged." : "Cleared." });
-            }}
-            data-testid="trip-clear"
-          >
-            {isOpen ? "New trip" : "Clear"}
-          </Button>
-        ) : null}
       </ButtonGroup>
       <p className={s.said} aria-live="polite" data-testid="trip-said">
         {said?.words ?? "Kept on this device only. Nothing is sent to Neritic."}
@@ -132,6 +117,34 @@ export function TripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace
           </>
         ) : null}
       </p>
+    </section>
+  );
+
+  const more = (
+    <section className={s.scMore} aria-label="More for this trip, and your saved trips">
+      <div className={s.scMoreActions}>
+        {isOpen ? (
+          <Button variant="quiet" className={s.compact} onClick={() => tell(trip.duplicate(st.id), (n) => `Copied as “${n}”.`)} data-testid="trip-duplicate">
+            Duplicate this trip
+          </Button>
+        ) : null}
+        <Button variant="quiet" className={s.compact} disabled={!entry} onClick={copyLink} data-testid="trip-copy-link">
+          Copy numbers-only link
+        </Button>
+        {entry || isOpen ? (
+          <Button
+            variant="quiet"
+            className={s.compact}
+            onClick={() => {
+              trip.clear();
+              setSaid({ words: isOpen ? "Started a new trip. The saved one is unchanged." : "Cleared." });
+            }}
+            data-testid="trip-clear"
+          >
+            {isOpen ? "New trip" : "Clear"}
+          </Button>
+        ) : null}
+      </div>
       {link ? <input className={s.linkBox} readOnly value={link} aria-label="Numbers-only link" onFocus={(e) => e.target.select()} data-testid="trip-link" /> : null}
       {trip.cleared.length ? (
         <p className={s.said} data-testid="trip-cleared">
@@ -204,9 +217,7 @@ export function TripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace
                       {r.name}
                       {trip.openId === r.id ? <span className={s.savedOpen}> · open now</span> : null}
                     </p>
-                    <p className={s.savedMeta}>
-                      {[r.port ?? "A port not on this device's list", r.fishery, r.detail, r.outcome, `saved ${r.savedAt}`].filter(Boolean).join(" · ")}
-                    </p>
+                    <p className={s.savedMeta}>{[r.port ?? "A port not on this device's list", r.fishery, r.detail, r.outcome, `saved ${r.savedAt}`].filter(Boolean).join(" · ")}</p>
                     <div className={s.savedActions}>
                       <Button
                         variant="quiet"
@@ -295,4 +306,6 @@ export function TripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace
       </Drawer>
     </section>
   );
+
+  return { bar, more };
 }
