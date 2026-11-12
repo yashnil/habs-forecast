@@ -5,7 +5,7 @@ import { coverCamera, fitBounds, formatDegrees, latY, lngX, project, scaleBar, s
 import { boxAt, overlaps, placeAll, type PlaceItem } from "@/nx/chart/placement";
 import { bloomRedirect, coastRedirect, hrefForPort, rootRedirect } from "@/nx/shell/redirects";
 import { ENTRY_SCRIPT } from "@/nx/shell/entry";
-import { activeDestination, withPlace } from "@/nx/shell/Shell";
+import { activeDestination, withPlace } from "@/nx/shell/destinations";
 
 const MONTEREY: Bounds = [
   [-122.3, 36.5],

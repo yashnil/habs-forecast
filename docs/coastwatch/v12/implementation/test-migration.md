@@ -77,7 +77,7 @@ Behaviour the old specs required that the v12 pages do not have (not papered ove
 Ported to v12 in the final pass. The proof opens Today at Moss Landing, saves the port's field pack from the
 Menu, empties the worker's own code cache (as after a deploy), stops the app server, and reopens the same
 browser profile with every request sent to a dead proxy. `/`, `/today`, `/coast`, `/explore` and `/research`
-must each open from the pack at 390 and 1440 px with their own content, the baked chart (static tier, every
+(and `/notices`) must each open from the pack at 390 and 1440 px with their own content, the baked chart (static tier, every
 image loaded), Explore's baked frame and the offline notice; a tab tapped offline opens the next saved page; an
 unsaved page says it is offline and links to the saved ones; no request leaves the device, no same-origin
-request fails, no page error. Result on the fixture build: 41 checks, all pass ("PROVEN").
+request fails, no page error. Result on the fixture build: 47 checks, all pass ("PROVEN").
