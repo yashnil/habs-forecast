@@ -4,7 +4,7 @@ import { LayoutGroup, MotionConfig } from "motion/react";
 import { useCallback, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { ChartScene } from "@/nx/chart/scene";
 import { Loading } from "@/nx/ds/States";
-import { savePort, usePorts, useSavedPortKey } from "@/nx/shell/port";
+import { choosePort, usePorts, useSavedPortKey } from "@/nx/shell/port";
 import { HOME_SCENE } from "@/nx/shell/views";
 import { TodayView } from "@/nx/today/TodayView";
 import { useFisheries } from "@/nx/today/store";
@@ -36,7 +36,8 @@ export function FrontDoor({ finder }: { finder: FinderData }) {
   // and the chooser's title takes the name over from where it stood
   const onPick = useCallback((p: Picked) => {
     setArriving(true);
-    savePort(p.key);
+    // the reader's own choice in the finder (it may become the home port; a deep link never does)
+    choosePort(p.key);
   }, []);
 
   const port = saved ? (ports.find((p) => p.key === saved) ?? null) : null;

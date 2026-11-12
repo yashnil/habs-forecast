@@ -1,0 +1,117 @@
+/* Today's three gates: ruled parts in the margin's rhythm. Tokens only. */
+.gates {
+  display: flex;
+  flex-direction: column;
+}
+.gate {
+  padding: var(--s-12) 0 var(--s-16);
+  border-top: var(--rule) solid var(--ink);
+}
+.title {
+  margin: 0 0 var(--s-8);
+  font: 700 var(--type-body) / var(--lh-snug) var(--font-sans);
+}
+.by {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.headline {
+  margin: 0;
+  font: 500 var(--type-lead) / var(--lh-snug) var(--font-serif);
+  text-wrap: pretty;
+}
+.gate[data-state="old"] .headline,
+.gate[data-state="unavailable"] .headline,
+.gate[data-state="none"] .headline {
+  color: var(--ink-2);
+}
+.stamp {
+  margin: var(--s-4) 0 0;
+}
+.facts {
+  list-style: none;
+  margin: var(--s-8) 0 0;
+  padding: 0;
+}
+.fact {
+  display: grid;
+  grid-template-columns: var(--s-16) 1fr;
+  column-gap: var(--s-8);
+  align-items: baseline;
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--s-8) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  text-align: left;
+  font-size: var(--type-body);
+  line-height: var(--lh-snug);
+}
+button.fact {
+  cursor: pointer;
+}
+button.fact:hover .factText {
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+}
+.mark {
+  align-self: center;
+  width: var(--s-16);
+}
+.factText {
+  font-weight: 600;
+}
+.when {
+  display: block;
+  font-weight: 400;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.relation {
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.extra {
+  margin-top: var(--s-8);
+}
+.extraList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.extraList li + li {
+  margin-top: var(--s-12);
+  padding-top: var(--s-12);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.extraList p {
+  margin: 0 0 var(--s-4);
+}
+.actions {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-24);
+  margin: var(--s-8) 0 0;
+  padding: 0;
+}
+
+/* NWS advisories under the status: ink, heavy rule; never the regulation or closure colours (they are official
+   season statements only) */
+.advisories {
+  list-style: none;
+  margin: var(--s-12) 0 0;
+  padding: var(--s-8) 0 var(--s-8) var(--s-12);
+  border-left: var(--s-4) solid var(--ink);
+}
+.advisories li + li {
+  margin-top: var(--s-8);
+}
+.advisory {
+  margin: 0 0 var(--s-4);
+  font: 600 var(--type-body) / var(--lh-snug) var(--font-sans);
+  text-wrap: pretty;
+}

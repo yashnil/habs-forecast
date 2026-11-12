@@ -482,7 +482,8 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
     const wp = provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed" });
     whaleIn = {
       zone: w.zone,
-      short: whaleMeasures(w, sectorOf(o.fishery)).short,
+      // the status above already states a whale delay: the gate does not repeat that clause (one home per fact)
+      short: whaleMeasures(w, sectorOf(o.fishery), { seasonSaysIt: whaleDelay }).short,
       decidesSeason: whaleDelay,
       assessed: w.fact.as_of ?? null,
       age: w.fact.as_of ? ageWords(w.fact.as_of, now) : null,
@@ -544,6 +545,12 @@ function alertProvenance(f: Parameters<typeof provenanceOf>[0], event: string): 
   return provenanceOf(f, `NWS ${event}`, { kind: "prediction", dateRole: "issued" });
 }
 
+/** "NWS Small Craft Advisory in effect from Thursday morning": NWS's headline, its event named once. */
+export function alertWords(event: string, headline: string): string {
+  const h = strip(headline);
+  return h.toLowerCase().startsWith(event.toLowerCase()) ? `NWS ${event}${h.slice(event.length)}` : `NWS ${event}: ${h}`;
+}
+
 /** The sea gate's lines: advisories, today's forecast, then what was measured and the tide (gates.ts orders them). */
 function seaInput(model: TodayModel, sea: TodayModel["sea"], now: string, today: string): SeaInput {
   if (sea.state !== "ok") return { state: sea.state };
@@ -551,7 +558,7 @@ function seaInput(model: TodayModel, sea: TodayModel["sea"], now: string, today:
   const facts: GateFact[] = [];
   for (const a of sea.alerts) {
     const f = model.today.facts.find((x) => x.id.startsWith("weather:alert:") && x.headline.includes(a.event));
-    facts.push({ id: `alert-${a.event}`, role: "advisory", text: `NWS ${a.event}: ${strip(a.headline)}`, provenance: f ? alertProvenance(f, a.event) : null });
+    facts.push({ id: `alert-${a.event}`, role: "advisory", text: alertWords(a.event, a.headline), provenance: f ? alertProvenance(f, a.event) : null });
   }
   const nws = fact("weather:nws");
   const first = sea.lanes.find((l) => !l.date || l.date === today) ?? sea.lanes[0];
@@ -568,7 +575,7 @@ function seaInput(model: TodayModel, sea: TodayModel["sea"], now: string, today:
   const wb = sea.windBuoy ?? (b && b.windKt != null && b.at ? { id: b.id, windKt: b.windKt, windDir: b.windDir } : null);
   if (wb) {
     const f = fact(sea.windBuoy ? "sea:wind" : "sea:buoy");
-    facts.push({ id: "wind", role: "measured", text: `Wind ${windWords(wb.windKt, wb.windDir).toLowerCase()} at buoy ${wb.id}`, provenance: f ? provenanceOf(f, `Wind, buoy ${wb.id}`) : null });
+    facts.push({ id: "wind", role: "measured", text: `Wind ${windWords(wb.windKt, wb.windDir).replace(/^Calm$/, "calm")} at buoy ${wb.id}`, provenance: f ? provenanceOf(f, `Wind, buoy ${wb.id}`) : null });
   }
   if (sea.water) {
     const f = fact("sea:water");

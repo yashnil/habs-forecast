@@ -66,7 +66,7 @@ const q = (key: string) => encodeURIComponent(key);
 
 /** Where each gate's next steps lead; every in-app address keeps the port (`place`). */
 export const gateHrefs = {
-  alerts: (place: string) => `/account?place=${q(place)}#alerts`,
+  alerts: (place: string) => `/alerts?place=${q(place)}`,
   /** water samples near the port, opened on particulate domoic acid (the Explore → Research contract's `var`) */
   research: (place: string) => `/research?place=${q(place)}&var=pDA`,
   explore: (place: string) => `/explore?place=${q(place)}&layer=sst`,

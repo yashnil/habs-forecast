@@ -31,7 +31,7 @@ export function FisheryChooser({ port, inputs, onChoose }: { port: { key: string
       <motion.h1 id="nx-today-title" layoutId={PORT_NAME_LAYOUT} className={s.chooserTitle} transition={pan}>
         {port.name}
       </motion.h1>
-      <p className={s.chooserLead}>What do you fish from here? Today leads with it.</p>
+      <p className={s.chooserLead}>What do you fish from here? Today leads with it, and you can change it at any time under Others.</p>
       {inputs === undefined ? (
         <Loading className={s.block}>Reading what Neritic has for {port.name}</Loading>
       ) : suggested.length ? (
