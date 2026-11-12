@@ -490,6 +490,11 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       sourceUrl: w.source_url ?? null,
       provenance: wp,
       next: decision && /whale assessment/i.test(decision.label) ? `${decision.label}: ${range(decision.start, decision.end ?? decision.start)}` : null,
+      record: (() => {
+        const full = whaleMeasures(w, sectorOf(o.fishery));
+        const text = [full.quote ? `CDFW, for ${sectorOf(o.fishery)} crabbers: “${full.quote}”` : null, ...full.fields].filter(Boolean).join(" ");
+        return [...(text ? [{ id: "cdfw", role: "record" as const, text, provenance: wp }] : []), { id: "zone", role: "note" as const, text: `Zone ${w.zone}: ${w.label}.` }];
+      })(),
     };
   }
   let testIn: TestInput;
@@ -508,6 +513,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       progress: test.showProgress ? test.progressWords : null,
       sourceUrl: test.fact.source.url ?? null,
       provenance: testProvenance(test),
+      others: model.tests.filter((t) => t !== test && t.latest).map((t) => ({ id: `site-${t.site.id}`, role: "measured" as const, text: `${t.sentence} ${cap1(ageWords(t.latest!.date, now))}.`, old: t.stale, provenance: testProvenance(t) })),
     };
   }
   const gates = buildGates({ place: o.place.key, whale: whaleIn, test: testIn, sea: seaInput(model, sea, now, today) });
@@ -542,7 +548,7 @@ function wavesWords(b: { waveFt: number | null; periodS: number | null }): strin
  * time. "Not verified" belongs to agency notices transcribed by machine (T38), not to it (lead decision 6).
  */
 function alertProvenance(f: Parameters<typeof provenanceOf>[0], event: string): Provenance | null {
-  return provenanceOf(f, `NWS ${event}`, { kind: "prediction", dateRole: "issued" });
+  return provenanceOf(f, `NWS ${event}`, { kind: "advisory", dateRole: "issued" });
 }
 
 /** "NWS Small Craft Advisory in effect from Thursday morning": NWS's headline, its event named once. */

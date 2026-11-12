@@ -27,8 +27,8 @@ import { useChangeLine } from "./useChangeLine";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
 import { PORT_NAME_LAYOUT } from "./layout";
-import { Advisories, Gates, type GateExtra } from "./TodayGates";
-import { gateHrefs } from "./gates";
+import { Advisories, GateList, type GateItem } from "@/nx/ds/GateList";
+import { gateHrefs, type Gate } from "./gates";
 import { buildToday, othersLine, scopeWords, type TodayInputs, type TodayView as View } from "./model";
 import { COMPACT, TodaySoundings } from "./Soundings";
 import { chooseFishery, useFisheries, useTourState } from "./store";
@@ -156,8 +156,6 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   const bounds = phone ? phoneBounds(port, pts) : todayBounds(port, pts, compact ? { minHalfKm: 14 } : {});
   const sceneId = `today:${port.key}`;
   const st = v.statement;
-  // a whale assessment date belongs to the whale gate; any other decision date stays with the status
-  const decisionInLead = !!v.decision && !(v.gates.some((g) => g.id === "whale") && /whale assessment/i.test(v.decision.label));
   // dated items the gates do not already hold: when the notice took effect, later assessments, coming NWS periods
   const ahead = agendaItems(v).filter((it) => it.id !== "today" && it.id !== "test" && !it.id.startsWith("alert-"));
 
@@ -231,17 +229,20 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
         )}
 
         {/* NWS advisories in force: under the status, in the first screen at every size (lead decision 6) */}
-        <Advisories items={v.advisories} now={v.now} />
+        <Advisories label="In force now" items={v.advisories.map((a) => ({ id: a.id, text: a.text, source: a.provenance ? <Stamp provenance={a.provenance} now={v.now} /> : "NWS" }))} />
 
         {/* what changed since the last visit sits with the status it may have changed */}
         <Change line={change} />
 
-        {decisionInLead ? (
+        {/* the next date that can change the status: said large, once (the whale gate below does not repeat it) */}
+        {v.decision ? (
           <motion.div className={s.decision} initial={false} animate={{ opacity: 1 }} transition={settle}>
-            <BigDate label={v.decision!.label} start={v.decision!.start} end={v.decision!.end} now={v.now} size="lg">
-              {v.decision!.provenance ? <Stamp provenance={v.decision!.provenance} now={v.now} /> : null}
+            <BigDate label={v.decision.label} start={v.decision.start} end={v.decision.end} now={v.now} size="lg">
+              {v.decision.provenance && !v.decision.sameAs ? <Stamp provenance={v.decision.provenance} now={v.now} /> : null}
             </BigDate>
           </motion.div>
+        ) : st.state === "ok" ? (
+          <p className={s.quietLine}>No decision date on record for this fishery.</p>
         ) : null}
 
         <div className={s.actions}>
@@ -267,27 +268,9 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
         {tour === "" ? <TourLink onStart={() => setTouring(true)} /> : null}
       </div>
 
-      <motion.div className={s.gatesWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register}>
+      <motion.div className={s.gatesWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register} data-tour="gates">
         <h2 className={s.gatesHead}>What decides a trip</h2>
-        <Gates
-          // the whale gate's next date is set large in the gate (the slot below), so its line is not repeated
-          gates={v.gates.map((g) => (g.id === "whale" && v.decision && !decisionInLead ? { ...g, facts: g.facts.filter((f) => f.id !== "next") } : g))}
-          now={v.now}
-          portName={port.name}
-          slots={{
-            // the next date that can change the whale measures sits in the gate it belongs to
-            whale:
-              v.decision && !decisionInLead ? (
-                <div className={s.gateDate}>
-                  <BigDate label={v.decision.label} start={v.decision.start} end={v.decision.end} now={v.now} size="lg">
-                    {v.decision.provenance && !v.decision.sameAs ? <Stamp provenance={v.decision.provenance} now={v.now} /> : null}
-                  </BigDate>
-                </div>
-              ) : undefined,
-          }}
-          extras={{ whale: extraOf(v, "whale", (r) => `CDFW's words for ${r.value.split(":")[0].toLowerCase().replace("zone", "Zone")}`), domoic: extraOf(v, "tests", (r) => cap1(r.value)) }}
-        />
-        {st.state === "ok" && !v.decision ? <p className={s.quietLine}>No decision date on record for this fishery.</p> : null}
+        <GateList label={`What decides a trip from ${port.name}`} level={3} gates={v.gates.map((g) => gateItem(g, v.now, !!v.decision))} />
       </motion.div>
 
       {ahead.length ? (
@@ -346,13 +329,31 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   );
 }
 
-const cap1 = (x: string) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
-
-/** A gate's fuller record, from the row that used to hold it: CDFW's own clauses, the other test sites. */
-function extraOf(v: View, rowId: string, summary: (r: Extract<View["rows"][number], { state: "ok" | "stale" }>) => string): GateExtra | undefined {
-  const r = v.rows.find((x) => x.id === rowId);
-  if (!r || r.state === "unavailable" || !r.detail.length) return undefined;
-  return { summary: summary(r), items: r.detail };
+/**
+ * A gate of the view model as the ds GateList draws it: every line of fact carries its stamp (which opens where
+ * it comes from), a sample is read with its age (T6, T17), the fixed relationship sentences read as one
+ * paragraph. The sea gate's headline is its first fact (an advisory when one is in force). The whale gate's
+ * next assessment is not repeated when the page already sets that date large.
+ */
+function gateItem(g: Gate, now: string, dateShown: boolean): GateItem {
+  const lead = g.id === "sea" && g.state === "ok" ? g.facts[0] : null;
+  const facts = (lead ? g.facts.slice(1) : g.facts).filter((f) => !(dateShown && g.id === "whale" && f.id === "next"));
+  return {
+    id: g.id,
+    title: g.title,
+    authority: g.authority,
+    state: g.state,
+    headline: (
+      <span data-role={lead?.role} data-testid={`nx-gate-${g.id}-headline`}>
+        {g.headline}
+        {g.dateRole === "sampled" && g.age ? <span className={s.age}> · {g.age}</span> : null}
+      </span>
+    ),
+    date: g.provenance ? <Stamp provenance={g.provenance} now={now} /> : undefined,
+    facts: facts.map((f) => ({ id: f.id, text: f.text, role: f.role, old: f.old, stamp: f.provenance ? <Stamp provenance={f.provenance} now={now} /> : undefined })),
+    relation: g.relation.join(" "),
+    actions: g.actions,
+  };
 }
 
 const noticesHref = (key: string) => `/notices?place=${encodeURIComponent(key)}`;

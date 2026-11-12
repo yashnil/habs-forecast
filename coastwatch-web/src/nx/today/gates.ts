@@ -86,6 +86,8 @@ export type WhaleInput = {
   provenance: Provenance | null;
   /** "Next whale assessment, subject to change: Dec 15–18" */
   next: string | null;
+  /** CDFW's own clauses for the reader's sector, quoted, and the zone's extent */
+  record: GateFact[];
 };
 
 export type TestInput =
@@ -102,6 +104,8 @@ export type TestInput =
       progress: string | null;
       sourceUrl: string | null;
       provenance: Provenance | null;
+      /** the port's other CDPH test sites, each in one sentence with its age */
+      others: GateFact[];
     };
 
 export type SeaInput =
@@ -136,7 +140,7 @@ function whaleGate(w: WhaleInput, place: string): Gate {
     date: w.assessed,
     dateRole: w.assessed ? "assessed" : null,
     age: w.age,
-    facts: w.next ? [{ id: "next", role: "record", text: w.next, provenance: w.provenance }] : [],
+    facts: [...(w.next ? [{ id: "next", role: "record" as const, text: w.next, provenance: w.provenance }] : []), ...w.record],
     relation: [w.decidesSeason ? RELATION.whaleDecides : RELATION.whaleGeneral],
     actions,
     provenance: w.provenance,
@@ -161,7 +165,7 @@ function domoicGate(t: TestInput, whaleDelay: boolean, place: string): Gate {
     date: t.date,
     dateRole: "sampled",
     age: t.age,
-    facts: t.progress ? [{ id: "progress", role: "record", text: t.progress, old: t.old, provenance: t.provenance }] : [],
+    facts: [...(t.progress ? [{ id: "progress", role: "record" as const, text: t.progress, old: t.old, provenance: t.provenance }] : []), ...t.others],
     relation,
     actions,
     provenance: t.provenance,

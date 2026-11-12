@@ -5,14 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, ChartDock, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, ChartDock, MarginSticky, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { openMargin } from "@/nx/shell/Margin";
 import { StaticField } from "./StaticField";
 import { ChartScene } from "@/nx/chart/scene";
 import { ChartMarks } from "@/nx/chart/Labels";
-import { whenChartReady } from "@/nx/chart/control";
+import { keepChartPointInView, whenChartReady } from "@/nx/chart/control";
 import { addChartLayer } from "@/nx/chart/layers/registry";
 import { modeColours, onModeChange } from "@/nx/chart/layers/colors";
 import { createFieldLayer, type FieldController, type FieldStyle } from "@/nx/chart/layers/FieldLayer";
@@ -361,10 +361,21 @@ export function Explore({ model }: { model: ExploreModel }) {
   // readout scrolls into view wherever the margin is
   useEffect(() => {
     if (reading?.status !== "ready") return;
-    if (phone) openMargin("half");
-    const t = window.setTimeout(() => readoutRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" }), phone ? 360 : 0);
+    // phone: the sheet drops to a peek (the reading leads it, see explore.module.css) and the chart pans just
+    // enough to keep the read cell clear of the sheet, so the next tap can land on the water beside it
+    if (phone) openMargin("peek");
+    const cell = reading.cell;
+    const t = window.setTimeout(
+      () => {
+        readoutRef.current?.scrollIntoView({ block: phone ? "start" : "nearest", behavior: reduce || phone ? "auto" : "smooth" });
+        keepChartPointInView(cell.lon, cell.lat);
+      },
+      phone ? 380 : 0,
+    );
     return () => window.clearTimeout(t);
-  }, [reading?.status, reduce, phone]);
+    // one move per reading: a new cell, not every frame of a playback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reading?.status, reading?.status === "ready" ? reading.cell.row : null, reading?.status === "ready" ? reading.cell.col : null, reduce, phone]);
 
   // ------------------------------------------------------------- choosing and playing frames (cuts, never tweens: T26)
   const chooseFrame = useCallback((p: ExploreProduct, f: ExploreFrame) => {
@@ -416,6 +427,8 @@ export function Explore({ model }: { model: ExploreModel }) {
       view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: extentBounds(extent), fill: !!extent },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
+      // the chart's own buttons, with a way back to everything the layers hold
+      controls: extent ? { fit: { label: "Fit the data", bounds: [[extent[0], extent[1]], [extent[2], extent[3]]] as [[number, number], [number, number]] } } : undefined,
     }),
     [port, extent],
   );
@@ -448,7 +461,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     if (r.status === "loading") readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="loading" message={`Reading ${LAYER_LABEL[product.id].toLowerCase()} at this point…`} onClose={onClose} />;
     else if (r.status === "error") readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="error" message="This point couldn't be read. Check the connection and tap again." onClose={onClose} />;
     else if (r.status === "outside")
-      readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="noview" message={frame.kind === "measured" ? `Outside this layer's area: ${frame.sensor} has no cells here. No value is not a low value.` : noValueWords(product, "outside-grid")} onClose={onClose} />;
+      readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="outside" message={frame.kind === "measured" ? `Outside this layer's area: ${frame.sensor} has no cells here. No value is not a low value.` : noValueWords(product, "outside-grid")} onClose={onClose} />;
     else {
       // while the next frame is being read, the value on show still belongs to the frame it was read from
       const rf = product.frames.find((f) => f.id === r.frame) ?? frame;
@@ -488,6 +501,8 @@ export function Explore({ model }: { model: ExploreModel }) {
                 : "Typical error about a factor of 2. Read as higher or lower than usual, not as a value. Algae, not toxin.";
       // a "nearby" record is within 25 km and measures the variable; a farther one is named with its distance
       const choice = stationFor(model.stations, r.cell.lat, r.cell.lon, RESEARCH_VAR[product.id]);
+      // what was sampled: one cell of the layer's own grid
+      const subtitle = `One cell of the ${rf.sensor} grid`;
       const action = (
         <span className={s.actions}>
           {choice.link ? (
@@ -537,7 +552,9 @@ export function Explore({ model }: { model: ExploreModel }) {
             title={title}
             lat={r.cell.lat}
             lon={r.cell.lon}
-            state="noview"
+            state={rf.kind === "measured" ? "noview" : "outside"}
+            subtitle={subtitle}
+            actions={action}
             message={rf.kind === "measured" ? `No view here (${rf.label === "Latest" ? `latest view, ${rf.stamp}` : rf.stamp}): cloud, fog or no pass. No value is not a low value.` : noValueWords(product, r.gap ?? "inside")}
             onClose={onClose}
           >
@@ -559,7 +576,8 @@ export function Explore({ model }: { model: ExploreModel }) {
                 {curLine ? <span className={s.curLine}>{curLine}</span> : null}
               </>
             }
-            action={action}
+            subtitle={subtitle}
+            actions={action}
             onClose={onClose}
           >
             {tr}
@@ -569,8 +587,10 @@ export function Explore({ model }: { model: ExploreModel }) {
   }
 
   const cell = r?.status === "ready" ? r.cell : null;
-  const tStart = r?.status === "ready" && r.transect.length ? r.transect[0].lon : null;
-  const tEnd = r?.status === "ready" && r.transect.length ? r.transect[r.transect.length - 1].lon : null;
+  // the line on the chart spans the water the transect has values for: never across land or past the grid's water
+  const valued = r?.status === "ready" ? r.transect.filter((p) => p.value !== null) : [];
+  const tStart = valued.length ? valued[0].lon : null;
+  const tEnd = valued.length ? valued[valued.length - 1].lon : null;
   return (
     <section className={s.explore} data-testid="nx-explore" data-product={product.id} data-frame={frame.id}>
       <ChartScene scene={scene} />
@@ -618,7 +638,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         ) : null}
       </div>
       {/* wide: the rail runs along the foot of the chart it steps, full width; on a phone it reads in the sheet */}
-      <ChartDock label="Time" height={streaks ? 284 : 204}>
+      <ChartDock label="Time" height={streaks ? 284 : 204} align="frame" variant="rail">
       <TimeRail
         model={model}
         product={product}
@@ -633,15 +653,17 @@ export function Explore({ model }: { model: ExploreModel }) {
         onPlay={() => setPlaying((p) => !p)}
       />
       </ChartDock>
-      {/* what the reading below is a reading of stays in sight while the margin scrolls past the legend */}
-      {readout ? (
-        <p className={s.context} data-testid="nx-context">
-          <strong>{LAYER_LABEL[product.id]}</strong> · {unit} · {contextWords(product, frame)}
-        </p>
-      ) : null}
-      <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
+      <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-open={readout ? "1" : "0"} data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
         {readout ?? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p>}
       </div>
+      {/* what the reading is a reading of stays at the margin's foot while the legend scrolls away */}
+      {readout ? (
+        <MarginSticky data-testid="nx-context">
+          <p className={s.context}>
+            <strong>{LAYER_LABEL[product.id]}</strong> · {unit} · {contextWords(product, frame)}
+          </p>
+        </MarginSticky>
+      ) : null}
     </section>
   );
 }

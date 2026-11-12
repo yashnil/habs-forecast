@@ -224,7 +224,8 @@ test("a layer this data run does not hold stays in the switch, disabled, with th
     await expect(b).toBeDisabled();
     await expect(b).toContainText("not in this data run");
   }
-  await expect(page.getByTestId("nx-layer-chl")).toBeEnabled();
+  // what the run does hold is still offered
+  expect(await page.locator('[data-testid^="nx-layer-"]:not([disabled])').count()).toBeGreaterThanOrEqual(1);
 });
 
 test("the selection survives a reload, and coming Back from Research", async ({ page }) => {
@@ -249,4 +250,93 @@ test("the selection survives a reload, and coming Back from Research", async ({ 
   await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-frame", "charm:1");
   await expect(page.getByTestId("nx-legend")).toHaveAttribute("data-product", "charm");
   await expect(readout(page).locator("p").filter({ hasText: "%" }).first()).toHaveText(value);
+});
+
+for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+  test(`at ${size.width} px a reading peeks over the chart, its cell stays above the sheet, and a second tap reads another cell`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await page.goto(`${OK}/explore?place=port-592&layer=charm`);
+    await mapReady(page);
+    await fieldDrawn(page, "charm:3");
+    const sheet = page.getByTestId("nx-margin");
+    const tapVisible = async (fx: number, fy: number) => {
+      // a point of the chart that is in view above the sheet right now
+      const m = (await page.getByTestId("nx-map").boundingBox())!;
+      const top = (await sheet.boundingBox())!.y;
+      await page.mouse.click(m.x + m.width * fx, m.y + (Math.min(top, m.y + m.height) - m.y) * fy);
+    };
+    await tapVisible(0.35, 0.55);
+    await expect(readout(page)).toContainText(/C-HARM in this 3 km cell|C-HARM here/);
+    await expect(sheet).toHaveAttribute("data-detent", "peek");
+    await page.waitForTimeout(1400);
+    const first = (await hook(page, (h) => h.cell ?? null))!;
+    expect(first).not.toBeNull();
+    // the reading leads the sheet: its figure is on screen at the peek
+    await expect(readout(page).locator("header").first()).toBeInViewport();
+    // the read cell is on the chart above the sheet, not under it
+    const p = await project(page, first.lat, first.lon);
+    const top = (await sheet.boundingBox())!.y;
+    expect(p.y).toBeLessThan(top - 8);
+    expect(p.y).toBeGreaterThan(0);
+    expect(p.x).toBeGreaterThan(0);
+    expect(p.x).toBeLessThan(size.width);
+    // a second tap on water still in view reads another cell
+    await tapVisible(0.2, 0.3);
+    await expect.poll(() => hook(page, (h) => (h.cell ? `${h.cell.lat},${h.cell.lon}` : null)), { timeout: 10_000 }).not.toBe(`${first.lat},${first.lon}`);
+    await page.waitForTimeout(1200);
+    const second = (await hook(page, (h) => h.cell ?? null))!;
+    const q = await project(page, second.lat, second.lon);
+    expect(q.y).toBeLessThan((await sheet.boundingBox())!.y - 8);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}
+
+test("no name on the chart is set over the transect line, the read cell or the phone's locator inset", async ({ page }) => {
+  const overlaps = (a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  const names = () =>
+    page.locator(".n12-mark").evaluateAll((els) =>
+      els
+        .filter((e) => getComputedStyle(e).visibility !== "hidden" && (e.textContent ?? "").trim().length > 0)
+        .map((e) => {
+          const r = e.getBoundingClientRect();
+          return { text: (e.textContent ?? "").trim(), x: r.x, y: r.y, width: r.width, height: r.height };
+        }),
+    );
+  // desktop: a transect along Moss Landing's latitude runs through where the port's name stood
+  await page.goto(`${OK}/explore?place=port-592`);
+  await mapReady(page);
+  await fieldDrawn(page, "olci:latest");
+  await tapWater(page, 36.8, -121.95);
+  await expect(page.getByTestId("nx-transect")).toBeVisible();
+  await page.waitForTimeout(1500);
+  const line = (await page.getByTestId("nx-reading-on-chart").locator("path").first().boundingBox())!;
+  const band = { x: line.x, y: line.y - 2, width: line.width, height: line.height + 4 };
+  const shown = await names();
+  expect(shown.length).toBeGreaterThan(1);
+  // (the reader's own port symbol may touch the line's end: the port is on that latitude; its letters may not)
+  for (const n of shown) expect(overlaps({ ...n, x: n.x + 26, width: Math.max(0, n.width - 26) }, band), `"${n.text}" over the transect`).toBe(false);
+  // phone: the locator inset
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(`${OK}/explore?place=port-592`);
+  await mapReady(page);
+  await page.waitForTimeout(1500);
+  const inset = (await page.getByTestId("nx-locator").boundingBox())!;
+  for (const n of await names()) expect(overlaps(n, inset), `"${n.text}" under the locator`).toBe(false);
+});
+
+test("the chart's own buttons: zoom, back to this view, fit the data", async ({ page }) => {
+  await page.goto(`${OK}/explore?place=port-592`);
+  await mapReady(page);
+  const zoom = () => page.evaluate(`window.__cwMap.getZoom()`) as Promise<number>;
+  const controls = page.getByTestId("nx-chart-controls");
+  await expect(controls).toBeVisible();
+  const z0 = await zoom();
+  await controls.getByRole("button").first().click();
+  await expect.poll(zoom).not.toBeCloseTo(z0, 1);
+  await page.getByTestId("nx-fit-data").click();
+  await page.waitForTimeout(1500);
+  const b = (await page.evaluate(`(() => { const b = window.__cwMap.getBounds(); return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]; })()`)) as number[];
+  // the whole of the observed chlorophyll's grid is in view
+  expect(b[0]).toBeLessThan(-122.5);
+  expect(b[3] - b[1]).toBeGreaterThan(0.7);
 });

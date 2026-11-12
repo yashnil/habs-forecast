@@ -1,11 +1,12 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { ink } from "@/nx/ds";
 import { getFrame, onFrame, type ChartFrame } from "@/nx/chart/runtime";
 import { visibleBounds } from "@/nx/chart/mercator";
+import { lineObstacle, registerChartObstacle, useChartObstacle } from "@/nx/chart/cover";
 import COAST from "./locator-coast.json";
 import s from "./explore.module.css";
 
@@ -80,6 +81,17 @@ export function ReadingOnChart({ lat, lon, lon0, lon1, hoverLon, outline }: { la
     return off;
   }, [target]);
   const drawRef = useRef<() => void>(() => undefined);
+  // the chart's lettering keeps clear of the transect line and of the read cell's mark (src/nx/chart/cover.ts)
+  useEffect(
+    () =>
+      registerChartObstacle("explore-reading", (project) => {
+        const a = args.current;
+        const p = project(a.lon, a.lat);
+        const mark = [{ x0: p.x - 12, y0: p.y - 12, x1: p.x + 12, y1: p.y + 12 }];
+        return a.lon0 === null || a.lon1 === null ? mark : [...mark, ...lineObstacle(project(a.lon0, a.lat), project(a.lon1, a.lat), 6)];
+      }),
+    [],
+  );
   useEffect(() => {
     // a new hover, point or cell: redraw at once with the camera where it is
     drawRef.current();
@@ -110,6 +122,9 @@ const COAST_D = (COAST as [number, number][]).map(([lon, lat], i) => `${i ? "L" 
 export function Locator() {
   const target = useTarget();
   const rectRef = useRef<SVGRectElement>(null);
+  // port and place names keep clear of the inset
+  const insetRef = useRef<SVGSVGElement>(null);
+  useChartObstacle("explore-locator", insetRef as unknown as RefObject<HTMLElement | null>, !!target);
   useEffect(() => {
     const draw = (f: ChartFrame | null) => {
       const r = rectRef.current;
@@ -126,7 +141,7 @@ export function Locator() {
   }, [target]);
   if (!target) return null;
   return createPortal(
-    <svg className={s.locator} width={LW + 8} height={LH + 8} viewBox={`-4 -4 ${LW + 8} ${LH + 8}`} role="img" aria-label="Where this view is on the California coast" data-testid="nx-locator">
+    <svg ref={insetRef} className={s.locator} width={LW + 8} height={LH + 8} viewBox={`-4 -4 ${LW + 8} ${LH + 8}`} role="img" aria-label="Where this view is on the California coast" data-testid="nx-locator">
       <rect x={-4} y={-4} width={LW + 8} height={LH + 8} className={s.locatorGround} />
       <path d={COAST_D} className={s.locatorCoast} />
       <rect ref={rectRef} className={s.locatorView} />

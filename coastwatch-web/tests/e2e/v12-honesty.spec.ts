@@ -42,8 +42,8 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
     // v13: the test is held by the gate it informs (CDPH tests), with the highest result, the count and the age
-    const gate = m.getByTestId("nx-gate-domoic");
-    await expect(gate).toContainText("Domoic acid · CDPH tests");
+    const gate = m.getByTestId("gate-domoic");
+    await expect(gate).toContainText("CDPH tests");
     await expect(gate).toContainText("Dungeness test, Monterey Bay, Sep 28: highest 9.8 of 30 ppm, 6 samples");
     await expect(gate).toContainText("14 days ago");
     await expect(m.getByRole("button", { name: /^Measured · CDPH · sampled Sep 28/ }).first()).toBeVisible();
@@ -64,8 +64,7 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
     await expect(m.getByRole("heading", { level: 1 })).toBeVisible();
-    // v13: CDFW's own clauses and the other test sites open inside their gates; models and others are rows
-    for (const id of ["nx-gate-whale-more", "nx-gate-domoic-more"]) await m.getByTestId(id).getByRole("button").click();
+    // v13: CDFW's own clauses and the other test sites are lines of their gates; models and others are rows
     for (const name of ["Models", "Others"]) await m.getByRole("button", { name: new RegExp(`^${name}`) }).click();
     const text = await m.innerText();
     expect(text).not.toMatch(FORBIDDEN);
