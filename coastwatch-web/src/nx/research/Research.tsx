@@ -134,6 +134,13 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   useEffect(() => setHash(window.location.hash), []);
   const query = useMemo(() => parseQuery(sp, hash), [sp, hash]);
   const wide = useMedia(WIDE);
+  // The drawings (the rail's ticks, the brush's overview, the plots) are made in the browser, in boxes the
+  // stylesheet has already sized. Sent as HTML they were about 100 KB ahead of the chart pane in the document:
+  // on a slow connection the page was painted before the pane arrived and then pushed down by it (CLS 0.64 on a
+  // phone), and the plot was drawn for a 640 px box whatever the screen. The words (station, last measured,
+  // counts, the empty range and its actions) are in the first HTML.
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => setDrawn(true), []);
 
   // ------------------------------------------------------------ the station
   const stations = useMemo(() => northToSouth(located(observations)), [observations]);
@@ -411,8 +418,9 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const statusWords = focusStrip ? `${LABEL[focus]}: ${lastOf ? `last measured ${day(lastOf.t, { year: true })} (${ageWords(Math.floor((nowMs - lastOf.t) / DAY))}), ${valueWords(focusStrip, lastOf)}.` : "never measured here."}` : `${st.name} has published no samples Neritic can read.`;
   // on a phone the sentence is under the plot (so the plot is in the first screen); the header keeps it on a wide screen
   const status = (
-    <span data-testid="research-status" className={focusStrip ? v.onlyWide : undefined}>
-      {statusWords}
+    <span data-testid="research-status" className={focusStrip ? `${v.onlyWide} ${v.oneLine}` : undefined} title={statusWords}>
+      {/* one line beside the station picker: the variable's short name, so the value at the end is never cut */}
+      {focusStrip ? `${SHORT[focus].charAt(0).toUpperCase()}${SHORT[focus].slice(1)}${statusWords.slice(LABEL[focus].length)}` : statusWords}
     </span>
   );
 
@@ -468,7 +476,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
               <>
                 <div data-testid="research-record" className={v.stack}>
                 <section className={v.railBlock} aria-label="Variable">
-                  <VariableRail rows={railRows} selected={focus} onSelect={chooseVariable} extent={extent} win={win} now={nowMs} stationName={st.name} />
+                  <VariableRail rows={railRows} drawTicks={drawn} selected={focus} onSelect={chooseVariable} extent={extent} win={win} now={nowMs} stationName={st.name} />
                 </section>
 
                 <section className={v.record} aria-label={`${LABEL[focus]} at ${st.name}`} data-testid="research-chart">
@@ -521,17 +529,19 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                       }}
                       data-testid="research-brush"
                     >
-                      <Brush extent={extent} value={win} onChange={onBrush} points={focusPoints.filter((p) => p.cls === "value").map((p) => ({ t: p.time, v: p.v }))} scale={focusStrip.scale} label={`${SHORT[focus]} and every plot`} height={44} inset={INSET} />
+                      <Brush extent={extent} value={win} onChange={onBrush} points={!drawn ? [] : focusPoints.filter((p) => p.cls === "value").map((p) => ({ t: p.time, v: p.v }))} scale={focusStrip.scale} label={`${SHORT[focus]} and every plot`} height={44} inset={INSET} />
                     </div>
 
                     <PlotSync value={sync} onChange={onSync}>
-                      <div className={v.main} data-testid="research-main">
+                      {/* the plot and, beside it on a wide screen, the selected sample: both in the first screen */}
+                      <div className={v.mainRow} data-inspecting={record ? "" : undefined}>
+                      <div className={v.main} data-testid="research-main" data-empty={empty ? "" : undefined}>
                         {empty ? (
                           <PlotState
                             kind="not-collected"
                             what={`${LABEL[focus]} at ${st.name}`}
                             reason={<span data-testid="research-empty">{emptyReason}</span>}
-                            height={wide ? 360 : 240}
+                            height={0}
                             action={
                               <ButtonGroup data-testid="research-empty-actions" className={v.emptyActions}>
                                 {latest ? (
@@ -555,6 +565,10 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                               </ButtonGroup>
                             }
                           />
+                        ) : !drawn ? (
+                          <p className={v.drawing} data-testid="research-drawing">
+                            Drawing {count(avail?.withValue ?? 0, "sample")} of {LABEL[focus].toLowerCase()}…
+                          </p>
                         ) : (
                           <MeasuredPlot
                             strip={focusStrip}
@@ -568,13 +582,33 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                           />
                         )}
                       </div>
+                      {/* under the plot on a phone, where the reader is looking: the card then pins while the plot is in view */}
+                {record && !opened ? (
+                        <p className={`${v.arrivedSample} ${v.onlyPhone}`} data-testid="research-sample-line">
+                          <span>
+                            Sample · {day(record.time, { year: true })}: {record.words}
+                          </span>
+                          <Button variant="secondary" onClick={() => setOpened(true)} data-testid="sample-details">
+                            Details
+                          </Button>
+                        </p>
+                      ) : null}
+                      {record ? (
+                        // wide: a column beside the plot, as tall as the plot, scrolling inside itself. Phone: the ds card
+                        // itself, pinned above the destinations once the reader opens it (a sample that arrived in a link
+                        // waits behind "Details", so the card does not cover the plot before it is read)
+                        <div className={v.inspCell} data-closed={!opened ? "" : undefined} data-testid="research-inspector-cell">
+                          <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} className={v.inspCard} />
+                        </div>
+                      ) : null}
+                      </div>
 
                       {cmpStrip ? (
                         <div className={v.second} data-testid="research-compare-plot">
                           <p className={v.plotTitle}>
                             {LABEL[cmp!]} <span className={v.unitWords}>{cmpStrip.unit}</span>
                           </p>
-                          <MeasuredPlot strip={cmpStrip} data={cmpData} win={win} now={nowMs} label={`${LABEL[cmp!]} at ${st.name}, for comparison`} height={{ desktop: 150, phone: 120 }} testid="research-plot-cmp" />
+                          <div className={v.cmpBox}>{drawn ? <MeasuredPlot strip={cmpStrip} data={cmpData} win={win} now={nowMs} label={`${LABEL[cmp!]} at ${st.name}, for comparison`} height={130} testid="research-plot-cmp" /> : null}</div>
                         </div>
                       ) : null}
 
@@ -586,7 +620,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                             </p>
                           ) : null}
                           {showModel ? (
-                            <ModelPlot strip={modelStrip} data={modelData} win={win} now={nowMs} label={`Model: ${modelStrip.label}, near ${st.name}`} height={{ desktop: 120, phone: 100 }} testid="research-plot-model" />
+                            <div className={v.modelBox}>{drawn ? <ModelPlot strip={modelStrip} data={modelData} win={win} now={nowMs} label={`Model: ${modelStrip.label}, near ${st.name}`} height={110} testid="research-plot-model" /> : null}</div>
                           ) : (
                             <p className={v.collapsed} data-testid="research-model-collapsed">
                               <span>
@@ -642,24 +676,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                 </section>
                 </div>
 
-                {/* a direct child of the desk's main: on a phone the card pins above the destinations while the plot scrolls */}
-                {record && !opened ? (
-                  <p className={`${v.arrivedSample} ${v.onlyPhone}`} data-testid="research-sample-line">
-                    <span>
-                      Sample · {day(record.time, { year: true })}: {record.words}
-                    </span>
-                    <Button variant="secondary" onClick={() => setOpened(true)} data-testid="sample-details">
-                      Details
-                    </Button>
-                  </p>
-                ) : null}
-                {record && !opened ? (
-                  <div className={v.onlyWide}>
-                    <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
-                  </div>
-                ) : (
-                  <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
-                )}
+                {record ? null : <Inspector record={null} onPrev={null} onNext={null} onClose={() => undefined} position={null} />}
 
                 {/* ------------------------------------------------ this window */}
                 <section className={v.group} aria-labelledby="rx-g-window">
