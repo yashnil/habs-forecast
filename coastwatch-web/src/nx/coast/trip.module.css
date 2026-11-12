@@ -521,18 +521,29 @@
 
 /* ---------------------------------------------------------------- the header's pinned context (CoastPage) */
 /* the context line: what this is, and (in the trip) the way back to the gates beside it */
+/* One line whatever the font: the words give way with an ellipsis before the link is ever pushed to a second
+   line or cut (a wider face on another system must not change the header's height). */
 .ctx {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0 var(--s-16);
+  min-width: 0;
   max-width: 100%;
-  vertical-align: middle;
+}
+.ctx > span {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .ctxLink {
+  flex: none;
   min-height: var(--s-32);
   font-size: var(--type-small);
   font-weight: 400;
+  white-space: nowrap;
 }
 @media (max-width: 360px) {
   .ctxWord {

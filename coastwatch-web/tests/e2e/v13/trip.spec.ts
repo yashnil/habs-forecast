@@ -444,6 +444,30 @@ test("the fishery's whole name is shown in the trip header at 320 px, and the co
   // the way back to the gates is still in it, and whole
   expect(await inView(p, p.getByTestId("coast-to-brief"))).toBe(true);
   expect(await inView(p, p.getByTestId("coast-status"))).toBe(true);
+
+  // The height does not hang on the font. Another system's faces are wider (Linux measured one line more here):
+  // with every glyph spread well past that, each line of the condensed header is still one line, the header is
+  // exactly as tall, the way back is whole and the fishery's name still fits.
+  const lines = async () => {
+    const box = async (id: string) => Math.round((await p.getByTestId(id).boundingBox())!.height);
+    return { header: Math.round((await header.boundingBox())!.height), title: await box("coast-title"), link: await box("coast-to-brief"), status: await box("coast-status"), fishery: await box("coast-fishery") };
+  };
+  const before = await lines();
+  await p.addStyleTag({ content: "[data-nx-desk-header], [data-nx-desk-header] * { letter-spacing: 0.08em !important; word-spacing: 0.2em !important; }" });
+  await p.waitForTimeout(300);
+  expect(await lines(), "with much wider text").toEqual(before);
+  const link = p.getByTestId("coast-to-brief");
+  expect(await inView(p, link)).toBe(true);
+  // not cut by the line it stands on: its box ends inside that line's own box
+  expect(
+    await link.evaluate((el) => {
+      const line = el.closest("p")!.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      return r.left >= line.left - 0.5 && r.right <= line.right + 0.5 && r.width > 40;
+    }),
+    "the way back is not cut",
+  ).toBe(true);
+  await whole("with much wider text");
   await ctx.close();
 });
 
