@@ -1,24 +1,10 @@
 "use client";
 
-import { AxisX, AxisY, Crosshair, GridY, Line, NoData, NowRule, Plot, Points, Threshold, Tip, usePlot, type PlotPoint } from "@/nx/ds";
+import { AxisX, AxisY, Crosshair, GridY, Line, NoData, NowRule, Plot, Points, Selection, Threshold, Tip, usePlot, type PlotPoint } from "@/nx/ds";
 import { day } from "@/nx/ds/format";
 import type { RecPoint, Strip } from "./model";
 import { modelLine, sayPoint, type SamplePoint } from "./plotData";
 import s from "./v13.module.css";
-
-/** The selected sample: a dashed rule and a square ring that stay while the pointer is elsewhere (the page owns the selection, so a link can carry it). */
-function SelectedMark({ p }: { p: PlotPoint | null }) {
-  const g = usePlot();
-  if (!p || p.t < g.xSpec.domain[0] || p.t > g.xSpec.domain[1]) return null;
-  const x = g.x(p.t);
-  const y = p.v != null ? g.y(p.v) : g.bottom;
-  return (
-    <g data-selected-sample="" pointerEvents="none" data-testid="research-selected">
-      <line x1={x} x2={x} y1={g.top} y2={g.bottom} className={s.selRule} />
-      <rect x={x - 9} y={y - 9} width={18} height={18} className={s.selRing} />
-    </g>
-  );
-}
 
 /** A value above Neritic's plausibility ceiling: kept where the source put it, with a ring that says "flagged". */
 function FlagRings({ data }: { data: SamplePoint[] }) {
@@ -55,7 +41,6 @@ export type FocusPlotProps = {
   now: number;
   label: string;
   height: number | { desktop: number; phone: number };
-  selected?: PlotPoint | null;
   onSelect?: (p: SamplePoint | null) => void;
   testid: string;
 };
@@ -66,7 +51,7 @@ export type FocusPlotProps = {
  * threshold named where it is on the scale. The axis spans the station's whole record and does not rescale as
  * the window moves, so a quiet year cannot look like a bloom.
  */
-export function MeasuredPlot({ strip, data, win, now, label, height, selected, onSelect, testid }: FocusPlotProps) {
+export function MeasuredPlot({ strip, data, win, now, label, height, onSelect, testid }: FocusPlotProps) {
   return (
     <Plot
       label={label}
@@ -88,7 +73,7 @@ export function MeasuredPlot({ strip, data, win, now, label, height, selected, o
       <FlagRings data={data} />
       <NowRule t={now} label="Today" />
       <Crosshair />
-      <SelectedMark p={selected ?? null} />
+      <Selection />
       <Tip render={(p) => <SampleTip strip={strip} p={p} />} />
     </Plot>
   );

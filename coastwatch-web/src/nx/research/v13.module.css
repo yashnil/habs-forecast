@@ -304,31 +304,6 @@
   gap: var(--s-8) var(--s-24);
   margin-top: var(--s-12);
 }
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-4) var(--s-16);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--type-small);
-  color: var(--ink-2);
-}
-.legend li {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-4);
-}
-.selRule {
-  stroke: var(--ink);
-  stroke-width: 1;
-  stroke-dasharray: 2 3;
-}
-.selRing {
-  fill: var(--sel);
-  stroke: var(--ink);
-  stroke-width: 2;
-}
 .flagRing {
   fill: none;
   stroke: var(--ink);

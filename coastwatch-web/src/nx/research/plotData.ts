@@ -9,10 +9,10 @@ import { day } from "@/nx/ds/format";
 import type { VisitTick } from "./availability";
 import { valueWords, type RecPoint, type Strip } from "./model";
 
-/** A sample's state in the kit's vocabulary. A QC-rejected value is "missing": expected, and not in the record as a value. */
+/** A sample's state in the kit's vocabulary. */
 export function kindOf(strip: Pick<Strip, "kind">, p: RecPoint): DataStateKind {
   if (strip.kind === "model") return "forecast";
-  return p.cls === "zero" ? "reported-zero" : p.cls === "rejected" ? "missing" : "measured";
+  return p.cls === "zero" ? "reported-zero" : p.cls === "rejected" ? "rejected" : "measured";
 }
 
 /** What a sample says in one line, for the tooltip, the live region and the table. */
