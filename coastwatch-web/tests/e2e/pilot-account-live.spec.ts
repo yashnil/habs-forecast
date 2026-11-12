@@ -34,7 +34,7 @@ async function codeFor(email: string): Promise<string> {
 test("sign in with an email code, sync, receive a server alert, delete the account", async ({ page, request }) => {
   test.setTimeout(90_000);
   const email = `pilot-${Date.now()}@example.test`;
-  await page.goto(`${BASE}/account`);
+  await page.goto(`${BASE}/account/pilot`);
   await expect(page.getByTestId("account-page")).toHaveAttribute("data-mode", "signed_out");
   await expect(page.getByTestId("readiness-accounts")).toHaveText("Pilot demo");
 
