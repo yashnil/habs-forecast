@@ -296,3 +296,22 @@ resting sheet).
 `src/nx/ds`, `src/nx/shell`, `src/app/globals.css`, `src/app/system` and `scripts/design-lint.mjs` have one owner
 (the art-direction agent). Pages compose these; they do not add `position: fixed` panels, raw d3 charts or their
 own button styles.
+
+## 10. Lint rules added in v13 (`npm run lint:design`)
+
+The v12 rules are unchanged. The page rules below apply outside `src/nx/ds`, `src/nx/shell`, `src/nx/chart` and
+`src/app/system`. Warnings are counted in the run's last line and listed with
+`node scripts/design-lint.mjs --warnings`; they do not fail it. Any line can be excused with a reason:
+`/* design-lint-allow <rule>: <why> */`.
+
+| Rule | Level now | What it wants | Becomes an error |
+|---|---|---|---|
+| `margin-width` | error | No `var(--margin-w)` in a page's stylesheet. The workspace sizes the page | already |
+| `fixed-position` | warning | No `position: fixed` in a page. Lay out in the `Desk`, the margin, a `ChartDock`, an `Inspector` or a `Drawer`. A real overlay (a coach mark) takes an allowance with its reason | when Today's tour carries its allowance |
+| `raw-chart` | warning | No `d3-scale` or `d3-shape` import in a page. Draw with the plot kit (§5) | when Research's strips and Explore's transect are on the kit |
+| `raw-button` | warning | No hand-styled `<button>` in a page (one finding per file, with the count). Use `Button`, `IconButton`, `Segmented`, `Disclosure`, `OptionList`, `RangeControl` | when the count reaches zero, or each remaining one has an allowance |
+| `one-primary` | warning | At most one `<Button variant="primary">` per file | with `raw-button` |
+| `small-text` | warning | At most six uses of 14 px text (`--t-14`, `--type-small`) in a page's stylesheet | with `raw-button` |
+
+Counts when the rules were added: raw-button 14 files, small-text 3 stylesheets, raw-chart 3 imports, one-primary
+1, fixed-position 3 (all in Today's tour).

@@ -130,3 +130,37 @@ describe("design lint: each rule catches its tell", () => {
     expect(f).toMatchObject({ file: CSS, line: 3, rule: "decoration" });
   });
 });
+
+describe("design lint: v13 page rules", () => {
+  const PAGE_CSS = "src/nx/coast/coast.module.css";
+  const PAGE_TSX = "src/nx/coast/Thing.tsx";
+  const all = (file: string, text: string) => lintSource(file, text) as Array<Finding & { level?: string }>;
+  it("a page never sizes itself by the margin column (an error); the shell may", () => {
+    expect(rules(PAGE_CSS, ".a { width: calc(100vw - var(--margin-w)); }")).toEqual(["margin-width"]);
+    expect(all(PAGE_CSS, ".a { width: var(--margin-w); }")[0].level).toBeUndefined();
+    expect(lint("src/nx/shell/shell.css", ".a { width: var(--margin-w); }")).toEqual([]);
+  });
+  it("position: fixed in a page is reported as a warning, and can be excused with a reason", () => {
+    const f = all(PAGE_CSS, ".panel { position: fixed; top: 0; }");
+    expect(f.map((x) => [x.rule, x.level])).toEqual([["fixed-position", "warn"]]);
+    expect(lint(PAGE_CSS, "/* design-lint-allow fixed-position: a coach mark is an overlay */\n.panel { position: fixed; }")).toEqual([]);
+    expect(lint("src/nx/ds/Overlay.module.css", ".dialog { position: fixed; }")).toEqual([]);
+  });
+  it("more than six uses of 14 px text in a page's stylesheet is reported once, with the count", () => {
+    const seven = Array.from({ length: 7 }, (_, i) => `.c${i} { font-size: var(--t-14); }`).join("\n");
+    const f = all(PAGE_CSS, seven);
+    expect(f).toHaveLength(1);
+    expect(f[0]).toMatchObject({ rule: "small-text", level: "warn" });
+    expect(f[0].message).toContain("7 uses");
+    expect(lint(PAGE_CSS, Array.from({ length: 6 }, (_, i) => `.c${i} { font: 400 var(--type-small) / 1.3 var(--font-sans); }`).join("\n"))).toEqual([]);
+  });
+  it("d3 in a page, a hand-styled button and a second primary are warnings; the design system is exempt", () => {
+    const src = `import { scaleLinear } from "d3-scale";
+      import { Button } from "@/nx/ds";
+      export const A = () => (<div><button type="button">x</button><Button variant="primary">Save</Button><Button variant="primary">Save as new</Button><Button>Other</Button></div>);`;
+    const f = all(PAGE_TSX, src);
+    expect(f.map((x) => x.rule).sort()).toEqual(["one-primary", "raw-button", "raw-chart"]);
+    expect(f.every((x) => x.level === "warn")).toBe(true);
+    expect(lint("src/nx/ds/plot/Plot.tsx", src)).toEqual([]);
+  });
+});
