@@ -423,7 +423,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   else if (sea.state === "ok") {
     if (sea.water) {
       const f = model.today.facts.find((x) => x.id === "sea:water");
-      rows.push({ id: "water", label: "Water", state: sea.water.stale ? "stale" : "ok", value: `${Math.round((sea.water.c * 9) / 5 + 32)} °F, ${sea.water.where}`, detail: [{ text: `${sea.water.c.toFixed(1)} °C, measured ${sea.water.where}.`, provenance: f ? provenanceOf(f, "Water temperature") : null }] });
+      rows.push({ id: "water", label: "Water", state: sea.water.stale ? "stale" : "ok", value: `${Math.round((sea.water.c * 9) / 5 + 32)} °F, ${sea.water.where}`, detail: [{ text: `${((sea.water.c * 9) / 5 + 32).toFixed(1)} °F (${sea.water.c.toFixed(1)} °C), measured ${sea.water.where}.`, provenance: f ? provenanceOf(f, "Water temperature") : null }] });
     }
     if (sea.windBuoy) {
       const f = model.today.facts.find((x) => x.id === "sea:wind");

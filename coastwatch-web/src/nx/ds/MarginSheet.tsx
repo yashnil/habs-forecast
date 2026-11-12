@@ -53,6 +53,7 @@ export function MarginSheet({ label, peek, children, detents = ["176px", 0.55, 0
   const container = usePortalContainer();
   const reduce = useReducedMotion();
   const titleId = useId();
+  const bodyId = useId();
   const controls = useDragControls();
   const [h, setH] = useState(() => (typeof window === "undefined" ? 844 : window.innerHeight));
   useEffect(() => {
@@ -109,7 +110,7 @@ export function MarginSheet({ label, peek, children, detents = ["176px", 0.55, 0
     >
       <div className={s.top} onPointerDown={(e) => controls.start(e)}>
         <span className={s.handle} aria-hidden />
-        {!peek ? <Controls label={label} last={last} step={step} onClose={onClose} floating /> : null}
+        {!peek ? <Controls label={label} last={last} step={step} onClose={onClose} bodyId={bodyId} floating /> : null}
       </div>
       <h2 id={titleId} className={s.vh}>
         {label}
@@ -117,10 +118,10 @@ export function MarginSheet({ label, peek, children, detents = ["176px", 0.55, 0
       {peek ? (
         <div className={s.peekRow} onPointerDown={(e) => controls.start(e)}>
           <div className={s.peek}>{peek}</div>
-          <Controls label={label} last={last} step={step} onClose={onClose} />
+          <Controls label={label} last={last} step={step} onClose={onClose} bodyId={bodyId} />
         </div>
       ) : null}
-      <div className={cx(s.body, !peek && s.bodyBare)} data-scroll={last || scroll === "always" || undefined}>
+      <div id={bodyId} className={cx(s.body, !peek && s.bodyBare)} data-scroll={last || scroll === "always" || undefined}>
         {children}
       </div>
     </motion.section>
@@ -130,10 +131,11 @@ export function MarginSheet({ label, peek, children, detents = ["176px", 0.55, 0
   return createPortal(el, container ?? document.body);
 }
 
-function Controls({ label, last, step, onClose, floating }: { label: string; last: boolean; step: () => void; onClose?: () => void; floating?: boolean }) {
+function Controls({ label, last, step, onClose, floating, bodyId }: { label: string; last: boolean; step: () => void; onClose?: () => void; floating?: boolean; bodyId: string }) {
   return (
     <div className={cx(s.controls, floating && s.floating)} onPointerDown={(e) => e.stopPropagation()}>
-      <button type="button" className={s.more} onClick={step} aria-label={last ? `Show less of ${label}` : `Show more of ${label}`}>
+      {/* expanded at reading height (the last detent); the words say where the next press goes (critic 18) */}
+      <button type="button" className={s.more} onClick={step} aria-expanded={last} aria-controls={bodyId} aria-label={last ? `Show less of ${label}` : `Show more of ${label}`}>
         {last ? "Less" : "More"}
         <Icon name="chevron" size={20} direction={last ? "down" : "up"} />
       </button>
