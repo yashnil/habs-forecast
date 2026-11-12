@@ -105,6 +105,18 @@ describe("chart placement (soundings, notes, names)", () => {
 
   it("does not place a mark whose point is off the sheet", () => {
     expect(placeAll([item("off", 900, 150, 1)], area)[0].visible).toBe(false);
+    expect(placeAll([item("off", 900, 150, 1, { insist: true })], area)[0].visible).toBe(false);
+  });
+
+  it("lets an insisting figure cover a lower place's dot rather than drop, but never a placed box or an obstacle", () => {
+    // a neighbouring port's dot sits right of the figure's only anchor
+    const dot = item("town", 270, 150, 1, { pointRadius: 6, width: 40, anchors: ["right"] });
+    const fig = (extra: Partial<PlaceItem>) => item("fig", 200, 150, 9, { anchors: ["right"], ...extra });
+    expect(placeAll([fig({}), dot], area).find((p) => p.id === "fig")!.visible).toBe(false);
+    const placed = placeAll([fig({ insist: true }), dot], area);
+    expect(placed.find((p) => p.id === "fig")).toMatchObject({ visible: true, anchor: "right" });
+    // an obstacle (a panel, the scale) still wins
+    expect(placeAll([fig({ insist: true }), dot], area, [{ x0: 250, y0: 100, x1: 260, y1: 200 }])[0].visible).toBe(false);
   });
 });
 

@@ -118,7 +118,8 @@
 .chartHover { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
 .chartPointRing { fill: none; stroke: var(--ink); stroke-width: 1.5; }
 .chartPointDot { fill: var(--ink); }
-.locator { position: absolute; bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-8)); right: var(--s-8); display: block; pointer-events: none; }
+/* top right: inland, clear of the water and the coastal town names the bottom corner covered (critic 12) */
+.locator { position: absolute; top: calc(var(--nx-cover-top, 0px) + var(--s-8)); right: calc(var(--nx-cover-right, 0px) + var(--s-8)); display: block; pointer-events: none; }
 .locatorGround { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
 .locatorCoast { fill: none; stroke: var(--ink-2); stroke-width: 1; stroke-linejoin: round; }
 .locatorView { fill: none; stroke: var(--ink); stroke-width: 1.5; }

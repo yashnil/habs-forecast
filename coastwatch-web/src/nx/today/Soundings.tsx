@@ -84,6 +84,9 @@ export function TodaySoundings({ items, sceneId, onOpen }: { items: SoundingDatu
         lon: d.lon,
         lat: d.lat,
         priority: d.id === "test" ? 90 : 85,
+        // the test is Today's main number: on a small screen it may cover a neighbouring port's dot rather
+        // than be dropped (critic 12, 320 px); the buoy still drops to the margin's water row
+        insist: d.id === "test",
         leader: true,
         offset: phone ? 22 : 26,
         // on a phone the water lies west of the points (camera.ts phoneBounds): the type goes there first

@@ -79,3 +79,19 @@
     font-size: var(--t-22);
   }
 }
+
+/* short landscape screens (844 x 390): the statement steps down so Find your port sits above the fold (critic 12) */
+@media (max-height: 480px) {
+  .home .lead h1 {
+    font-size: var(--t-28);
+  }
+  .home .lead p {
+    font-size: var(--t-16);
+  }
+  .actions {
+    margin-top: var(--s-12);
+  }
+  .paths {
+    margin-top: 0;
+  }
+}
