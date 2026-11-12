@@ -209,13 +209,89 @@ transition rules are switched off under `prefers-reduced-motion`.
 
 ## 7. Shell
 
-- The bar's Alerts link goes to `/alerts?place=…` (`alertsHref`). `/alerts` currently redirects to the alerts
-  section of `/account`; the alerts page replaces that redirect.
-- An unread count shows beside Alerts when it is above zero. Set it with `setUnreadCount(n)` from
-  `@/nx/shell/unread`; read it with `useUnread()`. The default is 0, which shows nothing.
-- The menu's "Account" is now "Your data" (same `/account`).
+- The bar's Alerts link goes to `/alerts?place=…` (`alertsHref` in `@/nx/shell/unread`). `/alerts` currently
+  redirects to the alerts section of `/account`; the alerts page replaces that redirect.
+- The unread count beside Alerts is the alerts feature's own: the shell reads `useUnread()` from
+  `@/nx/alerts/useInbox` (undefined until hydrated, shown only above zero). `<AlertWatch />` is mounted once in the
+  route group's layout.
+- The bar's port finder calls `choosePort` (the first port a reader picks becomes their home port).
+- The menu's "Account" is "Your data" (same `/account`). Ask and Alerts are in the menu at 380 px and under.
+- A page joins the shell by living in `src/app/(neritic)/` and being added to `NERITIC_PATHS`
+  (`src/nx/shell/LegacyChrome.tsx`). `/ask` and `/account` still live outside it with the pilot shell; moving
+  them is their owner's page work, and the shell needs nothing more for it: render
+  `<PageLayout mode="desk" defaultPane="rail" paneKey="…" />` and a `Desk`.
 
-## 8. Ownership
+## 8. Added for the pages (block 1 of phase B2)
+
+### Today and Explore
+
+| Part | Props | Notes |
+|---|---|---|
+| `GateList` | `label`, `gates: GateItem[]`, `level: 2 \| 3` | `GateItem`: `{ id, title, authority?, state: "ok" \| "old" \| "loading" \| "unavailable" \| "none", headline, tone?: "plain" \| "regulation" \| "closure", date?, facts?: { id, text, role?, old?, stamp? }[], relation?, actions?: { id, label, href, external? }[] }`. Gates stay separate; an old or missing gate is quieter and says so. A fact with `role: "advisory"` is set heavier |
+| `Advisories` | `label`, `items: { id, text, source, href?, area? }[]`, `none?` | The first-viewport slot: render it before the dates at every width. With no items it shows `none` (say which source was read), or nothing when `none` is not given |
+| `Kind` | adds `"advisory"` | An agency's warning in force. Drawn with the official ring (`markFor("advisory") === "official"`) |
+| `Sounding` | `stale?` | A stale figure is a step smaller, regular weight, in `--ink-2`, with "(old)" beside it |
+| `Readout` | adds `subtitle?`, `actions?`, and `state: "outside"` | `subtitle`: what was sampled ("Cell 3 km, C-HARM grid"). `outside`: the point is outside the product's footprint; its own mark (`outside-coverage`), not the no-view hatch. `actions`: two or three links, shown in every state |
+| `MarginSticky` | div props | Stays at the foot of the margin column while it scrolls (a legend while a reading is open). Static on a phone |
+| `ChartDock` | adds `align: "pane" \| "frame"`, `variant: "panel" \| "rail"` | `align="frame"` starts and ends the dock's content where the chart's frame does (`--frame-l`, `--frame-r`), so a time rail lines up with the chart's edges. `variant="rail"` is a thin strip |
+| Phone sheet | `openMargin("peek")` | A detent below rest (about 30 % of the screen). The chart's free area follows it. "More" goes from peek to rest |
+
+Chart API (`src/nx/chart`):
+
+| Call | From | What it does |
+|---|---|---|
+| `keepChartPointInView(lon, lat, margin = 56)` | `control` | Pans just enough to bring a place clear of the phone sheet (measured at its present height), a panel and the frame's edge. Already clear: nothing moves |
+| `zoomChart(±1)`, `refitChart()`, `fitChartBounds(bounds, maxZoom?)` | `control` | What the chart's own buttons do; a page may call them too |
+| `scene.controls` | `scene` | The chart's buttons (zoom in, zoom out, back to the page's view) show wherever the reader may pan. `controls: false` hides them; `controls: { fit: { label, bounds } }` adds a "fit the data" button |
+| `scene.view.tall` | `scene` | A second box, used when the free area is at least 1.25 times taller than wide (a desk page's pane). `tallBoundsAround(at, kmAlong, kmAcross?)` builds one. `useChartShape()` (`runtime`) gives `{ width, height, tall }` for a page that needs more than that |
+| `useChartObstacle(id, ref)` | `cover` | Chart lettering keeps clear of this element (a locator inset) |
+| `registerChartObstacle(id, (project) => Rect[])` | `cover` | Lettering keeps clear of something drawn in chart coordinates; `lineObstacle(a, b, pad)` makes the rects for a transect line. Returns the function that removes it |
+| `#nx-chart-marks` | | Kept, unchanged |
+
+Latitude labels on the neatline are written whole or not at all (never cut by the frame's corner or by the
+resting sheet).
+
+### My Coast
+
+- `WaterfallChart` takes any number of steps. `orientation: "auto" | "columns" | "rows"`: rows (one bar per line)
+  whenever a column would be under 88 px, so eight steps read at 390 px. Each step's `formula` is its worked sum.
+- A one-variable sweep is a `Plot` on a linear axis:
+
+```tsx
+<Plot label="Net to boat as catch changes, hypothetical" data={sweep} x={{ type: "linear", domain: [0, 800], unit: "lb" }}
+      y={{ unit: "$", format: (v) => usd(v) }} height={{ desktop: 320, phone: 220 }}>
+  <GridY /> <AxisX title="Catch, lb" /> <AxisY title="Net to boat" />
+  <Line data={sweep} kind="estimated" /> <Points data={[yours]} />
+  <BreakEvenMarker at={breakEvenLb} label={`Break-even ${breakEvenLb} lb`} />
+  <Crosshair /> <Tip />
+</Plot>
+```
+
+  `BreakEvenMarker { label?, at? }` works in both: the zero rule in a waterfall; in a plot, the zero rule and a
+  vertical rule at `at`. Give sweep points `kind: "estimated"` so they are never drawn as measurements.
+- `EditableText { label, value, onChange, placeholder = "Untitled", maxLength = 60, size: "head" | "body" }`: a name
+  edited in place. Enter or leaving keeps it, Escape restores it, an empty name is never kept.
+- `Drawer` (the `Dialog` props without `placement`): from the right on a wide screen, from the bottom on a phone.
+- `ButtonGroup` for Update / Save as new / Duplicate; `Segmented size="s"` for a compact two-option toggle;
+  `DeskSticky` for the phone's sticky result; `Figure cents` for the hero.
+
+### Research
+
+- `OptionList { label, hideLabel?, options: { value, label, meta?, end?, disabled? }[], value, onChange }`: the
+  variable rail. A radio group; a variable with nothing behind it stays listed, disabled, saying why in `meta`.
+- `Inspector { title, subtitle?, onClose?, actions?, children }` with `Facts { items: { label, value }[] }`: the
+  detail card for a pinned sample. A ruled card on a wide screen; on a phone it is pinned above the destinations,
+  at most half the screen tall.
+- `Brush`: when the frame is under 72 px wide the two handles stand outside it and face outward, so they never
+  overlap; the frame between them still pans. `handle.current.jumpTo(t, width?)` as before.
+- Plot mark tokens, set in each chart mode: `--plot-cross`, `--plot-focus`, `--plot-point`, `--plot-censored`,
+  `--plot-zero`, `--plot-model`, `--plot-grid`, `--plot-gap`.
+
+### Storage keys this system writes
+
+`nx-pane-v1` (localStorage): `{ [paneKey]: "rail" | "context" | "split" | "chart" }`. Nothing else.
+
+## 9. Ownership
 
 `src/nx/ds`, `src/nx/shell`, `src/app/globals.css`, `src/app/system` and `scripts/design-lint.mjs` have one owner
 (the art-direction agent). Pages compose these; they do not add `position: fixed` panels, raw d3 charts or their

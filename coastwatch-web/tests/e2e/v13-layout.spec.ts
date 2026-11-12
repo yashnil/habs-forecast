@@ -160,3 +160,40 @@ test("the bar's Alerts link carries the port and is never a dead end; the menu s
   await expect(page).toHaveURL(/\/alerts\?place=port-592$/);
   await expect(page.getByTestId("nx-alerts")).toBeVisible();
 });
+
+test("the chart's own buttons zoom and bring the page's view back; names keep clear of them", async ({ page }) => {
+  await open(page, "/explore?place=port-592");
+  await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
+  const zoom = () => page.evaluate(() => (window as unknown as { __nxChart: { camera: { zoom: number } } }).__nxChart.camera.zoom);
+  const controls = page.getByTestId("nx-chart-controls");
+  await expect(controls).toBeVisible();
+  for (const b of await controls.getByRole("button").all()) {
+    const r = (await b.boundingBox())!;
+    expect(r.width).toBeGreaterThanOrEqual(44);
+    expect(r.height).toBeGreaterThanOrEqual(44);
+  }
+  const z0 = await zoom();
+  await page.getByTestId("nx-zoom-in").click();
+  await expect.poll(zoom).toBeGreaterThan(z0 + 0.9);
+  // two quick presses are two steps, even while the camera is still travelling
+  await page.getByTestId("nx-zoom-in").click();
+  await expect.poll(zoom).toBeGreaterThan(z0 + 1.9);
+  await page.getByTestId("nx-zoom-out").click();
+  await expect.poll(zoom).toBeLessThan(z0 + 1.1);
+  await page.getByRole("button", { name: "Back to Moss Landing" }).click();
+  await expect.poll(async () => Math.abs((await zoom()) - z0)).toBeLessThan(0.05);
+  // nothing written on the chart lies under the buttons
+  const c = (await controls.boundingBox())!;
+  const under = await page.evaluate(
+    (c) =>
+      [...document.querySelectorAll<HTMLElement>(".n12-mark")].filter((el) => {
+        if (el.style.visibility !== "visible") return false;
+        const r = el.getBoundingClientRect();
+        return r.left < c.x + c.width && r.right > c.x && r.top < c.y + c.height && r.bottom > c.y;
+      }).length,
+    c,
+  );
+  expect(under).toBe(0);
+  // one map instance through all of it
+  expect(await chart(page)).toBe(1);
+});

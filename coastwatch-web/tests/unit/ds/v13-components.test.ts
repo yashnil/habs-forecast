@@ -11,6 +11,21 @@ vi.mock("@/nx/ds/plot/plot.module.css", () => css);
 vi.mock("@/nx/ds/worksheet/worksheet.module.css", () => css);
 vi.mock("@/nx/ds/series/series.module.css", () => css);
 vi.mock("@/nx/ds/Root.module.css", () => css);
+vi.mock("@/nx/ds/gates.module.css", () => css);
+vi.mock("@/nx/ds/Overlay.module.css", () => css);
+vi.mock("@/nx/ds/Stamp.module.css", () => css);
+vi.mock("@/nx/ds/Mark.module.css", () => css);
+vi.mock("@/nx/ds/chart/chart.module.css", () => css);
+vi.mock("@/nx/ds/chart/readout.module.css", () => css);
+import { Advisories, GateList } from "@/nx/ds/GateList";
+import { EditableText, Facts, Inspector, OptionList } from "@/nx/ds/Panels";
+import { Readout } from "@/nx/ds/chart/Readout";
+import { Sounding } from "@/nx/ds/chart/Sounding";
+import { Brush } from "@/nx/ds/series/Brush";
+import { markFor } from "@/nx/ds/kinds";
+import { lineObstacle } from "@/nx/chart/cover";
+import { tallBoundsAround } from "@/nx/chart/scene";
+import { cameraFor } from "@/nx/chart/ChartHost";
 import { Button } from "@/nx/ds/Button";
 import { ButtonGroup } from "@/nx/ds/ButtonGroup";
 import { IconButton } from "@/nx/ds/IconButton";
@@ -259,5 +274,128 @@ describe("v13 motion", () => {
     // critical damping for unit mass is 2√k: at or above it the spring never passes its target
     expect(v.damping).toBeGreaterThanOrEqual(2 * Math.sqrt(v.stiffness));
     expect((motion.swapIn as { delay: number }).delay).toBe((motion.swapOut as { duration: number }).duration);
+  });
+});
+
+describe("v13 block 1: page parts", () => {
+  it("gates stay separate: each has its authority, its state in words, advisories set first, and how it relates to the others", () => {
+    const out = html(
+      h(GateList, {
+        label: "What decides a trip from Moss Landing",
+        gates: [
+          { id: "whale", title: "Whale measures", authority: "CDFW RAMP", state: "ok", tone: "regulation", headline: "Season delayed to at least Jan 1, 2027", relation: "A crab test says nothing about this delay." },
+          { id: "domoic", title: "Domoic acid", authority: "CDPH tests", state: "old", headline: "Highest 9.8 of 30 ppm", date: "Sampled Sep 28, 45 days ago" },
+          { id: "sea", title: "Sea", authority: "NWS and NDBC", state: "ok", headline: "Small craft advisory until 3 AM", facts: [{ id: "a", role: "advisory", text: "Small craft advisory until 3 AM" }, { id: "b", role: "measured", text: "Waves 4.9 ft at 17 s", old: true }], actions: [{ id: "nws", label: "NWS marine forecast", href: "https://example.org", external: true }] },
+        ],
+      }),
+    );
+    expect(out.match(/data-gate="/g)).toHaveLength(3);
+    expect(out).toContain('data-tone="regulation"');
+    expect(out).toContain('data-state="old"');
+    expect(out).toMatch(/data-state-mark="stale"[\s\S]*old/);
+    expect(out).toContain('data-role="advisory"');
+    expect(out).toContain("(old)");
+    expect(out).toContain("A crab test says nothing about this delay.");
+    expect(out).toContain('target="_blank"');
+  });
+  it("advisories: shown with their source; none in force is said only with the source that was read; unknown renders nothing", () => {
+    const some = html(h(Advisories, { label: "In force now", items: [{ id: "sca", text: "Small craft advisory until 3 AM Tuesday", source: "NWS, issued Oct 12, 8:10 PM PT", area: "Monterey Bay" }] }));
+    expect(some).toContain("Small craft advisory until 3 AM Tuesday");
+    expect(some).toContain("NWS, issued Oct 12, 8:10 PM PT");
+    expect(html(h(Advisories, { label: "In force now", items: [], none: "No marine advisory in force (NWS, read 6 AM)" }))).toContain("No marine advisory in force");
+    expect(html(h(Advisories, { label: "In force now", items: [] }))).toBe("");
+  });
+  it("an advisory is an official kind; a stale sounding is marked and says (old)", () => {
+    expect(markFor("advisory")).toBe("official");
+    const out = html(h(Sounding, { x: 0, y: 0, value: "9.8", unit: "of 30 ppm", kind: "measured", stale: true, placement: "box" }));
+    expect(out).toContain('data-stale="true"');
+    expect(out).toContain("staleFig");
+  });
+  it("a readout outside a model's footprint has its own mark and words, a subtitle and its links in every state", () => {
+    const out = html(h(Readout, { title: "C-HARM here", subtitle: "Cell 3 km, C-HARM grid", lat: 36.8, lon: -122.05, state: "outside", actions: h("a", { href: "/research" }, "See the record") }));
+    expect(out).toContain('data-state-mark="outside-coverage"');
+    expect(out).toContain("not a low value");
+    expect(out).toContain("Cell 3 km, C-HARM grid");
+    expect(out).toContain("See the record");
+    expect(out).not.toContain('aria-label="no view"');
+  });
+  it("an editable name reads as text with a named rename control", () => {
+    const out = html(h(EditableText, { label: "Trip name", value: "Crab, 400 lb at $9" }));
+    expect(out).toContain("Crab, 400 lb at $9");
+    expect(out).toContain('aria-label="Rename: Trip name"');
+    expect(html(h(EditableText, { label: "Trip name", value: "" }))).toContain("Untitled");
+  });
+  it("an option list is a radio group whose empty choices stay listed, disabled, saying why", () => {
+    const out = html(
+      h(OptionList, {
+        label: "Variable",
+        value: "pDA",
+        onChange: () => {},
+        options: [
+          { value: "pDA", label: "Particulate domoic acid", meta: "165 samples · latest Mar 3, 2024" },
+          { value: "chl", label: "Chlorophyll", meta: "Not collected here", disabled: true },
+        ],
+      }),
+    );
+    expect(out).toContain('role="radiogroup"');
+    expect(out.match(/aria-checked="true"/g)).toHaveLength(1);
+    expect(out).toContain('aria-disabled="true"');
+    expect(out).toContain("Not collected here");
+  });
+  it("an inspector is a live, labelled region with its facts as a definition list", () => {
+    const out = html(h(Inspector, { title: "Sample, Mar 3, 2024", subtitle: "Monterey Wharf · pDA", onClose: () => {} }, h(Facts, { items: [{ label: "Value", value: "6.2 ng/mL" }, { label: "QC", value: "passed" }] })));
+    expect(out).toContain('aria-label="Sample, Mar 3, 2024"');
+    expect(out).toContain('aria-live="polite"');
+    expect(out.match(/<dt/g)).toHaveLength(2);
+  });
+  it("the waterfall takes any number of steps: rows when columns would be too narrow, with the same words", () => {
+    const steps = ["Gross", "Fees", "Fuel", "Bait and ice", "Observer", "Moorage", "Crew", "Net to boat"].map((l, i, a) => ({ id: `s${i}`, label: l, amount: i === 0 ? 3600 : i === a.length - 1 ? 2000 : 200, kind: (i === 0 ? "gross" : i === a.length - 1 ? "net" : "cost") as "gross" | "cost" | "net", formula: i === 2 ? "30 gal × $8.24" : undefined }));
+    // 640 px wide in a server render: eight steps have 71 px each, so rows
+    const out = html(h(WaterfallChart, { steps, label: "Gross to net" }));
+    expect(out).toContain('data-orientation="rows"');
+    expect(out.match(/data-step="/g)).toHaveLength(8);
+    expect(out).toContain("Fuel: −$200. 30 gal × $8.24.");
+    expect(html(h(WaterfallChart, { steps: steps.slice(0, 3), label: "Gross to net" }))).not.toContain('data-orientation="rows"');
+    expect(html(h(WaterfallChart, { steps: steps.slice(0, 3), label: "Gross to net", orientation: "rows" }))).toContain('data-orientation="rows"');
+  });
+  it("a one-variable sweep is a plot on a linear axis with its unit, and break-even is a named rule where the result crosses zero", () => {
+    const pts = [0, 20, 40, 60, 80].map((lb) => ({ t: lb, v: lb * 9 - 351, kind: "estimated" as const }));
+    const out = html(h(Plot, { label: "Net to boat as catch changes, hypothetical", data: pts, x: { type: "linear", domain: [0, 80], unit: "lb" }, y: { unit: "$" } }, h(AxisX), h(AxisY), h(Line, { data: pts, kind: "estimated" }), h(BreakEvenMarker, { at: 39, label: "Break-even 39 lb" })));
+    expect(out).toContain("5 points, 0 lb to 80 lb.");
+    expect(out).toContain("Break-even 39 lb");
+    expect(out).toContain("lineModel");
+    // off the axis: no vertical rule is drawn for a break-even the sweep never reaches
+    expect(html(h(Plot, { label: "x", data: pts, x: { type: "linear", domain: [0, 30] }, y: { domain: [-400, -50] } }, h(BreakEvenMarker, { at: 39 })))).not.toContain("data-break-even");
+  });
+  it("a narrow brush frame puts its handles outside it, facing outward, so they never share a hit area", () => {
+    const DAYms = 86_400_000;
+    const extent: [number, number] = [Date.UTC(2005, 0, 1), Date.UTC(2026, 0, 1)];
+    const narrow = html(h(Brush, { extent, value: [Date.UTC(2024, 0, 1), Date.UTC(2025, 0, 1)], onChange: () => {}, label: "every strip" }));
+    expect(narrow.match(/data-outward="true"/g)).toHaveLength(2);
+    const lefts = [...narrow.matchAll(/aria-label="Window (start|end)"[^>]*|style="left:([\d.]+)px;width:44px/g)];
+    expect(lefts.length).toBeGreaterThan(0);
+    const wide = html(h(Brush, { extent, value: [extent[0], extent[0] + 3000 * DAYms], onChange: () => {}, label: "every strip" }));
+    expect(wide).not.toContain("data-outward");
+  });
+});
+
+describe("v13 block 1: chart", () => {
+  it("a line obstacle covers a transect in padded boxes", () => {
+    const r = lineObstacle({ x: 0, y: 100 }, { x: 480, y: 100 }, 8, 48);
+    expect(r).toHaveLength(10);
+    expect(r[0]).toEqual({ x0: -8, y0: 92, x1: 56, y1: 108 });
+    expect(r[9].x1).toBe(488);
+  });
+  it("a scene's tall box is used in a tall, narrow free area and its own box in a wide one", () => {
+    const at: [number, number] = [-121.79, 36.8];
+    const scene = { id: "t", view: { bounds: [[-122.3, 36.5], [-121.6, 37.1]] as [[number, number], [number, number]], tall: tallBoundsAround(at, 60) } };
+    const none = { top: 0, right: 0, bottom: 0, left: 0 };
+    const wide = cameraFor(scene, { width: 1000, height: 800 }, none);
+    const tall = cameraFor(scene, { width: 360, height: 800 }, none);
+    const plain = cameraFor({ id: "p", view: { bounds: scene.view.bounds } }, { width: 360, height: 800 }, none);
+    // the tall box runs up and down the coast from the place: centred on it, and closer in than the wide box squeezed into the pane
+    expect(Math.abs(tall.center[1] - at[1])).toBeLessThan(0.02);
+    expect(tall.zoom).toBeGreaterThan(plain.zoom);
+    expect(wide.zoom).toBeCloseTo(cameraFor({ id: "p", view: { bounds: scene.view.bounds } }, { width: 1000, height: 800 }, none).zoom, 6);
   });
 });

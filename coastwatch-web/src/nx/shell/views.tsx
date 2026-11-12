@@ -34,7 +34,9 @@ export function portScene(page: string, port: ShellPort | null, km: number): Sce
   if (!port) return { id: `${page}:coast`, view: COAST_VIEW };
   // California's water is to the west: the view leans seaward, so the port sits right of centre with its sea before it
   const lean = (km * 0.45) / (111.32 * Math.cos((port.lat * Math.PI) / 180));
-  return { id: `${page}:${port.key}`, view: { bounds: boundsAround([port.lon - lean, port.lat], km, km * 0.8) }, focus: focusOf(port) };
+  // in a desk page's tall, narrow pane: the same water as a run of coast up and down from the port, leaning seaward less
+  const tall = boundsAround([port.lon - lean * 0.45, port.lat], km * 0.5, km * 1.15);
+  return { id: `${page}:${port.key}`, view: { bounds: boundsAround([port.lon - lean, port.lat], km, km * 0.8), tall }, focus: focusOf(port) };
 }
 
 /**

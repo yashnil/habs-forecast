@@ -95,6 +95,19 @@
   letter-spacing: 0;
   margin-left: 0.16em;
 }
+.staleFig .fig {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.staleFig.lg .fig {
+  font-size: var(--t-36);
+}
+.staleFig.md .fig {
+  font-size: var(--t-28);
+}
+.staleFig .lbl {
+  font-weight: 500;
+}
 .figOld {
   font-size: var(--t-16);
   letter-spacing: 0;

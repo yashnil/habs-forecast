@@ -16,8 +16,11 @@ import { useCurrentPort } from "./port";
  * The phone sheet's detents: resting (the page's statement in view above the tab bar), half (a reading and the
  * chart around it), reading height. A page asks for one with `openMargin`, e.g. Explore when a reading arrives.
  */
-export type MarginDetent = "rest" | "half" | "full";
+/** `peek` is lower than rest (about 30 % of the screen): a reading's first lines with most of the chart in view. Only a page asks for it. */
+export type MarginDetent = "peek" | "rest" | "half" | "full";
 const ORDER: MarginDetent[] = ["rest", "half", "full"];
+/** `at` for the peek detent (below the first of the sheet's own three). */
+const PEEK = -1;
 
 let asked: { detent: MarginDetent; n: number } = { detent: "rest", n: 0 };
 const askListeners = new Set<() => void>();
@@ -39,7 +42,7 @@ const useAsked = () =>
 const TABS = 56;
 const BAR = 52;
 /** The sheet's heights above the tab bar, px: resting (shell.css --n12-rest: min(44dvh, 340px)), half, reading. */
-function useDetents(): { heights: number[]; rest: number } {
+function useDetents(): { heights: number[]; rest: number; peek: number } {
   const [h, setH] = useState(844);
   useEffect(() => {
     const on = () => setH(window.innerHeight);
@@ -48,7 +51,7 @@ function useDetents(): { heights: number[]; rest: number } {
     return () => window.removeEventListener("resize", on);
   }, []);
   const rest = Math.round(Math.min(h * 0.44, 340));
-  return { heights: [rest, Math.round(Math.max(rest + 120, h * 0.62)), h - BAR - 12 - TABS], rest };
+  return { heights: [rest, Math.round(Math.max(rest + 120, h * 0.62)), h - BAR - 12 - TABS], rest, peek: Math.round(Math.min(rest - 48, h * 0.3)) };
 }
 
 /**
@@ -190,7 +193,7 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
 
   // ------------------------------------------------------------ the phone sheet (chart mode)
   const ask = useAsked();
-  const { heights, rest } = useDetents();
+  const { heights, rest, peek } = useDetents();
   const [at, setAt] = useState(0);
   // a new page rests again; a page's request moves the sheet
   useEffect(() => setAt(0), [pathname]);
@@ -198,10 +201,11 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
   useEffect(() => {
     if (ask.n === seen.current) return;
     seen.current = ask.n;
-    setAt(ORDER.indexOf(ask.detent));
+    setAt(ask.detent === "peek" ? PEEK : ORDER.indexOf(ask.detent));
   }, [ask]);
   const full = heights[heights.length - 1];
-  const offset = (i: number) => full - heights[i];
+  const heightAt = (i: number) => (i === PEEK ? peek : heights[i]);
+  const offset = (i: number) => full - heightAt(i);
   const y = useMotionValue(0);
   const controls = useDragControls();
   const was = useRef(false);
@@ -211,7 +215,7 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
       y.set(0);
       return;
     }
-    const target = full - heights[at];
+    const target = full - heightAt(at);
     // the first frame as a sheet is drawn at its detent (no slide in on arrival)
     if (!was.current) {
       was.current = true;
@@ -221,11 +225,12 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
     const c = animate(y, target, sheetSpring);
     return () => c.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheetOn, at, full, heights[at]]);
+  }, [sheetOn, at, full, heightAt(at)]);
   const onDragEnd = (_: unknown, info: PanInfo) => {
     // where the hand was heading: the nearest detent to the position a fling would carry the sheet to
     const aim = y.get() + info.velocity.y * 0.18;
-    let best = 0;
+    // the peek detent is offered to the hand only while the page has the sheet there
+    let best = at === PEEK ? PEEK : 0;
     heights.forEach((_h, i) => {
       if (Math.abs(offset(i) - aim) < Math.abs(offset(best) - aim)) best = i;
     });
@@ -251,19 +256,19 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
 
   return (
     <div className="n12-work" ref={workRef} data-pane={layout.detent} data-pane-open={layout.open ? "" : undefined} data-testid="nx-work">
-      <div ref={restRef} className="n12-margin-rest" style={{ height: rest }} aria-hidden="true" />
+      <div ref={restRef} className="n12-margin-rest" style={{ height: at === PEEK ? peek : rest }} aria-hidden="true" />
       <motion.main
         id="nx-margin"
         className="n12-margin"
         data-nx-margin=""
         data-testid="nx-margin"
-        data-detent={sheetOn ? at : undefined}
+        data-detent={sheetOn ? (at === PEEK ? "peek" : at) : undefined}
         tabIndex={-1}
         style={{ y, height: sheetOn ? full : undefined }}
         drag={sheetOn ? "y" : false}
         dragListener={false}
         dragControls={controls}
-        dragConstraints={{ top: 0, bottom: offset(0) }}
+        dragConstraints={{ top: 0, bottom: offset(at === PEEK ? PEEK : 0) }}
         dragElastic={0.06}
         dragMomentum={false}
         onDragEnd={onDragEnd}

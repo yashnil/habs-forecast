@@ -70,7 +70,9 @@ export interface PlotGeometry {
   bottom: number;
   x: (t: number) => number;
   y: (v: number) => number;
-  xSpec: Required<XSpec>;
+  xSpec: { type: "time" | "linear"; domain: [number, number]; format?: (t: number) => string };
+  /** A position on x in words: a date on a time axis, the formatted value and unit on a linear one. */
+  xWords: (t: number) => string;
   ySpec: { type: "linear" | "log"; domain: [number, number]; unit?: string; format: (v: number) => string };
   /** The sample under the crosshair (hover or keyboard), and the pinned one. */
   focus: PlotPoint | null;
@@ -78,6 +80,8 @@ export interface PlotGeometry {
 }
 const Geo = createContext<PlotGeometry | null>(null);
 /** The plot's scales and state, for a custom mark. */
+/** The geometry of the plot around a mark, or null outside a <Plot> (for a mark that also works elsewhere). */
+export const usePlotMaybe = (): PlotGeometry | null => useContext(Geo);
 export function usePlot(): PlotGeometry {
   const g = useContext(Geo);
   if (!g) throw new Error("usePlot: a mark must be inside <Plot>");
@@ -130,7 +134,8 @@ export function Plot({ label, data, x: xs, y: ys = {}, height = 280, margin, des
     return { x: (t: number) => r2(sx(t)), y: (v: number) => r2(sy(v)), invert: (px: number) => sx.invert(px) };
   }, [xs.domain, yDomain, yType, left, right, top, bottom]);
   const format = ys.format ?? plain;
-  const sayPoint = say ?? ((p: PlotPoint) => describePoint(p, { unit: ys.unit, time, format }));
+  const xWords = (t: number) => (time ? day(t, { year: true }) : `${(xs.format ?? plain)(t)}${xs.unit ? ` ${xs.unit}` : ""}`);
+  const sayPoint = say ?? ((p: PlotPoint) => describePoint(p, { unit: ys.unit, time, format, xFormat: xs.format, xUnit: xs.unit }));
 
   // only the samples in view can be inspected
   const shown = useMemo(() => data.filter((p) => p.t >= xs.domain[0] && p.t <= xs.domain[1]), [data, xs.domain]);
@@ -250,7 +255,8 @@ export function Plot({ label, data, x: xs, y: ys = {}, height = 280, margin, des
     bottom,
     x: geo.x,
     y: geo.y,
-    xSpec: { type: time ? "time" : "linear", domain: xs.domain },
+    xSpec: { type: time ? "time" : "linear", domain: xs.domain, format: xs.format },
+    xWords,
     ySpec: { type: yType, domain: yDomain, unit: ys.unit, format },
     focus,
     pinned,
@@ -261,7 +267,7 @@ export function Plot({ label, data, x: xs, y: ys = {}, height = 280, margin, des
     if (isValidElement(c) && (c.type as { plotLayer?: string }).plotLayer === "html") htmlKids.push(c);
     else svgKids.push(c);
   });
-  const summary = describe ? describe(shown) : shown.length ? `${label}: ${shown.length} samples, ${describeX(shown[0].t, time)} to ${describeX(shown[shown.length - 1].t, time)}.` : `${label}: no samples in this window.`;
+  const summary = describe ? describe(shown) : shown.length ? `${label}: ${shown.length} ${time ? "samples" : "points"}, ${xWords(shown[0].t)} to ${xWords(shown[shown.length - 1].t)}.` : `${label}: no samples in this window.`;
   return (
     <Geo.Provider value={value}>
       <div
@@ -298,7 +304,7 @@ export function Plot({ label, data, x: xs, y: ys = {}, height = 280, margin, des
     </Geo.Provider>
   );
 }
-const describeX = (t: number, time: boolean) => (time ? day(t, { year: true }) : plain(t));
+
 
 /* ---------------------------------------------------------------- axes and grid */
 
@@ -341,7 +347,7 @@ export interface AxisXProps {
 export function AxisX({ title, ticks, format }: AxisXProps) {
   const g = usePlot();
   const n = ticks ?? Math.max(2, Math.floor((g.right - g.left) / 96));
-  const list = g.xSpec.type === "time" && !format ? timeTicks(g.xSpec.domain, n) : linearTicks(g.xSpec.domain, n).map((t) => ({ t, label: (format ?? plain)(t) }));
+  const list = g.xSpec.type === "time" && !format ? timeTicks(g.xSpec.domain, n) : linearTicks(g.xSpec.domain, n).map((t) => ({ t, label: (format ?? g.xSpec.format ?? plain)(t) }));
   // labels never collide with each other or run off the plot's right edge
   let lastEnd = -Infinity;
   return (
@@ -619,7 +625,7 @@ export function Tip({ render }: TipProps) {
         <>
           <span className={s.tipValue}>{p.raw ?? (p.v !== null && onAxis(p) ? `${g.ySpec.format(p.v)}${g.ySpec.unit ? ` ${g.ySpec.unit}` : ""}` : DATA_STATE_WORDS[kind].word)}</span>
           <span className={s.tipMeta}>
-            {g.xSpec.type === "time" ? day(p.t, { year: true }) : plain(p.t)} · {DATA_STATE_WORDS[kind].word.toLowerCase()}
+            {g.xWords(p.t)} · {DATA_STATE_WORDS[kind].word.toLowerCase()}
           </span>
         </>
       )}

@@ -144,6 +144,23 @@
   }
 }
 
+/* ---------------------------------------------------------------- a legend that stays in reach */
+.marginSticky {
+  position: sticky;
+  bottom: calc(-1 * var(--s-32));
+  z-index: 2;
+  margin-top: var(--s-16);
+  padding: var(--s-8) 0 var(--s-32);
+  background: var(--paper);
+  border-top: var(--hair) solid var(--ink);
+}
+@media (max-width: 720px) {
+  .marginSticky {
+    position: static;
+    padding-bottom: var(--s-8);
+  }
+}
+
 /* ---------------------------------------------------------------- the chart dock */
 .dock {
   position: relative;
@@ -156,6 +173,15 @@
   flex-direction: column;
   border-top: var(--rule) solid var(--ink);
   padding: var(--s-12) var(--s-24) var(--s-16);
+}
+.dock[data-placed="pane"][data-align="frame"] {
+  padding-left: var(--frame-l, var(--s-24));
+  padding-right: var(--frame-r, var(--s-24));
+}
+.dock[data-placed="pane"][data-variant="rail"] {
+  padding-top: 0;
+  padding-bottom: var(--s-8);
+  border-top: 0;
 }
 .dock[data-placed="inline"] {
   margin-top: var(--s-16);
