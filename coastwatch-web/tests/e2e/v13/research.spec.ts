@@ -128,11 +128,11 @@ test("keyboard: focus the plot, step to a sample, Enter opens it in the inspecto
   const said = (await page.getByTestId("research-plot-live").textContent())!;
   expect(said).toMatch(/^[A-Z][a-z]{2} \d{1,2}, 2026 · .+ · (measured|at or below an unpublished limit, not absent)/);
   await page.keyboard.press("Enter");
-  await expect(page.getByTestId("research-inspector")).toHaveAttribute("data-index", /\d+/);
+  await expect(page.getByTestId("inspector-body")).toHaveAttribute("data-index", /\d+/);
   await expect.poll(() => params(page).day).toMatch(/^2026-09-/);
   await expect(page.getByTestId("inspector-utc")).toContainText("2026-09-");
   // a reported 0 is inspected as a reported 0, never as "none"
-  await page.getByTestId("inspector-close").click();
+  await page.getByRole("button", { name: "Close the details" }).click();
   await expect(page.getByTestId("research-inspector")).toHaveAttribute("data-empty", "");
   await page.getByTestId("range-latest").click();
   await expect.poll(() => params(page).day).toBe("2026-09-30");
@@ -144,7 +144,7 @@ test("a reported 0 is its own state in the table and the inspector", async ({ pa
   await page.getByTestId("disc-samples").getByRole("button").first().click();
   const zero = page.getByTestId("plot-table").locator("tbody tr", { hasText: "Reported 0" }).first();
   await zero.click();
-  await expect(page.getByTestId("research-inspector")).toHaveAttribute("data-state", "reported_zero");
+  await expect(page.getByTestId("inspector-body")).toHaveAttribute("data-state", "reported_zero");
   await expect(page.getByTestId("inspector-value")).toHaveText("0 ng/mL");
   await expect(page.getByTestId("inspector-state")).toContainText("Not quantified, not absent");
 });
@@ -154,13 +154,17 @@ test("phone, 390 px: a tap on the plot opens the sample; nothing scrolls sideway
   const page = await ctx.newPage();
   await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
   const plot = page.getByTestId("research-plot");
-  await plot.scrollIntoViewIfNeeded();
+  // the plot in the middle of the screen, clear of the header and the destinations, and the header settled
+  await plot.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(600);
   const box = (await plot.boundingBox())!;
   expect(box.width).toBeGreaterThanOrEqual(358);
   expect(box.height).toBeGreaterThanOrEqual(240);
   await page.touchscreen.tap(box.x + box.width * 0.7, box.y + box.height * 0.5);
-  await expect(page.getByTestId("research-inspector")).toHaveAttribute("data-index", /\d+/);
+  await expect(page.getByTestId("inspector-body")).toHaveAttribute("data-index", /\d+/);
   await expect(page.getByTestId("inspector-value")).toContainText("ng/mL");
+  // the card is pinned above the destinations: in view without scrolling, the plot still above it
+  await expect(page.getByTestId("inspector-value")).toBeInViewport();
   await expect(page.getByTestId("inspector-prev")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   // the empty range on a phone keeps its actions inside the page

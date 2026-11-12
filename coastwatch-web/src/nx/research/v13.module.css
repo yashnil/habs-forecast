@@ -326,20 +326,19 @@
 }
 
 /* ---------------------------------------------------------------- the inspector */
-.inspector {
-  padding: var(--s-16);
-  border: var(--rule) solid var(--ink);
-  background: var(--paper);
+.inspHint {
+  margin: var(--s-24) 0 0;
+  padding: var(--s-12) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  color: var(--ink-2);
 }
-.inspector[data-empty] {
-  border: var(--hair) solid var(--rule-soft);
+.inspStep {
+  margin: var(--s-12) 0;
 }
-.inspHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s-8) var(--s-16);
+.inline {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
 }
 .inspValue {
   margin: var(--s-12) 0 0;
@@ -360,28 +359,13 @@
   line-height: 1.45;
   max-width: var(--measure);
 }
-.inspFacts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--s-8) var(--s-24);
-  margin: var(--s-16) 0 0;
+.inspLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-24);
+  margin: var(--s-12) 0 0;
+  font-weight: 600;
 }
-.inspFacts > div {
-  min-width: 0;
-  padding-top: var(--s-4);
-  border-top: var(--hair) solid var(--rule-soft);
-}
-.inspFacts dt {
-  font-size: var(--type-small);
-  color: var(--ink-2);
-}
-.inspFacts dd {
-  margin: 0;
-  font-size: var(--type-body);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
-.inspFacts a,
 .inspLinks a {
   text-decoration: underline;
   text-decoration-thickness: var(--rule);
@@ -469,8 +453,5 @@
     padding-top: 0;
     border-top: 0;
     margin-bottom: var(--s-8);
-  }
-  .inspector {
-    padding: var(--s-12);
   }
 }

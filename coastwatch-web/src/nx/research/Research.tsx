@@ -36,7 +36,7 @@ import {
 } from "@/nx/ds";
 import { age, day, dayTime, latLon, range } from "@/nx/ds/format";
 import { setChartHighlight } from "@/nx/chart/highlight";
-import { ChartScene, boundsAround, type ChartScene as Scene } from "@/nx/chart/scene";
+import { ChartScene, boundsAround, tallBoundsAround, type ChartScene as Scene } from "@/nx/chart/scene";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import {
   availabilityAll,
@@ -170,22 +170,32 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   // a new window is a cut (v13 README §5: data never tweens)
   const win = drag ?? committed;
 
+  /**
+   * Writes the view to the address. What is not being changed is read from the ADDRESS as it is now, not from
+   * this render: the address is ahead of React for a moment after each change, and a second choice made in
+   * that moment (a variable, then a comparison) must not undo the first. `w: null` keeps the window.
+   */
   const commit = useCallback(
-    (w: [number, number], patch: { station?: string; v?: ObsVariableId; day?: number | null; cmp?: ObsVariableId | null } = {}) => {
-      const cw = clampWin(w, extent);
+    (w: [number, number] | null, patch: { station?: string; v?: ObsVariableId; day?: number | null; cmp?: ObsVariableId | null } = {}) => {
+      const cur = parseQuery(new URLSearchParams(window.location.search));
+      const sameStation = cur.station == null || cur.station === st.station_id;
+      const curV = sameStation && cur.v && measured.includes(cur.v) ? cur.v : focus;
+      const curWin: [number, number] = cur.from != null && cur.to != null && sameStation ? [cur.from, cur.to] : committed;
+      const v = patch.v ?? curV;
+      const cmpNext = patch.cmp === undefined ? (cur.station != null ? cur.cmp : cmp) : patch.cmp;
       writeAddress(
         queryFor({
           station: patch.station ?? st.station_id,
-          v: patch.v ?? focus,
-          win: cw,
+          v,
+          win: clampWin(w ?? curWin, extent),
           place: query.place,
           back: query.back,
-          day: patch.day === undefined ? query.day : patch.day,
-          cmp: patch.cmp === undefined ? cmp : patch.cmp,
+          day: patch.day === undefined ? (cur.station != null ? cur.day : query.day) : patch.day,
+          cmp: cmpNext === v ? null : cmpNext,
         }),
       );
     },
-    [extent, st.station_id, focus, query.place, query.back, query.day, cmp],
+    [extent, st.station_id, focus, measured, committed, query.place, query.back, query.day, cmp],
   );
   // the address is left as it arrived (a tab's `?place=`, a v11 link) until the reader chooses something
 
@@ -233,12 +243,10 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     return focusPoints.find((p) => Math.abs(p.t - query.day!) < 1.01 * DAY && inWin(p.t, committed)) ?? null;
   }, [query.day, focusPoints, committed]);
   const record = useMemo(() => (selected ? inspectSample(observations, st, focus, selected.i) : null), [selected, observations, st, focus]);
-  const inspectorRef = useRef<HTMLDivElement>(null);
-  const select = (p: RecPoint | null, o: { reveal?: boolean } = {}) => {
-    if (!p) return commit(committed, { day: null });
+  const select = (p: RecPoint | null) => {
+    if (!p) return commit(null, { day: null });
     // a sample outside the window brings the window to it (same width)
-    commit(inWin(p.t, committed) ? committed : windowAround(extent, committed, p.t), { day: p.t });
-    if (o.reveal !== false) requestAnimationFrame(() => inspectorRef.current?.scrollIntoView({ block: "nearest", behavior: "auto" }));
+    commit(inWin(p.t, committed) ? null : windowAround(extent, committed, p.t), { day: p.t });
   };
   const prev = selected ? stepSample(focusPoints, selected.t, -1) : null;
   const next = selected ? stepSample(focusPoints, selected.t, 1) : null;
@@ -266,12 +274,12 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const showModel = modelStrip != null && (!collapsed || modelAnyway === modelKey);
 
   // ------------------------------------------------------------ choosing
-  const chooseStationId = (id: string, w: [number, number] = committed) => {
+  const chooseStationId = (id: string, w: [number, number] | null = null) => {
     const nextSt = stations.find((x) => x.station_id === id);
     const nextVars = nextSt ? chooseFocus(nextSt, focus).measured : [];
     commit(w, { station: id, v: nextVars.includes(focus) ? focus : undefined, day: null, cmp: null });
   };
-  const chooseVariable = (id: ObsVariableId) => commit(committed, { v: id, day: null, cmp: cmp === id ? null : cmp });
+  const chooseVariable = (id: ObsVariableId) => commit(null, { v: id, day: null });
   const choosePreset = (r: RangeId) => commit(presetWindow(r, extent));
   const jumpLatest = () => latest && commit(latest.win, { day: latest.day });
   const openNeighbour = () => {
@@ -291,10 +299,11 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     return {
       id,
       focus: focusPort,
-      view: { bounds: wide ? boundsAround([st.lon, st.lat], 12, 70) : boundsAround([st.lon, st.lat], 32, 24), maxZoom: 12, align: wide ? [1, 0.5] : undefined },
+      // the pane beside the desk is tall and narrow: 70 km up and down the coast when it is, a wider box when not
+      view: { bounds: boundsAround([st.lon, st.lat], 32, 24), tall: tallBoundsAround([st.lon, st.lat], 70, 14), maxZoom: 12 },
       named: stations.map((x) => ({ name: x.name, lon: x.lon, lat: x.lat })),
     };
-  }, [st, port, sceneBase, homeStation, wide, stations]);
+  }, [st, port, sceneBase, homeStation, stations]);
 
   // ------------------------------------------------------------ exports
   const figureRef = useRef<RecordStripsHandle>(null);
@@ -588,7 +597,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                       <div className={v.cmpPick}>
                         <label htmlFor={cmpSelect}>Compare with</label>
                         <span className={v.selectWrap}>
-                          <select id={cmpSelect} className={v.select} value={cmp ?? ""} onChange={(e) => commit(committed, { cmp: (e.target.value || null) as ObsVariableId | null })} data-testid="research-compare">
+                          <select id={cmpSelect} className={v.select} value={cmp ?? ""} onChange={(e) => commit(null, { cmp: (e.target.value || null) as ObsVariableId | null })} data-testid="research-compare">
                             <option value="">Nothing</option>
                             {measured
                               .filter((x) => x !== focus)
@@ -612,9 +621,8 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                 </section>
                 </div>
 
-                <div ref={inspectorRef} className={v.block}>
-                  <Inspector record={record} onPrev={prev ? () => select(prev, { reveal: false }) : null} onNext={next ? () => select(next, { reveal: false }) : null} onClose={() => select(null)} position={position} />
-                </div>
+                {/* a direct child of the desk's main: on a phone the card pins above the destinations while the plot scrolls */}
+                <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
 
                 {/* ------------------------------------------------ this window */}
                 <section className={v.group} aria-labelledby="rx-g-window">
