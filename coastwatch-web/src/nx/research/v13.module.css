@@ -247,6 +247,9 @@
 }
 .rangeCell {
   grid-area: range;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .copyCell {
   grid-area: copy;
@@ -323,6 +326,9 @@
   stroke: var(--ink);
   stroke-width: 1;
   stroke-dasharray: 5 4;
+}
+.thresholdGround {
+  fill: var(--paper);
 }
 .thresholdLabel {
   font: 500 var(--type-small) / 1 var(--font-sans);
@@ -513,6 +519,8 @@
   .main {
     height: 282px;
     overflow: hidden;
+    /* brought into view under the condensed header (jump to the latest sample) */
+    scroll-margin-top: 104px;
   }
   .main[data-empty] {
     min-height: 282px;
