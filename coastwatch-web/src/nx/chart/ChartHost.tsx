@@ -13,6 +13,7 @@ import { measureCovers, onCoversChange } from "./cover";
 import { chartStyle, CHART_FRAME, modePaint, posterImages, posterLandEast, readPalette } from "./style";
 import { Neatline } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
+import { RegulationLayer } from "./RegulationLayer";
 
 type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null } };
 
@@ -157,6 +158,23 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       return { ...e.spec, x: p.x, y: p.y, width: e.w, height: e.h };
     });
     const placed = placeAll(items, area, obstacles, prevAnchors.current);
+    // regulation's lettering (RegulationLayer.tsx) yields to readings, stations and ports (priority 20 and up),
+    // which matter more where they stand, and holds its place against the names of water below them
+    // (a label that yielded keeps `data-reg-yield` so the layer's per-frame drawing does not flash it back)
+    const reg = [...frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: t.getBBox() }));
+    if (reg.length) {
+      const hits = (i: number, b: DOMRect) => b.x < placed[i].left + items[i].width && b.x + b.width > placed[i].left && b.y < placed[i].top + items[i].height && b.y + b.height > placed[i].top;
+      const live = reg.filter(({ t, b }) => {
+        const yields = placed.some((pl, i) => pl.visible && items[i].priority >= 20 && hits(i, b));
+        if (yields) t.setAttribute("data-reg-yield", "");
+        else t.removeAttribute("data-reg-yield");
+        t.setAttribute("visibility", yields ? "hidden" : "visible");
+        return !yields;
+      });
+      placed.forEach((pl, i) => {
+        if (pl.visible && items[i].priority < 20 && live.some(({ b }) => hits(i, b))) pl.visible = false;
+      });
+    }
     const shown = new Set<string>();
     const leaders: string[] = [];
     placed.forEach((pl, i) => {
@@ -478,6 +496,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         <div id="nx-chart-underlay" className="n12-underlay" aria-hidden="true" />
         {opening}
         <div className="n12-overlay" data-testid="nx-overlay">
+          <RegulationLayer />
           <CanyonName />
           <svg className="n12-leaders" aria-hidden="true" />
           <ChartLabels ports={ports} />

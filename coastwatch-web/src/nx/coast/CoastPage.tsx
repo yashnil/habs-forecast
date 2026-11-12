@@ -2,12 +2,13 @@
 
 import { MotionConfig } from "motion/react";
 import { useEffect, useId, useMemo, useState } from "react";
+import { ChartRegulation, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
 import { Legend } from "@/nx/ds";
 import { Button } from "@/nx/ds/Button";
 import { openPortFinder } from "@/nx/shell/finder";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
-import { portScene } from "@/nx/shell/views";
+import { portScene, zoneScene } from "@/nx/shell/views";
 import type { FisheryId } from "@/pilot/contracts";
 import { COAST_FISHERIES, coastFishery } from "./fisheries";
 import { Gates } from "./Gates";
@@ -40,7 +41,10 @@ export function CoastPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <ChartScene scene={portScene("coast", port, 30)} />
+      {/* a crab trip's water is its RAMP zone, drawn whole; otherwise the port's own water */}
+      <ChartScene scene={(fishery?.ramp && port ? zoneScene("coast", port, rampZoneAt(port.lat)) : null) ?? portScene("coast", port, 30)} />
+      {/* the chosen fishery's regulation on the chart: RAMP's zone lines for crab, the port's zone heavier (E T43) */}
+      <ChartRegulation spec={fishery?.ramp ? { zones: { highlight: port ? rampZoneAt(port.lat) : null } } : null} />
       <article className={s.page} data-testid="nx-coast">
         <header className={s.head}>
           <p className={`n12-kicker ${s.kicker}`}>My Coast</p>

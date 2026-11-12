@@ -7,6 +7,7 @@ import { fisheryLabel as labelOf, snapFacts } from "@/pilot/facts";
 import { readSeen, storageWorks, writeSeen } from "@/pilot/today/prefs";
 import { readSaved } from "@/pilot/today/prefs";
 import { saveTodayOffline } from "@/pilot/today/offline";
+import { ChartRegulation, RAMP_FISHERIES, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
 import { Agenda, agendaPhase, type AgendaItem } from "@/nx/ds/Agenda";
 import { BigDate } from "@/nx/ds/BigDate";
@@ -53,8 +54,11 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
   const primary = fisheries?.[0];
   if (!port) return null;
   const inputs = data.state === "ok" ? data.inputs : null;
+  // RAMP's zone lines on the chart for a crab reader, the port's own zone heavier (E T43)
+  const ramp = !!fisheries?.some((f) => RAMP_FISHERIES.has(f));
   return (
     <MotionConfig reducedMotion="user">
+      <ChartRegulation spec={ramp ? { zones: { highlight: rampZoneAt(port.lat) } } : null} />
       <section className={s.today} data-testid="nx-today" aria-labelledby="nx-today-title">
         {fisheries === undefined ? (
           <PortHeading name={port.name} />

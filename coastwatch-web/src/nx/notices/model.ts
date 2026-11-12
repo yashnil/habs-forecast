@@ -20,6 +20,8 @@ export type NoticeItem = {
   fishery: string;
   species: string[];
   area: string;
+  /** the official latitude band, when the notice's area is one (drawn on the chart as a bracket) */
+  band: { south: number; north: number } | null;
   statewide: boolean;
   effective: string | null;
   effectiveNote: string | null;
@@ -60,6 +62,7 @@ function item(r: OfficialRecord, now: Date, extra: { basis?: string | null; cave
     fishery: FISHERY_LABEL[r.fishery] ?? r.fishery,
     species: [...(r.species ?? [])],
     area: r.area.description,
+    band: r.area.type === "lat_band" && r.area.lat_south != null && r.area.lat_north != null ? { south: r.area.lat_south, north: r.area.lat_north } : null,
     statewide: r.area.type === "statewide",
     effective: r.effective_date ?? null,
     effectiveNote: r.effective_date_note ?? null,

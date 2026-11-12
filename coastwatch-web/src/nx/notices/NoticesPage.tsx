@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { ChartRegulation, noticeExtents } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
 import { Button } from "@/nx/ds/Button";
 import { day } from "@/nx/ds/format";
@@ -141,6 +142,8 @@ export function NoticesPage({ view, now }: { view: NoticesView | null; now: stri
   }
   const name = view.port?.name ?? null;
   const here = view.here.length + view.unsettled.length;
+  // on the chart: the latitude bands of the notices listed for the port (all of them with no port), in magenta
+  const extents = noticeExtents(view.port ? [...view.here, ...view.unsettled] : [...view.here, ...view.unsettled, ...view.elsewhere]);
   const reviewWords =
     view.review.status === "human_verified"
       ? `The registry records a review against the agencies' pages${view.review.reviewedAt ? ` on ${day(view.review.reviewedAt, { ref: now })}` : ""}; Neritic still does not stand in for them.`
@@ -148,6 +151,7 @@ export function NoticesPage({ view, now }: { view: NoticesView | null; now: stri
   return (
     <section className={s.page} data-testid="nx-notices">
       <ChartScene scene={scene} />
+      <ChartRegulation spec={extents.length ? { extents } : null} />
       <Statement
         size="md"
         as="h1"
