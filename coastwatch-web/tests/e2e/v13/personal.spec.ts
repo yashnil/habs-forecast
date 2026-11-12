@@ -117,6 +117,10 @@ test.describe("Your data and preferences", () => {
   test("what is kept is listed in plain words, and a copy can be saved", async ({ page }) => {
     await page.goto(`${OK}/today?place=${MOSS}`);
     await expect(page.getByTestId("nx-today")).toContainText("Moss Landing");
+    // Today records what it showed once the port's records have loaded; leave only after it has
+    await expect
+      .poll(() => page.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith("nx-today-seen-v1:"))))
+      .toBe(true);
     await page.goto(`${OK}/account`);
     const data = page.getByTestId("account-data");
     await expect(data).toContainText("Your home port, the port you opened last, your fisheries in order and your vessel length");
