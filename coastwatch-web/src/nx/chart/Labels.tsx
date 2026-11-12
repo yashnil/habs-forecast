@@ -86,6 +86,9 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
   const scene = useScene();
   const focus = scene?.focus?.key ?? null;
   const hydrated = useHydrated();
+  const named = scene?.named ?? [];
+  // a port the page already names (a station "Monterey Wharf" 1 km from Monterey) is left off, unless it is the reader's
+  const repeated = (p: ChartPort) => p.key !== focus && named.some((n) => n.name.toLowerCase().startsWith(p.name.toLowerCase()) && Math.hypot((n.lon - p.lon) * Math.cos((p.lat * Math.PI) / 180), n.lat - p.lat) * 111.32 < 6);
   const marks: ChartMark[] = [
     ...(hydrated ? WATER_NAMES : []).map((w) => ({
       id: `water-${w.id}`,
@@ -101,7 +104,7 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
         </span>
       ),
     })),
-    ...ports.map((p) => {
+    ...ports.filter((p) => !repeated(p)).map((p) => {
       const isFocus = p.key === focus;
       return {
         id: `port-${p.key}`,

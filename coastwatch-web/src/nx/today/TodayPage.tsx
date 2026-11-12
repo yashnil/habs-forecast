@@ -5,7 +5,7 @@ import { ChartScene } from "@/nx/chart/scene";
 import { Button } from "@/nx/ds/Button";
 import { openPortFinder } from "@/nx/shell/finder";
 import { savePort, useCurrentPort, usePorts } from "@/nx/shell/port";
-import { CA_COAST } from "@/nx/shell/views";
+import { COAST_VIEW } from "@/nx/shell/views";
 import type { Initial } from "./data";
 import { TodayView } from "./TodayView";
 import s from "./today.module.css";
@@ -27,7 +27,7 @@ export function TodayPage({ initial }: { initial: Initial }) {
   if (pending) return <section className={s.today} data-testid="nx-today" />;
   return (
     <section className={s.today} data-testid="nx-today">
-      <ChartScene scene={{ id: "today:coast", view: { bounds: CA_COAST } }} />
+      <ChartScene scene={{ id: "today:coast", view: COAST_VIEW }} />
       <h1 className={s.chooserTitle}>Today at your port</h1>
       <p className={s.chooserLead}>Choose your port to see its season status, the latest tests and the next decision date.</p>
       <p className={s.emptyAction}>

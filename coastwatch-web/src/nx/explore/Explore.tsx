@@ -351,7 +351,8 @@ export function Explore({ model }: { model: ExploreModel }) {
     () => ({
       id: `explore:${port?.key ?? "coast"}`,
       // the view stops at the data's own edge rather than showing a sliver of chart past it
-      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: extentBounds(extent) },
+      // the data's water fills the free area (the box's longer side cropped) rather than leaving inland hills beside it
+      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: extentBounds(extent), fill: !!extent },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
     }),

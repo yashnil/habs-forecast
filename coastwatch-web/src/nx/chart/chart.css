@@ -52,12 +52,13 @@
 .n12-scale-text, .n12-attrib { font-size: var(--t-14); color: var(--ink); text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 1px 1px 0 var(--halo), -1px -1px 0 var(--halo), 1px -1px 0 var(--halo), -1px 1px 0 var(--halo), 0 0 3px var(--halo); white-space: nowrap; }
 .n12-attrib { position: absolute; right: calc(var(--nx-cover-right, 0px) + var(--s-12)); bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12)); margin: 0; color: var(--ink-2); }
 /* a narrow free part (a panel beside it): the sources stand above the scale bar instead of beside it */
-.n12-frame[data-free="narrow"] .n12-attrib { bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12) + var(--s-32)); left: calc(var(--nx-cover-left, 0px) + var(--s-16)); right: auto; }
+.n12-frame[data-free="narrow"] .n12-attrib { bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-12) + var(--s-32)); left: calc(var(--nx-cover-left, 0px) + var(--s-16)); right: calc(var(--nx-cover-right, 0px) + var(--s-16)); white-space: normal; }
 .n12-attrib a { pointer-events: auto; }
 
 /* the neatline */
 .n12-neat { position: absolute; overflow: visible; pointer-events: none; }
 .n12-neat-fill rect { fill: var(--neat-a); }
+.n12-neat-paper { fill: var(--paper); }
 .n12-neat-line { fill: none; stroke: var(--ink); stroke-width: 1; shape-rendering: crispEdges; }
 .n12-neat-tick { stroke: var(--ink-2); stroke-width: 1; shape-rendering: crispEdges; }
 .n12-neat-label { font-family: var(--font-sans); font-size: 14px; fill: var(--ink-2); font-variant-numeric: tabular-nums; }

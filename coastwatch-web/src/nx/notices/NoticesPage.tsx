@@ -10,7 +10,7 @@ import { Stamp, type Provenance } from "@/nx/ds/Stamp";
 import { SourcesDiffer, Unavailable } from "@/nx/ds/States";
 import { Statement } from "@/nx/ds/Statement";
 import { savedPortKey, useCurrentPort } from "@/nx/shell/port";
-import { CA_COAST, portScene } from "@/nx/shell/views";
+import { COAST_VIEW, portScene } from "@/nx/shell/views";
 import type { NoticeItem, NoticesView } from "./model";
 import s from "./notices.module.css";
 
@@ -120,7 +120,7 @@ export function NoticesPage({ view, now }: { view: NoticesView | null; now: stri
     }
   }, [view, router]);
   const port = view?.port ? (current.port?.key === view.port.key ? current.port : null) : null;
-  const scene = port ? portScene("notices", port, 60) : { id: "notices:coast", view: { bounds: CA_COAST } };
+  const scene = port ? portScene("notices", port, 60) : { id: "notices:coast", view: COAST_VIEW };
 
   if (!view) {
     return (

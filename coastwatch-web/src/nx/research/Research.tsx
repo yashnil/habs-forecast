@@ -207,8 +207,15 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     const id = st.station_id === homeStation ? sceneBase : `${sceneBase}:${st.station_id}`;
     const focusPort = port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null;
     // beside the panel the free part is tall and narrow: 70 km up and down the coast, the station centred
-    return { id, focus: focusPort, view: { bounds: wide ? boundsAround([st.lon, st.lat], 12, 70) : boundsAround([st.lon, st.lat], 32, 24), maxZoom: 12 } };
-  }, [st, port, sceneBase, homeStation, wide]);
+    // the station toward the pane's east side, so the spare width is the sea it samples rather than hillshade;
+    // ports a station's own name repeats beside it are left off the chart (StationMarks names them)
+    return {
+      id,
+      focus: focusPort,
+      view: { bounds: wide ? boundsAround([st.lon, st.lat], 12, 70) : boundsAround([st.lon, st.lat], 32, 24), maxZoom: 12, align: wide ? [1, 0.5] : undefined },
+      named: stations.map((x) => ({ name: x.name, lon: x.lon, lat: x.lat })),
+    };
+  }, [st, port, sceneBase, homeStation, wide, stations]);
 
   // ------------------------------------------------------------ exports
   const figureRef = useRef<RecordStripsHandle>(null);

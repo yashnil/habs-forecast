@@ -12,7 +12,19 @@ import type { Bounds, LngLat } from "./mercator";
  */
 export type SceneView =
   /** fit this box in the free part of the sheet (the margin, bars and phone sheet excluded) */
-  | { bounds: Bounds; maxZoom?: number; /** where the view may slide to so it stops at the data's edge (mercator.ts slideWithin) */ within?: Bounds | null }
+  | {
+      bounds: Bounds;
+      maxZoom?: number;
+      /** where the view may slide to so it stops at the data's edge (mercator.ts slideWithin) */
+      within?: Bounds | null;
+      /**
+       * where the box sits in the free area when the area's shape leaves room beside it (0 west/north, 1 east/south;
+       * centred by default). The coast runs down the sheet's east side, so [1, 0.5] gives the spare room to the sea.
+       */
+      align?: [number, number];
+      /** fill the free area with the box, cropping its longer side (CSS `cover`), instead of fitting it whole */
+      fill?: boolean;
+    }
   /** cover the whole sheet with this box, as CSS `cover` would (the opening's still registers to it) */
   | { cover: Bounds; position?: [number, number] };
 
@@ -26,6 +38,11 @@ export type ChartScene = {
   interactive?: boolean;
   /** index isobath depth labels ("200 m"), on by default */
   depthLabels?: boolean;
+  /**
+   * places the page writes on the chart itself (Research's shore stations): a port whose name one of them repeats
+   * close by ("Santa Cruz" beside "Santa Cruz Wharf") is left off, so two names never crowd one place
+   */
+  named?: { name: string; lon: number; lat: number }[];
   /** how far the reader may zoom out and in on this view (the chart's own limits otherwise), so context is never lost */
   zoomRange?: [number, number];
 };

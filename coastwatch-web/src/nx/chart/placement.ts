@@ -103,7 +103,8 @@ export function placeAll(items: PlaceItem[], area: Rect, obstacles: Rect[] = [],
           break;
         }
       }
-      if (!placed && it.keep) {
+      // kept even without a free spot, but never written over a panel when its point lies under one
+      if (!placed && it.keep && pointIn(it, area)) {
         const r = boxAt(it, tries[0]);
         taken.push(r);
         placed = { id: it.id, left: r.x0, top: r.y0, anchor: tries[0], visible: true };
