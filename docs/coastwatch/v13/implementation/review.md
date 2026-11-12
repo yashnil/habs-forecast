@@ -125,3 +125,89 @@ parallel run is **video finalisation under CPU contention, not a page that never
 
 Unit tests: 1641 on D's branch against 1624 integrated is exact: B removed `tests/unit/nx/coast/trip.test.ts`
 (21 tests) and added 4 to `workspace.test.ts`. No test file was dropped by a merge.
+
+---
+
+## After the fix round (2026-11-12, `71f198a04`)
+
+Re-reviewed on a fresh production build of `71f198a04`, by the same probes and walks, staging data and fixtures,
+at the sizes where each defect failed. On this build: `tests/e2e/v13/guards.spec.ts` and
+`journeys/first-visit.spec.ts` 33 of 33 pass with no expected failures left; `npm run test:offline` PROVEN, 57 of
+57. The "after" stills in [before-after.md](before-after.md) and clips 3, 4 and 5 are from this build.
+
+**Verdict now:** the product passes the gate at 1440 and, with two exceptions, on a phone. Still failing:
+"Latest sample" on a phone no longer shows the sample (R-1, new), and the Compare box (F-12) is unchanged.
+
+### Each defect
+
+| # | Outcome | What was seen |
+|---|---|---|
+| F-01 | **Fixed** | Explore at 390 with a reading open: layer switch, Play and "Sources and coverage" are reachable at all four sheet heights (they lead the sheet now). Today and Notices scroll to their last control above the bar. Guards G2 pass at 390 and 320 with no exceptions. |
+| F-02 | **Fixed** | Header after "Save as new" at 1440: 200 px (was 310); name on one line with Rename, one row of buttons. |
+| F-03 | **Fixed** | Each waiting bar says "waiting" in its own column; nothing overlaps. |
+| F-04 | **Fixed** at 1440 | The sample panel opens beside the plot, its value in the first screen. |
+| F-05 | **Fixed** | Phone Research, Slow 4G: layout shift 0 in 8 of 8 loads (was 0.279). |
+| F-06 | **Fixed** | Two compact chart buttons on a phone; the port's name is clear. |
+| F-07 | **Fixed** | Guard passes with the filter removed. |
+| F-08 | **Fixed** | No page error offline; the pack holds the trip view. Not tested: a pack saved before this change (it has no trip-view document, so expect the old behaviour, a working page after a hydration error, until the pack is saved again). |
+| F-09 | **Fixed** | The phone journey passes. |
+| F-10 | **Fixed** | "Play" whole at 1440. |
+| F-11 | **Fixed** | Update renames an automatic name ("… at $10 …"). |
+| F-12 | **Not fixed** | The unticked Compare box is still filled dark grey; ticked is black with a white tick. Apart, an unticked box reads as ticked. `evidence/R2-research-phone-latest-and-compare-box.webp` (left). |
+| F-13 | **Partly** | The label moved to the right end and is clear at Monterey Wharf; at Santa Cruz Wharf (3 y) the data line still runs through it at 1440 and 390. |
+| F-14 | **Fixed**, one cost | Gap above the button; the 320 header is shorter. The fishery in the 320 header is now cut to "Dungeness …". |
+| F-15 | **Fixed** | "Chart · Monterey Wharf"; the port's name is clear of the zone line. |
+| F-16 | **Fixed** | "No pier nearby is known to measure chlorophyll. Nearest pier's record: …". |
+| F-17 | **Fixed** | The scrolled result is a ruled block; no sliver. |
+| F-18 | Not re-tested under load | Both recording journeys pass in the lead's run and mine. |
+
+### Still open, ranked
+
+| # | P | Owner | Page / size | What | Expected fix |
+|---|---|---|---|---|---|
+| R-1 | P1 | Research | 390 and 320 | New with the fix for F-04. "Latest sample" (the headline action, and the first action of the empty range) scrolls the plot off the screen and leaves a bare "Details" button under the header: no value, no date, and the marked point is not in view. Before the fix round the same press opened the sample sheet. A tap on the plot still opens the sheet correctly. `evidence/R2-research-phone-latest-and-compare-box.webp` | The press opens the sheet, as a tap does; or the value and date sit beside "Details" with the marked plot in view. |
+| F-12 | P2 | My Coast, ds | saved trips | As above. | An empty box when unticked. |
+| F-13 | P2 | Research | Santa Cruz Wharf, 3 y | As above. | Put the label above the plot or on a ground of the page colour. |
+| R-2 | P2 | Research | all sizes | The headline now reads "PDA: last measured …"; the quantity is pDA. | Do not capitalise the abbreviation. |
+| R-3 | P2 | Explore | 320, a reading at rest | The reading's title and position show; its value sits at y 584–622, exactly under the destinations bar (584). | Value on the title's line at 320, or a taller peek. |
+| R-4 | P2 | My Coast, Research | 320 | "Dungeness …" in the trip header; the "Custom" range is cut at the right edge of Research's range row. | Let the fishery wrap or abbreviate meaningfully; let the range row wrap. |
+| R-5 | P2 | shell-ds, Research | phone, Slow 4G | Home text LCP 4660 → 5198 ms (+11.5 %), Today +8 %. Research's blocking time rose from 181 to about 320 ms now that the plot is drawn at hydration behind "Drawing N samples…" (within the 450 ms budget, below v12's 416). | Trim the 58 KB added ahead of Home's and Today's first text. |
+
+### The twelve gate states, again
+
+| # | State | Pass? | Why |
+|---|---|---|---|
+| 1 | First-time Today | **Yes** | |
+| 2 | Returning Today | **Yes** | The phone sheet reaches its end. |
+| 3 | Explore with a layer | **Yes** | Layer switch and Play lead the phone sheet; "Play" whole at 1440. |
+| 4 | Explore with a harbour | **Yes**; at 320 the value is under the bar | R-3. |
+| 5 | My Coast start | **Yes** | |
+| 6 | Economics with inputs | **Yes** | |
+| 7 | Economics with results | **Yes** | $3,600.00 / $347.20 / $650.56 / $2,602.24 / 39 lb at every size. |
+| 8 | Research, a measured pDA sample | **Yes** | F-13 at Santa Cruz Wharf; R-2. |
+| 9 | Research, nothing in range | **Yes** | |
+| 10 | Research sample inspection | **Yes** at 1440 and by a tap on a phone; **No** by "Latest sample" on a phone | R-1. |
+| 11 | Saved scenarios and alerts | **Yes** | F-12 is the blemish. |
+| 12 | Phone versions | **Yes**, except R-1 | No sideways scroll; every control reachable by scrolling at 390 and 320. |
+
+### Performance, v12 → final v13
+
+Fixture data, medians. The run shared the machine with this review's other probes, so blocking times read
+higher than the first table's; the six-run repeat for phone Research was taken alone.
+
+| Condition | Route | JS KB | TBT ms | CLS | Text LCP ms | Map ready ms |
+|---|---|---|---|---|---|---|
+| desktop | home | 579 → 637 | 0 → 0 | 0 → 0 | 152 → 148 | 409 → 405 |
+| | today | 578 → 636 | 0 → 0 | 0 → 0 | 232 → 212 | 466 → 442 |
+| | explore | 622 → 652 | 0 → 0 | 0 → 0.007 | 136 → 108 | 509 → 376 |
+| | coast | 612 → 654 | 0 → 0 | 0.031 → 0 | 100 → 64 | 696 → 494 |
+| | research | 604 → 648 | 0 → 4 | 0.028 → 0 | 280 → 228 | 518 → 448 |
+| phone 390, CPU 4x, Slow 4G | home | | 164 → 159 | 0 → 0 | 4660 → 5198 | 14242 → 14762 |
+| | today | | 272 → 286 | 0 → 0 | 4586 → 4964 | 14180 → 14532 |
+| | explore | | 215 → 180 | 0.008 → 0.017 | 2168 → 2188 | 14382 → 14580 |
+| | coast | | 228 → 255 | 0 → 0.004 | 5366 → 2172 | 14414 → 14179 |
+| | research | | 416 → 346 (alone: 297–360) | 0.007 → **0** | 2248 → 2290 | 14925 → 15112 |
+
+All three budgets hold on every route: JS at most +58 KB (limit +60), phone blocking time at most 346 ms
+(limit 450), desktop layout shift at most 0.007 (limit 0.05). Phone Research's layout shift is gone. The one
+soft miss is unchanged: phone Home text LCP +11.5 %.
