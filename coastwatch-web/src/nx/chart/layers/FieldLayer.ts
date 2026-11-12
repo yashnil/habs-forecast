@@ -2,6 +2,7 @@
 
 import type { CustomLayerInterface, Map as MapLibreMap } from "maplibre-gl";
 import type { ModeColours, RGBA } from "./colors";
+import { CHART_FRAME } from "../style";
 import { gridBounds, mercX, mercY, type FieldGrid } from "./grid";
 
 /**
@@ -104,27 +105,19 @@ float rampT(float v) {
 void main() {
   vec2 f = cellf();
   ivec2 c = ivec2(floor(f + 0.5));
-  if (!inside(c)) discard;
-  float v = q(codeAt(c), u_dec);
+  bool within = inside(c);
+  // an observed layer is drawn past its grid (the quad covers the chart): there is no view there either
+  if (!within && u_variant != 0) discard;
+  float v = within ? q(codeAt(c), u_dec) : -1e30;
   bool nodata = v < -1e29;
 
   if (u_variant == 0) {
-    // the data's own extent ends at a neatline (a hairline in ink 2), so the edge of the grid reads as the edge of
-    // the sensor's view, not as a pale strip of chart
-    vec2 fw = max(fwidth(f), vec2(1e-6));
-    vec2 lo = (f + 0.5) / fw;
-    vec2 hi = (vec2(u_size) - 0.5 - f) / fw;
-    float edge = min(min(lo.x, lo.y), min(hi.x, hi.y));
-    if (edge < u_dpr) {
-      o = pm(u_ink2, 0.7);
-      return;
-    }
     if (nodata) {
-      // "no view": a quiet hatch over a light paper veil, so measured water dominates (T19); it comes in over
-      // the first 32 px inside the neatline, so the edge is the line, not a step in tone
-      float inA = smoothstep(0.0, 32.0 * u_dpr, edge);
-      vec4 veil = pm(u_paper, 0.22 * inA);
-      o = over(pm(u_hatch, 0.32 * inA * hatch(11.0, 1.0)), veil);
+      // "no view" (T19): a quiet hatch over a light paper veil, so measured water dominates. The same mark inside
+      // the grid (cloud, a gap) and outside it (beyond the sensor's footprint), continuous in screen space, so the
+      // grid's edge is never a line across the sea and no blank water reads as data
+      vec4 veil = pm(u_paper, 0.22);
+      o = over(pm(u_hatch, 0.32 * hatch(11.0, 1.0)), veil);
       return;
     }
     o = pm(ramp(rampT(v)), u_opacity);
@@ -195,6 +188,9 @@ export function decimate(codes: Uint16Array, w: number, h: number, stride: numbe
   return { codes: out, w: dw, h: dh };
 }
 
+/** The chart's whole drawn extent (public/chart/chart.json frame.bounds): how far "no view" is hatched. */
+const OUTER = CHART_FRAME.bounds;
+
 const VARIANT: Record<FieldStyle["kind"], number> = { ramp: 0, outlook: 1, classes: 2, isolines: 3 };
 
 export type FieldController = CustomLayerInterface & {
@@ -249,7 +245,9 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       texAux ??= g.createTexture();
       upload(g, texAux!, a.codes, a.w, a.h);
     }
-    const [w, s, e, n] = gridBounds(grid);
+    // an observed layer's "no view" hatch reaches past its grid to the chart's edge (the land masks it); the others
+    // stop at their grid
+    const [w, s, e, n] = style.kind === "ramp" ? OUTER : gridBounds(grid);
     g.bindBuffer(g.ARRAY_BUFFER, quad);
     g.bufferData(g.ARRAY_BUFFER, new Float32Array([mercX(w), mercY(n), mercX(e), mercY(n), mercX(w), mercY(s), mercX(e), mercY(s)]), g.STATIC_DRAW);
     g.bindTexture(g.TEXTURE_2D, null);
