@@ -232,9 +232,13 @@
   @media (min-height: 700px) {
     .hero {
       position: sticky;
-      top: var(--trip-top, 120px);
+      /* tucked a hair under the header (whose height is a fraction of a pixel) and closed with its own rule, so
+         nothing of the chart scrolling beneath shows between them or under it (F-17) */
+      top: calc(var(--trip-top, 120px) - 2px);
       z-index: 2;
       padding: var(--s-4) 0 var(--s-8);
+      border-bottom: var(--hair) solid var(--rule-soft);
+      background: var(--paper);
     }
   }
 }
@@ -261,28 +265,6 @@
 }
 .scBar .tripName {
   white-space: nowrap;
-}
-.nameOne {
-  display: flex;
-  min-width: 0;
-  flex: 0 1 auto;
-}
-.nameOne > span {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: baseline;
-  gap: var(--s-8);
-  min-width: 0;
-  max-width: 100%;
-}
-.nameOne > span > span {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.nameOne > span > button {
-  flex: none;
 }
 .scButtons {
   flex-wrap: nowrap;
@@ -463,15 +445,18 @@
   }
   /* F-14: once the header has condensed it is context, the title and one line of status; the whole sentence
      is a tap away (it opens the gates) */
-  [data-condensed] .chip {
+  :is([data-condensed], [data-measuring]) .chip {
     display: block;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  [data-condensed] .carried,
-  [data-condensed] .pinned > .compact {
+  :is([data-condensed], [data-measuring]) .carried {
     display: none;
+  }
+  /* the way back to the gates stays in the condensed header, small, on the fishery's own line */
+  .pinned > .compact {
+    font-size: var(--type-small);
   }
   /* a phone opens with the first input in reach: the column's own heading gives way to the group's */
   .aside > .h2 {
@@ -481,7 +466,7 @@
   .pinned > :first-child {
     flex: 0 1 auto;
     display: block;
-    max-width: 60%;
+    max-width: 55%;
   }
   .pinned {
     column-gap: var(--s-12);
@@ -560,22 +545,4 @@
 .briefMoney p {
   margin: 0;
   max-width: var(--measure);
-}
-
-/* On a phone the waterfall's callout (the bar's worked sum) is laid in the page under the bars, so pointing at a
-   bar and leaving it moved everything below by its height. Here it takes a place kept for it under the chart.
-   (For the design system: reserve this in WaterfallChart's rows layout, then this rule goes.) */
-@media (max-width: 720px) {
-  .fallChart {
-    position: relative;
-    margin-bottom: calc(var(--s-64) + var(--s-48));
-  }
-  .fallChart [data-testid="waterfall-callout"] {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    margin-top: var(--s-4);
-    background: var(--paper);
-  }
 }
