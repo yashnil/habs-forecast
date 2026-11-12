@@ -75,6 +75,28 @@ test("Monterey Wharf, pDA, one year: the empty range is explained, and one press
   await expect(page.getByTestId("research-inspector-live")).toContainText("Sample of 2022-");
 });
 
+test("1440 × 900, on load: the whole plot is in the first screen with the variable rail; so is the empty range with its actions", async ({ page }) => {
+  await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
+  const plot = (await page.getByTestId("research-plot").boundingBox())!;
+  expect(plot.width).toBeGreaterThanOrEqual(800);
+  expect(plot.height).toBeGreaterThanOrEqual(360);
+  expect(plot.y + plot.height).toBeLessThanOrEqual(900);
+  const rail = (await page.getByTestId("research-rail").boundingBox())!;
+  expect(rail.y).toBeGreaterThanOrEqual(0);
+  expect(rail.y + rail.height).toBeLessThanOrEqual(plot.y);
+  await expect(page.getByTestId("rail-temp")).toBeInViewport({ ratio: 1 });
+  // Monterey Wharf has one more variable: its plot still ends inside the screen
+  await open(page, "station=HABs-MontereyWharf&var=temp&range=1y");
+  const mw = (await page.getByTestId("research-plot").boundingBox())!;
+  expect(mw.y + mw.height).toBeLessThanOrEqual(900);
+  // the empty range: the message and all four actions, without scrolling
+  await open(page, MW_1Y);
+  await expect(page.getByTestId("research-empty")).toBeInViewport({ ratio: 1 });
+  for (const id of ["empty-latest", "empty-all", "empty-neighbour", "empty-source"]) await expect(page.getByTestId(id)).toBeInViewport({ ratio: 1 });
+  const box = (await page.getByTestId("research-main").boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(900);
+});
+
 test("the whole record and the neighbour are one press from the empty range", async ({ page }) => {
   await open(page, MW_1Y);
   await page.getByTestId("empty-all").click();

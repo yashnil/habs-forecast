@@ -146,25 +146,36 @@ test("a station picked on the chart, in the picker or in the list opens its reco
   await expect(page.getByTestId("strip-model")).toHaveCount(0);
 });
 
-test("on a phone the page is the page under the chart strip, the brush above the plot", async ({ browser }) => {
+test("on a phone the page is the page under the chart strip, and the plot is in the first screen", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
   const page = await ctx.newPage();
-  await open(page, "station=HABs-SantaCruzWharf&var=pDA");
+  await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
   // the page's element is the same one from the server's HTML through hydration and the phone query resolving
   const margin = page.getByTestId("nx-margin");
   await margin.evaluate((el) => ((el as HTMLElement & { __kept?: boolean }).__kept = true));
   await page.waitForTimeout(1500);
   expect(await margin.evaluate((el) => (el as HTMLElement & { __kept?: boolean }).__kept === true)).toBe(true);
   await expect(async () => {
-    const brush = await page.getByTestId("research-brush").boundingBox();
     const plot = await page.getByTestId("research-plot").boundingBox();
-    expect(brush).not.toBeNull();
+    const tabs = await page.getByTestId("nx-tabs").boundingBox();
     expect(plot).not.toBeNull();
-    expect(brush!.y).toBeLessThan(plot!.y);
-    // the one large plot: the page's width, at least 240 px tall
+    // the one large plot: the page's width, at least 240 px tall, whole in the first screen above the destinations
     expect(plot!.width).toBeGreaterThanOrEqual(358);
     expect(plot!.height).toBeGreaterThanOrEqual(240);
+    expect(plot!.y + plot!.height).toBeLessThanOrEqual(tabs ? tabs.y : 844 - 56);
+    // a compact selector over it; the window's brush and the full list of variables under it
+    const pick = await page.getByTestId("research-variable-select").boundingBox();
+    const brush = await page.getByTestId("research-brush").boundingBox();
+    const rail = await page.getByTestId("research-rail").boundingBox();
+    expect(pick!.y).toBeLessThan(plot!.y);
+    expect(brush!.y).toBeGreaterThan(plot!.y);
+    expect(rail!.y).toBeGreaterThan(brush!.y);
   }).toPass({ timeout: 10_000 });
+  // the compact selector changes the variable
+  await page.getByTestId("research-variable-select").selectOption("temp");
+  await expect.poll(() => params(page).var).toBe("temp");
+  await page.getByTestId("research-variable-select").selectOption("pDA");
+  await expect.poll(() => params(page).var).toBe("pDA");
   await expect(page.getByTestId("nx-research")).toHaveAttribute("data-layout", "desk");
   await expect(page.getByRole("button", { name: "Show more of this page" })).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);

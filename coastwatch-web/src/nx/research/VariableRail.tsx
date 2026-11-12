@@ -76,8 +76,8 @@ export function VariableRail({ rows, selected, onSelect, extent, win, now, stati
               {last ? (
                 <>
                   <span className={s.railLastDate}>Last {day(last.t, { year: true })}</span>
-                  <span className={s.railAge}>
-                    {ageWords(days as number)} · {valueWords(strip, last)}
+                  <span className={s.railAge} title={valueWords(strip, last)}>
+                    {ageWords(days as number)}
                   </span>
                 </>
               ) : (

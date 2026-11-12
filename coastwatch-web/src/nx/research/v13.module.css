@@ -95,8 +95,15 @@
 
 /* ---------------------------------------------------------------- the variable rail */
 .rail {
-  margin-top: var(--s-8);
   border-top: var(--rule) solid var(--ink);
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+.onlyPhone,
+.pickCell {
+  display: none;
 }
 .unitWords {
   font-weight: 400;
@@ -109,12 +116,12 @@
 }
 .railRow {
   display: grid;
-  grid-template-columns: minmax(270px, 1.1fr) minmax(100px, 1.6fr) minmax(168px, auto) minmax(96px, auto);
+  grid-template-columns: minmax(0, 330px) minmax(96px, 1fr) 250px 96px;
   align-items: center;
-  gap: var(--s-4) var(--s-16);
+  gap: 0 var(--s-16);
   width: 100%;
-  min-height: 44px;
-  padding: var(--s-4) var(--s-8) var(--s-4) var(--s-12);
+  min-height: 40px;
+  padding: 0 var(--s-8) 0 var(--s-12);
   border: 0;
   border-bottom: var(--hair) solid var(--rule-soft);
   border-left: 4px solid transparent;
@@ -132,8 +139,15 @@
   background: var(--sel);
 }
 .railName {
-  display: grid;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
   min-width: 0;
+  white-space: nowrap;
+}
+.railUnit {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .railLabel {
   font-weight: 600;
@@ -183,8 +197,11 @@
   opacity: 0.55;
 }
 .railLast {
-  display: grid;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
   min-width: 0;
+  white-space: nowrap;
 }
 .railLastDate {
   font-size: var(--type-body);
@@ -202,25 +219,34 @@
 }
 /* ---------------------------------------------------------------- the record: range, plots, brush */
 .record {
-  margin-top: var(--s-16);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "title range" "plots plots" "under under" "copy copy";
+  align-items: end;
+  gap: 0 var(--s-24);
+  margin-top: var(--s-12);
 }
-.recordHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--s-8) var(--s-24);
+.titleCell {
+  grid-area: title;
+  min-width: 0;
+}
+.rangeCell {
+  grid-area: range;
+}
+.copyCell {
+  grid-area: copy;
 }
 .windowLine {
-  margin: var(--s-4) 0 0;
-  font-size: var(--type-body);
+  margin: 0;
+  font-size: var(--type-small);
   font-variant-numeric: tabular-nums;
   color: var(--ink-2);
 }
 .plots {
+  grid-area: plots;
   display: flex;
   flex-direction: column;
-  margin-top: var(--s-12);
+  margin-top: var(--s-4);
   min-width: 0;
 }
 .main,
@@ -270,6 +296,7 @@
   line-height: 1.45;
 }
 .under {
+  grid-area: under;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -416,9 +443,39 @@
 
 /* ---------------------------------------------------------------- phone */
 @media (max-width: 720px) {
-  /* the condensed header already names the station: its picker comes back at the page's top */
-  :global([data-condensed]) .stationPick {
+  .onlyWide {
     display: none;
+  }
+  .onlyPhone {
+    display: revert;
+  }
+  .stationPick.onlyPhone {
+    display: inline-flex;
+  }
+  /* the plot first: a compact selector over it, then the range, the sentence, and the full list with its ticks */
+  .railBlock {
+    order: 2;
+    margin-top: var(--s-24);
+  }
+  .record {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "pick" "plots" "range" "title" "under" "copy";
+    margin-top: 0;
+  }
+  .pickCell {
+    grid-area: pick;
+    display: flex;
+  }
+  .pickCell .selectWrap,
+  .pickCell .select {
+    flex: 1;
+    width: 100%;
+  }
+  .titleCell {
+    margin-top: var(--s-8);
+  }
+  .titleCell .h2 {
+    font-size: var(--type-body);
   }
   .railRow {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -427,6 +484,8 @@
   }
   .railName {
     grid-area: name;
+    display: grid;
+    white-space: normal;
   }
   .railCount {
     grid-area: count;
@@ -438,20 +497,10 @@
   }
   .railLast {
     grid-area: last;
-    grid-auto-flow: column;
     justify-content: space-between;
-    gap: var(--s-8);
     font-size: var(--type-small);
   }
   .railLastDate {
     font-size: var(--type-small);
-  }
-  /* the window's brush sits above the plot, so dragging it with a thumb shows the plot below it change */
-  .brush {
-    order: -1;
-    margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
-    margin-bottom: var(--s-8);
   }
 }

@@ -356,8 +356,24 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const radius = st.charm?.radius_km ?? 15;
   const open = query.section;
   const stationSelect = useId();
+  const stationSelectPhone = useId();
+  const variableSelect = useId();
   const cmpSelect = useId();
 
+  const stationPicker = (id: string, testid: string) => (
+    <>
+      <label htmlFor={id}>Station</label>
+      <span className={v.selectWrap}>
+        <select id={id} className={v.select} value={st.station_id} onChange={(e) => chooseStationId(e.target.value)} data-testid={testid}>
+          {stations.map((x) => (
+            <option key={x.station_id} value={x.station_id}>
+              {x.name}
+            </option>
+          ))}
+        </select>
+      </span>
+    </>
+  );
   const insteadWords = empty?.instead.length ? `${empty.instead.map((x) => SHORT[x]).join(", ")} only` : "none of the variables shown";
   const emptyReason = empty ? (
     <>
@@ -387,12 +403,11 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const tableRows = useMemo(() => logRows(focusPoints, committed, "date", "desc"), [focusPoints, committed]);
   const depthOf = (p: RecPoint) => st.depths_m[p.i];
 
-  const status = !focusStrip ? (
-    `${st.name} has published no samples Neritic can read.`
-  ) : (
-    <span data-testid="research-status">
-      {LABEL[focus]}:{" "}
-      {lastOf ? `last measured ${day(lastOf.t, { year: true })} (${ageWords(Math.floor((nowMs - lastOf.t) / DAY))}), ${valueWords(focusStrip, lastOf)}.` : "never measured here."}
+  const statusWords = focusStrip ? `${LABEL[focus]}: ${lastOf ? `last measured ${day(lastOf.t, { year: true })} (${ageWords(Math.floor((nowMs - lastOf.t) / DAY))}), ${valueWords(focusStrip, lastOf)}.` : "never measured here."}` : `${st.name} has published no samples Neritic can read.`;
+  // on a phone the sentence is under the plot (so the plot is in the first screen); the header keeps it on a wide screen
+  const status = (
+    <span data-testid="research-status" className={focusStrip ? v.onlyWide : undefined}>
+      {statusWords}
     </span>
   );
 
@@ -404,24 +419,16 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
 
       <Desk>
         <DeskHeader
-          context="Research · water samples measured at a shore station"
+          context="Research · shore-station water samples"
           title={st.name}
           titleProps={{ "data-testid": "research-title" }}
           status={status}
-          actions={<ChartToggle />}
-          pinned={
-            <div className={v.stationPick}>
-              <label htmlFor={stationSelect}>Station</label>
-              <span className={v.selectWrap}>
-                <select id={stationSelect} className={v.select} value={st.station_id} onChange={(e) => chooseStationId(e.target.value)} data-testid="research-station-select">
-                  {stations.map((x) => (
-                    <option key={x.station_id} value={x.station_id}>
-                      {x.name}
-                    </option>
-                  ))}
-                </select>
-              </span>
-            </div>
+          actions={
+            <>
+              {/* in the title's row on a wide screen; on a phone the picker is under the plot, so the plot is in the first screen */}
+              <div className={`${v.stationPick} ${v.onlyWide}`}>{stationPicker(stationSelect, "research-station-select")}</div>
+              <ChartToggle />
+            </>
           }
         >
           {choice.arrival || askedMissing || query.askedVar || query.back ? (
@@ -454,14 +461,26 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
               <Unavailable what={`${st.name} has published no samples`} why={st.error ?? "The station's last request returned nothing Neritic could read."} />
             ) : (
               <>
-                <div data-testid="research-record">
-                <section className={v.block} aria-label="Variable">
+                <div data-testid="research-record" className={v.stack}>
+                <section className={v.railBlock} aria-label="Variable">
                   <VariableRail rows={railRows} selected={focus} onSelect={chooseVariable} extent={extent} win={win} now={nowMs} stationName={st.name} />
                 </section>
 
                 <section className={v.record} aria-label={`${LABEL[focus]} at ${st.name}`} data-testid="research-chart">
-                  <header className={v.recordHead}>
-                    <div>
+                    {/* a phone's compact selector: the plot is in the first screen, the full list with its ticks under it */}
+                    <div className={`${v.pickCell} ${v.cmpPick}`}>
+                      <label htmlFor={variableSelect}>Variable</label>
+                      <span className={v.selectWrap}>
+                        <select id={variableSelect} className={v.select} value={focus} onChange={(e) => chooseVariable(e.target.value as ObsVariableId)} data-testid="research-variable-select">
+                          {availability.map((a) => (
+                            <option key={a.v} value={a.v}>
+                              {LABEL[a.v]} ({a.withValue} in window)
+                            </option>
+                          ))}
+                        </select>
+                      </span>
+                    </div>
+                    <div className={v.titleCell}>
                       <h2 className={v.h2} data-testid="research-variable">
                         {LABEL[focus]} <span className={v.unitWords}>{focusStrip.unit}</span>
                       </h2>
@@ -476,7 +495,9 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                           </span>
                         ) : null}
                       </p>
+                      <p className={`${v.windowLine} ${v.onlyPhone}`}>{statusWords}</p>
                     </div>
+                    <div className={v.rangeCell}>
                     <RangeControl<RangeId>
                       label="Window"
                       presets={RANGES.map((r) => ({ value: r.id, label: PRESET_LABEL[r.id] }))}
@@ -485,7 +506,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                       onJumpLatest={latest ? jumpLatest : undefined}
                       latestLabel={latest ? `Latest sample: ${day(latest.day, { year: true })}` : undefined}
                     />
-                  </header>
+                    </div>
 
                   <div className={v.plots}>
                     <div
@@ -505,7 +526,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                             kind="not-collected"
                             what={`${LABEL[focus]} at ${st.name}`}
                             reason={<span data-testid="research-empty">{emptyReason}</span>}
-                            height={wide ? 360 : 250}
+                            height={wide ? 360 : 240}
                             action={
                               <ButtonGroup data-testid="research-empty-actions" className={v.emptyActions}>
                                 {latest ? (
@@ -536,7 +557,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                             win={win}
                             now={nowMs}
                             label={`${LABEL[focus]} at ${st.name}, ${range(win[0], win[1], { year: true })}`}
-                            height={{ desktop: 360, phone: 250 }}
+                            height={{ desktop: 360, phone: 240 }}
                             selected={selectedPoint}
                             onSelect={(p) => select(p ? p.meta : null)}
                             testid="research-plot"
@@ -584,6 +605,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                   </div>
 
                   <div className={v.under}>
+                    <div className={`${v.stationPick} ${v.onlyPhone}`}>{stationPicker(stationSelectPhone, "research-station-select-phone")}</div>
                     <Stamp provenance={provenance} now={now} />
                     <ul className={v.legend} aria-label="Legend" data-testid="research-legend">
                       {legendKinds.map((k) => (
@@ -611,7 +633,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                       </div>
                     ) : null}
                   </div>
-                  <p className={s.small} data-testid="research-copy-start">
+                  <p className={`${s.small} ${v.copyCell}`} data-testid="research-copy-start">
                     {copy.mayBeCut ? `Neritic's copy of this station starts ${day(`${copy.windowStart}T12:00:00Z`, { year: true })}; earlier samples, if any, are in ` : `Neritic asks the source for samples from ${day(`${copy.windowStart}T12:00:00Z`, { year: true })}; the first here is ${copy.firstSample ? day(`${copy.firstSample}T12:00:00Z`, { year: true }) : "none"}. The whole record is in `}
                     <a href={copy.sourceUrl} target="_blank" rel="noreferrer">
                       the source record
