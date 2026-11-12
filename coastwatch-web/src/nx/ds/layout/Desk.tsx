@@ -158,6 +158,19 @@ export function DeskSticky({ className, children, ...rest }: ComponentPropsWitho
   );
 }
 
+/**
+ * Stays at the foot of the margin column (or of a desk column) while the page scrolls under it: the legend for
+ * a reading that is open, so its marks stay explained however far the reader scrolls. An ordinary block on a
+ * phone sheet, where it would crowd the resting detent.
+ */
+export function MarginSticky({ className, children, ...rest }: ComponentPropsWithoutRef<"div">) {
+  return (
+    <div className={cx(s.marginSticky, className)} data-nx-margin-sticky {...rest}>
+      {children}
+    </div>
+  );
+}
+
 export interface ChartDockProps {
   /** Accessible name: "C-HARM along 36°48′ N". */
   label: string;
@@ -165,6 +178,13 @@ export interface ChartDockProps {
   height?: number;
   /** A separator on the top edge: drag, or Up/Down arrows. */
   resizable?: boolean;
+  /**
+   * frame: the dock's content starts and ends where the chart's frame does (a time rail whose ends line up with
+   * the chart's edges); pane (default): the pane's own padding.
+   */
+  align?: "pane" | "frame";
+  /** rail: a thin strip with a hairline instead of the heavy rule and no vertical padding (a time rail). */
+  variant?: "panel" | "rail";
   onClose?: () => void;
   className?: string;
   children: ReactNode;

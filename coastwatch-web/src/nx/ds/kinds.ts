@@ -4,7 +4,8 @@
  */
 
 /** Kind words, exactly as T1 lists them. */
-export type Kind = "measured" | "analysis" | "estimated" | "model" | "outlook" | "prediction" | "official";
+/** `advisory`: an agency's warning in force (an NWS small craft advisory, a CDPH health advisory): official words, drawn with the official ring. */
+export type Kind = "measured" | "analysis" | "estimated" | "model" | "outlook" | "prediction" | "official" | "advisory";
 
 /** The five marks. `official` always travels with the words "not verified" (T38). */
 export type MarkKind = "measured" | "model" | "official" | "noview" | "stale";
@@ -17,6 +18,7 @@ export const KIND_WORD: Record<Kind, string> = {
   outlook: "outlook",
   prediction: "prediction",
   official: "official",
+  advisory: "advisory",
 };
 
 /** Observed things are solid; anything computed about the water is hollow or hatched. */
@@ -25,6 +27,7 @@ export function markFor(kind: Kind): Extract<MarkKind, "measured" | "model" | "o
     case "measured":
       return "measured";
     case "official":
+    case "advisory":
       return "official";
     default:
       return "model";

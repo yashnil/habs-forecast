@@ -16,6 +16,8 @@ export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from ".
 export { ButtonGroup, type ButtonGroupProps } from "./ButtonGroup";
 export { IconButton, type IconButtonProps } from "./IconButton";
 export { RangeControl, ScrubNumber, Disclosure, ToggleRow, Hint, type RangeControlProps, type ScrubNumberProps, type DisclosureProps, type ToggleRowProps, type HintProps } from "./Controls";
+export { Drawer, EditableText, OptionList, Inspector, Facts, type DrawerProps, type EditableTextProps, type OptionListProps, type OptionItem, type InspectorProps } from "./Panels";
+export { GateList, Advisories, type GateListProps, type GateItem, type GateFactItem, type GateItemState, type AdvisoriesProps, type AdvisoryItem } from "./GateList";
 export { Figure, type FigureProps, type FigureFormat } from "./Figure";
 export { useSettledNumber } from "./useSettledNumber";
 export { DataState, DataStateMark, DataStateLegend, Availability, Skeleton, Recovered, DATA_STATE_KINDS, DATA_STATE_WORDS, type DataStateKind, type DataStateProps, type AvailabilityProps, type AvailabilityRow, type AvailabilitySpan, type SkeletonProps, type RecoveredProps } from "./DataState";

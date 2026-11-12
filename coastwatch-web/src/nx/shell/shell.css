@@ -94,7 +94,7 @@
 .n12-margin-page { min-height: 100%; }
 .n12-sheet-top { display: none; }
 .n12-divider { display: none; grid-column: 2; grid-row: 1; }
-.n12-pane { grid-column: 3; grid-row: 1; position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--paper); }
+.n12-pane { --frame-l: calc(var(--neat-label) + var(--neat-band) + 6px); --frame-r: calc(var(--neat-band) + var(--s-16)); grid-column: 3; grid-row: 1; position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--paper); }
 .n12-dock-slot { flex: none; min-width: 0; }
 .n12-pane-rail, .n12-pane-bar, .n12-pane-close { display: none; }
 
@@ -185,7 +185,7 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
      the statement and is dragged or stepped up to read on. The same element at every width: before hydration
      it stands at the resting height; after, Motion gives it its reading height and slides it down to a detent. */
   .n12-work { display: block; }
-  .n12-pane { position: absolute; top: 0; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+  .n12-pane { --frame-l: calc(var(--neat-label) + var(--neat-band) + 4px); --frame-r: calc(var(--neat-band) + var(--s-8)); position: absolute; top: 0; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
   .n12-margin-rest { display: block; }
   /* fixed, as a sheet is: the part of it below the screen at a low detent must not become scrollable overflow */
   .n12-margin {
@@ -215,6 +215,7 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
   }
   /* a locator until the reader enlarges it: touches on it scroll the page */
   .n12-app:has([data-nx-layout="desk"]) .n12-work:not([data-pane-open]) .n12-map { pointer-events: none; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work:not([data-pane-open]) .n12-controls { display: none; }
   .n12-app:has([data-nx-layout="desk"]) .n12-pane-bar {
     flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-8);
     height: var(--strip-bar); padding: 0 var(--s-8) 0 var(--s-16); background: var(--paper); border-top: var(--hair) solid var(--rule-soft);

@@ -174,11 +174,20 @@
 .brushHandle::after {
   content: "";
   position: absolute;
-  left: 50%;
+  left: var(--tick, 50%);
   top: 25%;
   bottom: 25%;
   border-left: 3px solid var(--ink);
   transform: translateX(-50%);
+}
+/* outward-facing (a narrow frame): a short foot from the tick shows which way the handle reaches */
+.brushHandle[data-outward]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: var(--hair) solid var(--ink);
 }
 .brushHandle:focus-visible {
   outline: 2px solid var(--focus, var(--ink));

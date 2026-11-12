@@ -8,7 +8,8 @@ import { openPortFinder } from "./finder";
 import { FieldPack } from "@/nx/offline/FieldPack";
 import { useCurrentPort, useSavedPortKey, type ShellPort } from "./port";
 import { DESTINATIONS, activeDestination, withPlace } from "./destinations";
-import { alertsHref, useUnread } from "./unread";
+import { alertsHref } from "./unread";
+import { useUnread } from "@/nx/alerts/useInbox";
 import { motion } from "motion/react";
 import { shared } from "@/nx/ds/motion";
 
@@ -99,7 +100,7 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
 
 /**
  * The shell (README §6): one 52 px bar with the wordmark, the port, the four destinations, Ask and Alerts (with
- * the unread count when there is one, src/nx/shell/unread.ts), and the chart mode in a menu. On a phone the destinations move to a 56 px bottom bar with 48 px targets. Every
+ * the unread count when there is one, src/nx/alerts/useInbox), and the chart mode in a menu. On a phone the destinations move to a 56 px bottom bar with 48 px targets. Every
  * link carries the current port.
  */
 export function Shell() {
@@ -108,7 +109,8 @@ export function Shell() {
   const { port, key } = useCurrentPort();
   const active = activeDestination(pathname, saved);
   const portName = port?.name ?? null;
-  const unread = useUnread();
+  // undefined until the device's inbox has been read (after hydration): nothing is shown until then
+  const unread = useUnread() ?? 0;
   // the travelling underline is drawn once the app has hydrated (the saved port, which decides the active
   // destination at `/`, is known only then); until then the stylesheet underlines the current link
   const [live, setLive] = useState(false);
