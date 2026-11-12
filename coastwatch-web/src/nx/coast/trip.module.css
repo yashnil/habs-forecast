@@ -120,8 +120,6 @@
 .results {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  /* a figure or a bar's amount wider than a narrow screen is clipped here, never a sideways scroll of the page */
-  overflow-x: clip;
   gap: var(--s-8);
   font-variant-numeric: tabular-nums;
 }
@@ -177,6 +175,11 @@
   font-weight: 400;
   color: var(--ink-2);
 }
+/* the scenario line keeps its own line whether or not it has words, so the grid never moves under the pointer */
+.showing {
+  display: block;
+  min-height: calc(var(--type-small) * 1.5);
+}
 .inlineButton {
   min-height: 0;
   padding: 0;
@@ -219,11 +222,6 @@
 }
 .sensHead .h3 {
   margin: 0;
-}
-/* the grid of figures scrolls inside itself when it is wider than a 320 px screen; the page never does */
-.gridScroll {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
 }
 .assume {
   margin: 0;

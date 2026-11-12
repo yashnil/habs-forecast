@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { AxisX, AxisY, BreakEvenMarker, Button, Crosshair, Figure, GridY, Line, NowRule, Plot, Points, PlotState, Segmented, SensitivityGrid, Tip, useMedia, WaterfallChart, type PlotPoint } from "@/nx/ds";
+import { AxisX, AxisY, BreakEvenMarker, Button, Crosshair, Figure, GridY, Line, NowRule, Plot, Points, PlotState, Segmented, SensitivityGrid, Tip, WaterfallChart, type PlotPoint } from "@/nx/ds";
 import { HYPOTHETICAL, type TripFlag } from "./context";
 import type { CoastFishery } from "./fisheries";
 import {
@@ -40,10 +40,7 @@ export function useTripPreview(result: TripResult, preview: (scale: Scale) => Tr
   const [hover, setHover] = useState<Cell | null>(null);
   const [pinned, setPinned] = useState<Cell | null>(null);
   // a cell exists only while the grid does: a gap opening under a held scenario returns to the reader's numbers
-  // a finger has no hover: a touch leaves a pointerenter behind with no leave to clear it, so on a touch screen
-  // only the held cell counts (a tap holds, a second tap returns)
-  const touch = useMedia("(hover: none)");
-  const cell = result.grid ? (touch ? pinned : (hover ?? pinned)) : null;
+  const cell = result.grid ? (hover ?? pinned) : null;
   const moved = cell && !(cell.row === BASE.row && cell.col === BASE.col) ? cell : null;
   const shown = useMemo(() => (moved ? preview({ catch: ROWS[moved.row].value, price: COLS[moved.col].value }) : result), [moved, preview, result]);
   const words = moved ? `Showing catch ${pctWord(ROWS[moved.row].value)}, price ${pctWord(COLS[moved.col].value)}.` : "";
@@ -113,7 +110,7 @@ export function TripResults({
             label={
               <>
                 {rec ? "Trip cost" : "Net to boat"} <span className={s.hypo}>{HYPOTHETICAL}</span>{" "}
-                <span className={s.hypo} aria-live="polite" data-testid="trip-showing">
+                <span className={`${s.hypo} ${s.showing}`} aria-live="polite" data-testid="trip-showing">
                   {look.words}
                 </span>
               </>
@@ -208,7 +205,6 @@ export function TripResults({
           {!result.grid ? (
             <PlotState kind="missing" what="Net to boat" reason={result.out.net.status === "waiting" ? `Still ${waitingWords(result.out.net, ws, fishery)}.` : "Net to boat has no value for these numbers."} height={160} />
           ) : view === "grid" ? (
-            <div className={s.gridScroll}>
             <SensitivityGrid
               caption={`Net to boat, price across and catch down. Trip costs${ws.crewKind === "dayRate" ? " and day pay" : ""} stay as entered; fees and shares move with gross. Point at a figure to see it above; press it to hold it there.`}
               rows={ROWS}
@@ -221,7 +217,6 @@ export function TripResults({
               onPreview={setHover}
               onSelect={(c) => setPinned((was) => (was && was.row === c.row && was.col === c.col ? null : c.row === BASE.row && c.col === BASE.col ? null : c))}
             />
-            </div>
           ) : (
             <SweepPlot ws={ws} fishery={fishery} variable={variable} setVariable={setVariable} />
           )}

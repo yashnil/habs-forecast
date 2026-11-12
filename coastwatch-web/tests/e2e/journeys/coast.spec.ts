@@ -199,6 +199,36 @@ test("on a phone: the page scrolls under the chart strip; the season line and th
   await ctx.close();
 });
 
+test("while the gates and the sea are read, placeholders hold their place: what is under them barely moves when they land", async ({ browser }) => {
+  for (const [w, h] of [
+    [1440, 900],
+    [390, 844],
+  ]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w <= 720, isMobile: w <= 720 });
+    await seed(ctx);
+    const p = await ctx.newPage();
+    let release = () => {};
+    const held = new Promise<void>((ok) => (release = ok));
+    await p.route("**/coast/data**", async (r) => {
+      await held;
+      await r.continue();
+    });
+    await p.goto(`${OK}/coast?place=${MOSS}`);
+    await expect(p.getByTestId("skeleton")).toHaveCount(2);
+    await expect(p.getByTestId("skeleton").first()).toContainText("Reading the season list, whale measures and CDPH tests");
+    // what stands under each placeholder: the money section under the sea window, the sea window (phone) or the foot under the gates
+    const under = p.getByRole("heading", { name: "The money" });
+    const before = (await under.boundingBox())!.y + (await p.evaluate(() => document.querySelector(".n12-margin-scroll")!.scrollTop + window.scrollY));
+    release();
+    await expect(p.getByRole("list", { name: "Gates for Dungeness crab" })).toBeVisible({ timeout: 15_000 });
+    await expect(p.getByRole("radiogroup", { name: "Day to read" })).toBeVisible({ timeout: 15_000 });
+    await expect(p.getByTestId("skeleton")).toHaveCount(0);
+    const after = (await under.boundingBox())!.y + (await p.evaluate(() => document.querySelector(".n12-margin-scroll")!.scrollTop + window.scrollY));
+    expect(Math.abs(after - before), `${w} px: the section under the placeholders moved`).toBeLessThanOrEqual(48);
+    await ctx.close();
+  }
+});
+
 test("media: stills at the widths and modes the page is used at", async ({ browser }) => {
   test.skip(!MEDIA, "media only on request (NX_MEDIA=1)");
   test.setTimeout(240_000);

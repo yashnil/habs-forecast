@@ -4,9 +4,6 @@
   display: block;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-  /* the sticky header changes height when it condenses. With scroll anchoring the scroller would follow that
-     change, cross the condense threshold again and never settle; nothing here may be a scroll anchor */
-  overflow-anchor: none;
 }
 
 /* ---------------------------------------------------------------- head */
@@ -528,6 +525,22 @@
 }
 
 /* the gates while they load: about their loaded height (three rows and their stamps) */
+/* The gates and the sea window while they are read: placeholders at the height the loaded blocks take (three
+   gates with their stamps; the buoys' line and a week of days), measured at the desk's column widths, so the
+   page under them does not move when the data lands. */
 .gatesLoading {
-  min-height: calc(var(--s-64) * 8);
+  min-height: calc(var(--s-64) * 9 + var(--s-48));
+  align-content: start;
+}
+.seaLoading {
+  min-height: calc(var(--s-64) * 10 + var(--s-32));
+  align-content: start;
+}
+@media (max-width: 720px) {
+  .gatesLoading {
+    min-height: calc(var(--s-64) * 8 + var(--s-24));
+  }
+  .seaLoading {
+    min-height: calc(var(--s-64) * 12);
+  }
 }
