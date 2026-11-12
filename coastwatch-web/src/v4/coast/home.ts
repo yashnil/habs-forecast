@@ -1,11 +1,10 @@
 import { coastHref, parseAudience, type Audience } from "@/lib/coast";
+import { LEGACY_HOME_KEY, dropLegacy, readPortRecord, updatePortRecord } from "@/lib/portRecord";
 
 /**
- * The reader's home port, on this device only (localStorage "cw-home-port"), never assumed to be where
- * anyone fishes. Stored as {place, for, species} so the home briefing reopens the reader's own trip;
- * an older plain place key ("port-550") is still read, as that place with no trip.
+ * The reader's home port, on this device only (the saved-port record, `lib/portRecord`), never assumed
+ * to be where anyone fishes. Kept with {for, species} so the home briefing reopens the reader's own trip.
  */
-export const HOME_KEY = "cw-home-port";
 export type HomePort = { place: string; for: Audience; species: string };
 
 export function parseHome(raw: string | null | undefined): HomePort | null {
@@ -21,20 +20,13 @@ export function parseHome(raw: string | null | undefined): HomePort | null {
 }
 
 export function readHome(): HomePort | null {
-  try {
-    return parseHome(window.localStorage.getItem(HOME_KEY));
-  } catch {
-    return null;
-  }
+  const r = readPortRecord();
+  return r.place ? { place: r.place, for: parseAudience(r.for), species: r.species || "any" } : null;
 }
 
 export function writeHome(h: HomePort | null) {
-  try {
-    if (h) window.localStorage.setItem(HOME_KEY, JSON.stringify(h));
-    else window.localStorage.removeItem(HOME_KEY);
-  } catch {
-    // not remembered on this device
-  }
+  updatePortRecord((r) => (h ? { ...r, place: h.place, for: h.for, species: h.species } : { ...r, place: null, for: "all", species: "any" }));
+  if (!h) dropLegacy(LEGACY_HOME_KEY);
 }
 
 /** The home briefing's link: the place with the reader's own activity and species. */

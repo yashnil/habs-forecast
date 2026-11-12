@@ -36,6 +36,7 @@ import type {
 } from "./contracts";
 import type { Conditions, Tide } from "@/lib/conditions";
 import { compass } from "@/lib/conditions";
+import { allPast, isPastRun } from "@/lib/modelTime";
 import { lanePeriods, periodLine, type LanePeriod } from "./today/marine";
 
 // ---------------------------------------------------------------- inputs
@@ -310,7 +311,7 @@ export type OutlookRead = {
   level: OutlookLevel;
   /** "higher than usual" | "about usual" | "lower than usual": the phrase inside the fact's headline */
   phrase: string;
-  /** "about 1.6× the typical level" (higher), "about 60% of the typical level" (lower); null for "about usual" */
+  /** "within the model's typical error" (higher), "about 60% of the typical level" (lower); null for "about usual" */
   ratioWords: string | null;
 };
 export type BloomView = {
@@ -558,7 +559,9 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         causeWord: null,
         area: null,
         next_review: null,
-        source: { name: "CDFW and CDPH (Neritic's list)", url: "https://wildlife.ca.gov/Fishing/Ocean/Regulations" },
+        // T42: CDFW acts on fisheries (and its regulations page is the link); never "CDFW and CDPH", which a
+        // short stamp read as "CDPH" for a fishery with nothing on record
+        source: { name: "CDFW (Neritic's list)", url: "https://wildlife.ca.gov/Fishing/Ocean/Regulations" },
         checked_at: inp.fisheries?.generated_at ?? null,
         verified: null,
         records: [],
@@ -786,12 +789,16 @@ export function testSentence(site: BiotoxinSite, set: BiotoxinSet | null, lvl: n
   const when = dayWords(set.date, now);
   const nums = set.values_ppm.filter((v): v is number => v != null);
   if (!nums.length) return `${subject}: no domoic acid detected in ${set.nd_count || set.values_ppm.length} samples on ${when}${lvl != null ? ` (limit ${lvl} ppm)` : ""}.`;
+  // T8: the highest result leads, against the action level, with the count. No average: CDPH's printed
+  // average counts results below detection ("ND", "<2.5") as zero, so it reads lower than the crab tested.
   const max = setMax(set);
-  const avg = set.avg_ppm;
-  if (lvl == null) return `${subject} tested on ${when}: ${avg != null ? `avg ${ppm(avg)} ppm, ` : ""}max ${ppm(max)} ppm.`;
-  if (max < lvl) return `${subject} tested ${max < lvl / 2 ? "well under" : "under"} the limit on ${when}: avg ${ppm(avg ?? max)} ppm, limit ${lvl}.`;
+  const n = set.values_ppm.length;
+  const below = set.values_ppm.length - nums.length;
+  const belowWords = below ? `, ${below} below detection` : "";
+  if (lvl == null) return `${subject} tested on ${when}: highest ${ppm(max)} ppm of ${n} sample${n === 1 ? "" : "s"}${belowWords}.`;
   const over = set.values_ppm.filter((v) => v != null && v >= lvl).length;
-  return `${subject} tested over the limit on ${when}: ${over} of ${set.values_ppm.length} samples at or over ${lvl} ppm, max ${ppm(max)} ppm${avg != null ? `, avg ${ppm(avg)}` : ""}.`;
+  if (!over) return `${subject} tested under the action level on ${when}: highest ${ppm(max)} ppm of ${lvl}, ${n === 1 ? "1 sample" : `all ${n} samples under`}${belowWords}.`;
+  return `${subject} tested over the action level on ${when}: highest ${ppm(max)} ppm of ${lvl}, ${over} of ${n} samples at or over${belowWords}.`;
 }
 
 function testViews(idx: BiotoxinIndex | null, place: TodayPlace, selected: FisheryId[], rows: StatusRow[], now: string, fact: (f: Omit<PortFact, "place_id">) => PortFact): TestSiteView[] {
@@ -844,7 +851,7 @@ function testViews(idx: BiotoxinIndex | null, place: TodayPlace, selected: Fishe
       cleanStreak,
       showProgress,
       progressWords,
-      fact: fact({ id: `test:${site.id}`, kind: "test", severity: over ? "amber" : "info", headline: s, value: latest?.avg_ppm != null ? `${ppm(latest.avg_ppm)} ppm avg` : latest ? `${ppm(setMax(latest))} ppm max` : null, detail, basis: "measured", verified: null, source: { name: idx.source.name, url: idx.source.url }, as_of: latest?.date ?? null }),
+      fact: fact({ id: `test:${site.id}`, kind: "test", severity: over ? "amber" : "info", headline: s, value: latest && latest.values_ppm.some((v) => v != null) ? `${ppm(setMax(latest))} ppm max` : latest ? "not detected" : null, detail, basis: "measured", verified: null, source: { name: idx.source.name, url: idx.source.url }, as_of: latest?.date ?? null }),
     };
   });
   // in the order of the reader's fisheries (crab first by default), then any over the limit, then the newest
@@ -887,11 +894,23 @@ export function skillWords(skill: OutlookInput["skill"]): string {
  */
 export const OUTLOOK_SIGNAL_RATIO = 1.5;
 
-/** higher / about usual / lower, from outlook ÷ usual (the ratio is compared unrounded). */
-export function outlookRead(value: number | null | undefined, typical: number | null | undefined): OutlookRead | null {
+/**
+ * higher / about usual / lower, from outlook ÷ usual (the ratio is compared unrounded). With the model's typical
+ * error factor known (outlookErrorFactor), a ratio inside that factor is never quoted as a multiple (T15: a
+ * "1.6×" beside "a typical error of a factor of 2" claims a precision the model does not have): the words say
+ * only that it is within the model's typical error. Beyond it, the multiple is given to one figure.
+ */
+export function outlookRead(value: number | null | undefined, typical: number | null | undefined, errorFactor: number | null = null): OutlookRead | null {
   if (value == null || typical == null || !(value > 0) || !(typical > 0)) return null;
   const ratio = value / typical;
   if (!Number.isFinite(ratio)) return null;
+  if (errorFactor != null && errorFactor > 1) {
+    const within = "within the model's typical error";
+    const one = (x: number) => Number(x.toPrecision(1));
+    if (ratio >= OUTLOOK_SIGNAL_RATIO) return { ratio, level: "higher", phrase: "higher than usual", ratioWords: ratio < errorFactor ? within : `about ${one(ratio)}× the typical level` };
+    if (ratio <= 1 / OUTLOOK_SIGNAL_RATIO) return { ratio, level: "lower", phrase: "lower than usual", ratioWords: ratio > 1 / errorFactor ? within : `about ${one(ratio * 100)}% of the typical level` };
+    return { ratio, level: "usual", phrase: "about usual", ratioWords: null };
+  }
   if (ratio >= OUTLOOK_SIGNAL_RATIO) return { ratio, level: "higher", phrase: "higher than usual", ratioWords: `about ${ratio >= 9.95 ? ratio.toFixed(0) : ratio.toFixed(1)}× the typical level` };
   if (ratio <= 1 / OUTLOOK_SIGNAL_RATIO) return { ratio, level: "lower", phrase: "lower than usual", ratioWords: `about ${Math.max(5, Math.round((ratio * 100) / 5) * 5)}% of the typical level` };
   return { ratio, level: "usual", phrase: "about usual", ratioWords: null };
@@ -929,7 +948,7 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
   });
   const withPda = days.filter((d) => d.pda != null);
   const todayPT = pacificDay(now);
-  const charmPast = days.length > 0 && days.every((d) => !!d.date && d.date < todayPT);
+  const charmPast = allPast(days.map((d) => d.date), todayPT);
   let charmFact: PortFact;
   const src = { name: "NOAA C-HARM", url: charm?.url ?? "https://coastalscience.noaa.gov/science-areas/habs/hab-forecasts/california/" };
   if (!charm || charm.state === "unavailable" || !days.length) {
@@ -972,10 +991,10 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
   let use: string | null = null;
   if (outlook) {
     sw = skillWords(outlook.skill);
-    outlookStale = outlook.valid_to < pacificDay(now);
+    outlookStale = isPastRun(outlook.valid_from, outlook.valid_to, pacificDay(now));
     const win = rangeWords(outlook.valid_from, outlook.valid_to, now);
-    read = outlookRead(outlook.value, outlook.typical);
     errorFactor = outlookErrorFactor(outlook.skill);
+    read = outlookRead(outlook.value, outlook.typical, errorFactor);
     // what it is and how sure, always beside the reading: algae of every kind, one average, and the size of a typical miss
     const w = outlookWindow(outlook, now);
     honest = `A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one ${w.days}-day average, not a day-by-day forecast${errorFactor != null ? `, and its typical error is about a factor of ${factorWords(errorFactor)} either way` : ""}.`;

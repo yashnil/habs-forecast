@@ -1,0 +1,571 @@
+/* The catalog is set like the product: a sheet and its margin, ruled, no containers. */
+.page {
+  min-height: 100vh;
+  font-feature-settings: normal;
+}
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-16);
+  min-height: var(--bar-h);
+  padding: var(--s-4) var(--s-24);
+  background: var(--paper);
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.mastLeft {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-16);
+}
+.wordmark {
+  margin: 0;
+  font: 500 var(--t-22) / 1 var(--font-serif);
+  letter-spacing: -0.01em;
+}
+.mastNote {
+  margin: 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  gap: var(--s-48);
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 var(--s-24) var(--s-64);
+}
+
+.index {
+  position: sticky;
+  top: var(--bar-h);
+  align-self: start;
+  max-height: calc(100vh - var(--bar-h));
+  overflow: auto;
+  padding: var(--s-32) 0 var(--s-24);
+  font-size: var(--t-14);
+}
+.index ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+}
+.index li {
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.index a {
+  display: flex;
+  align-items: center;
+  min-height: var(--s-32);
+  color: var(--ink);
+  text-decoration: none;
+}
+.index a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+
+.main {
+  min-width: 0;
+  padding-top: var(--s-32);
+}
+
+.intro {
+  max-width: 68ch;
+  padding-bottom: var(--s-48);
+}
+.intro > * + * {
+  margin-top: var(--s-16);
+}
+.title {
+  margin: 0;
+  font: 500 var(--t-64) / 1.02 var(--font-serif);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+.lede {
+  margin: 0;
+  font: 400 var(--t-22) / 1.35 var(--font-serif);
+  font-optical-sizing: auto;
+}
+
+.section {
+  padding: var(--s-24) 0 var(--s-48);
+  border-top: var(--rule) solid var(--ink);
+  scroll-margin-top: var(--bar-h);
+}
+.sectionHead {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--s-8) var(--s-32);
+  align-items: baseline;
+  margin-bottom: var(--s-24);
+}
+.sectionName {
+  margin: 0;
+  font: 500 var(--t-36) / 1.08 var(--font-serif);
+  font-optical-sizing: auto;
+  letter-spacing: -0.012em;
+}
+.purpose {
+  margin: 0;
+  font-size: var(--t-18);
+  line-height: 1.4;
+  max-width: 60ch;
+}
+
+.specimens {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--s-32) var(--s-48);
+}
+.specimen {
+  min-width: 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  padding-top: var(--s-8);
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.state {
+  margin: 0 0 var(--s-16);
+  font-size: var(--t-14);
+  font-weight: 600;
+  color: var(--ink);
+}
+.stateNote {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.specimenBody {
+  position: relative;
+}
+
+/* ---------- the plate (stands in for the chart host) ---------- */
+.plate {
+  margin: 0;
+}
+.plateInner {
+  position: relative;
+  width: 100%;
+  outline: var(--hair) solid var(--isobath);
+  overflow: hidden;
+}
+.plateSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.land {
+  fill: var(--land);
+}
+.water {
+  fill: var(--depth-7);
+}
+.shoalMid {
+  fill: none;
+  stroke: var(--depth-4);
+  stroke-width: 36;
+}
+.shoalNear {
+  fill: none;
+  stroke: var(--depth-1);
+  stroke-width: 14;
+}
+.iso {
+  fill: none;
+  stroke: var(--isobath);
+  stroke-width: 0.75;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.7;
+}
+.iso200 {
+  fill: none;
+  stroke: var(--isobath);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+.coast {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+.regRail {
+  fill: var(--reg);
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+}
+.plateCap {
+  margin-top: var(--s-8);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.gapGround {
+  fill: var(--paper);
+}
+.gapHatch {
+  fill: none;
+  stroke: var(--hatch);
+  stroke-width: 0.8;
+}
+.portLeft {
+  display: inline-block;
+}
+
+.miniWater {
+  position: relative;
+  height: 152px;
+  background: var(--depth-6);
+  outline: var(--hair) solid var(--isobath);
+  overflow: hidden;
+}
+.miniCap {
+  position: absolute;
+  left: var(--s-12);
+  bottom: var(--s-8);
+  margin: 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.specimenBody > .miniCap {
+  position: static;
+  margin-top: var(--s-8);
+}
+
+/* ---------- foundations ---------- */
+.typeSpec > p {
+  margin: 0;
+}
+.tsLabel {
+  margin: var(--s-4) 0 var(--s-24) !important;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.tsStatement {
+  font: 500 var(--t-64) / 1 var(--font-serif);
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
+  color: var(--reg-text);
+}
+.tsWater {
+  font: italic 400 var(--t-22) / 1.2 var(--font-serif);
+  letter-spacing: 0.04em;
+  color: var(--water-name);
+}
+.tsSounding {
+  font: 600 var(--t-48) / 1 var(--font-sans);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.tsSounding em {
+  font-style: normal;
+  font-size: 0.46em;
+  letter-spacing: 0;
+  margin-left: 0.16em;
+}
+.tsBody {
+  max-width: 60ch;
+  font-size: var(--t-18);
+}
+
+.swatches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0 var(--s-32);
+}
+.swatches li {
+  display: grid;
+  grid-template-columns: var(--s-32) minmax(0, 1fr);
+  column-gap: var(--s-12);
+  align-items: center;
+  padding: var(--s-8) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.swatch {
+  grid-row: span 2;
+  width: var(--s-32);
+  height: var(--s-32);
+  outline: var(--hair) solid var(--rule-soft);
+}
+.swName {
+  font-weight: 600;
+}
+.swRole {
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.strip {
+  display: flex;
+  height: var(--s-32);
+  outline: var(--hair) solid var(--rule-soft);
+}
+.strip span {
+  flex: 1 1 0;
+}
+.rulesSpec {
+  display: grid;
+  gap: var(--s-16);
+}
+.ruleHead,
+.ruleHair {
+  display: block;
+  padding-top: var(--s-4);
+  font-size: var(--t-14);
+  max-width: 420px;
+}
+.ruleHead {
+  border-top: var(--rule) solid var(--ink);
+}
+.ruleHair {
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.spaceRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-16);
+  flex-wrap: wrap;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.spaceCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.spaceBar {
+  display: block;
+  height: var(--s-8);
+  background: var(--ink);
+}
+
+.markList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.markList li > :first-child {
+  width: var(--s-24);
+  display: inline-flex;
+  justify-content: center;
+}
+.markList li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-12);
+  min-height: var(--s-32);
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+
+.marginDemo {
+  max-width: 400px;
+  border-left: var(--hair) solid var(--rule-soft);
+}
+
+.sheetStatus {
+  margin: 0;
+  font: 500 var(--t-22) / 1.15 var(--font-serif);
+  color: var(--reg-text);
+}
+.sheetSub {
+  margin: var(--s-4) 0 0;
+}
+
+.rampGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 520px) minmax(300px, 372px);
+  gap: var(--s-32);
+  align-items: start;
+}
+.rampSide > * + * {
+  margin-top: var(--s-24);
+}
+
+/* ---------- worksheet ---------- */
+.ws {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+  gap: var(--s-32) var(--s-48);
+  align-items: start;
+}
+.ledgerIn {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s-8);
+}
+.ledgerIn > div {
+  display: inline-grid;
+}
+.wsNote {
+  margin: var(--s-12) 0 0;
+  max-width: 64ch;
+  font-size: var(--t-14);
+  line-height: 1.4;
+}
+.wsControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-24) var(--s-48);
+  margin-top: var(--s-32);
+  align-items: flex-end;
+}
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--s-24) var(--s-32);
+}
+.stack {
+  display: grid;
+  gap: var(--s-4);
+  max-width: 480px;
+}
+
+/* ---------- overlays ---------- */
+.portButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  min-height: var(--target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 600 var(--t-16) / 1 var(--font-sans);
+  cursor: pointer;
+}
+.portButton:hover {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.popHead {
+  margin: 0 0 var(--s-4);
+  font-weight: 700;
+}
+.popList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.popList button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--target);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  background: none;
+  color: var(--ink);
+  font: 400 var(--t-16) / 1.2 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.popList button[aria-current] {
+  font-weight: 700;
+}
+.popList button:hover {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  width: var(--target);
+  height: var(--target);
+  padding: 0;
+  border: var(--hair) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.icons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0 var(--s-16);
+}
+.icons li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-8);
+  padding: var(--s-12) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.icons li svg {
+  color: var(--ink);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .index {
+    display: none;
+  }
+  .rampGrid,
+  .ws {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .masthead {
+    padding: var(--s-4) var(--s-16);
+  }
+  .mastNote {
+    display: none;
+  }
+  .layout {
+    padding: 0 var(--s-16) var(--s-48);
+  }
+  .title {
+    font-size: var(--t-40);
+  }
+  .lede {
+    font-size: var(--t-18);
+  }
+  .sectionHead {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sectionName {
+    font-size: var(--t-28);
+  }
+  .purpose {
+    font-size: var(--t-16);
+  }
+  .specimens {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tsStatement {
+    font-size: var(--t-40);
+  }
+  .tsSounding {
+    font-size: var(--t-36);
+  }
+}

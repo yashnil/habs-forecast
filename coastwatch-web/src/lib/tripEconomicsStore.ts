@@ -67,7 +67,15 @@ type Key = (typeof KEYS)[number];
 export const draftKey = (placeKey: string, species: string) => `${placeKey}|${species}`;
 
 export function emptyDraft(preset: FisheryPresetId | null = null): Draft {
-  return { preset, inputs: { ...sanitizeInputs({ catch: [], costs: [] }), crew: { kind: null } }, pots: null, baitUsdPerPot: null, basis: {} };
+  return { preset, inputs: unchosenFuelShare({ ...sanitizeInputs({ catch: [], costs: [] }), crew: { kind: null } }, undefined), pots: null, baitUsdPerPot: null, basis: {} };
+}
+
+/** `sanitizeInputs` fills "fuel off the top" in; a draft keeps it only if the user (or a stored record) really has a value. */
+function unchosenFuelShare(inputs: TripScenario, raw: unknown): TripScenario {
+  if (typeof raw === "boolean") return { ...inputs, fuelShared: raw };
+  const { fuelShared: _unset, ...rest } = inputs;
+  void _unset;
+  return rest;
 }
 
 /** The draft's calculator inputs: pots × bait per pot becomes a shared "Bait" cost. */
@@ -108,7 +116,7 @@ export function sanitizeDraft(v: unknown, schema: number = SCHEMA): Draft {
   const anglers = clampNum(raw.anglers, "people");
   return {
     preset,
-    inputs: { ...inputs, crew: { ...inputs.crew, kind, ...(kind === "none" ? { pct: null } : {}) }, ...(anglers !== null ? { anglers } : {}) },
+    inputs: unchosenFuelShare({ ...inputs, crew: { ...inputs.crew, kind, ...(kind === "none" ? { pct: null } : {}) }, ...(anglers !== null ? { anglers } : {}) }, raw.fuelShared),
     pots: clampNum(d.pots, "pots"),
     baitUsdPerPot: clampNum(d.baitUsdPerPot, "usdPerDay"),
     basis,
@@ -434,7 +442,8 @@ export function encodeShare(d: Draft): string {
     v: 1,
     p: d.preset,
     n: [i.roundTripNm, i.cruiseKt, i.steamGph, i.fishingHours, i.fishingGph, i.fuelGal, i.fuelUsdPerGal, i.feesPctOfGross, i.feesUsdPerLb, d.pots, d.baitUsdPerPot].map(n),
-    fs: i.fuelShared === false ? 0 : 1,
+    // absent = not chosen yet
+    ...(typeof i.fuelShared === "boolean" ? { fs: i.fuelShared ? 1 : 0 } : {}),
     c: (i.costs ?? []).map((c) => [n(c.usd), c.shared ? 1 : 0]),
     k: (i.catch ?? []).map((c) => [c.ref ?? "", n(c.lb), n(c.usdPerLb)]),
     // "" = how crew is paid is not chosen yet
@@ -471,7 +480,7 @@ export function decodeShare(s: string): Draft | null {
         fuelUsdPerGal,
         feesPctOfGross,
         feesUsdPerLb,
-        fuelShared: p.fs !== 0,
+        fuelShared: p.fs === 0 ? false : p.fs === 1 ? true : undefined,
         costs: (Array.isArray(p.c) ? p.c : []).map((c: unknown, j: number) => (Array.isArray(c) ? { label: `Cost ${j + 1}`, usd: c[0], shared: c[1] !== 0 } : null)).filter(Boolean),
         catch: (Array.isArray(p.k) ? p.k : []).map((c: unknown, j: number) => (Array.isArray(c) ? { species: label(typeof c[0] === "string" ? c[0] : "", j), ref: typeof c[0] === "string" && c[0] ? c[0] : null, lb: c[1], usdPerLb: c[2] } : null)).filter(Boolean),
         crew: { kind: m[0], pct: m[1], crew: m[2], usdPerDay: m[3], days: m[4] },

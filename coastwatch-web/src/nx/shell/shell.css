@@ -1,0 +1,148 @@
+/* Neritic v12 shell: the bar, the phone tab bar, the margin column / phone sheet, the port finder and the
+   one entry's pre-paint gating. Colours, type, space and motion only from src/nx/ds/tokens.css. */
+
+.n12-app {
+  /* the phone sheet's resting height: the chart's free area and the opening's still both read it */
+  --n12-rest: min(44dvh, 340px);
+  --font-serif: var(--nx-literata), Georgia, serif;
+  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--t-16);
+  line-height: 1.5;
+  font-feature-settings: normal;
+  -webkit-font-smoothing: antialiased;
+}
+:where(.n12-app) a { color: inherit; }
+.n12-app :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+:where(.n12-app) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; border-radius: var(--r-0); }
+
+/* the chart is never part of a route's snapshot: only the margin is (React <ViewTransition name="nx-margin">) */
+:root:has(.n12-app) { view-transition-name: none; }
+::view-transition-old(.nx-margin-swap),
+::view-transition-new(.nx-margin-swap) { animation-duration: 180ms; animation-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+::view-transition-group(.nx-margin-swap) { animation-duration: 180ms; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.nx-margin-swap), ::view-transition-new(.nx-margin-swap), ::view-transition-group(.nx-margin-swap) { animation: none; }
+}
+
+.n12-skip { position: absolute; left: var(--s-8); top: -60px; z-index: 30; padding: var(--s-8) var(--s-12); background: var(--paper); border: var(--hair) solid var(--ink); }
+.n12-skip:focus { top: var(--s-8); }
+.n12-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ------------------------------------------------------------------ the bar */
+.n12-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: var(--bar-h); z-index: 10;
+  display: flex; align-items: center; gap: var(--s-24); padding: 0 var(--s-24);
+  background: var(--paper);
+}
+.n12-wordmark { display: inline-flex; align-items: center; min-height: 44px; font-family: var(--font-serif); font-size: var(--t-22); font-weight: 500; text-decoration: none; letter-spacing: -0.005em; font-variation-settings: "opsz" 24; }
+.n12-port-control { display: inline-flex; align-items: center; gap: var(--s-4); min-height: 44px; font-weight: 600; white-space: nowrap; }
+.n12-port-control-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.n12-chev { flex: none; }
+.n12-dest { display: flex; gap: var(--s-4); margin-left: auto; }
+.n12-dest-link, .n12-bar-link {
+  display: inline-flex; align-items: center; min-height: var(--bar-h); padding: 0 var(--s-12);
+  text-decoration: none; white-space: nowrap; color: var(--ink-2); font-weight: 500;
+  border-bottom: 2px solid transparent; transition: color var(--dur-quick) linear, border-color var(--dur-quick) linear;
+}
+.n12-dest-link:hover, .n12-bar-link:hover { color: var(--ink); }
+.n12-dest-link[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+.n12-bar-end { display: flex; align-items: center; gap: var(--s-4); }
+
+.n12-menu { position: relative; }
+.n12-menu-panel {
+  position: absolute; right: 0; top: calc(100% - 4px); z-index: 20; width: 304px; max-width: calc(100vw - var(--s-16));
+  max-height: calc(100dvh - var(--bar-h) - var(--s-16)); overflow: auto; overscroll-behavior: contain; padding: var(--s-16);
+  background: var(--paper); border: var(--hair) solid var(--ink);
+}
+.n12-mode { border: 0; margin: 0 0 var(--s-16); padding: 0; }
+.n12-mode legend { font-weight: 600; margin-bottom: var(--s-8); }
+.n12-mode-option { display: flex; align-items: center; gap: var(--s-12); min-height: var(--target); cursor: pointer; }
+.n12-mode-option input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; }
+.n12-mode-option small { display: block; font-size: var(--t-14); color: var(--ink-2); }
+.n12-menu-links { display: grid; border-top: var(--hair) solid var(--rule-soft); padding-top: var(--s-8); }
+.n12-menu-links a { min-height: 44px; display: flex; align-items: center; text-decoration: none; }
+
+/* ------------------------------------------------------------------ the margin */
+/* phone, after hydration: the ds MarginSheet, stacked under the bars; the resting detent is a cover the
+   chart frames its scenes around (src/nx/chart/cover.ts) */
+.n12-app .n12-margin-sheet { z-index: 6; }
+.n12-margin-main { display: block; outline: none; }
+.n12-margin-rest { position: absolute; left: 0; right: 0; pointer-events: none; visibility: hidden; }
+.n12-margin {
+  position: absolute; top: var(--bar-h); left: 0; bottom: 0; width: var(--margin-w); z-index: 5;
+  display: flex; flex-direction: column; background: var(--paper);
+  outline: none;
+}
+.n12-margin-scroll { flex: 1; overflow: auto; padding: var(--s-24) var(--s-24) var(--s-32) var(--s-24); overscroll-behavior: contain; }
+.n12-margin-page { min-height: 100%; }
+
+.n12-kicker { margin: 0 0 var(--s-12); font-size: var(--t-16); font-weight: 600; color: var(--ink); }
+.n12-statement { margin: 0; font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.012em; color: var(--ink); text-wrap: balance; }
+.n12-statement-l { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
+.n12-statement-m { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
+.n12-skip-opening { display: none; min-height: var(--target); padding: 0 var(--s-16); border: var(--hair) solid var(--ink); font-weight: 600; }
+html[data-nx-opening="on"] .n12-skip-opening, html[data-nx-opening="run"] .n12-skip-opening { display: inline-flex; align-items: center; }
+
+/* `/`: home or Today, chosen before the first paint (src/nx/shell/entry.ts) */
+html[data-nx-entry="today"] [data-nx-home] { display: none; }
+html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
+
+/* ------------------------------------------------------------------ the phone tab bar */
+.n12-tabs { display: none; }
+
+@media (max-width: 1100px) and (min-width: 721px) {
+  .n12-bar { gap: var(--s-12); padding: 0 var(--s-16); }
+  .n12-dest-link, .n12-bar-link { padding: 0 var(--s-8); }
+  .n12-port-control-name { max-width: 150px; }
+}
+
+@media (max-width: 720px) {
+  .n12-bar { gap: var(--s-8); padding: 0 var(--s-8) 0 var(--s-16); }
+  .n12-dest { display: none; }
+  .n12-bar-end { margin-left: auto; gap: 0; }
+  .n12-bar-link { padding: 0 var(--s-8); }
+  .n12-port-control-name { max-width: 128px; }
+  .n12-tabs {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 10;
+    padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--paper); border-top: var(--hair) solid var(--rule-soft);
+  }
+  .n12-tab { display: flex; align-items: center; justify-content: center; min-height: var(--target); text-decoration: none; color: var(--ink-2); font-weight: 500; border-top: 2px solid transparent; white-space: nowrap; }
+  .n12-tab[aria-current="page"] { color: var(--ink); font-weight: 600; border-top-color: var(--ink); }
+
+  /* the margin becomes a sheet over the chart's lower part: it rests showing the statement, opens to read on */
+  .n12-margin {
+    top: auto; width: auto; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    height: var(--n12-rest); border-top: var(--rule) solid var(--ink);
+  }
+  /* before hydration the same rest the sheet takes: handle row, then the page from its first line */
+  .n12-margin-scroll { padding: var(--s-32) var(--s-16) var(--s-24); overflow: hidden; }
+  .n12-margin-page { min-height: 0; }
+  .n12-kicker { margin-bottom: var(--s-8); }
+  .n12-statement-l { font-size: var(--t-28); }
+  .n12-statement-m { font-size: var(--t-28); }
+      }
+@media (max-width: 380px) {
+  .n12-bar-end .n12-bar-link:not(.n12-menu .n12-bar-link) { display: none; }
+}
+@media (max-width: 360px) {
+  .n12-port-control-name { max-width: 96px; }
+  .n12-wordmark { font-size: var(--t-18); }
+  .n12-statement-l, .n12-statement-m { font-size: var(--t-22); line-height: 1.15; }
+  .n12-tab { font-size: var(--t-14); }
+}
+@media (max-height: 480px) and (min-width: 721px) {
+  .n12-margin-scroll { padding: var(--s-16); }
+  .n12-statement-l, .n12-statement-m { font-size: var(--t-28); }
+  }
+
+.n12-menu-narrow { display: none !important; }
+.n12-menu-note { margin: var(--s-12) 0 0; font-size: var(--t-14); color: var(--ink-2); }
+@media (max-width: 380px) { .n12-menu-narrow { display: flex !important; } }

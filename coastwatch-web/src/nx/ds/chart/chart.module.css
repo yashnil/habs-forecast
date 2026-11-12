@@ -1,0 +1,156 @@
+/* ---------- things set on the chart ---------- */
+.placed {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* a box the host measures and places (the chart's marks layer): in flow, at its own size */
+.boxed {
+  position: relative;
+  display: inline-block;
+  white-space: normal;
+}
+.boxed .block {
+  position: relative;
+}
+
+.halo .block {
+  /* the knockout halo: a paper stroke painted behind each glyph (spec section 5) */
+  paint-order: stroke fill;
+  -webkit-text-stroke: calc(var(--halo-w) * 2) var(--halo);
+}
+
+.leader {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+}
+.leaderLine {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.leaderHalo {
+  stroke: var(--halo);
+  stroke-width: 4.5;
+}
+.dotHalo {
+  fill: var(--halo);
+}
+.dotSolid {
+  fill: var(--ink);
+}
+.dotHollow {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.portRing {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.block {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--t-16);
+  line-height: 1.28;
+  font-variant-numeric: tabular-nums;
+  pointer-events: auto;
+}
+
+/* soundings */
+.sounding .lbl {
+  display: block;
+  font-weight: 600;
+}
+.fig {
+  display: block;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  margin: var(--s-4) 0 var(--s-4);
+}
+.lg .fig {
+  font-size: var(--t-48);
+}
+.md .fig {
+  font-size: var(--t-36);
+}
+.unit {
+  font-style: normal;
+  /* never under the 14 px floor: at the phone's 28 px figure, 0.46em alone is 12.9 px (critic 12) */
+  font-size: max(0.46em, var(--t-14));
+  font-weight: 600;
+  letter-spacing: 0;
+  margin-left: 0.16em;
+}
+.figOld {
+  font-size: var(--t-16);
+  letter-spacing: 0;
+  font-weight: 400;
+}
+.cap {
+  display: block;
+}
+
+.activate {
+  cursor: pointer;
+  text-align: inherit;
+}
+.activate:hover .fig {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 6px;
+}
+.activate:focus-visible {
+  outline: 2px solid var(--focus, var(--ink));
+  outline-offset: var(--s-4);
+}
+
+/* notes */
+.note {
+  max-width: 34ch;
+}
+.water {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--water-name);
+}
+.place {
+  font-weight: 600;
+  font-size: var(--t-16);
+}
+.port {
+  font-weight: 700;
+  font-size: var(--t-18);
+}
+.regulation {
+  font-weight: 600;
+  font-size: var(--t-16);
+  color: var(--reg-text);
+}
+
+@media (max-width: 720px) {
+  .lg .fig {
+    font-size: var(--t-36);
+  }
+  .md .fig {
+    font-size: var(--t-28);
+  }
+  .port {
+    font-size: var(--t-16);
+  }
+}

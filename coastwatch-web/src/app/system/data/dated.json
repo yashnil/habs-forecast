@@ -1,0 +1,16 @@
+{
+  "_source": "Dates the catalog needs as ISO values, transcribed from snapshot.json: fishery_status.ramp_zone_4.next_assessment ('December 15-18 (then January 13-15), subject to change'), fishery_status.records[].effective and headline ('delayed to at least Jan 1, 2027'), _about.generated (the snapshot clock) and _about.channels.production.manifest_generated_at (used as the offline save time).",
+  "now": "2026-11-10T15:50:00Z",
+  "nextAssessment": { "start": "2026-12-15", "end": "2026-12-18" },
+  "thenAssessment": { "start": "2027-01-13", "end": "2027-01-15" },
+  "earliestCommercial": "2027-01-01",
+  "rampAssessed": "2026-10-30",
+  "recreationalOpen": "2026-11-07",
+  "anchovyRestriction": "2026-09-11",
+  "crabSampled": "2026-09-28",
+  "charmIssued": "2026-11-03",
+  "checked": "2026-11-08",
+  "savedAt": "2026-11-10T07:21:05Z",
+  "olciFrom": "2026-11-03",
+  "olciTo": "2026-11-08"
+}

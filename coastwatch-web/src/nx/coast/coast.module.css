@@ -1,0 +1,525 @@
+/* My Coast: the margin's page (gates, sea window, worksheet). Tokens only (src/nx/ds/tokens.css). */
+
+.page {
+  display: block;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- head */
+.head {
+  padding-bottom: 0;
+}
+.kicker {
+  margin-bottom: var(--s-8);
+}
+.title {
+  font-size: var(--t-32);
+}
+.lead {
+  margin: var(--s-12) 0 0;
+  font-size: var(--t-16);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 34em;
+}
+.fishery {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--s-12);
+  margin-top: var(--s-16);
+  min-height: var(--target);
+  border-top: var(--hair) solid var(--rule-soft);
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.fisheryLabel {
+  font-weight: 600;
+}
+.select {
+  justify-self: end;
+  max-width: 100%;
+  min-height: var(--target);
+  padding: 0 var(--s-24) 0 var(--s-8);
+  border: 0;
+  border-radius: var(--r-1);
+  background-color: transparent;
+  color: var(--ink);
+  font: 600 var(--t-18) / 1.2 var(--font-sans);
+  text-align: right;
+  appearance: none;
+  background-image: none;
+  cursor: pointer;
+}
+.fishery {
+  position: relative;
+}
+.fishery::after {
+  /* the select's own chevron, drawn in ink */
+  content: "";
+  position: absolute;
+  right: var(--s-8);
+  top: 50%;
+  width: var(--s-8);
+  height: var(--s-8);
+  border-right: var(--rule) solid var(--ink);
+  border-bottom: var(--rule) solid var(--ink);
+  transform: translateY(-75%) rotate(45deg);
+  pointer-events: none;
+}
+.select option {
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- sections */
+.section {
+  margin-top: var(--s-32);
+}
+.h2 {
+  margin: 0 0 var(--s-4);
+  font-family: var(--font-serif);
+  font-size: var(--t-22);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+.sub {
+  margin: 0 0 var(--s-12);
+  font-size: var(--t-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.h2 + .rows,
+.h2 + [aria-label="Not available"],
+.h2 + [role="status"] {
+  margin-top: var(--s-8);
+}
+.h3 {
+  margin: var(--s-24) 0 var(--s-8);
+  font-family: var(--font-sans);
+  font-size: var(--t-16);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.empty {
+  margin: var(--s-8) 0 0;
+  padding: var(--s-12) 0;
+  border-top: var(--rule) solid var(--ink);
+  color: var(--ink-2);
+}
+.empty p {
+  margin: 0 0 var(--s-12);
+}
+.quiet {
+  color: var(--ink-2);
+}
+.small {
+  margin: var(--s-12) 0 0;
+  font-size: var(--t-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.link {
+  position: relative;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+}
+.link:hover {
+  text-decoration-thickness: var(--rule);
+}
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--target);
+  transform: translateY(-50%);
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-16);
+  margin-top: var(--s-4);
+}
+.foot {
+  margin-top: var(--s-48);
+  padding-top: var(--s-12);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+
+/* ---------------------------------------------------------------- gates */
+.rows {
+  margin: 0;
+}
+.rowsTight {
+  margin-top: var(--s-12);
+}
+.statusText {
+  font-weight: 600;
+}
+.toneReg {
+  color: var(--reg-text);
+}
+.toneClosure {
+  color: var(--closure);
+}
+.next {
+  display: block;
+  margin-top: var(--s-4);
+}
+.nextKey {
+  font-weight: 600;
+}
+.gauge {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  margin-top: var(--s-8);
+  overflow: visible;
+}
+.gaugeAxis {
+  stroke: var(--rule-soft);
+  stroke-width: 1;
+}
+.gaugeTick {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.gaugeLimit {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.gaugeText {
+  fill: var(--ink-2);
+  font: 400 var(--t-14) / 1 var(--font-sans);
+}
+.stamps {
+  display: grid;
+  gap: var(--s-4);
+}
+
+/* ---------------------------------------------------------------- the day strip */
+.strip {
+  margin-top: var(--s-16);
+}
+.stripHead,
+.dayRow {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--s-8);
+  align-items: center;
+}
+.stripHead {
+  padding: 0 var(--s-8) var(--s-4);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  border-bottom: var(--rule) solid var(--ink);
+}
+.stripRows {
+  display: grid;
+}
+.dayRow {
+  width: 100%;
+  min-height: var(--target);
+  padding: 0 var(--s-8);
+  border-bottom: var(--hair) solid var(--rule-soft);
+  text-align: left;
+  color: var(--ink);
+  transition: background-color var(--dur-quick) linear, color var(--dur-quick) linear;
+}
+.dayRow:hover:not(.dayOn) .dayName {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.dayRow:focus-visible {
+  outline-offset: -3px;
+}
+.dayOn {
+  background: var(--ink);
+  color: var(--paper);
+}
+.dayOn:focus-visible {
+  outline-color: var(--paper);
+}
+.dayName {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dayCell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+  min-width: 0;
+}
+.seasTrack {
+  flex: 1;
+  max-width: 64px;
+  height: 16px;
+}
+.seasBar {
+  display: block;
+  height: 100%;
+  border: var(--hair) solid currentColor;
+  overflow: hidden;
+}
+.seasBar svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.seasBar path {
+  stroke: currentColor;
+  stroke-width: 1.25;
+  fill: none;
+}
+.seasNum {
+  font-size: var(--t-16);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tides {
+  display: grid;
+}
+.tide {
+  display: grid;
+  grid-template-columns: 48px 64px auto;
+  column-gap: var(--s-8);
+}
+.tideFt {
+  text-align: right;
+  font-weight: 600;
+}
+.stripStamp {
+  margin: var(--s-8) 0 0;
+}
+.quote {
+  margin: 0;
+  padding-left: var(--s-12);
+  border-left: var(--rule) solid var(--rule-soft);
+  color: var(--ink);
+  font-size: var(--t-16);
+  line-height: 1.5;
+}
+.quoteName {
+  font-weight: 600;
+}
+
+/* on the chart: a buoy's name beside its symbol, on a knockout halo */
+.chartName {
+  font-size: var(--t-14);
+}
+
+/* ---------------------------------------------------------------- the worksheet */
+.sheet {
+  display: block;
+}
+.group {
+  border-top: var(--rule) solid var(--ink);
+}
+.group + .group {
+  margin-top: var(--s-16);
+}
+.group .field {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--s-12);
+  padding: 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.group .field > label {
+  font-weight: 500;
+}
+.group .field > span:last-child:not(:nth-child(2)) {
+  padding-bottom: var(--s-8);
+}
+.group .field > span:last-child:not(:nth-child(2)):empty {
+  display: none;
+}
+.seg3,
+.seg2 {
+  padding: var(--s-12) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.seg3 > span,
+.seg2 > span {
+  margin-bottom: var(--s-4);
+}
+.seg3 [role="radiogroup"],
+.seg2 [role="radiogroup"] {
+  display: grid;
+  width: 100%;
+}
+.seg3 [role="radiogroup"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.seg2 [role="radiogroup"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.seg3 [role="radio"],
+.seg2 [role="radio"] {
+  min-height: var(--target);
+  padding: var(--s-4) var(--s-8);
+  line-height: 1.2;
+}
+
+.results {
+  margin-top: var(--s-24);
+}
+.resultsHead {
+  margin: 0 0 var(--s-8);
+  /* room for the preview line on two lines, so the grid below never moves under the pointer */
+  min-height: 60px;
+  font-size: var(--t-14);
+  line-height: 1.4;
+}
+.hypo {
+  display: block;
+  color: var(--ink-2);
+}
+.showing {
+  font-weight: 600;
+}
+.textButton {
+  position: relative;
+  font-weight: 400;
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+}
+.textButton::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--target);
+  transform: translateY(-50%);
+}
+
+.outs {
+  margin: var(--s-12) 0 0;
+  display: grid;
+}
+.outs > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--s-12);
+  align-items: baseline;
+  padding: var(--s-8) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.outs dt {
+  font-weight: 500;
+}
+.outs dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+}
+.outs dd.waitingText {
+  max-width: 14em;
+  font-weight: 400;
+}
+.waitingText {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--t-14);
+  line-height: 1.4;
+}
+
+.grid {
+  margin-top: var(--s-8);
+}
+.sens th:first-child {
+  white-space: normal;
+}
+
+.assume {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--rule) solid var(--ink);
+}
+.assume li {
+  padding: var(--s-8) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  font-size: var(--t-16);
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.save {
+  margin-top: var(--s-24);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-8) var(--s-16);
+}
+.saved {
+  margin: var(--s-12) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--rule) solid var(--ink);
+}
+.saved li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--s-8);
+  min-height: var(--target);
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.savedName {
+  font-weight: 500;
+  line-height: 1.3;
+  padding: var(--s-8) 0;
+}
+.savedWhen {
+  font-weight: 400;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.savedActions {
+  display: flex;
+  gap: var(--s-4);
+}
+
+@media (max-width: 720px) {
+  .kicker {
+    display: none;
+  }
+  .title {
+    font-size: var(--t-28);
+  }
+  .lead {
+    margin-top: var(--s-8);
+  }
+  .fishery {
+    margin-top: var(--s-12);
+  }
+  .section {
+    margin-top: var(--s-16);
+  }
+}
+@media (max-width: 360px) {
+  .title {
+    font-size: var(--t-22);
+  }
+  .stripHead,
+  .dayRow {
+    grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* the gates while they load: about their loaded height (three rows and their stamps) */
+.gatesLoading {
+  min-height: calc(var(--s-64) * 8);
+}

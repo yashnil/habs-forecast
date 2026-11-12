@@ -1,0 +1,316 @@
+/* Today at your port: the margin's composition. Tokens only (src/nx/ds/tokens.css); components from ds. */
+
+.today {
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- the scope line: port · fishery */
+.scope {
+  margin: 0 0 var(--s-8);
+  font: 600 var(--t-16) / 1.3 var(--font-sans);
+}
+.scopeInner {
+  display: inline;
+  font-size: var(--t-16);
+}
+.portName {
+  display: inline-block;
+  font-weight: 700;
+  /* the port's name travels (layoutId) from the finder to the chooser's title to Today's scope line: it passes over
+     the page's other lines, so it rides above them on a paper knockout halo instead of tangling with their letters */
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 1px var(--paper), 1.5px 0 0 var(--paper), -1.5px 0 0 var(--paper), 0 1.5px 0 var(--paper), 0 -1.5px 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper), 1px -1px 0 var(--paper), -1px 1px 0 var(--paper), 0 0 3px var(--paper);
+}
+.scopeFishery {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.lead > * + * {
+  margin-top: var(--s-24);
+}
+.block {
+  margin-top: var(--s-16);
+}
+
+.decision {
+  padding-top: var(--s-16);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.quietLine {
+  margin-bottom: 0;
+  color: var(--ink-2);
+}
+
+/* ---- since your last visit */
+.change {
+  margin-bottom: 0;
+  padding-left: var(--s-12);
+  border-left: var(--rule) solid var(--ink);
+  font-size: var(--t-16);
+  line-height: 1.4;
+}
+.changeWrap {
+  padding-left: var(--s-12);
+  border-left: var(--rule) solid var(--ink);
+}
+.changeToggle {
+  display: block;
+  min-height: var(--target);
+  text-align: left;
+  font-size: var(--t-16);
+  line-height: 1.4;
+  cursor: pointer;
+}
+.more {
+  display: block;
+  margin-top: var(--s-4);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+}
+.changeList {
+  list-style: none;
+  margin: 0;
+  padding: var(--s-8) 0 0;
+  overflow: hidden;
+}
+.changeList li + li {
+  margin-top: var(--s-8);
+}
+.before {
+  display: block;
+  color: var(--ink-2);
+}
+
+/* ---- actions */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-16) var(--s-24);
+}
+.quiet {
+  display: inline-flex;
+  gap: var(--s-24);
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-8) var(--s-24);
+  margin: 0;
+}
+
+.tourLink {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  margin-bottom: 0;
+  font-size: var(--t-16);
+}
+.tourClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target);
+  height: var(--target);
+  margin: calc(-1 * var(--s-12)) 0;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.tourHide {
+  min-height: var(--target);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---- the agenda */
+/* the agenda starts below the lead's first screen on a desktop: status, date, change and actions read alone */
+.agendaWrap {
+  margin-top: var(--s-64);
+}
+.head {
+  margin: 0 0 var(--s-12);
+  padding-top: var(--s-8);
+  border-top: var(--rule) solid var(--ink);
+  font: 600 var(--t-16) / 1.3 var(--font-sans);
+}
+.agendaWrap .agenda {
+  --when: 76px;
+  --railw: 20px;
+}
+.allDates {
+  margin-top: var(--s-4);
+}
+
+/* ---- rows */
+.rows {
+  margin-top: var(--s-32);
+}
+.figure {
+  display: inline-block;
+}
+.detailList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.detailList li + li {
+  margin-top: var(--s-12);
+  padding-top: var(--s-12);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.detailList p {
+  margin: 0 0 var(--s-4);
+}
+.models > * + * {
+  margin-top: var(--s-16);
+}
+.models p {
+  margin: 0 0 var(--s-4);
+}
+.subhead {
+  margin: 0 0 var(--s-4);
+  font: 600 var(--t-16) / 1.3 var(--font-sans);
+}
+
+.legend {
+  margin-top: var(--s-32);
+  padding-top: var(--s-12);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.imprint {
+  margin: var(--s-16) 0 0;
+  font-size: var(--t-14);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* ---- the fishery chooser */
+.chooser {
+  display: flex;
+  flex-direction: column;
+}
+.chooserTitle {
+  margin: 0;
+  align-self: flex-start;
+  /* as .portName: the travelling name rides above the page's other lines on a paper halo */
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 1px var(--paper), 1.5px 0 0 var(--paper), -1.5px 0 0 var(--paper), 0 1.5px 0 var(--paper), 0 -1.5px 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper), 1px -1px 0 var(--paper), -1px 1px 0 var(--paper), 0 0 3px var(--paper);
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: var(--t-36);
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+}
+.chooserLead {
+  margin: var(--s-12) 0 0;
+  font-size: var(--t-18);
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.groupHead {
+  margin: var(--s-24) 0 0;
+  padding-bottom: var(--s-4);
+  font: 600 var(--t-14) / 1.3 var(--font-sans);
+  color: var(--ink-2);
+}
+.options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+}
+.option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--s-8) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  text-align: left;
+  font-size: var(--t-18);
+  font-weight: 600;
+  cursor: pointer;
+}
+.option:hover {
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 4px;
+}
+
+/* ---- the tour */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+.tourFrame {
+  position: fixed;
+  border: 2px solid var(--ink);
+  outline: var(--halo-w) solid var(--halo);
+}
+.tourNote {
+  position: fixed;
+  padding: var(--s-16);
+  background: var(--paper);
+  border: var(--rule) solid var(--ink);
+  pointer-events: auto;
+  outline: none;
+}
+.tourCount {
+  margin: 0;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.tourText {
+  margin: var(--s-4) 0 var(--s-12);
+  font-size: var(--t-16);
+  line-height: 1.4;
+}
+.tourActions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-16);
+}
+
+@media (max-width: 720px) {
+  .lead > * + * {
+    margin-top: var(--s-16);
+  }
+  .decision {
+    padding-top: var(--s-12);
+  }
+  .chooserTitle {
+    font-size: var(--t-28);
+  }
+  .chooserLead {
+    font-size: var(--t-16);
+  }
+  .agendaWrap {
+    margin-top: var(--s-24);
+  }
+}
+
+.emptyAction {
+  margin: var(--s-24) 0 0;
+}

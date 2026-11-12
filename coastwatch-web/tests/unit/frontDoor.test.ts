@@ -11,7 +11,7 @@ describe("pilot front door", () => {
     expect(pilotFrontDoor({ NERITIC_PILOT: "true" })).toBe(false);
     expect(pilotFrontDoor(ON)).toBe(true);
     for (const sp of [{}, { region: "monterey_bay" }, { utm_source: "x" }]) expect(frontDoorRedirect(sp, {})).toBeNull();
-    expect(exploreHref(false)).toBe("/");
+    expect(exploreHref(false)).toBe("/explore");
   });
 
   it("with the flag, a bare visit opens Today", () => {
@@ -42,10 +42,9 @@ describe("pilot front door", () => {
     expect(namesExplore({ view: "map" })).toBe(true);
   });
 
-  it("Explore keeps a stable address under the flag, and the nav uses it", () => {
-    expect(EXPLORE_URL).toBe("/?view=map");
+  it("v12: Explore has its own address with or without the flag, and the nav uses it", () => {
+    expect(EXPLORE_URL).toBe("/explore");
     expect(exploreHref(true)).toBe(EXPLORE_URL);
-    const sp = Object.fromEntries(new URL(`http://x${EXPLORE_URL}`).searchParams);
-    expect(frontDoorRedirect(sp, ON)).toBeNull();
+    expect(exploreHref(false)).toBe(EXPLORE_URL);
   });
 });

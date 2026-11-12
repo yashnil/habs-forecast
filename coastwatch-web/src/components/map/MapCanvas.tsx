@@ -2,6 +2,7 @@
 
 import { FORECAST_RASTER_OPACITY } from "@/lib/palette";
 import { NEAR_MS, SHORT_MS, cameraTier } from "@/lib/camera";
+import { noteContextLoss } from "@/lib/capability";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, ScaleControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import { PMTiles, Protocol } from "pmtiles";
@@ -677,6 +678,7 @@ export default function MapCanvas(p: Props) {
       if (ev.id.startsWith("cw-arrow-")) addArrows(m);
       if (ev.id === "v4-ring" && !m.hasImage("v4-ring")) m.addImage("v4-ring", ringImage(), { pixelRatio: 2 });
     });
+    m.on("webglcontextlost", noteContextLoss);
     setMap(m);
     // exposed for end-to-end tests and debugging
     (window as unknown as { __cwMap?: unknown }).__cwMap = m;

@@ -1,0 +1,97 @@
+/* Home, first visit: the statement, Find your port, three quiet paths. Tokens only. */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-16);
+  margin-top: var(--s-32);
+}
+
+.paths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-16);
+  margin-top: var(--s-24);
+}
+.paths a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 5px;
+}
+.paths a:hover {
+  text-decoration-thickness: var(--rule);
+}
+
+.find {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.findHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-16);
+  margin-bottom: var(--s-12);
+}
+.findTitle {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: var(--t-28);
+  line-height: 1.15;
+}
+.back {
+  min-height: var(--target);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.finder {
+  max-width: none;
+}
+.empty {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .actions {
+    margin-top: var(--s-16);
+  }
+  .paths {
+    margin-top: var(--s-8);
+  }
+  .findHead {
+    margin-bottom: var(--s-4);
+  }
+  .findTitle {
+    font-size: var(--t-22);
+  }
+}
+
+/* short landscape screens (844 x 390): the statement steps down so Find your port sits above the fold (critic 12) */
+@media (max-height: 480px) {
+  .home .lead h1 {
+    font-size: var(--t-28);
+  }
+  .home .lead p {
+    font-size: var(--t-16);
+  }
+  .actions {
+    margin-top: var(--s-12);
+  }
+  .paths {
+    margin-top: 0;
+  }
+}

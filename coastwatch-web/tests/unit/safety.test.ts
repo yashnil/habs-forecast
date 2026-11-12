@@ -84,8 +84,10 @@ describe("hierarchy and labelling", () => {
     for (const e of copy.EXPERIENCES) {
       expect(e.href).toMatch(/^\//);
       // every entry has a real page behind it
-      const page = e.href === "/" ? "src/app/page.tsx" : `src/app${e.href}/page.tsx`;
-      expect(existsSync(path.resolve(__dirname, "../..", page)), page).toBe(true);
+      // a page may live in a route group (v12: src/app/(neritic)/), which does not change its URL
+      const rel = e.href === "/" ? "page.tsx" : `${e.href.slice(1)}/page.tsx`;
+      const page = ["src/app", "src/app/(neritic)"].map((d) => `${d}/${rel}`).find((p) => existsSync(path.resolve(__dirname, "../..", p)));
+      expect(page, rel).toBeTruthy();
     }
     expect(JSON.stringify(copy.EXPERIENCES)).not.toMatch(/upcoming|coming soon/i);
   });

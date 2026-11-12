@@ -1,0 +1,36 @@
+/* The field pack's Menu section and the offline notice. Tokens only (src/nx/ds/tokens.css). */
+
+.pack {
+  margin: 0 0 var(--s-16);
+  padding-top: var(--s-12);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.head {
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-16);
+  font-weight: 600;
+}
+.line {
+  margin: 0 0 var(--s-8);
+  font-size: var(--t-14);
+  color: var(--ink-2);
+}
+.line strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-12);
+  margin: var(--s-4) 0 var(--s-8);
+}
+
+.notice {
+  margin: 0 0 var(--s-16);
+}
+.notice > section {
+  border-top-width: var(--rule);
+  padding-top: var(--s-8);
+}

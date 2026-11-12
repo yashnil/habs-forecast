@@ -1,0 +1,155 @@
+/* Neritic Chart design tokens. The only file in src/nx allowed to hold colour literals (with palette.ts).
+   Spec: docs/coastwatch/v12/design-system/README.md. Three chart modes, each its own table, never an automatic
+   inversion of another. Data ramps: high is dark on Day's paper, high is light on Dusk's and Night's dark ground.
+   Contrast (WCAG 2) of each text token on its mode's paper is noted. */
+
+:root,
+[data-chart-mode="day"] {
+  --paper: #fffefa;
+  --ink: #0e1417;          /* 18.4 */
+  --ink-2: #2f4a5b;        /* 9.2 */
+  --water-name: #1f4c74;   /* 8.9 */
+  --reg: #a83ba6;          /* regulation line/rail colour, never text */
+  --reg-text: #7b2279;     /* 8.9 */
+  --closure: #8a3307;      /* 8.1, official closures only */
+  --land: #dfd8ae;
+  --land-relief-opacity: 0.55;
+  --depth-0: #7cb5f0; --depth-1: #90c3f4; --depth-2: #a5cff5; --depth-3: #badbf3; --depth-4: #cbe6f0;
+  --depth-5: #d6edee; --depth-6: #def1ee; --depth-7: #e5f4f0; --depth-8: #ebf6f2;
+  --isobath: #4b6270;
+  --halo: rgba(255, 255, 255, 0.92);
+  --rule-soft: rgba(14, 20, 23, 0.26);
+  --neat-a: #b7c4ca;
+  --hatch: rgba(14, 20, 23, 0.55);
+  --chl-0: #f6f4dc; --chl-1: #e6ebb8; --chl-2: #bdd68f; --chl-3: #82b77c;
+  --chl-4: #418f74; --chl-5: #1b635b; --chl-6: #0b3e41; --chl-7: #052327;
+  --streak: #0e1417;
+  /* C-HARM probability, cw-probability-classes-v1's ten 10-point display intervals (display classes, not risk
+     tiers, T12): a quiet slate-violet, high is dark, never a warning hue and well clear of --reg. Built in OKLCH,
+     L* 95.9 → 22.7 in near-equal steps (min ΔL* 8.0); on paper 1.10:1 (class 0) to 11.9:1 (class 9). */
+  --prob-0: #f4f2fb; --prob-1: #dedae8; --prob-2: #c7c3d5; --prob-3: #b1acc3; --prob-4: #9b96b2;
+  --prob-5: #8581a0; --prob-6: #706c8f; --prob-7: #5c587e; --prob-8: #48446d; --prob-9: #34315d;
+  /* Sea temperature, sequential (T21: never diverging without a stated climatology), cream to rust, its own
+     hue family (T22). OKLCH, L* 95.4 → 35.0 (min ΔL* 8.4); on paper 1.11:1 to 7.7:1. */
+  --sst-0: #f8f2dc; --sst-1: #e8d9b5; --sst-2: #d9be90; --sst-3: #cba36f;
+  --sst-4: #bc8952; --sst-5: #ac6f3b; --sst-6: #995628; --sst-7: #853e19;
+  /* which way the data ramps run in this mode, for the legend's words (RampLegend): on paper, high is dark */
+  --ramp-says-darker: inline; --ramp-says-lighter: none;
+  color-scheme: light;
+}
+
+[data-chart-mode="dusk"] {
+  --paper: #1c2226;
+  --ink: #e2e7e8;          /* 12.9 */
+  --ink-2: #aebbc0;        /* 8.2 */
+  --water-name: #a9c6de;   /* 9.0 */
+  --reg: #cf8ccd;
+  --reg-text: #e6b8e4;     /* 9.4 */
+  --closure: #f0a27c;      /* 7.8 */
+  --land: #3d3a2e;
+  --land-relief-opacity: 0.35;
+  --depth-0: #35617f; --depth-1: #315a75; --depth-2: #2d526b; --depth-3: #2a4a61; --depth-4: #274357;
+  --depth-5: #243c4e; --depth-6: #223645; --depth-7: #20313e; --depth-8: #1f2d38;
+  --isobath: #7d97a6;
+  --halo: rgba(28, 34, 38, 0.92);
+  --rule-soft: rgba(226, 231, 232, 0.24);
+  --neat-a: #4a5a63;
+  --hatch: rgba(226, 231, 232, 0.5);
+  /* Dusk and Night are their own tables (README §4), not an inversion of Day: on a dark ground every data ramp
+     runs dark to light, high is LIGHT (as the depth tints run shoal-light to deep-dark here), lightness monotone.
+     High-is-dark on this ground would sink the highest values into the water. The legend says so in words. */
+  --ramp-says-darker: none; --ramp-says-lighter: inline;
+  --chl-0: #10302f; --chl-1: #17473f; --chl-2: #1f6150; --chl-3: #3a7d5c;
+  --chl-4: #6a9a63; --chl-5: #a3b76e; --chl-6: #d4d48a; --chl-7: #f4f1c4;
+  --streak: #e2e7e8;
+  /* dusk: high is light on the dark ground, lightness monotone. prob L* 18.4 → 85.7 (min ΔL* 7.1), on paper
+     1.17:1 to 11.1:1; sst L* 18.1 → 86.0 (min ΔL* 9.6), 1.16:1 to 11.2:1 */
+  --prob-0: #2d2b3c; --prob-1: #3e3b53; --prob-2: #504a6a; --prob-3: #635b80; --prob-4: #766d96;
+  --prob-5: #8a7faa; --prob-6: #9e93bd; --prob-7: #b2a7ce; --prob-8: #c7bcdf; --prob-9: #dbd2ef;
+  --sst-0: #422518; --sst-1: #5f3820; --sst-2: #7b4e2a; --sst-3: #956636;
+  --sst-4: #ac8049; --sst-5: #c29c62; --sst-6: #d6b981; --sst-7: #e9d6a3;
+  color-scheme: dark;
+}
+
+[data-chart-mode="night"] {
+  --paper: #06090b;
+  --ink: #a89c88;          /* 7.4, dim and warm for dark adaptation */
+  --ink-2: #8a8070;        /* 5.1 */
+  --water-name: #7f93a3;   /* 6.3 */
+  --reg: #8f6a8d;
+  --reg-text: #b98db6;     /* 7.2 */
+  --closure: #c08a6a;      /* 6.7 */
+  --land: #15140f;
+  --land-relief-opacity: 0;
+  --depth-0: #13222c; --depth-1: #13222c; --depth-2: #13222c; --depth-3: #0e1a21; --depth-4: #0e1a21;
+  --depth-5: #0e1a21; --depth-6: #0a1217; --depth-7: #0a1217; --depth-8: #0a1217;
+  --isobath: #4a5560;
+  --halo: rgba(6, 9, 11, 0.92);
+  --rule-soft: rgba(168, 156, 136, 0.22);
+  --neat-a: #2a2a24;
+  --hatch: rgba(168, 156, 136, 0.45);
+  /* night, as dusk: high is light on the dark ground, lightness monotone; the legend says so */
+  --ramp-says-darker: none; --ramp-says-lighter: inline;
+  --chl-0: #0b1715; --chl-1: #10221e; --chl-2: #163027; --chl-3: #213f2f;
+  --chl-4: #344e37; --chl-5: #4e5d40; --chl-6: #6e6e4c; --chl-7: #8f855c;
+  --streak: #a89c88;
+  /* night: very low emission, high is light. prob L* 4.3 → 41.9 (min ΔL* 3.5), on paper 1.04:1 to 3.3:1;
+     sst L* 4.3 → 44.1 (min ΔL* 5.1), 1.04:1 to 3.6:1 (fills, never text) */
+  --prob-0: #100e14; --prob-1: #18161d; --prob-2: #211e27; --prob-3: #2a2731; --prob-4: #33303b;
+  --prob-5: #3d3945; --prob-6: #474250; --prob-7: #514c5b; --prob-8: #5b5667; --prob-9: #666072;
+  --sst-0: #160d07; --sst-1: #23180f; --sst-2: #302418; --sst-3: #3e3021;
+  --sst-4: #4d3c2a; --sst-5: #5c4934; --sst-6: #6b573e; --sst-7: #7a6548;
+  color-scheme: dark;
+}
+
+:root {
+  /* type */
+  --font-serif: var(--nx-literata), Georgia, serif;
+  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
+  --t-14: 14px; --t-16: 16px; --t-18: 18px; --t-22: 22px; --t-28: 28px;
+  --t-32: 32px; --t-36: 36px; --t-40: 40px; --t-48: 48px; --t-64: 64px;
+  /* space */
+  --s-4: 4px; --s-8: 8px; --s-12: 12px; --s-16: 16px; --s-24: 24px; --s-32: 32px; --s-48: 48px; --s-64: 64px;
+  /* structure */
+  --bar-h: 52px; --tabbar-h: 56px; --margin-w: clamp(340px, 26vw, 372px);
+  --neat-band: 4px; --neat-label: 20px; --rule: 1.5px; --hair: 1px;
+  --r-0: 0; --r-1: 2px;
+  --target: 48px;
+  /* motion (mirrors ds/motion.ts; CSS only for hover/press colour changes) */
+  --ease-chart: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-quick: 120ms;
+}
+
+/* Added for the component library (v12 system). The font stacks are re-declared on every mode scope so
+   they resolve wherever the next/font variables (ds/fonts.ts) are applied: a custom property that refers
+   to another is resolved where it is declared, and the variables may sit below :root. Same values. */
+[data-chart-mode] {
+  --font-serif: var(--nx-literata), Georgia, serif;
+  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
+  --focus: var(--ink);
+}
+
+:root {
+  /* the knockout halo behind any text set on the chart */
+  --halo-w: 3px;
+}
+
+@media (max-width: 720px) {
+  :root { --neat-band: 3px; --neat-label: 16px; }
+}
+
+/* The primary button (ds/Button): an ink block on paper by day and dusk. At night a large luminous block is what the
+   Night table exists to avoid, so it is an outline in ink, filled only faintly when pressed or hovered. */
+:root,
+[data-chart-mode] {
+  --primary-bg: var(--ink);
+  --primary-fg: var(--paper);
+  --primary-hover-bg: var(--ink-2);
+  --primary-hover-line: var(--ink-2);
+}
+[data-chart-mode="night"] {
+  --primary-bg: transparent;
+  --primary-fg: var(--ink);
+  --primary-hover-bg: var(--neat-a);
+  --primary-hover-line: var(--ink);
+}

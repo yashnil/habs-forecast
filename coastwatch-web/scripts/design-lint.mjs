@@ -1,0 +1,293 @@
+#!/usr/bin/env node
+/**
+ * npm run lint:design — the anti-vibe-coding rules of the Neritic design system, enforced mechanically
+ * (docs/coastwatch/v12/design-system/README.md section 3). Scans src/nx/**, src/app/**\/(neritic)/** and the
+ * /system catalog. CSS is read declaration by declaration; TS/TSX through the TypeScript AST, so only real
+ * string literals, template text and JSX text count (comments never do).
+ *
+ * A line may be excused with a reason, on the line itself or the line above:
+ *   /* design-lint-allow <rule>: <why> *\/     or     // design-lint-allow <rule>: <why>
+ * An allowance without a reason is itself an error.
+ */
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
+
+export const RULES = {
+  "colour-literal": "Colour literal outside the token files; use a token from src/nx/ds/tokens.css",
+  "font-size": "Text under 14 px; the floor is --t-14 (body 16)",
+  decoration: "Shadows, backdrop filters and gradients are not part of the system; layer with rules, halos and paper",
+  radius: "Radius must be 0, var(--r-0) or var(--r-1) (2 px, inputs only); no pills",
+  caps: "No uppercase transforms, small caps or letter-spaced labels; sentence case everywhere",
+  emoji: "No emoji",
+  "forbidden-word": "Forbidden word (truth rule T36); Neritic never gives a verdict",
+  "iso-date": "Hard-coded ISO date in a component; dates come from data and are formatted by ds/format",
+  motion: "Motion goes through src/nx/ds/motion presets: no raw transition over 200 ms, no keyframes outside ds/",
+  "motion-preset": "Inline Motion timing; use a preset from src/nx/ds/motion.ts (ink, pan, settle, register, sheet, press, cut)",
+  "font-family": "Type must use --font-serif or --font-sans; no monospace, no other families",
+  "space-scale": "Spacing must come from the scale 4, 8, 12, 16, 24, 32, 48, 64 (--s-*)",
+  "allow-reason": "design-lint-allow needs a rule and a reason",
+};
+
+const TOKEN_FILES = [/src\/nx\/ds\/tokens\.css$/, /src\/nx\/ds\/palette\.ts$/];
+const MOTION_HOME = /src\/nx\/ds\/motion\.ts$/;
+const DS_DIR = /src\/nx\/ds\//;
+
+const FORBIDDEN = [
+  "all clear",
+  "no-go",
+  "go/no-go",
+  "good day",
+  "good to fish",
+  "best spot",
+  "best place to fish",
+  "hot ?spot",
+  "recommended",
+  "expected catch",
+  "price forecast",
+  "green light",
+  "low risk",
+  "bloom risk",
+  "toxicity",
+  "toxin forecast",
+  "ai-powered",
+  "accurate",
+  "(?:un)?safe",
+  "go",
+];
+const FORBIDDEN_RE = new RegExp(`(?<![\\p{L}\\p{N}_-])(${FORBIDDEN.join("|")})(?![\\p{L}\\p{N}_-])`, "iu");
+const HEX_RE = /(^|[^\w&/])#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})(?![\w-])/;
+const FN_COLOUR_RE = /\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/i;
+const NAMED_COLOUR_RE = /(^|[\s:,(])(white|black|red|green|blue|gray|grey|yellow|orange|purple|pink|silver|navy|teal)(?=$|[\s;,)!])/i;
+const GRADIENT_RE = /\b(?:repeating-)?(?:linear|radial|conic)-gradient\(/i;
+const EMOJI_RE = /\p{Emoji_Presentation}|\p{Extended_Pictographic}️/u;
+const ISO_RE = /\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b/;
+const SCALE = new Set([0, 4, 8, 12, 16, 24, 32, 48, 64]);
+
+const lineOf = (text, offset) => text.slice(0, offset).split("\n").length;
+
+/** Allowances: line number -> set of rules excused on that line and the next. */
+function allowances(text, file, out) {
+  const map = new Map();
+  const re = /design-lint-allow\s+([a-z-]+)?\s*(?::\s*(\S[^*\n]*))?/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const line = lineOf(text, m.index);
+    if (!m[1] || !RULES[m[1]] || !m[2] || m[2].trim().length < 4) {
+      out.push({ file, line, rule: "allow-reason", message: RULES["allow-reason"] });
+      continue;
+    }
+    for (const l of [line, line + 1]) {
+      if (!map.has(l)) map.set(l, new Set());
+      map.get(l).add(m[1]);
+    }
+  }
+  return map;
+}
+
+function durationsMs(value) {
+  const out = [];
+  const re = /(\d*\.?\d+)(ms|s)\b/g;
+  let m;
+  while ((m = re.exec(value))) out.push(m[2] === "s" ? parseFloat(m[1]) * 1000 : parseFloat(m[1]));
+  return out;
+}
+
+function pxValue(v) {
+  const m = /^(-?\d*\.?\d+)(px|rem)$/.exec(v.trim());
+  if (!m) return null;
+  return m[2] === "rem" ? parseFloat(m[1]) * 16 : parseFloat(m[1]);
+}
+
+/** Colour, emoji, forbidden-word, ISO and decoration checks on a piece of user-facing or style text. */
+function textChecks(s, { copy, style, iso }) {
+  const hits = [];
+  if (HEX_RE.test(s) || FN_COLOUR_RE.test(s)) hits.push("colour-literal");
+  if (GRADIENT_RE.test(s) || (style && /\bbox-shadow\s*:|backdrop-filter/.test(s))) hits.push("decoration");
+  if (EMOJI_RE.test(s)) hits.push("emoji");
+  if (copy && FORBIDDEN_RE.test(s)) hits.push("forbidden-word");
+  if (iso && ISO_RE.test(s)) hits.push("iso-date");
+  return hits;
+}
+
+/* ---------------- CSS ---------------- */
+
+function lintCss(file, text, tokenFile, inDs) {
+  const out = [];
+  const clean = text.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+  if (!inDs) {
+    const kf = /@(?:-webkit-)?keyframes\b/g;
+    let m;
+    while ((m = kf.exec(clean))) out.push({ file, line: lineOf(clean, m.index), rule: "motion", message: `${RULES.motion} (@keyframes)` });
+  }
+  const block = /\{([^{}]*)\}/g;
+  let b;
+  while ((b = block.exec(clean))) {
+    const body = b[1];
+    const base = b.index + 1;
+    const decl = /([a-zA-Z-]+)\s*:\s*([^;]+)/g;
+    let d;
+    while ((d = decl.exec(body))) {
+      const prop = d[1].toLowerCase();
+      const value = d[2].trim();
+      const line = lineOf(clean, base + d.index);
+      const add = (rule, extra = "") => out.push({ file, line, rule, message: `${RULES[rule]}${extra ? ` (${extra})` : ""}`, text: `${prop}: ${value}` });
+      if (prop.startsWith("--")) {
+        if (!tokenFile && (HEX_RE.test(` ${value}`) || FN_COLOUR_RE.test(value))) add("colour-literal", prop);
+        continue;
+      }
+      if (!tokenFile && (HEX_RE.test(` ${value}`) || FN_COLOUR_RE.test(value) || (/(color|background|fill|stroke|border|outline|caret|shadow)/.test(prop) && NAMED_COLOUR_RE.test(` ${value}`)))) add("colour-literal", `${prop}: ${value}`);
+      if (prop === "font-size") {
+        const px = pxValue(value);
+        if (px !== null && px < 14) add("font-size", value);
+      }
+      if (prop === "font") {
+        const m = /(\d*\.?\d+)(px|rem)\b/.exec(value);
+        if (m) {
+          const px = m[2] === "rem" ? parseFloat(m[1]) * 16 : parseFloat(m[1]);
+          if (px < 14) add("font-size", value);
+        }
+        if (!/var\(--font-(serif|sans)\)/.test(value) && value !== "inherit") add("font-family", value);
+      }
+      if (prop === "font-family" && !/^var\(--font-(serif|sans)\)$/.test(value) && value !== "inherit") add("font-family", value);
+      if (/monospace/i.test(value)) add("font-family", value);
+      if ((prop === "box-shadow" && value !== "none") || prop.endsWith("backdrop-filter")) add("decoration", prop);
+      if (GRADIENT_RE.test(value)) add("decoration", "gradient");
+      if (/^border(-[a-z]+)*-radius$/.test(prop)) {
+        const ok = value.split(/\s+/).every((v) => v === "0" || v === "var(--r-0)" || v === "var(--r-1)");
+        if (!ok) add("radius", value);
+      }
+      if (prop === "text-transform" && /uppercase/.test(value)) add("caps", value);
+      if (/^font-variant(-caps)?$/.test(prop) && /small-caps|all-small-caps|petite-caps|unicase|titling-caps/.test(value)) add("caps", value);
+      if (prop === "letter-spacing") {
+        const m = /^(-?\d*\.?\d+)(em|px)$/.exec(value);
+        if (m && ((m[2] === "em" && parseFloat(m[1]) > 0.04) || (m[2] === "px" && parseFloat(m[1]) > 0.6))) add("caps", `letter-spacing ${value}`);
+      }
+      if (/^(transition|transition-duration|animation|animation-duration)$/.test(prop)) {
+        if (durationsMs(value).some((x) => x > 200)) add("motion", value);
+      }
+      if (/^(margin|padding|gap|row-gap|column-gap)(-(top|right|bottom|left|inline|block)(-start|-end)?)?$/.test(prop)) {
+        const bad = value.split(/\s+/).map(pxValue).filter((v) => v !== null && !SCALE.has(Math.abs(v)));
+        if (bad.length) add("space-scale", value);
+      }
+    }
+  }
+  return out;
+}
+
+/* ---------------- TS / TSX ---------------- */
+
+const STYLE_PROPS = new Set(["fontSize", "borderRadius", "boxShadow", "backdropFilter", "textTransform", "letterSpacing", "transition", "fontFamily", "background", "backgroundImage", "color"]);
+
+function lintTs(file, text, tokenFile, inDs) {
+  const out = [];
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const isTest = /\.test\.|\/tests?\//.test(file);
+  const motionHome = MOTION_HOME.test(file);
+  const add = (node, rule, extra = "") => {
+    const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+    out.push({ file, line: line + 1, rule, message: `${RULES[rule]}${extra ? ` (${extra})` : ""}` });
+  };
+  const inType = (n) => {
+    for (let p = n.parent; p; p = p.parent) {
+      if (ts.isLiteralTypeNode(p) || ts.isImportDeclaration(p) || ts.isExportDeclaration(p) || ts.isImportTypeNode(p) || ts.isExternalModuleReference(p)) return true;
+      if (ts.isCallExpression(p) && p.expression.kind === ts.SyntaxKind.ImportKeyword) return true;
+      if (ts.isStatement(p) && !ts.isVariableStatement(p) && !ts.isReturnStatement(p) && !ts.isExpressionStatement(p)) break;
+    }
+    return false;
+  };
+  const isDirective = (n) => ts.isExpressionStatement(n.parent) && n.parent.parent === sf;
+  const propName = (n) => (n && (ts.isIdentifier(n) || ts.isStringLiteral(n)) ? n.text : null);
+
+  const visit = (node) => {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node) || ts.isJsxText(node)) {
+      if (!inType(node) && !isDirective(node)) {
+        const s = node.text;
+        const style = node.parent && ts.isPropertyAssignment(node.parent) && STYLE_PROPS.has(propName(node.parent.name));
+        const hits = textChecks(s, { copy: !style, style, iso: !isTest });
+        for (const h of hits) if (!(h === "colour-literal" && tokenFile)) add(node, h, JSON.stringify(s.length > 60 ? `${s.slice(0, 57)}…` : s));
+      }
+    }
+    if (ts.isPropertyAssignment(node) || ts.isJsxAttribute(node)) {
+      const name = ts.isJsxAttribute(node) ? node.name.getText(sf) : propName(node.name);
+      let init = ts.isJsxAttribute(node) ? node.initializer : node.initializer;
+      if (init && ts.isJsxExpression(init)) init = init.expression;
+      const lit = init && (ts.isNumericLiteral(init) ? Number(init.text) : ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init) ? init.text : null);
+      if (name === "fontSize" || name === "font-size") {
+        const px = typeof lit === "number" ? lit : typeof lit === "string" ? (pxValue(lit) ?? (/^\d+(\.\d+)?$/.test(lit) ? Number(lit) : null)) : null;
+        if (px !== null && px < 14) add(node, "font-size", String(lit));
+      }
+      if (name === "boxShadow" || name === "backdropFilter") add(node, "decoration", name);
+      if (name === "borderRadius" && lit !== null && lit !== 0 && lit !== "0" && lit !== "var(--r-0)" && lit !== "var(--r-1)") add(node, "radius", String(lit));
+      if (name === "textTransform" && lit === "uppercase") add(node, "caps", "uppercase");
+      if (name === "fontVariant" && typeof lit === "string" && /small-caps/.test(lit)) add(node, "caps", lit);
+      if (name === "fontFamily" && typeof lit === "string" && !/^var\(--font-(serif|sans)\)$/.test(lit)) add(node, "font-family", lit);
+      if (name === "transition" && typeof lit === "string" && durationsMs(lit).some((x) => x > 200)) add(node, "motion", lit);
+      if (!motionHome && ts.isPropertyAssignment(node) && ts.isObjectLiteralExpression(node.parent)) {
+        if ((name === "stiffness" || name === "damping" || name === "bounce") && typeof lit === "number") add(node, "motion-preset", name);
+        if (name === "duration" && typeof lit === "number" && lit > 0.2 && lit < 30) add(node, "motion-preset", `duration ${lit}`);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  if (!inDs && /@keyframes/.test(text)) {
+    const line = lineOf(text, text.indexOf("@keyframes"));
+    out.push({ file, line, rule: "motion", message: `${RULES.motion} (@keyframes)` });
+  }
+  return out;
+}
+
+/** Lint one file's text. `file` is a repo-relative path with forward slashes. */
+export function lintSource(file, text) {
+  const f = file.split(sep).join("/");
+  const tokenFile = TOKEN_FILES.some((r) => r.test(f));
+  const inDs = DS_DIR.test(f);
+  const out = [];
+  const allow = allowances(text, f, out);
+  const found = f.endsWith(".css") ? lintCss(f, text, tokenFile, inDs) : lintTs(f, text, tokenFile, inDs);
+  for (const x of found) {
+    const ok = allow.get(x.line);
+    if (!(ok && ok.has(x.rule))) out.push(x);
+  }
+  return out.sort((a, b) => a.line - b.line);
+}
+
+/** Files in scope under a web root. */
+export function scopeFiles(root) {
+  const walk = (dir) => {
+    let names;
+    try {
+      names = readdirSync(dir);
+    } catch {
+      return [];
+    }
+    return names.flatMap((n) => {
+      const p = join(dir, n);
+      if (statSync(p).isDirectory()) return n === "node_modules" ? [] : walk(p);
+      return /\.(css|tsx?)$/.test(n) && !/\.d\.ts$|\.test\.tsx?$/.test(n) ? [p] : [];
+    });
+  };
+  const app = walk(join(root, "src", "app")).filter((p) => {
+    const r = relative(root, p).split(sep).join("/");
+    return r.includes("/(neritic)/") || r.startsWith("src/app/system/");
+  });
+  return [...walk(join(root, "src", "nx")), ...app];
+}
+
+export function lintRoot(root) {
+  return scopeFiles(root).flatMap((p) => lintSource(relative(root, p), readFileSync(p, "utf8")));
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
+  const files = scopeFiles(root);
+  const found = lintRoot(root);
+  for (const x of found) console.log(`${x.file}:${x.line}  ${x.rule}  ${x.message}`);
+  if (found.length) {
+    console.error(`\nlint:design: ${found.length} problem${found.length === 1 ? "" : "s"} in ${new Set(found.map((x) => x.file)).size} file(s) of ${files.length}. Rules: docs/coastwatch/v12/design-system/README.md section 3.`);
+    process.exit(1);
+  }
+  console.log(`lint:design: ${files.length} files clean.`);
+}

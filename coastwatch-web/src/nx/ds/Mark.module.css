@@ -1,0 +1,85 @@
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  vertical-align: -1px;
+}
+
+.glyph {
+  display: inline-block;
+  flex: none;
+  vertical-align: -1px;
+}
+
+.solid {
+  fill: var(--ink);
+}
+.outline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.modelHatch {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.frame {
+  fill: var(--paper);
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+.hatch {
+  fill: none;
+  stroke: var(--hatch);
+  stroke-width: 1;
+}
+
+.words {
+  font-weight: 600;
+}
+
+.old {
+  color: var(--ink-2);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* legend */
+.legend {
+  margin: 0;
+  font-size: var(--t-14);
+  line-height: 1.36;
+  color: var(--ink);
+}
+.title {
+  font-weight: 600;
+  margin-bottom: var(--s-4);
+}
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-16);
+}
+.column .items {
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+.item > :first-child {
+  min-width: 24px;
+  display: inline-flex;
+  justify-content: center;
+}

@@ -40,7 +40,7 @@ describe("diffFacts (shared by the device inbox and alerts-fanout)", () => {
     const next = withFact(base, "test:bma-g-monterey-bay-dungeness-crab", { as_of: "2026-11-05", value: "avg 7.1 ppm (limit 30)" });
     const out = diffFacts(snap(base), next, ["new_toxin_result"], NOW);
     expect(out.map((a) => a.trigger)).toEqual(["new_toxin_result"]);
-    expect(out[0].body).toContain("Previous: 5.5 ppm avg");
+    expect(out[0].body).toContain("Previous: 9.8 ppm max");
   });
 
   it(`bloom risk alerts only on a jump of ≥ ${BLOOM_JUMP_PTS} points or a rise to amber/red, and says it is a model forecast`, () => {

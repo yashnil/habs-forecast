@@ -1,0 +1,106 @@
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-8);
+  min-height: var(--target);
+  padding: 0 var(--s-24);
+  border: var(--rule) solid var(--ink);
+  border-radius: var(--r-0);
+  background: transparent;
+  color: var(--ink);
+  font: 600 var(--t-18) / 1.2 var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-quick) linear, color var(--dur-quick) linear;
+}
+
+.full {
+  display: flex;
+  width: 100%;
+}
+
+/* primary: one per view, ink */
+.primary {
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  min-height: 52px;
+}
+.primary:hover:not([aria-disabled="true"]) {
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-hover-line);
+}
+
+/* secondary: ruled */
+.secondary:hover:not([aria-disabled="true"]) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* text link: no box, the underline is the affordance */
+.text {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  font-weight: 600;
+  font-size: var(--t-16);
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule);
+  text-underline-offset: 3px;
+  justify-content: flex-start;
+}
+.text::after {
+  /* hit area to the touch target without moving the line */
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--s-4));
+  right: calc(-1 * var(--s-4));
+  top: 50%;
+  height: var(--target);
+  transform: translateY(-50%);
+}
+.text:hover:not([aria-disabled="true"]) {
+  text-decoration-thickness: 3px;
+}
+
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  color: var(--ink-2);
+  border-style: dashed;
+  border-color: var(--ink-2);
+}
+.primary[aria-disabled="true"] {
+  background: transparent;
+}
+.text[aria-disabled="true"] {
+  text-decoration-style: dotted;
+}
+
+.btn[aria-busy="true"] {
+  cursor: progress;
+}
+
+.busyLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--rule));
+  height: var(--rule);
+  background: currentColor;
+  transform-origin: 0 50%;
+}
+.primary .busyLine {
+  background: var(--primary-fg);
+  bottom: var(--s-4);
+  left: var(--s-24);
+  right: var(--s-24);
+}
+
+@media (max-width: 720px) {
+  .btn {
+    font-size: var(--t-16);
+  }
+}
