@@ -93,8 +93,12 @@ async function journey(page: Page) {
   // tap the water in Monterey Bay
   await tapWater(page, 36.87, -122.02);
   const readout = page.getByTestId("nx-readout");
-  await expect(readout).toContainText("Chlorophyll here");
+  await expect(readout).toContainText("Chlorophyll in this 300 m cell");
   const at = (await hook(page))!.at!;
+  // the header and the mark on the chart are the read cell's own centre (v13), within half a cell of the tap
+  const cell = (await page.evaluate(() => (window as unknown as { __nxExplore: { cell: { lat: number; lon: number } } }).__nxExplore.cell))!;
+  expect(Math.abs(cell.lat - at.lat)).toBeLessThan(0.0015);
+  expect(Math.abs(cell.lon - at.lon)).toBeLessThan(0.0015);
   const expected = publishedChl("olci300_chl_latest", at.lat, at.lon);
   expect(expected).not.toBeNull();
   const shown = await readout.locator("p").filter({ hasText: "mg/m³" }).first().innerText();
@@ -112,8 +116,12 @@ async function journey(page: Page) {
   await expect(page.getByTestId("nx-reading-on-chart").locator("circle").first()).toHaveAttribute("visibility", "visible");
   await page.waitForTimeout(1200);
 
-  // follow to Research with the station and the window
-  const link = page.getByTestId("nx-record-link");
+  // follow to Research with the station and the window. The station list does not say which piers measure
+  // extracted chlorophyll (it carries toxin and Pseudo-nitzschia only), so the pier is offered as a place to
+  // look, never as "the record nearby" (v13, the Explore → Research contract)
+  await expect(page.getByTestId("nx-record-link")).toHaveCount(0);
+  await expect(page.getByTestId("nx-record-unknown")).toContainText("does not say which piers measure this");
+  const link = page.getByTestId("nx-record-look");
   await expect(link).toContainText("Santa Cruz Wharf");
   await link.click();
   await expect(page).toHaveURL(/\/research\?station=HABs-SantaCruzWharf&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}&var=chl_extracted&place=port-592$/);
@@ -138,7 +146,7 @@ test.describe("Journey 3: Explore to the record", () => {
     await page.goto(`${OK}/explore?place=port-592&layer=charm&frame=charm:1&at=36.8000,-122.0500`);
     await mapReady(page);
     await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-frame", "charm:1");
-    await expect(page.getByTestId("nx-readout")).toContainText("C-HARM here");
+    await expect(page.getByTestId("nx-readout")).toContainText("C-HARM in this 3 km cell");
     await expect(page.getByTestId("nx-readout")).toContainText("not toxin in seafood");
   });
 

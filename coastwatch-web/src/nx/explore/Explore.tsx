@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, ChartDock, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { openMargin } from "@/nx/shell/Margin";
@@ -28,7 +28,7 @@ import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isoth
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, unitOf, valueWords, type CurrentsState } from "./words";
+import { aboutWords, CHL_DOMAIN, contextWords, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
@@ -439,7 +439,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   let readout = null;
   if (pt && r) {
-    const title = product.id === "chl" ? "Chlorophyll here" : product.id === "sst" ? "Sea temperature here" : product.id === "charm" ? "C-HARM here" : "Outlook here";
+    // the reading is one cell of the layer's grid: its title says so, with the cell's size once it is known
+    const title = readoutTitle(product.id, r.status === "ready" ? r.cell : null);
     const onClose = () => {
       setAt(null);
       setHover(null);
@@ -500,6 +501,14 @@ export function Explore({ model }: { model: ExploreModel }) {
                 The nearest that does: {choice.far.name}, {sig(choice.far.km, 2)} km away
               </Link>
             </span>
+          ) : choice.unknown ? (
+            // the station list carries toxin and Pseudo-nitzschia only: for this measurement no pier is claimed
+            <span data-testid="nx-record-unknown">
+              Neritic&rsquo;s station list does not say which piers measure this.{" "}
+              <Link className={s.recordLink} href={researchHref({ station: choice.unknown.id, to: date, product: product.id, place: key })} data-testid="nx-record-look">
+                Look in the nearest pier&rsquo;s record: {choice.unknown.name}, {sig(choice.unknown.km, 2)} km{choice.unknown.km > NEARBY_KM ? " away" : ""}
+              </Link>
+            </span>
           ) : (
             <span data-testid="nx-record-none">No monitoring station measures this.</span>
           )}
@@ -515,7 +524,7 @@ export function Explore({ model }: { model: ExploreModel }) {
             points={xs}
             unit={unit}
             scale={product.id === "chl" || product.id === "outlook" ? "log" : "linear"}
-            label={`Along ${latLon(pt.lat, pt.lon).split(",")[0]}, west to east`}
+            label={`Along ${latLon(r.cell.lat, r.cell.lon).split(",")[0]}, west to east`}
             observed={rf.kind === "measured"}
             format={fmt}
             onHover={setHover}
@@ -559,12 +568,14 @@ export function Explore({ model }: { model: ExploreModel }) {
     }
   }
 
+  const cell = r?.status === "ready" ? r.cell : null;
   const tStart = r?.status === "ready" && r.transect.length ? r.transect[0].lon : null;
   const tEnd = r?.status === "ready" && r.transect.length ? r.transect[r.transect.length - 1].lon : null;
   return (
     <section className={s.explore} data-testid="nx-explore" data-product={product.id} data-frame={frame.id}>
       <ChartScene scene={scene} />
-      {pt ? <ReadingOnChart lat={pt.lat} lon={pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} /> : null}
+      {/* the mark sits on the cell that was read (its centre, its outline), not on the tap */}
+      {pt ? <ReadingOnChart lat={cell?.lat ?? pt.lat} lon={cell?.lon ?? pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} outline={cell?.outline ?? null} /> : null}
       {phone ? <Locator /> : null}
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
@@ -606,6 +617,8 @@ export function Explore({ model }: { model: ExploreModel }) {
           </button>
         ) : null}
       </div>
+      {/* wide: the rail runs along the foot of the chart it steps, full width; on a phone it reads in the sheet */}
+      <ChartDock label="Time" height={streaks ? 284 : 204}>
       <TimeRail
         model={model}
         product={product}
@@ -619,6 +632,13 @@ export function Explore({ model }: { model: ExploreModel }) {
         canPlay={canPlay}
         onPlay={() => setPlaying((p) => !p)}
       />
+      </ChartDock>
+      {/* what the reading below is a reading of stays in sight while the margin scrolls past the legend */}
+      {readout ? (
+        <p className={s.context} data-testid="nx-context">
+          <strong>{LAYER_LABEL[product.id]}</strong> · {unit} · {contextWords(product, frame)}
+        </p>
+      ) : null}
       <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
         {readout ?? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p>}
       </div>

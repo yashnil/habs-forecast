@@ -11,7 +11,7 @@ import derivedRaw from "../../../fixture-derived/v1/derived/index.json";
 import type { FieldGrid } from "@/nx/chart/layers/grid";
 import { FIELD_FS, fieldQuadBounds } from "@/nx/chart/layers/FieldLayer";
 import { CHART_FRAME } from "@/nx/chart/style";
-import { buildExploreModel, shortSensor, SST_FRESHNESS, stationVars, type ExploreFrame, type ExploreStation } from "@/nx/explore/model";
+import { buildExploreModel, shortSensor, SST_FRESHNESS, type ExploreFrame, type ExploreStation } from "@/nx/explore/model";
 import { cellGeometry, cellSizeWords, coastHref, gapPosition, NEARBY_KM, stationFor } from "@/nx/explore/read";
 import { qualityHours } from "@/nx/explore/timeline";
 import { coverageWords, currentsCaption, currentsStill, currentsToggleWords, legendCaption, noValueWords, OUTSIDE_KEY, readingStamp, unitOf, valueWords } from "@/nx/explore/words";
@@ -128,16 +128,16 @@ describe("E-5: what a readout's stamp says the date is", () => {
   });
 });
 
-describe("E-6: a 'nearby' record is within 25 km and measures the variable", () => {
-  const st = (id: string, lat: number, lon: number, vars: string[]): ExploreStation => ({ id, name: id, lat, lon, last: null, vars });
-  const stations = [st("SantaCruz", 36.958, -122.017, ["pDA", "chl_extracted", "temp"]), st("Monterey", 36.605, -121.889, ["pDA", "temp"]), st("MossShore", 36.802, -121.79, ["temp"])];
+describe("E-6: a 'nearby' record is within 25 km and measures the variable (Research's own rule)", () => {
+  const st = (id: string, lat: number, lon: number, vars: string[]): ExploreStation => ({ id, name: id, lat, lon, last: null, latest: vars.map((variable) => ({ variable, value: 1, date: "2026-10-01", n_last_365d: 3 })) });
+  const stations = [st("SantaCruz", 36.958, -122.017, ["pDA", "pn_seriata"]), st("Monterey", 36.605, -121.889, ["pDA"]), st("MossShore", 36.802, -121.79, [])];
   it("links the nearest station that measures it, not a nearer one that does not", () => {
-    // mid-bay: MossShore is nearest but has no chlorophyll; Santa Cruz does, about 18 km away
-    const c = stationFor(stations, 36.8, -121.95, "chl_extracted");
+    // mid-bay: MossShore is nearest but has never published pDA; Santa Cruz has, about 18 km away
+    const c = stationFor(stations, 36.8, -121.95, "pDA");
     expect(c.link?.id).toBe("SantaCruz");
     expect(c.link!.km).toBeLessThan(NEARBY_KM);
     expect(c.far).toBeNull();
-    expect(stationFor(stations, 36.8, -121.95, "temp").link?.id).toBe("MossShore");
+    expect(c.unknown).toBeNull();
   });
   it("beyond 25 km nothing is called nearby: the nearest that measures it is named as far", () => {
     const c = stationFor(stations, 36.6, -122.4, "pDA");
@@ -145,12 +145,17 @@ describe("E-6: a 'nearby' record is within 25 km and measures the variable", () 
     expect(c.far?.id).toBe("Monterey");
     expect(c.far!.km).toBeGreaterThan(NEARBY_KM);
   });
-  it("no station measures it: nothing is offered", () => {
-    expect(stationFor(stations, 36.8, -121.95, "pn_seriata")).toEqual({ link: null, far: null });
+  it("a variable the list knows but no station has: nothing is offered", () => {
+    expect(stationFor(stations, 36.8, -121.95, "pn_delicatissima")).toEqual({ link: null, far: null, unknown: null });
+    expect(stationFor([], 36.8, -121.95, "pDA")).toEqual({ link: null, far: null, unknown: null });
   });
-  it("a station's variables come from its own samples", () => {
-    const s = { latest: [{ variable: "pDA" }], recent: { chl_extracted: [["2026-10-01", 1.2]], pn_seriata: [["2026-10-01", null]], pn_delicatissima: [] } } as unknown as StationLite;
-    expect(stationVars(s).sort()).toEqual(["chl_extracted", "pDA", "temp"]);
+  it("a variable the station list does not carry (chlorophyll, temperature) is never claimed: the nearest station is only a place to look", () => {
+    for (const v of ["chl_extracted", "temp"] as const) {
+      const c = stationFor(stations, 36.8, -121.95, v);
+      expect(c.link).toBeNull();
+      expect(c.far).toBeNull();
+      expect(c.unknown?.id).toBe("MossShore");
+    }
   });
 });
 

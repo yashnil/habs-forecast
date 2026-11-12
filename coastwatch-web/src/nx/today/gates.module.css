@@ -25,6 +25,11 @@
 .gate[data-state="none"] .headline {
   color: var(--ink-2);
 }
+.age {
+  font: 500 var(--type-body) / var(--lh-snug) var(--font-sans);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
 .stamp {
   margin: var(--s-4) 0 0;
 }

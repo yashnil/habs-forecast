@@ -155,7 +155,7 @@ test("Show me around: four steps, one sentence each, gone for good", async ({ br
   for (const [i, words] of [
     [1, /season status/],
     [2, /where they were measured/],
-    [3, /today's line/],
+    [3, /What decides a trip, in parts/],
     [4, /source, the date/],
   ] as const) {
     await expect(tour).toContainText(`${i} of 4`);

@@ -52,6 +52,8 @@ function GatePart({ gate: g, now, slot, extra, onOpen }: { gate: Gate; now: stri
               <Mark kind="stale" />
             </>
           ) : null}
+          {/* a sample is read with its age (T6, T17) */}
+          {g.dateRole === "sampled" && g.age ? <span className={s.age}> · {g.age}</span> : null}
         </p>
       )}
       {g.provenance ? (

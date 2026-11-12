@@ -21,14 +21,19 @@ function useTarget() {
   return el;
 }
 
-export function ReadingOnChart({ lat, lon, lon0, lon1, hoverLon }: { lat: number; lon: number; lon0: number | null; lon1: number | null; hoverLon: number | null }) {
+/** Below this many pixels across, a cell's outline is a speck: the ring around its centre marks it instead. */
+const OUTLINE_MIN_PX = 9;
+
+export function ReadingOnChart({ lat, lon, lon0, lon1, hoverLon, outline }: { lat: number; lon: number; lon0: number | null; lon1: number | null; hoverLon: number | null; outline?: [number, number][] | null }) {
   const target = useTarget();
   const reduce = useReducedMotion();
   const lineRef = useRef<SVGPathElement>(null);
   const ptRef = useRef<SVGGElement>(null);
   const hovRef = useRef<SVGCircleElement>(null);
-  const args = useRef({ lat, lon, lon0, lon1, hoverLon });
-  args.current = { lat, lon, lon0, lon1, hoverLon };
+  const cellRef = useRef<SVGPathElement>(null);
+  const caseRef = useRef<SVGPathElement>(null);
+  const args = useRef({ lat, lon, lon0, lon1, hoverLon, outline });
+  args.current = { lat, lon, lon0, lon1, hoverLon, outline };
   useEffect(() => {
     const draw = (f: ChartFrame | null) => {
       if (!f) return;
@@ -38,6 +43,24 @@ export function ReadingOnChart({ lat, lon, lon0, lon1, hoverLon }: { lat: number
       if (lineRef.current && a.lon0 !== null && a.lon1 !== null) {
         const q0 = f.project(a.lon0, a.lat), q1 = f.project(a.lon1, a.lat);
         lineRef.current.setAttribute("d", `M${q0.x.toFixed(1)},${q0.y.toFixed(1)}L${q1.x.toFixed(1)},${q1.y.toFixed(1)}`);
+      }
+      const c = cellRef.current;
+      if (c) {
+        // the cell that was read, at its true footprint; too small to see, the ring at its centre stands for it
+        const pts = (a.outline ?? []).map(([lo, la]) => f.project(lo, la));
+        const w = pts.length ? Math.max(...pts.map((q) => q.x)) - Math.min(...pts.map((q) => q.x)) : 0;
+        if (pts.length && w >= OUTLINE_MIN_PX) {
+          const d = `M${pts.map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join("L")}Z`;
+          for (const el of [c, caseRef.current]) {
+            el?.setAttribute("d", d);
+            el?.setAttribute("visibility", "visible");
+          }
+          ptRef.current?.setAttribute("data-cell", "outlined");
+        } else {
+          c.setAttribute("visibility", "hidden");
+          caseRef.current?.setAttribute("visibility", "hidden");
+          ptRef.current?.setAttribute("data-cell", "point");
+        }
       }
       const h = hovRef.current;
       if (h) {
@@ -50,36 +73,25 @@ export function ReadingOnChart({ lat, lon, lon0, lon1, hoverLon }: { lat: number
         }
       }
     };
-    draw(getFrame());
+    const now = () => draw(getFrame());
+    drawRef.current = now;
+    now();
     const off = onFrame(draw);
     return off;
   }, [target]);
+  const drawRef = useRef<() => void>(() => undefined);
   useEffect(() => {
-    // a new hover or point: redraw at once with the camera where it is
-    const f = getFrame();
-    if (f) {
-      const a = args.current;
-      const h = hovRef.current;
-      if (h && a.hoverLon !== null) {
-        const q = f.project(a.hoverLon, a.lat);
-        h.setAttribute("cx", q.x.toFixed(1));
-        h.setAttribute("cy", q.y.toFixed(1));
-        h.setAttribute("visibility", "visible");
-      } else h?.setAttribute("visibility", "hidden");
-      const p = f.project(a.lon, a.lat);
-      ptRef.current?.setAttribute("transform", `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`);
-      if (lineRef.current && a.lon0 !== null && a.lon1 !== null) {
-        const q0 = f.project(a.lon0, a.lat), q1 = f.project(a.lon1, a.lat);
-        lineRef.current.setAttribute("d", `M${q0.x.toFixed(1)},${q0.y.toFixed(1)}L${q1.x.toFixed(1)},${q1.y.toFixed(1)}`);
-      }
-    }
-  }, [lat, lon, lon0, lon1, hoverLon]);
+    // a new hover, point or cell: redraw at once with the camera where it is
+    drawRef.current();
+  }, [lat, lon, lon0, lon1, hoverLon, outline]);
   if (!target) return null;
   return createPortal(
     <svg className={s.onChart} aria-hidden="true" data-testid="nx-reading-on-chart">
       {lon0 !== null && lon1 !== null ? <motion.path key={`${lat}-${lon}`} ref={lineRef} className={s.chartTransect} initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={ink(1.1)} /> : null}
+      <path ref={caseRef} className={s.chartCellCase} visibility="hidden" />
+      <path ref={cellRef} className={s.chartCell} visibility="hidden" data-testid="nx-cell-outline" />
       <circle ref={hovRef} r={5} className={s.chartHover} visibility="hidden" />
-      <g ref={ptRef}>
+      <g ref={ptRef} className={s.chartPoint}>
         <circle r={7} className={s.chartPointRing} />
         <circle r={2.5} className={s.chartPointDot} />
       </g>
