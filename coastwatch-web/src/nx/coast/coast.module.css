@@ -4,6 +4,9 @@
   display: block;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  /* the sticky header changes height when it condenses. With scroll anchoring the scroller would follow that
+     change, cross the condense threshold again and never settle; nothing here may be a scroll anchor */
+  overflow-anchor: none;
 }
 
 /* ---------------------------------------------------------------- head */

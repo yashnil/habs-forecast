@@ -295,7 +295,7 @@ describe("zero, impossible and inconsistent inputs", () => {
     expect(breakEvenPriceText(0.8701, "lb")).toBe("$0.88/lb");
     // the most fuel can cost is rounded down: a cent more would lose money
     expect(breakEvenFuelText(12.349)).toBe("$12.34/gal");
-    expect(breakEvenFuelText(116.67)).toBe("above $50.00/gal");
+    expect(breakEvenFuelText(116.67)).toBe("over $50/gal");
     expect(money(-0.001)).toBe("$0.00");
   });
 });

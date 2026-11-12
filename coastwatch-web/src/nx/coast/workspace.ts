@@ -588,7 +588,7 @@ export function breakEvenPriceText(v: number, unit: "lb" | "ton"): string {
 
 /** The most fuel can cost before net to boat falls to $0, rounded down: a cent more would lose money. */
 export function breakEvenFuelText(v: number): string {
-  return v > 50 ? "above $50.00/gal" : `$${roundDown(v, 0.01).toFixed(2)}/gal`;
+  return v > 50 ? "over $50/gal" : `$${roundDown(v, 0.01).toFixed(2)}/gal`;
 }
 
 // ---------------------------------------------------------------- assumptions, in plain words
