@@ -283,6 +283,7 @@
 /* ---------------------------------------------------------------- SensitivityGrid */
 /* wider than its column (a phone): the grid scrolls inside itself, its row heads staying in place */
 .sensWrap {
+  container-type: inline-size;
   max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -370,6 +371,20 @@
 .sensNone {
   color: var(--ink-2);
   font-weight: 400;
+}
+/* a narrow column (a 320 px phone): tighter cells, so five prices fit or nearly; the grid scrolls inside itself for more */
+@container (max-width: 420px) {
+  .sensCorner {
+    min-width: 56px;
+    padding: var(--s-4);
+  }
+  .sensHead {
+    padding: var(--s-8) var(--s-4);
+  }
+  .sensCell {
+    min-width: 46px;
+    padding: var(--s-4);
+  }
 }
 .sensFoot {
   padding-top: var(--s-8);
