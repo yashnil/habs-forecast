@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -273,6 +275,15 @@ describe("agenda, legend and type render accessibly", () => {
     expect(renderToStaticMarkup(h(Mark, { kind: "official" }))).toContain("not verified");
     expect(renderToStaticMarkup(h(Mark, { kind: "noview" }))).toContain('aria-label="no view"');
     expect(renderToStaticMarkup(h(Legend, { kinds: ["measured", "noview"] }))).toContain("No view: no data, not a low value");
+  });
+  it("each mode's tokens say which end of a ramp is more, and the legend words follow them (README §4)", () => {
+    const css = readFileSync(path.join(__dirname, "../../../src/nx/ds/tokens.css"), "utf8");
+    const block = (mode: string) => css.slice(css.indexOf(`[data-chart-mode="${mode}"]`), css.indexOf("}", css.indexOf(`[data-chart-mode="${mode}"]`)));
+    expect(block("day")).toMatch(/--ramp-says-darker: inline; --ramp-says-lighter: none;/);
+    for (const m of ["dusk", "night"]) expect(block(m)).toMatch(/--ramp-says-darker: none; --ramp-says-lighter: inline;/);
+    const html = renderToStaticMarkup(h(RampLegend, { title: "Chlorophyll", unit: "mg/m³", steps: ["--chl-0", "--chl-1"], domain: [0.05, 50], ticks: [0.1, 1, 10] }));
+    expect(html).toContain("Darker is more.");
+    expect(html).toContain("Lighter is more (dark chart).");
   });
   it("the ramp legend places log ticks and says no view", () => {
     expect(rampPosition(1, [0.05, 50])).toBeCloseTo(0.4337, 3);

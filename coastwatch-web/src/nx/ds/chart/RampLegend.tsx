@@ -67,6 +67,12 @@ export function RampLegend({ title, unit, steps, domain, scale = "log", ticks, t
           </div>
         ) : null}
       </div>
+      {/* which end is "more" depends on the mode's table (tokens.css): darker on Day's paper, lighter on the dark
+          grounds of Dusk and Night. Only the active mode's words show (and are read). */}
+      <p className={s.direction} data-testid="ramp-direction">
+        <span className={s.saysDarker}>Darker is more.</span>
+        <span className={s.saysLighter}>Lighter is more (dark chart).</span>
+      </p>
       {caption ? <p className={s.caption}>{caption}</p> : null}
     </figure>
   );

@@ -91,6 +91,17 @@
   white-space: nowrap;
 }
 
+.direction {
+  margin: var(--s-4) 0 0;
+  font-size: var(--t-14);
+  line-height: 1.4;
+}
+.saysDarker {
+  display: var(--ramp-says-darker, inline);
+}
+.saysLighter {
+  display: var(--ramp-says-lighter, none);
+}
 .caption {
   margin: var(--s-4) 0 0;
   font-size: var(--t-14);

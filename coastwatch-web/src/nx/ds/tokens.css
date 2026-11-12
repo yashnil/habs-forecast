@@ -1,5 +1,6 @@
 /* Neritic Chart design tokens. The only file in src/nx allowed to hold colour literals (with palette.ts).
-   Spec: docs/coastwatch/v12/design-system/README.md. Three chart modes, each specified, never inverted.
+   Spec: docs/coastwatch/v12/design-system/README.md. Three chart modes, each its own table, never an automatic
+   inversion of another. Data ramps: high is dark on Day's paper, high is light on Dusk's and Night's dark ground.
    Contrast (WCAG 2) of each text token on its mode's paper is noted. */
 
 :root,
@@ -32,6 +33,8 @@
      hue family (T22). OKLCH, L* 95.4 → 35.0 (min ΔL* 8.4); on paper 1.11:1 to 7.7:1. */
   --sst-0: #f8f2dc; --sst-1: #e8d9b5; --sst-2: #d9be90; --sst-3: #cba36f;
   --sst-4: #bc8952; --sst-5: #ac6f3b; --sst-6: #995628; --sst-7: #853e19;
+  /* which way the data ramps run in this mode, for the legend's words (RampLegend): on paper, high is dark */
+  --ramp-says-darker: inline; --ramp-says-lighter: none;
   color-scheme: light;
 }
 
@@ -52,7 +55,10 @@
   --rule-soft: rgba(226, 231, 232, 0.24);
   --neat-a: #4a5a63;
   --hatch: rgba(226, 231, 232, 0.5);
-  /* on a dark ground high chlorophyll is light; lightness stays monotone */
+  /* Dusk and Night are their own tables (README §4), not an inversion of Day: on a dark ground every data ramp
+     runs dark to light, high is LIGHT (as the depth tints run shoal-light to deep-dark here), lightness monotone.
+     High-is-dark on this ground would sink the highest values into the water. The legend says so in words. */
+  --ramp-says-darker: none; --ramp-says-lighter: inline;
   --chl-0: #10302f; --chl-1: #17473f; --chl-2: #1f6150; --chl-3: #3a7d5c;
   --chl-4: #6a9a63; --chl-5: #a3b76e; --chl-6: #d4d48a; --chl-7: #f4f1c4;
   --streak: #e2e7e8;
@@ -82,6 +88,8 @@
   --rule-soft: rgba(168, 156, 136, 0.22);
   --neat-a: #2a2a24;
   --hatch: rgba(168, 156, 136, 0.45);
+  /* night, as dusk: high is light on the dark ground, lightness monotone; the legend says so */
+  --ramp-says-darker: none; --ramp-says-lighter: inline;
   --chl-0: #0b1715; --chl-1: #10221e; --chl-2: #163027; --chl-3: #213f2f;
   --chl-4: #344e37; --chl-5: #4e5d40; --chl-6: #6e6e4c; --chl-7: #8f855c;
   --streak: #a89c88;

@@ -48,9 +48,18 @@ Review gate: the independent visual critic may reject any screen regardless of t
 
 ## 4. Colour
 
-Three chart modes, each separately specified like S-52's day, dusk and night tables, never inverted:
-**Day** (default, sunlight-first), **Dusk** (evening wheelhouse, reduced luminance), **Night** (dark-adapted,
-very low emission). Mode follows a toggle and `prefers-color-scheme`; Night is opt-in only.
+Three chart modes, each separately specified like S-52's day, dusk and night tables, never an automatic
+inversion of another: **Day** (default, sunlight-first), **Dusk** (evening wheelhouse, reduced luminance),
+**Night** (dark-adapted, very low emission). Mode follows a toggle and `prefers-color-scheme`; Night is opt-in
+only.
+
+**Which end of a data ramp is "more" (decided 2026-11-11).** On Day's paper, high is dark. On the dark grounds of
+Dusk and Night, high is **light**: every data ramp (`--chl`, `--prob`, `--sst`) runs dark to light, lightness
+still monotone, the way the depth tints there run shoal-light to deep-dark, as S-52's night tables do. High-is-dark
+on a near-black sea would sink the highest values into the water. So switching to Dusk at sunset turns the bay's
+highest chlorophyll from darkest to lightest, on purpose, and every ramp legend says which end is more in words
+("Darker is more." on Day, "Lighter is more (dark chart)." on Dusk and Night), driven by the mode's own tokens
+(`--ramp-says-darker` / `--ramp-says-lighter`).
 
 Day tokens (contrast on paper `#FFFEFA`):
 
@@ -66,7 +75,7 @@ Day tokens (contrast on paper `#FFFEFA`):
 | `--land` | `#DFD8AE` | Land, with 1× relief |
 | `--rule` / `--rule-soft` | ink / `rgba(14,20,23,.26)` | 1.5 px heads and tallies / 1 px hairlines |
 | `--focus` | ink | 2 px outline, 2 px offset |
-| `--chl-0…7` | `#F6F4DC` → `#052327` | Chlorophyll, log10 0.05–50 mg/m³, high is dark, lightness monotone |
+| `--chl-0…7` | `#F6F4DC` → `#052327` | Chlorophyll, log10 0.05–50 mg/m³, high is dark on Day's paper (light on Dusk and Night, see above), lightness monotone |
 | `--prob-0…9` | `#F4F2FB` → `#34315D` | C-HARM probability in cw-probability-classes-v1's ten 10-point display intervals (not risk tiers, T12): a quiet slate-violet clear of `--reg`, drawn at 0.72 under a model hatch; L* 95.9 → 22.7, min ΔL* 8.0 |
 | `--sst-0…7` | `#F8F2DC` → `#853E19` | Sea temperature, sequential cream to rust (its own hue family, T22); L* 95.4 → 35.0, min ΔL* 8.4. Explore draws temperature as isotherms; the ramp is there for a filled field or a legend that needs one |
 
