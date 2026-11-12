@@ -154,10 +154,11 @@ test("the bar's Alerts link carries the port and is never a dead end; the menu s
   await expect(page.getByTestId("nx-unread")).toHaveCount(0);
   await page.getByTestId("nx-menu-button").click();
   await expect(page.getByRole("navigation", { name: "More" }).getByRole("link", { name: "Your data" })).toHaveAttribute("href", "/account");
-  const res = await page.request.get(`${OK}/alerts?place=port-592`, { maxRedirects: 0 });
-  expect(res.status()).toBeGreaterThanOrEqual(300);
-  expect(res.status()).toBeLessThan(400);
-  expect(res.headers().location).toContain("/account?place=port-592#alerts");
+  // the link opens the alerts page itself, in the shell, at that port (tests/e2e/v13/alerts.spec.ts)
+  await page.keyboard.press("Escape");
+  await alerts.click();
+  await expect(page).toHaveURL(/\/alerts\?place=port-592$/);
+  await expect(page.getByTestId("nx-alerts")).toBeVisible();
 });
 
 test("the chart's own buttons zoom and bring the page's view back; names keep clear of them", async ({ page }) => {

@@ -206,7 +206,8 @@ test.describe("addresses", () => {
       await page.goto(`${OK}${path}`);
       await expect(page.getByTestId(id)).toBeVisible();
     }
-    for (const path of ["/about", "/privacy", "/terms", "/sources", "/ask", "/account", "/sms-terms", "/fisheries", "/coast/kept"]) {
+    // v13: /ask, /account and /alerts moved into the shell (tests/e2e/v13/personal.spec.ts, alerts.spec.ts)
+    for (const path of ["/about", "/privacy", "/terms", "/sources", "/sms-terms", "/fisheries", "/coast/kept"]) {
       const r = await page.goto(`${OK}${path}`);
       expect(r!.status(), path).toBe(200);
       await expect(page.getByTestId("nx-app"), path).toHaveCount(0);
