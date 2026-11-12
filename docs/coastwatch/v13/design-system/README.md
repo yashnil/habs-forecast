@@ -355,3 +355,23 @@ requests as a page would.
 - **Phone sheet.** Brought back to rest from a raised detent it shows the page from its first line. The handle's
   grab area reaches 12 px above the sheet's edge.
 - **Menu.** The chart-mode choice is read each time the menu opens.
+
+## 13. Changes from the independent review
+
+- **Phone sheet (F-01).** The sheet's scroller ends where the visible sheet ends at every detent (above the
+  destinations bar), so a page's last control is reached by scrolling without raising the sheet.
+- **Chart buttons on a phone (F-06).** At 720 px and under the zoom buttons are not shown (a pinch zooms). What
+  remains is one 44 px column in the chart's foot corner: back to the page's view and, when a scene names one,
+  "fit the data" as an icon with its name.
+- **`PageLayout chartLabel` (F-15).** The phone strip's bar and the collapsed rail say "Chart · …" only with
+  what the page passes (`<PageLayout mode="desk" paneKey="research" chartLabel={station.name} />`). Without it
+  they say "Chart": never a port's name over a chart that shows something else.
+- **Names keep clear of a zone's boundary line** (a parallel drawn by the regulation layer).
+- **`WaterfallChart` (F-03).** A step that cannot be drawn yet is a short open mark in its column; what each one
+  waits for is one sentence under the chart (`data-testid="waterfall-waiting"`), never a label per bar.
+- **Checkboxes (F-12).** A native `<input type="checkbox">` inside the shell is drawn in the system's terms in
+  every chart mode: an empty ruled box, or an ink box with a paper tick.
+- **`DeskHeader` gives its room in the same commit as it condenses** (from its two measured heights), so the
+  page is never laid out with the room missing and no page needs `overflow-anchor` for it.
+- **A sticky `DeskAside` and `DeskSticky` have paper under them** and stand above the column that scrolls beside
+  them (F-17).

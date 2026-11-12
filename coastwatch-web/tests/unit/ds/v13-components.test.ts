@@ -250,6 +250,10 @@ describe("v13 plot kit", () => {
     expect(out).toContain("Gross: $3,600.00. 400 lb × $9.00.");
     expect(out).toContain("Fuel: −$247.20. 30 gal × $8.24.");
     expect(out).toContain("Crew: waiting for who pays fuel.");
+    // what is not drawn yet is said once, as one sentence under the chart, never as a label per bar
+    expect(out.match(/data-testid="waterfall-waiting"/g)).toHaveLength(1);
+    expect(out).toContain("Not drawn yet: Crew (waiting for who pays fuel); Net to boat (waiting for crew).");
+    expect(out).not.toMatch(/<text[^>]*>waiting/);
     expect(out).toContain("Break-even");
     expect(out.match(/class="wfSolid"/g)).toHaveLength(1);
   });

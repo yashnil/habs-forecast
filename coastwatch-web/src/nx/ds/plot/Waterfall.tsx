@@ -85,6 +85,13 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
     }
   };
   const focusStep = at !== null ? steps[at] : null;
+  // steps that cannot be worked out yet: one sentence for the chart, wrapped as text, never a label per bar
+  const waitingFor = steps.filter((st, i) => own.bars[i].waiting);
+  const pending = waitingFor.length ? (
+    <p className={s.wfPendingNote} data-testid="waterfall-waiting">
+      Not drawn yet: {waitingFor.map((st, i) => `${i ? "; " : ""}${st.label}${st.amount === null && st.waiting ? ` (${st.waiting})` : ""}`).join("")}.
+    </p>
+  ) : null;
   const rows = orientation === "rows" || (orientation === "auto" && band < 88);
   if (rows) {
     // one bar per line: the label at the left, the bar on a money axis running right, the amount after it
@@ -128,9 +135,7 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
                     ) : null}
                   </>
                 ) : (
-                  <text x={x0} y={y0 + RH / 2} dy="0.34em" className={s.wfWaiting}>
-                    {st.waiting ?? "waiting"}
-                  </text>
+                  <line x1={x0 + 2} x2={x0 + 26} y1={y0 + RH / 2} y2={y0 + RH / 2} className={s.wfPending} />
                 )}
               </g>
             );
@@ -145,6 +150,7 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
             <span className={s.tipMeta}>{focusStep.formula ?? focusStep.waiting ?? (focusStep.kind === "cost" ? "Taken off" : focusStep.kind === "net" ? "What is left" : "Catch × price")}</span>
           </div>
         ) : null}
+        {pending}
         <p className={s.vh} role="status" aria-live="polite">
           {at !== null ? say(at) : ""}
         </p>
@@ -180,9 +186,8 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
                 {!b.waiting ? (
                   <motion.rect x={x} width={bw} initial={false} animate={{ y: y(b.to), height: Math.max(1.5, y(b.from) - y(b.to)) }} transition={t} className={st.kind === "cost" ? s.wfCost : s.wfSolid} />
                 ) : (
-                  <text x={cx0(i)} y={(top + bottom) / 2} textAnchor="middle" className={s.wfWaiting}>
-                    {st.waiting ?? "waiting"}
-                  </text>
+                  // a bar that cannot be drawn yet is a short open mark in its column; what it waits for is said once, under the chart
+                  <line x1={cx0(i) - Math.min(bw, band * 0.5) / 2} x2={cx0(i) + Math.min(bw, band * 0.5) / 2} y1={y(0)} y2={y(0)} className={s.wfPending} />
                 )}
                 {g && !g.waiting ? <motion.rect x={x - 3} width={bw + 6} initial={false} animate={{ y: y(g.to), height: Math.max(1.5, y(g.from) - y(g.to)) }} transition={t} className={s.wfGhost} /> : null}
                 {a !== null && !b.waiting ? (
@@ -209,6 +214,7 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
             <span className={s.tipMeta}>{focusStep.formula ?? focusStep.waiting ?? (focusStep.kind === "cost" ? "Taken off" : focusStep.kind === "net" ? "What is left" : "Catch × price")}</span>
           </div>
         ) : null}
+        {pending}
         <p className={s.vh} role="status" aria-live="polite">
           {at !== null ? say(at) : ""}
         </p>

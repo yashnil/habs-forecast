@@ -14,14 +14,19 @@ export interface PageLayoutProps {
   paneKey?: string;
   /** The pane's size until the reader chooses one. */
   defaultPane?: PaneDetent;
+  /**
+   * What the chart shows on this page, in a few words ("Monterey Wharf", "Whale zone 4"): named on the phone strip's
+   * bar and on the collapsed rail as "Chart · …". Without it they say only "Chart": never a name the chart is not showing.
+   */
+  chartLabel?: string;
 }
 
 /**
  * Declares the page's layout (as <ChartScene> declares its view). Renders only a hidden marker, which is what
  * the stylesheet reads, so the server's HTML is already laid out as a desk.
  */
-export function PageLayout({ mode, paneKey, defaultPane = "context" }: PageLayoutProps) {
-  usePageLayoutEffect(mode, paneKey ?? null, defaultPane);
+export function PageLayout({ mode, paneKey, defaultPane = "context", chartLabel }: PageLayoutProps) {
+  usePageLayoutEffect(mode, paneKey ?? null, defaultPane, chartLabel ?? null);
   return <span hidden data-nx-layout={mode} />;
 }
 
@@ -87,29 +92,26 @@ export function DeskHeader({ context, title, titleProps, status, actions, sticky
   // Condensing never moves the page. The header keeps the room it had: what it loses in height it carries as a
   // margin under itself, so nothing below shifts, the scroller's position is not adjusted, and the header cannot
   // flip back and forth across its own threshold however much taller it was (a 90 px change on Research).
-  const full = useRef(0);
-  const [hold, setHold] = useState(0);
+  // The room is given in the same commit as the change (from the header's two heights as last measured, an
+  // estimate the first time), so there is no moment in which the page is laid out with the room missing.
+  const [full, setFull] = useState(0);
+  const [slim, setSlim] = useState(64);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (!on) {
-      setHold(0);
-      const read = () => {
-        full.current = el.offsetHeight;
-      };
-      read();
-      const ro = new ResizeObserver(read);
-      ro.observe(el);
-      return () => ro.disconnect();
-    }
-    const read = () => setHold(Math.max(0, full.current - el.offsetHeight));
+    const read = () => {
+      const h = el.offsetHeight;
+      if (on) setSlim((v) => (Math.abs(v - h) < 1 ? v : h));
+      else setFull((v) => (Math.abs(v - h) < 1 ? v : h));
+    };
     read();
     const ro = new ResizeObserver(read);
     ro.observe(el);
     return () => ro.disconnect();
   }, [on, ref]);
+  const hold = on && full ? Math.max(0, full - slim) : 0;
   return (
-    <header ref={ref} className={cx(s.header, sticky && s.sticky, className)} data-condensed={on ? "" : undefined} style={on && hold ? { marginBottom: hold } : undefined} data-nx-desk-header>
+    <header ref={ref} className={cx(s.header, sticky && s.sticky, className)} data-condensed={on ? "" : undefined} style={hold ? { marginBottom: hold } : undefined} data-nx-desk-header>
       <div className={s.headMain}>
         {context ? <p className={s.context}>{context}</p> : null}
         <h1 className={s.title} {...titleProps}>

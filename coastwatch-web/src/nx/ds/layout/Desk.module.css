@@ -116,6 +116,9 @@
     grid-template-columns: clamp(320px, 32%, 380px) minmax(0, 1fr);
   }
   .asideSticky {
+    /* paper under it and above the column that scrolls beside it: nothing shows through or past its edges */
+    background: var(--paper);
+    z-index: 2;
     position: sticky;
     top: var(--desk-aside-top, 96px);
     max-height: calc(100dvh - var(--bar-h) - 96px - var(--s-24));
@@ -126,6 +129,8 @@
 
 /* ---------------------------------------------------------------- the phone's sticky bottom slot */
 .stickyBottom {
+  position: relative;
+  z-index: 2;
   background: var(--paper);
 }
 @media (max-width: 720px) {

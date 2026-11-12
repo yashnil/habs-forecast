@@ -10,7 +10,6 @@ import { CHART_DOCK_ID } from "@/nx/ds/layout/Desk";
 import { PANE_DETENTS, panePlacement, setPaneDetent, setPaneOpen, useChartPane, usePageLayout, type PaneDetent } from "@/nx/ds/layout/pane";
 import { PHONE_QUERY, useMedia } from "@/nx/ds/useMedia";
 import { OfflineNotice } from "@/nx/offline/OfflineNotice";
-import { useCurrentPort } from "./port";
 
 /**
  * The phone sheet's detents: resting (the page's statement in view above the tab bar), half (a reading and the
@@ -190,7 +189,6 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
   const phone = useMedia(PHONE_QUERY);
   const layout = usePageLayout();
   const pane = useChartPane();
-  const { port } = useCurrentPort();
   const sheetOn = phone && layout.mode === "chart";
   const pageRef = useBackForwardSwap();
   const workRef = useRef<HTMLDivElement>(null);
@@ -276,7 +274,10 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
     el.style.removeProperty("--pane-w");
     const to = paneEl.offsetWidth;
     if (Math.abs(to - from) < 2) return done();
-    el.style.setProperty("--pane-hold", `${Math.max(from, to)}px`);
+    // one resize of the chart for the whole change, a drag included: a hold a drag left in place is kept unless
+    // the new size is larger than it (then the chart takes the new size now and is uncovered as the column arrives)
+    const held = el.hasAttribute("data-pane-resizing") ? parseFloat(el.style.getPropertyValue("--pane-hold")) || 0 : 0;
+    el.style.setProperty("--pane-hold", `${held ? Math.max(held, to) : Math.max(from, to)}px`);
     el.style.setProperty("--pane-w", `${from}px`);
     el.setAttribute("data-pane-resizing", "");
     const a = animate(from, to, { ...paneMove, onUpdate: (v) => el.style.setProperty("--pane-w", `${Math.round(v)}px`), onComplete: done });
@@ -313,7 +314,8 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
         data-testid="nx-margin"
         data-detent={sheetOn ? (at === PEEK ? "peek" : at) : undefined}
         tabIndex={-1}
-        style={{ y, height: sheetOn ? full : undefined }}
+        // --sheet-hidden: how much of the sheet lies below the screen at this detent; its scroller stops short by that
+        style={{ y, height: sheetOn ? full : undefined, "--sheet-hidden": `${sheetOn ? offset(at) : 0}px` } as unknown as React.CSSProperties}
         drag={sheetOn ? "y" : false}
         dragListener={false}
         dragControls={controls}
@@ -352,14 +354,15 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
         {chart}
         <div id={CHART_DOCK_ID} className="n12-dock-slot" />
         {/* desk pages only (the stylesheet shows each where it applies): the rail, the phone strip's bar, the overlay's close */}
-        <button type="button" className="n12-pane-rail" onClick={pane.toggle} aria-label={port ? `Show the chart of ${port.name}` : "Show the chart"} data-testid="nx-pane-rail">
+        <button type="button" className="n12-pane-rail" onClick={pane.toggle} aria-label={layout.subject ? `Show the chart of ${layout.subject}` : "Show the chart"} data-testid="nx-pane-rail">
           <Icon name="chevron" size={20} direction="left" />
           {/* words, not a picture: the chart is out of sight here, so the rail says what opening it shows */}
-          <span suppressHydrationWarning>{port ? `Chart · ${port.name}` : "Chart"}</span>
+          <span>{layout.subject ? `Chart · ${layout.subject}` : "Chart"}</span>
         </button>
         <div className="n12-pane-bar">
-          <span className="n12-pane-bar-name" suppressHydrationWarning>
-            {port ? `Chart · ${port.name}` : "Chart"}
+          {/* the page names what its chart shows (PageLayout chartLabel); without that, only "Chart" */}
+          <span className="n12-pane-bar-name" data-testid="nx-pane-subject">
+            {layout.subject ? `Chart · ${layout.subject}` : "Chart"}
           </span>
           <button type="button" className="n12-pane-bar-btn" onClick={toggleStrip} aria-expanded={layout.open} data-testid="nx-pane-toggle">
             {layout.open ? "Smaller" : "Larger"}

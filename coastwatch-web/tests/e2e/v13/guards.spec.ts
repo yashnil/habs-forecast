@@ -25,13 +25,9 @@ test.use({ storageState: { cookies: [], origins: [] } });
  *        switch and time rail). Needs "More" or a drag first.
  *  F-07  the trip workspace at 320 px: the last links sit under the fixed result bar at the end of the page.
  */
-const KNOWN: Record<string, string> = {
-  "Today at 390 px": "F-01",
-  "Explore at 390 px": "F-01",
-  "Explore at 320 px": "F-01",
-  "Notices at 390 px": "F-01",
-  "Notices at 320 px": "F-01",
-};
+// F-01 is fixed in the shell (the sheet's scroller ends where the visible sheet ends at every detent): its five
+// entries are gone, so the guard now holds those pages to it.
+const KNOWN: Record<string, string> = {};
 
 const PHONES = [
   { width: 390, height: 844 },
