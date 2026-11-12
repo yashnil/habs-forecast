@@ -7,6 +7,9 @@ import { day, pacificYmd, time } from "@/nx/ds/format";
  * to the port (src/pilot/today/prefs.ts `readSeen`) against the facts now, by PortFact.id
  * (src/pilot/facts.ts `diffFacts`). Status, notices, whale measures, tests, model runs and NWS
  * advisories count; the hourly sea, tide and buoy do not. No earlier visit: no line (never invented).
+ *
+ * Which earlier visit, and when it is written, is `useChangeLine.ts`: one comparison per visit, so a page that
+ * mounts twice or is reloaded never compares with itself.
  */
 export type ChangeLine = { since: string; text: string; changes: Array<FactChange & { words: string }> };
 
@@ -32,8 +35,14 @@ export function changeWords(c: FactChange): string {
   return strip(f.headline);
 }
 
-/** When: "Oct 8", or "7:02 AM PT" for a visit earlier the same day. */
+/**
+ * When: "Oct 8", or "7:02 AM PT" for a visit earlier the same day. A visit dated after `now` (the page's clock
+ * moved back, or a saved copy older than the visit) is never worded as a time: "your last visit".
+ */
 export function sinceWords(since: string, now: string): string {
+  const a = Date.parse(since);
+  const b = Date.parse(now);
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a > b) return "your last visit";
   return pacificYmd(since) === pacificYmd(now) ? time(since) : day(since, { ref: now });
 }
 

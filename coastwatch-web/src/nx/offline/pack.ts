@@ -276,7 +276,7 @@ export async function saveFieldPack(port: SavePort, opts: { researchPath?: strin
 /** What a page says it has offline, and what it cannot have. Pure (tests read it). */
 export function packWords(r: FieldRecord | null, page: string): { saved: string | null; notSaved: string } {
   const notSaved: Record<string, string> = {
-    today: "Newer tests, notices and forecasts, Alerts and Ask wait for a connection.",
+    today: "Newer tests, notices and forecasts, new alert checks and Ask wait for a connection.",
     notices: "Notices issued or changed since then wait for a connection; call the agencies to be sure.",
     coast: "A newer sea window waits for a connection. The worksheet works as usual and stays on this device.",
     explore: "Only each layer's latest frame is saved, as a still picture: earlier frames, temperature lines, currents and tapping the water wait for a connection.",
