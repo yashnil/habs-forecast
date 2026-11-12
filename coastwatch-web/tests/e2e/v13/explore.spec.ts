@@ -13,6 +13,9 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
+/** The sheet's lowest height with a reading open: the peek, or the resting height on the narrowest screens (where the peek would end above the reading's figure). */
+const low = (width: number) => (width <= 340 ? "0" : "peek");
+
 type Cell = { lat: number; lon: number; widthKm: number; heightKm: number; outline: [number, number][] };
 type Hook = { product: string; frame: string; field?: string; cell?: Cell | null; flow?: { segments: () => number; streaks: () => { speed: number; px: number }[]; capPx: () => number; heads: () => [number, number][] } };
 const hook = <T>(page: Page, f: (h: Hook) => T) => page.evaluate(`(${f.toString()})(window.__nxExplore ?? {})`) as Promise<T>;
@@ -281,7 +284,7 @@ for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
     };
     await tapVisible(0.35, 0.55);
     await expect(readout(page)).toContainText(/C-HARM in this 3 km cell|C-HARM here/);
-    await expect(sheet).toHaveAttribute("data-detent", "peek");
+    await expect(sheet).toHaveAttribute("data-detent", low(size.width));
     await page.waitForTimeout(1400);
     const first = (await hook(page, (h) => h.cell ?? null))!;
     expect(first).not.toBeNull();
@@ -414,14 +417,24 @@ test("phone: with a reading open, the layer switch and Play are in reach at the 
     await mapReady(page);
     await fieldDrawn(page, "olci:latest");
     const sheet = page.getByTestId("nx-margin");
-    const m = (await page.getByTestId("nx-map").boundingBox())!;
-    await page.mouse.click(m.x + m.width * 0.35, m.y + ((await sheet.boundingBox())!.y - m.y) * 0.5);
+    // a cell of Monterey Bay that has a value in the fixture's latest view, in view above the resting sheet
+    const spot = await project(page, 36.87, -122.02);
+    expect(spot.y).toBeLessThan((await sheet.boundingBox())!.y - 8);
+    await tapWater(page, 36.87, -122.02);
     await expect(readout(page)).toContainText("Chlorophyll in this 300 m cell");
-    await expect(sheet).toHaveAttribute("data-detent", "peek");
+    await expect(readout(page)).toContainText("mg/m³");
+    await expect(sheet).toHaveAttribute("data-detent", low(size.width));
     await page.waitForTimeout(1200);
     const top = (await sheet.boundingBox())!.y;
     // the chart keeps most of the screen at this height
-    expect(top).toBeGreaterThan(size.height * 0.5);
+    expect(top).toBeGreaterThan(size.height * 0.45);
+    // the reading's figure is on screen above the destinations bar at this lowest height (re-review R-3)
+    {
+      const fig = (await readout(page).locator("p").filter({ hasText: "mg/m³" }).first().boundingBox())!;
+      const bar = (await page.getByTestId("nx-tabs").boundingBox())!;
+      expect(fig.y + fig.height, `${size.width}: the value above the destinations`).toBeLessThanOrEqual(bar.y);
+      expect(fig.y, `${size.width}: the value below the sheet's top`).toBeGreaterThan(top);
+    }
     // the controls lead the sheet: the switch, then what is on show and Play, all on screen without raising it
     const sw = page.getByTestId("nx-layers");
     await expect(sw).toBeInViewport({ ratio: 1 });
@@ -432,7 +445,7 @@ test("phone: with a reading open, the layer switch and Play are in reach at the 
     // a layer changes from here, the sheet staying down and the reading following
     await page.getByTestId("nx-layer-sst").click();
     await expect(page.getByTestId("nx-legend")).toHaveAttribute("data-product", "sst");
-    await expect(sheet).toHaveAttribute("data-detent", "peek");
+    await expect(sheet).toHaveAttribute("data-detent", low(size.width));
     await expect(readout(page)).toContainText("Sea temperature in this");
     // and back; time steps from here too
     await page.getByTestId("nx-layer-chl").click();
@@ -441,10 +454,10 @@ test("phone: with a reading open, the layer switch and Play are in reach at the 
     await page.getByTestId("nx-play").click();
     await expect.poll(() => page.getByTestId("nx-explore").getAttribute("data-frame"), { timeout: 8000 }).not.toBe(before);
     await page.getByTestId("nx-play").click();
-    expect((await sheet.boundingBox())!.y).toBeGreaterThan(size.height * 0.5);
+    expect((await sheet.boundingBox())!.y).toBeGreaterThan(size.height * 0.45);
     // at every height of the sheet, from its top: the switch and Play stay above the destinations bar, and the
     // chart's own buttons never sit over the sheet or over the read cell
-    const tabs = (await page.locator(".n12-dests, [data-testid=nx-dests], nav[aria-label='Destinations']").first().boundingBox()) ?? { y: size.height, height: 0 };
+    const tabs = (await page.getByTestId("nx-tabs").boundingBox())!;
     const more = sheet.getByRole("button", { name: /Show (more|less) of this page/ });
     const seen = new Set<string>();
     for (let i = 0; i < 5; i++) {
@@ -460,7 +473,7 @@ test("phone: with a reading open, the layer switch and Play are in reach at the 
       }
       const ctl = await page.getByTestId("nx-chart-controls").boundingBox();
       const st = (await sheet.boundingBox())!.y;
-      if (ctl && detent === "peek") {
+      if (ctl && detent === low(size.width)) {
         expect(ctl.y + ctl.height, `${size.width}: chart buttons clear of the sheet`).toBeLessThanOrEqual(st + 1);
         const c = (await hook(page, (h) => h.cell ?? null))!;
         const q = await project(page, c.lat, c.lon);

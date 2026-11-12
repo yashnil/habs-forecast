@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, ChartDock, MarginSticky, day, fixed, latLon, plainError, sig, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, ChartDock, MarginSticky, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { openMargin } from "@/nx/shell/Margin";
@@ -124,6 +124,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [tier, setTier] = useState<GraphicsTier | null>(null);
   const reduce = useReducedMotion() ?? false;
   const phone = usePhone();
+  const narrow = useMedia("(max-width: 340px)");
   const product = model.products.find((p) => p.id === productId) ?? null;
   const frame = product?.frames.find((f) => f.id === frameId) ?? null;
   const current = model.currents?.frames.find((f) => f.id === hourId) ?? null;
@@ -388,7 +389,9 @@ export function Explore({ model }: { model: ExploreModel }) {
     if (reading?.status !== "ready") return;
     // phone: the sheet drops to a peek (the reading leads it, see explore.module.css) and the chart pans just
     // enough to keep the read cell clear of the sheet, so the next tap can land on the water beside it
-    if (phone) openMargin("peek");
+    // On the narrowest screens the peek (30 % of a 640 px screen) ends above the reading's figure, so the sheet
+    // takes its resting height there instead: the figure is in view and the chart still keeps about half the screen
+    if (phone) openMargin(narrow ? "rest" : "peek");
     const cell = reading.cell;
     const t = window.setTimeout(
       () => {
@@ -402,7 +405,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     return () => window.clearTimeout(t);
     // one move per reading: a new cell, not every frame of a playback
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reading?.status, reading?.status === "ready" ? reading.cell.row : null, reading?.status === "ready" ? reading.cell.col : null, reduce, phone]);
+  }, [reading?.status, reading?.status === "ready" ? reading.cell.row : null, reading?.status === "ready" ? reading.cell.col : null, reduce, phone, narrow]);
 
   // ------------------------------------------------------------- choosing and playing frames (cuts, never tweens: T26)
   const chooseFrame = useCallback((p: ExploreProduct, f: ExploreFrame) => {

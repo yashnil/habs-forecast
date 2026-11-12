@@ -85,8 +85,16 @@ test.describe("touch", () => {
     const b = (await plot(page).boundingBox())!;
     expect(b.width).toBeLessThanOrEqual(390);
     expect(b.height).toBeGreaterThanOrEqual(240);
-    await page.touchscreen.tap(b.x + b.width - 50, b.y + 120);
-    await expect(plot(page)).toHaveAttribute("data-pinned-t", /\d+/);
+    // the catalog is a long page: on a slow machine it can still be settling (or not yet hydrated) when the
+    // plot is first measured, so the tap is made where the plot stands now, and made again only if nothing is pinned
+    await expect(async () => {
+      if (!(await plot(page).getAttribute("data-pinned-t"))) {
+        await plot(page).scrollIntoViewIfNeeded();
+        const now = (await plot(page).boundingBox())!;
+        await page.touchscreen.tap(now.x + now.width - 50, now.y + 120);
+      }
+      await expect(plot(page)).toHaveAttribute("data-pinned-t", /\d+/, { timeout: 1500 });
+    }).toPass({ timeout: 15_000 });
     await expect(page.getByTestId("sys-inspector")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });

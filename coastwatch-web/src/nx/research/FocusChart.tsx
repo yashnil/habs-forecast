@@ -16,9 +16,13 @@ function ThresholdRule({ value, label }: { value: number; label: string }) {
   const [lo, hi] = g.ySpec.domain;
   if (value < lo || value > hi) return null;
   const y = g.y(value);
+  // a ground of the page's colour behind the words (sized generously from their length): a data line that
+  // passes there is covered, not merely outlined
+  const w = Math.ceil(label.length * 7.6) + 14;
   return (
     <g data-threshold="" pointerEvents="none">
       <line x1={g.left} x2={g.right} y1={y} y2={y} className={s.thresholdLine} />
+      <rect x={g.right - 2 - w} y={y - 26} width={w} height={24} className={s.thresholdGround} data-testid="research-threshold-ground" />
       <text x={g.right - 8} y={y - 7} textAnchor="end" className={s.thresholdLabel} data-testid="research-threshold-label">
         {label}
       </text>

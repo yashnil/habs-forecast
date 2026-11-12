@@ -265,3 +265,141 @@ for (const [w, h] of [[1440, 900], [390, 844], [320, 640]] as const) {
     await ctx.close();
   });
 }
+
+for (const [w, h] of [[390, 844], [320, 640]] as const) {
+  test(`phone ${w} px: "Latest sample" opens the sample's card as a tap does, with the plot and its marked point in view`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
+    const page = await ctx.newPage();
+    const opened = async (utc: string) => {
+      await expect(page.getByTestId("inspector-utc")).toContainText(utc);
+      await expect(page.getByTestId("inspector-value")).toBeInViewport({ ratio: 1 });
+      await expect(page.getByTestId("research-sample-line")).toHaveCount(0); // never a bare "Details" control
+      // the ring on the sample itself (the selection also draws a rule the plot's whole height)
+      const mark = page.getByTestId("research-plot").locator("[data-selection] rect");
+      await expect(mark).toBeInViewport({ ratio: 1 });
+      // the marked point is above the pinned card and below the header, not under either
+      await expect(async () => {
+        const m = (await mark.boundingBox())!;
+        const card = (await page.getByTestId("research-inspector").boundingBox())!;
+        const head = (await page.locator("[data-nx-desk-header]").boundingBox())!;
+        expect(m.y + m.height).toBeLessThanOrEqual(card.y);
+        expect(m.y).toBeGreaterThanOrEqual(head.y + head.height);
+      }).toPass({ timeout: 5000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w);
+    };
+    // the headline action, from where it stands under the plot
+    await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
+    await page.getByTestId("range-latest").scrollIntoViewIfNeeded();
+    await page.getByTestId("range-latest").tap();
+    await opened("2026-09-30");
+    // R-4: with the range the reader's own, "Custom" is inside the screen
+    await open(page, "station=HABs-SantaCruzWharf&var=pDA&from=2025-01-10&to=2025-09-20");
+    await page.getByTestId("range-custom").scrollIntoViewIfNeeded();
+    const custom = (await page.getByTestId("range-custom").boundingBox())!;
+    expect(custom.x).toBeGreaterThanOrEqual(0);
+    expect(custom.x + custom.width).toBeLessThanOrEqual(w);
+    const latestBox = (await page.getByTestId("range-latest").boundingBox())!;
+    expect(latestBox.x + latestBox.width).toBeLessThanOrEqual(w);
+    // the empty range's first action
+    await open(page, MW_1Y);
+    await page.getByTestId("empty-latest").scrollIntoViewIfNeeded();
+    await page.getByTestId("empty-latest").tap();
+    await opened("2022-08-31");
+    await ctx.close();
+  });
+}
+
+test("the header sentence keeps an abbreviation's case; the threshold's name has a ground that covers the data (Santa Cruz Wharf, 3 y)", async ({ page }) => {
+  await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=3y");
+  await expect(page.getByTestId("research-status")).toHaveText(/^pDA: last measured /);
+  // F-13: nothing is drawn after the ground but the words, and the ground is the page's colour and wider than them
+  const label = page.getByTestId("research-threshold-label").first();
+  const ground = page.getByTestId("research-threshold-ground").first();
+  const lb = (await label.boundingBox())!;
+  const gb = (await ground.boundingBox())!;
+  expect(gb.x).toBeLessThanOrEqual(lb.x);
+  expect(gb.x + gb.width).toBeGreaterThanOrEqual(lb.x + lb.width);
+  expect(gb.y).toBeLessThanOrEqual(lb.y + 1);
+  expect(gb.y + gb.height).toBeGreaterThanOrEqual(lb.y + lb.height - 3);
+  const paint = await ground.evaluate((el) => {
+    const paper = getComputedStyle(document.querySelector("[data-chart-mode]") ?? document.documentElement).getPropertyValue("--paper").trim();
+    const probe = document.createElement("span");
+    probe.style.color = paper;
+    document.body.append(probe);
+    const want = getComputedStyle(probe).color;
+    probe.remove();
+    const after = el.nextElementSibling;
+    return { fill: getComputedStyle(el).fill, want, lastIsLabel: after?.getAttribute("data-testid") === "research-threshold-label" && !after.nextElementSibling, dataBefore: !!el.closest("svg")?.querySelector("[data-line]") };
+  });
+  expect(paint.fill).toBe(paint.want);
+  expect(paint.lastIsLabel).toBe(true);
+  // the threshold group is drawn after the data's line and points
+  expect(await page.getByTestId("research-plot").evaluate((el) => { const kids = [...el.querySelectorAll("svg > *")]; return kids.findIndex((k) => k.hasAttribute("data-threshold")) > Math.max(kids.findIndex((k) => k.hasAttribute("data-line")), kids.findIndex((k) => k.hasAttribute("data-points"))); })).toBe(true);
+  for (const id of ["temp", "pn_seriata", "chl_extracted"] as const) {
+    await page.getByTestId(`rail-${id}`).click();
+    await expect(page.getByTestId("research-status")).toHaveText(id === "temp" ? /^Temperature: last measured / : id === "pn_seriata" ? /^Seriata group: last measured / : /^Chlorophyll: last measured /);
+  }
+});
+
+test("on a slow machine the last of several quick choices wins: variable (compact select and rail), comparison, station", async ({ browser }) => {
+  test.setTimeout(120_000);
+  // phone, CPU 8x: the page's render lags each change; every choice is made before the previous one has rendered
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
+  const page = await ctx.newPage();
+  await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
+  await expect(page.getByTestId("research-plot")).toBeVisible();
+  const cdp = await ctx.newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 8 });
+  const pick = page.getByTestId("research-variable-select");
+  const agree = async (v: string, heading: string) => {
+    await expect.poll(() => params(page).var, { timeout: 20_000 }).toBe(v);
+    await expect(pick).toHaveValue(v, { timeout: 20_000 });
+    await expect(page.getByTestId("research-variable")).toContainText(heading, { timeout: 20_000 });
+    await expect(page.getByTestId("nx-research")).toHaveAttribute("data-var", v);
+    // and it stays so once everything has settled
+    await page.waitForTimeout(1500);
+    expect(params(page).var).toBe(v);
+    await expect(pick).toHaveValue(v);
+  };
+  for (const [seq, last, heading] of [
+    [["temp", "pDA"], "pDA", "Particulate domoic acid"],
+    [["temp", "pDA", "temp"], "temp", "Water temperature"],
+    [["chl_extracted", "pn_seriata", "temp", "pDA", "chl_extracted"], "chl_extracted", "Chlorophyll-a, extracted"],
+    [["pDA", "temp", "pDA"], "pDA", "Particulate domoic acid"],
+  ] as const) {
+    // no waiting between the choices: each is made while the one before is still being rendered
+    for (const v of seq) await pick.selectOption(v, { noWaitAfter: true });
+    await agree(last, heading);
+  }
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  await ctx.close();
+
+  // desktop, CPU 8x: the rail, the comparison and the station picker share the mechanism
+  const wide = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: { cookies: [], origins: [] } });
+  const p2 = await wide.newPage();
+  await open(p2, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
+  await expect(p2.getByTestId("research-plot")).toBeVisible();
+  const c2 = await wide.newCDPSession(p2);
+  await c2.send("Emulation.setCPUThrottlingRate", { rate: 8 });
+  for (const id of ["temp", "pn_seriata", "pDA", "temp"]) await p2.getByTestId(`rail-${id}`).click({ noWaitAfter: true });
+  await expect.poll(() => params(p2).var, { timeout: 20_000 }).toBe("temp");
+  await expect(p2.getByTestId("rail-temp")).toHaveAttribute("aria-checked", "true", { timeout: 20_000 });
+  await expect(p2.getByTestId("research-variable")).toContainText("Water temperature");
+  const cmp = p2.getByTestId("research-compare");
+  for (const v of ["pDA", "chl_extracted", "pDA"]) await cmp.selectOption(v, { noWaitAfter: true });
+  await expect.poll(() => params(p2).cmp, { timeout: 20_000 }).toBe("pDA");
+  await expect(cmp).toHaveValue("pDA", { timeout: 20_000 });
+  expect(params(p2).var).toBe("temp"); // the variable chosen before is kept
+  const st = p2.getByTestId("research-station-select");
+  for (const v of ["HABs-MontereyWharf", "HABs-StearnsWharf", "HABs-MontereyWharf"]) await st.selectOption(v, { noWaitAfter: true });
+  await expect.poll(() => params(p2).station, { timeout: 20_000 }).toBe("HABs-MontereyWharf");
+  await expect(st).toHaveValue("HABs-MontereyWharf", { timeout: 20_000 });
+  await expect(p2.getByTestId("research-title")).toHaveText("Monterey Wharf", { timeout: 20_000 });
+  for (const r of ["range-90d", "range-3y", "range-1y"]) await p2.getByTestId(r).click({ noWaitAfter: true });
+  await expect(p2.getByTestId("range-1y")).toHaveAttribute("aria-checked", "true", { timeout: 20_000 });
+  await p2.waitForTimeout(1500);
+  expect(params(p2)).toMatchObject({ station: "HABs-MontereyWharf", var: "temp" });
+  await expect(p2.getByTestId("range-1y")).toHaveAttribute("aria-checked", "true");
+  await c2.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  await wide.close();
+});

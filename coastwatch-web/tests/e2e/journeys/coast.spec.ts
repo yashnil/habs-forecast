@@ -48,6 +48,8 @@ async function open(p: Page, query = "") {
 }
 
 test("a trip from Moss Landing: gates, the sea, the money, a scenario, saved and still open after a reload", async ({ browser }) => {
+  // the whole journey on video: about ten seconds alone, several times that beside the other specs on a busy machine
+  test.setTimeout(150_000);
   const dir = path.join(test.info().outputDir, "video");
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, recordVideo: { dir, size: { width: 1440, height: 900 } } });
   await seed(ctx);

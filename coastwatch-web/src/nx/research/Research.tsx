@@ -116,13 +116,12 @@ const LEGEND_WORDS: Partial<Record<DataStateKind, string>> = {
   forecast: "Model: computed, not measured",
 };
 
-/** The address, rewritten in place (no navigation, no scroll): the view is always shareable. */
-function writeAddress(qs: string) {
-  const url = `${window.location.pathname}?${qs}${window.location.hash}`;
-  if (url !== `${window.location.pathname}${window.location.search}${window.location.hash}`) window.history.replaceState(null, "", url);
-}
+/** A query string as the router spells it, to compare the page's last write with the router's copy. */
+const canon = (qs: string) => new URLSearchParams(qs).toString();
 
 const SHORT: Record<ObsVariableId, string> = { pDA: "pDA", dDA: "dDA", tDA: "tDA", pn_seriata: "seriata group", pn_delicatissima: "delicatissima group", chl_extracted: "chlorophyll", temp: "temperature" };
+/** The short names at the head of a sentence: an abbreviation keeps its own case (pDA is never "PDA"). */
+const SHORT_HEAD: Record<ObsVariableId, string> = { pDA: "pDA", dDA: "dDA", tDA: "tDA", pn_seriata: "Seriata group", pn_delicatissima: "Delicatissima group", chl_extracted: "Chlorophyll", temp: "Temperature" };
 const kmWords = (km: number) => (km < 1 ? `${Math.round(km * 1000)} m` : km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`);
 const checkName = (n: string) => ({ units: "Units", duplicates: "Duplicates", time: "Sample times" })[n] ?? n.charAt(0).toUpperCase() + n.slice(1).replace(/_/g, " ");
 const count = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
@@ -132,8 +131,48 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const nowMs = useMemo(() => Date.parse(now), [now]);
   const [hash, setHash] = useState("");
   useEffect(() => setHash(window.location.hash), []);
-  const query = useMemo(() => parseQuery(sp, hash), [sp, hash]);
+  // The view is the address, but the page does not wait for the router to say so. A choice is written to the
+  // address AND taken as the page's state in the same event (`view`); the router's copy (`sp`) arrives a render
+  // or more later, and on a slow machine a second choice was made before it did. The controls were then still
+  // showing the old value: React put a select back to it, so choosing that value again raised no change at
+  // all, and the first choice landed late over the second. With `view` every control shows the choice at once,
+  // and the last choice is the state and the address.
+  const [view, setView] = useState<string | null>(null);
+  // every query string this page has written since the router last agreed with it, and the newest of them
+  const written = useRef(new Set<string>());
+  const newest = useRef<string | null>(null);
+  const settle = useRef(0);
+  const spKey = sp.toString();
+  useEffect(() => {
+    window.clearTimeout(settle.current);
+    const mine = newest.current;
+    if (mine == null) return;
+    const release = () => {
+      written.current.clear();
+      newest.current = null;
+      setView(null);
+    };
+    // The router repeats each of our writes to the address a little later, in order. An echo of an EARLIER
+    // choice is not news: the newest choice stands (and is written again, see `write`). When the router's copy
+    // is the newest choice and stays so, the address is the state again. Anything we never wrote is the reader
+    // going somewhere else (back, a link): the address is the state at once.
+    if (!written.current.has(canon(spKey))) release();
+    else if (canon(spKey) === canon(mine)) settle.current = window.setTimeout(release, 800);
+  }, [spKey]);
+  useEffect(() => () => window.clearTimeout(settle.current), []);
+  const write = useCallback((qs: string) => {
+    window.clearTimeout(settle.current);
+    written.current.add(canon(qs));
+    newest.current = qs;
+    setView(qs);
+    // always written, even when the address already reads so: it may read so only because the router has just
+    // repeated an earlier choice, and the router's last word must be this one
+    window.history.replaceState(null, "", `${window.location.pathname}?${qs}${window.location.hash}`);
+  }, []);
+  const query = useMemo(() => parseQuery(view != null ? new URLSearchParams(view) : sp, hash), [view, sp, hash]);
   const wide = useMedia(WIDE);
+  // at 320 px the range row holds "Custom" too: the whole record is "All" there
+  const narrow = useMedia("(max-width: 360px)");
   // The drawings (the rail's ticks, the brush's overview, the plots) are made in the browser, in boxes the
   // stylesheet has already sized. Sent as HTML they were about 100 KB ahead of the chart pane in the document:
   // on a slow connection the page was painted before the pane arrived and then pushed down by it (CLS 0.64 on a
@@ -184,13 +223,15 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
    */
   const commit = useCallback(
     (w: [number, number] | null, patch: { station?: string; v?: ObsVariableId; day?: number | null; cmp?: ObsVariableId | null } = {}) => {
-      const cur = parseQuery(new URLSearchParams(window.location.search));
+      // the newest choice of this page, else the address: never the address alone, which the router may have
+      // just set back to an earlier choice
+      const cur = parseQuery(new URLSearchParams(newest.current ?? window.location.search));
       const sameStation = cur.station == null || cur.station === st.station_id;
       const curV = sameStation && cur.v && measured.includes(cur.v) ? cur.v : focus;
       const curWin: [number, number] = cur.from != null && cur.to != null && sameStation ? [cur.from, cur.to] : committed;
       const v = patch.v ?? curV;
       const cmpNext = patch.cmp === undefined ? (cur.station != null ? cur.cmp : cmp) : patch.cmp;
-      writeAddress(
+      write(
         queryFor({
           station: patch.station ?? st.station_id,
           v,
@@ -202,7 +243,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
         }),
       );
     },
-    [extent, st.station_id, focus, measured, committed, query.place, query.back, query.day, cmp],
+    [extent, st.station_id, focus, measured, committed, query.place, query.back, query.day, cmp, write],
   );
   // the address is left as it arrived (a tab's `?place=`, a v11 link) until the reader chooses something
 
@@ -293,13 +334,94 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   };
   const chooseVariable = (id: ObsVariableId) => commit(null, { v: id, day: null });
   const choosePreset = (r: RangeId) => commit(presetWindow(r, extent));
-  const jumpLatest = () => latest && commit(latest.win, { day: latest.day });
+  const mainRef = useRef<HTMLDivElement>(null);
+  const jumpLatest = () => {
+    if (!latest) return;
+    // as a tap on the sample does: its card opens (pinned on a phone), and on a phone the plot is brought back
+    // under the header, since the control that was pressed stands below it
+    setOpened(true);
+    commit(latest.win, { day: latest.day });
+    if (window.matchMedia("(max-width: 720px)").matches) requestAnimationFrame(() => requestAnimationFrame(() => mainRef.current?.scrollIntoView({ block: "start", behavior: "auto" })));
+  };
+  // On a phone the pinned card takes the screen's lower half: the marked sample is kept in the part of the plot
+  // still in view between the header and the card (at 320 px that part is shorter than the plot).
+  const selectedIndex = selected?.i ?? null;
+  useEffect(() => {
+    if (selectedIndex == null || !opened || !window.matchMedia("(max-width: 720px)").matches) return;
+    let tries = 0;
+    let raf = 0;
+    const place = () => {
+      const main = mainRef.current;
+      // the ring on the sample itself (the group also holds a rule the plot's whole height)
+      const mark = main?.querySelector("[data-selection] rect");
+      const card = document.querySelector("[data-nx-inspector]");
+      const head = document.querySelector("[data-nx-desk-header]");
+      if (!main || !mark || !card) {
+        if (tries++ < 30) raf = requestAnimationFrame(place);
+        return;
+      }
+      let sc: HTMLElement | null = main.parentElement;
+      while (sc && !/(auto|scroll)/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
+      const m = mark.getBoundingClientRect();
+      const top = (head?.getBoundingClientRect().bottom ?? 0) + 12;
+      const bottom = card.getBoundingClientRect().top - 12;
+      const y = m.top + m.height / 2;
+      if (y < top || y > bottom) (sc ?? document.scrollingElement)?.scrollBy({ top: y - (top + bottom) / 2, behavior: "auto" });
+    };
+    // after the jump's own scroll and the card's entrance
+    const t = window.setTimeout(() => (raf = requestAnimationFrame(place)), 120);
+    return () => {
+      window.clearTimeout(t);
+      cancelAnimationFrame(raf);
+    };
+  }, [selectedIndex, opened]);
   const openNeighbour = () => {
     if (!neighbour) return;
     // open the neighbour on a year that holds its newest sample of this variable
     const w: [number, number] = [neighbour.last ? Date.parse(neighbour.last.time) - 335 * DAY : committed[0], neighbour.last ? Date.parse(neighbour.last.time) + 30 * DAY : committed[1]];
-    writeAddress(queryFor({ station: neighbour.station.station_id, v: focus, win: w, place: query.place, back: query.back }));
+    write(queryFor({ station: neighbour.station.station_id, v: focus, win: w, place: query.place, back: query.back }));
   };
+
+  // ------------------------------------------------------------ choices are taken from the browser's own events
+  // React does not always deliver an event: a `change` or a click that arrives while the router's transition
+  // for the previous choice is being committed reaches the document and never reaches the component's handler
+  // (measured at CPU 8x to 20x: the select showed the new variable, the page and the address kept the old one).
+  // So the page's controls are also heard on the page's own element, where the event always arrives. Each
+  // choice is idempotent: when React does deliver the same event afterwards, it writes the same view again.
+  const pageRef = useRef<HTMLElement>(null);
+  const choices = useRef({ chooseVariable, chooseStationId, choosePreset, jumpLatest, commit });
+  useEffect(() => {
+    choices.current = { chooseVariable, chooseStationId, choosePreset, jumpLatest, commit };
+  });
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el) return;
+    const id = (t: EventTarget | null, sel: string) => (t instanceof Element ? t.closest<HTMLElement>(sel) : null);
+    const onChange = (e: Event) => {
+      const sel = id(e.target, "select[data-testid]") as HTMLSelectElement | null;
+      if (!sel) return;
+      const c = choices.current;
+      const which = sel.dataset.testid;
+      if (which === "research-variable-select") c.chooseVariable(sel.value as ObsVariableId);
+      else if (which === "research-station-select" || which === "research-station-select-phone") c.chooseStationId(sel.value);
+      else if (which === "research-compare") c.commit(null, { cmp: (sel.value || null) as ObsVariableId | null });
+    };
+    const onClick = (e: Event) => {
+      const c = choices.current;
+      const row = id(e.target, '[role="radio"][data-testid^="rail-"]');
+      if (row) return c.chooseVariable(row.dataset.testid!.slice(5) as ObsVariableId);
+      const range = id(e.target, '[data-testid^="range-"], [data-testid="empty-latest"], [data-testid="empty-all"]');
+      const r = range?.dataset.testid?.replace(/^(range|empty)-/, "");
+      if (r === "latest") c.jumpLatest();
+      else if (r && RANGES.some((x) => x.id === r)) c.choosePreset(r as RangeId);
+    };
+    el.addEventListener("change", onChange);
+    el.addEventListener("click", onClick);
+    return () => {
+      el.removeEventListener("change", onChange);
+      el.removeEventListener("click", onClick);
+    };
+  }, []);
 
   // ------------------------------------------------------------ the chart pane: the station, its neighbours up and down the coast
   const homeStation = port ? nearestStation(stations, port.lat, port.lon, port.key)?.station.station_id : DEFAULT_STATION;
@@ -420,12 +542,12 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const status = (
     <span data-testid="research-status" className={focusStrip ? `${v.onlyWide} ${v.oneLine}` : undefined} title={statusWords}>
       {/* one line beside the station picker: the variable's short name, so the value at the end is never cut */}
-      {focusStrip ? `${SHORT[focus].charAt(0).toUpperCase()}${SHORT[focus].slice(1)}${statusWords.slice(LABEL[focus].length)}` : statusWords}
+      {focusStrip ? `${SHORT_HEAD[focus]}${statusWords.slice(LABEL[focus].length)}` : statusWords}
     </span>
   );
 
   return (
-    <section className={s.page} data-testid="nx-research" data-station={st.station_id} data-var={focus} data-layout="desk">
+    <section ref={pageRef} className={s.page} data-testid="nx-research" data-station={st.station_id} data-var={focus} data-layout="desk">
       <PageLayout mode="desk" paneKey="research" defaultPane="context" chartLabel={st.name} />
       <ChartScene scene={scene} />
       <StationMarks stations={stations.map((x) => ({ id: x.station_id, name: x.name, lat: x.lat, lon: x.lon }))} selected={st.station_id} radiusKm={showModel ? radius : null} onPick={(id) => chooseStationId(id)} leanLeft={wide} />
@@ -513,7 +635,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                     <div className={v.rangeCell}>
                     <RangeControl<RangeId>
                       label="Window"
-                      presets={RANGES.map((r) => ({ value: r.id, label: PRESET_LABEL[r.id] }))}
+                      presets={RANGES.map((r) => ({ value: r.id, label: narrow && r.id === "all" ? "All" : PRESET_LABEL[r.id] }))}
                       value={preset}
                       onChange={choosePreset}
                       onJumpLatest={latest ? jumpLatest : undefined}
@@ -535,7 +657,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                     <PlotSync value={sync} onChange={onSync}>
                       {/* the plot and, beside it on a wide screen, the selected sample: both in the first screen */}
                       <div className={v.mainRow} data-inspecting={record ? "" : undefined}>
-                      <div className={v.main} data-testid="research-main" data-empty={empty ? "" : undefined}>
+                      <div ref={mainRef} className={v.main} data-testid="research-main" data-empty={empty ? "" : undefined}>
                         {empty ? (
                           <PlotState
                             kind="not-collected"

@@ -105,7 +105,29 @@ export function CoastPage() {
   const trip = view === "trip";
   // short enough to stay whole on a 320 px screen once the header condenses: the port is in the title beside it
   // and the fishery in the control under it, so all of them stay in view together
-  const context = [trip ? "Hypothetical trip" : "My Coast", fishery ? (audience === "recreational" ? "Recreational, cost only" : "Commercial") : null].filter(Boolean).join(" · ");
+  // The way back to the gates rides on the same line in the trip, so the fishery below has the header's whole
+  // width (its name is never cut) and the condensed header stays three short lines on a 320 px screen, where
+  // the word "trip" gives way (the title beside it says "A trip from …").
+  const kind = fishery ? (audience === "recreational" ? "Recreational, cost only" : "Commercial") : null;
+  const context = (
+    <span className={t.ctx}>
+      <span>
+        {trip ? (
+          <>
+            Hypothetical<span className={t.ctxWord}> trip</span>
+          </>
+        ) : (
+          "My Coast"
+        )}
+        {kind ? ` · ${kind}` : ""}
+      </span>
+      {trip ? (
+        <Button variant="quiet" className={t.ctxLink} onClick={() => setView("brief")} aria-label="Back to the gates and sea window" data-testid="coast-to-brief">
+          Gates and sea
+        </Button>
+      ) : null}
+    </span>
+  );
   /**
    * The desk header, the same in both states: context, title, and pinned under it the fishery, the official season
    * line (it opens the gates) and anything carried from Explore. The trip hands it its saving controls as actions;
@@ -147,11 +169,6 @@ export function CoastPage() {
               </optgroup>
             </select>
           </div>
-          {trip ? (
-            <Button variant="quiet" className={t.compact} onClick={() => setView("brief")} aria-label="Back to the gates and sea window" data-testid="coast-to-brief">
-              Gates and sea
-            </Button>
-          ) : null}
           {chip ? (
             <Button variant="quiet" className={t.chip} data-tone={chip.tone} onClick={() => setGatesOpen(true)} aria-haspopup="dialog" data-testid="coast-status">
               {chip.words}
