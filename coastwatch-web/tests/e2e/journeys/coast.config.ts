@@ -1,15 +1,17 @@
+import path from "node:path";
 import { defineConfig } from "@playwright/test";
 
 /**
- * The My Coast journey (tests/e2e/journeys/coast.spec.ts) on one production server with the main fixture and
+ * The My Coast journey (tests/e2e/journeys/coast.spec.ts) and the v13 trip workspace's acceptance tests
+ * (tests/e2e/v13/trip.spec.ts) on one production server with the main fixture and
  * recorded NOAA responses: `npm run data:fixture && npm run build && npx playwright test -c tests/e2e/journeys/coast.config.ts`.
  * CW_E2E_PORT_BASE moves it; NX_MEDIA=1 also writes review media to docs/coastwatch/v12/implementation/coast/.
  */
 const PORT = Number(process.env.CW_E2E_PORT_BASE ?? 3200);
 
 export default defineConfig({
-  testDir: ".",
-  testMatch: /coast\.spec\.ts$/,
+  testDir: "..",
+  testMatch: /(journeys\/coast|v13\/trip)\.spec\.ts$/,
   timeout: 60_000,
   fullyParallel: true,
   workers: 2,
@@ -23,7 +25,7 @@ export default defineConfig({
   },
   webServer: {
     command: `npx next start -p ${PORT}`,
-    cwd: "../../..",
+    cwd: path.resolve(__dirname, "../../.."),
     port: PORT,
     reuseExistingServer: false,
     timeout: 60_000,

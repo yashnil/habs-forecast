@@ -22,7 +22,7 @@ export type TripFlag = {
   checked: string | null;
   /** the short line for the context bar */
   short: string;
-  /** the sentence the hero carries */
+  /** the line the result carries, short enough to sit on it whole */
   words: string;
 };
 
@@ -36,7 +36,6 @@ export function tripFlag(season: SeasonGate | null, fishery: CoastFishery | null
   const verified = season.verified === true;
   const what = (fishery?.label ?? "this fishery").replace(/, recreational$/, "");
   const state = season.level === "delayed" ? "delayed" : season.seasonal ? "closed for the season" : "closed";
-  const record = verified ? `${season.source}'s record says` : `${season.source}'s record, which nobody at Neritic has verified, says`;
   return {
     level: season.level,
     seasonal: season.seasonal,
@@ -45,7 +44,7 @@ export function tripFlag(season: SeasonGate | null, fishery: CoastFishery | null
     url: season.url,
     checked: season.checked,
     short: `Season ${state} · ${season.source}${verified ? "" : " · not verified"}`,
-    words: `${record} the ${what.charAt(0).toLowerCase()}${what.slice(1)} season here is ${state}. These figures are hypothetical: they do not describe a trip that can be made now. Check ${season.source} before you plan around them.`,
+    words: `${what} season ${state} per ${season.source}'s ${verified ? "" : "unverified "}record: not a trip you can make now.`,
   };
 }
 
