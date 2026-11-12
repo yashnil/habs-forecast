@@ -114,9 +114,9 @@ describe("Save as new, Update, and no accidental copies", () => {
     expect(store.load().scenarios).toHaveLength(3);
     expect(new Set(store.load().scenarios.map((s) => s.name)).size).toBe(3);
   });
-  it("Update changes the open trip in place: same id, same name, nothing added", () => {
+  it("Update changes the open trip in place: same id, nothing added (a typed name stays)", () => {
     const { store } = fresh();
-    const a = ok(saveNew(store, input(), UTC));
+    const a = ok(saveNew(store, input(), { ...UTC, name: "Opener" }));
     const edited = setCatch(owner(), 0, { amount: "450" });
     expect(updateTrip(store, a.id, input(edited))).toEqual({ ok: true, id: a.id, name: a.name });
     const d = store.load();
@@ -124,6 +124,35 @@ describe("Save as new, Update, and no accidental copies", () => {
     expect(d.scenarios[0].draft.inputs.catch![0].lb).toBe(450);
     expect(d.scenarios[0].updatedAt > d.scenarios[0].createdAt).toBe(true);
     expect(updateTrip(store, "s-gone", input())).toEqual({ ok: false, reason: "gone" });
+  });
+  it("a name Neritic wrote follows the numbers when the trip is updated", () => {
+    const { store } = fresh();
+    const a = ok(saveNew(store, input(), UTC));
+    expect(a.name).toBe("Dungeness crab, 400 lb at $9, 1 crew 20 % after costs, Nov 12, 8:41 AM");
+    const later = { now: new Date("2026-11-12T09:05:00Z"), timeZone: "UTC" };
+    const up = ok(updateTrip(store, a.id, input(setCatch(owner(), 0, { price: "10" })), later));
+    expect(up).toEqual({ ok: true, id: a.id, name: "Dungeness crab, 400 lb at $10, 1 crew 20 % after costs, Nov 12, 9:05 AM" });
+    expect(store.load().scenarios.map((s) => [s.id, s.name, s.autoName])).toEqual([[a.id, up.name, true]]);
+    // still unique against the other trips, and it keeps following
+    const b = ok(saveNew(store, input(setCatch(owner(), 0, { price: "11" })), later));
+    const same = ok(updateTrip(store, a.id, input(setCatch(owner(), 0, { price: "11" })), later));
+    expect(same.name).toBe(`${b.name} (2)`);
+  });
+  it("a name the reader typed or edited never changes on its own", () => {
+    const { store } = fresh();
+    const later = { now: new Date("2026-11-12T09:05:00Z"), timeZone: "UTC" };
+    // typed when saving
+    const typed = ok(saveNew(store, input(), { ...UTC, name: "Opener" }));
+    expect(ok(updateTrip(store, typed.id, input(setCatch(owner(), 0, { price: "10" })), later)).name).toBe("Opener");
+    // written by Neritic, then edited by hand
+    const auto = ok(saveNew(store, input(setCatch(owner(), 0, { amount: "500" })), UTC));
+    ok(renameTrip(store, auto.id, "Second week"));
+    expect(ok(updateTrip(store, auto.id, input(setCatch(owner(), 0, { amount: "600" })), later)).name).toBe("Second week");
+    expect(store.load().scenarios.every((s) => s.autoName === undefined)).toBe(true);
+    // a copy's name is its own; a trip saved before names were tracked is left as it is
+    const again = ok(saveNew(store, input(setCatch(owner(), 0, { amount: "700" })), UTC));
+    const copy = ok(duplicateTrip(store, again.id));
+    expect(ok(updateTrip(store, copy.id, input(setCatch(owner(), 0, { amount: "800" })), later)).name).toBe(copy.name);
   });
   it("an empty worksheet is not saved, and a chosen name is kept (made unique)", () => {
     const { store } = fresh();

@@ -56,7 +56,15 @@ export type DraftView = { shareBasis?: "each"; fuelRoute?: "distance"; payerUnse
 export const MAX_NAME = 90;
 
 export type BaseRecord = { schema: number; id: string; createdAt: string; updatedAt: string };
-export type ScenarioRecord = BaseRecord & { name: string; placeKey: string; species: string; draft: Draft; refs: RefSnapshot[] };
+export type ScenarioRecord = BaseRecord & {
+  name: string;
+  /** the name was written from the trip's own numbers and nobody has edited it: it may follow them when the trip is updated */
+  autoName?: boolean;
+  placeKey: string;
+  species: string;
+  draft: Draft;
+  refs: RefSnapshot[];
+};
 export type VesselRecord = BaseRecord & { name: string; cruiseKt: number | null; steamGph: number | null; fishingGph: number | null; crew: number | null; pots: number | null };
 /** `openId`: the saved trip the working draft was opened from, so saving after a reload updates it instead of adding a copy. */
 export type WorkingDraft = { draft: Draft; updatedAt: string; openId?: string };
@@ -179,7 +187,7 @@ export function migrateRecord(v: unknown, kind: "scenario" | "vessel", now: stri
   // schema 0 kept the inputs at the top level as `inputs`, without a draft wrapper
   const draftSrc = isObj(v.draft) ? v.draft : schema === 0 && isObj(v.inputs) ? { inputs: v.inputs, preset: v.preset } : null;
   if (!draftSrc) return null;
-  return { ...base, name: str(v.name, MAX_NAME) || "Scenario", placeKey: str(v.placeKey, 60), species: str(v.species, 30), draft: sanitizeDraft(draftSrc, schema), refs: sanitizeRefs(v.refs) };
+  return { ...base, name: str(v.name, MAX_NAME) || "Scenario", ...(v.autoName === true ? { autoName: true } : {}), placeKey: str(v.placeKey, 60), species: str(v.species, 30), draft: sanitizeDraft(draftSrc, schema), refs: sanitizeRefs(v.refs) };
 }
 
 // ---------------------------------------------------------------- the store
@@ -303,7 +311,7 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
   return {
     load,
 
-    saveScenario(input: { id?: string; name: string; placeKey: string; species: string; draft: Draft; refs: RefSnapshot[] }): WriteResult & { id?: string } {
+    saveScenario(input: { id?: string; name: string; autoName?: boolean; placeKey: string; species: string; draft: Draft; refs: RefSnapshot[] }): WriteResult & { id?: string } {
       const d = load();
       const g = guard(d);
       if (g) return g;
@@ -316,6 +324,7 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
         name: input.name.trim().slice(0, MAX_NAME) || "Scenario",
+        ...(input.autoName ? { autoName: true } : {}),
         placeKey: input.placeKey,
         species: input.species,
         draft: sanitizeDraft(input.draft),
@@ -333,7 +342,10 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
       if (!src) return { ok: false, reason: "unavailable" };
       if (d.scenarios.length >= MAX_SCENARIOS) return { ok: false, reason: "full" };
       const now = nowIso();
-      const rec: ScenarioRecord = { ...src, id: newId("s"), name: copyName(src.name, d.scenarios.map((s) => s.name)), createdAt: now, updatedAt: now };
+      // a copy's name is its own ("… (copy)"): it no longer follows the numbers
+      const { autoName: _was, ...rest } = src;
+      void _was;
+      const rec: ScenarioRecord = { ...rest, id: newId("s"), name: copyName(src.name, d.scenarios.map((s) => s.name)), createdAt: now, updatedAt: now };
       const r = putScenarios([rec, ...d.scenarios]);
       return r.ok ? { ok: true, id: rec.id } : r;
     },
@@ -355,7 +367,15 @@ export function createTripStore(kv: KV | null, clock: () => Date = () => new Dat
       const g = guard(d);
       if (g) return g;
       const now = nowIso();
-      return putScenarios(d.scenarios.map((s) => (s.id === id ? { ...s, name: name.trim().slice(0, MAX_NAME) || s.name, updatedAt: now } : s)));
+      // a name the reader typed is theirs: it never changes again on its own
+      return putScenarios(
+        d.scenarios.map((s) => {
+          if (s.id !== id) return s;
+          const { autoName: _was, ...rest } = s;
+          void _was;
+          return { ...rest, name: name.trim().slice(0, MAX_NAME) || s.name, updatedAt: now };
+        }),
+      );
     },
 
     deleteScenario(id: string): WriteResult {

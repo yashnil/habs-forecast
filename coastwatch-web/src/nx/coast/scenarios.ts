@@ -141,17 +141,24 @@ export function saveNew(store: TripStore, t: TripInput, o: { now: Date; name?: s
   const twin = o.allowIdentical ? null : findIdentical(d.scenarios, t.placeKey, species, draft);
   if (twin) return { ok: false, reason: "identical", id: twin.id, name: twin.name };
   const taken = d.scenarios.map((s) => s.name);
-  const name = o.name?.trim() ? uniqueName(o.name, taken) : tripName(t.ws, t.fishery, { now: o.now, taken, timeZone: o.timeZone });
-  const r = store.saveScenario({ name, placeKey: t.placeKey, species, draft, refs: refSnapshots(t.ws, t.fishery) });
+  const typed = !!o.name?.trim();
+  const name = typed ? uniqueName(o.name!, taken) : tripName(t.ws, t.fishery, { now: o.now, taken, timeZone: o.timeZone });
+  const r = store.saveScenario({ name, autoName: !typed, placeKey: t.placeKey, species, draft, refs: refSnapshots(t.ws, t.fishery) });
   return r.ok ? { ok: true, id: r.id!, name } : { ok: false, reason: r.reason };
 }
 
-/** Update the open trip in place: its id, name and creation time stay; nothing new is added. */
-export function updateTrip(store: TripStore, id: string, t: TripInput): SaveOutcome {
-  const rec = store.load().scenarios.find((s) => s.id === id);
+/**
+ * Update the open trip in place: its id and creation time stay; nothing new is added. A name Neritic wrote from
+ * the trip's numbers is written again from the new ones (a trip updated to $10 is not left called "… at $9");
+ * a name the reader typed or edited is never touched.
+ */
+export function updateTrip(store: TripStore, id: string, t: TripInput, o: { now?: Date; timeZone?: string } = {}): SaveOutcome {
+  const d = store.load();
+  const rec = d.scenarios.find((s) => s.id === id);
   if (!rec) return { ok: false, reason: "gone" };
-  const r = store.saveScenario({ id, name: rec.name, placeKey: t.placeKey, species: t.fishery?.id ?? "", draft: toDraft(t.ws, t.fishery), refs: refSnapshots(t.ws, t.fishery) });
-  return r.ok ? { ok: true, id, name: rec.name } : { ok: false, reason: r.reason };
+  const name = rec.autoName ? tripName(t.ws, t.fishery, { now: o.now ?? new Date(), taken: d.scenarios.filter((s) => s.id !== id).map((s) => s.name), timeZone: o.timeZone }) : rec.name;
+  const r = store.saveScenario({ id, name, autoName: rec.autoName, placeKey: t.placeKey, species: t.fishery?.id ?? "", draft: toDraft(t.ws, t.fishery), refs: refSnapshots(t.ws, t.fishery) });
+  return r.ok ? { ok: true, id, name } : { ok: false, reason: r.reason };
 }
 
 /** A deliberate copy: "Name (copy)", then "(copy 2)"… */
