@@ -53,7 +53,7 @@ test("Monterey Wharf, pDA, one year: the empty range is explained, and one press
   await page.getByTestId("empty-latest").click();
   await expect.poll(() => params(page).day).toBe("2022-08-31");
   await expect(page.getByTestId("research-plot")).toBeVisible();
-  await expect(page.getByTestId("research-selected")).toBeVisible();
+  await expect(page.getByTestId("research-plot").locator("[data-selection]")).toBeVisible();
   const insp = page.getByTestId("research-inspector");
   await expect(page.getByTestId("inspector-value")).toHaveText("0.05220236 ng/mL");
   await expect(page.getByTestId("inspector-state")).toContainText("Measured, as published");
@@ -189,6 +189,16 @@ test("phone, 390 px: a tap on the plot opens the sample; nothing scrolls sideway
   await expect(page.getByTestId("inspector-value")).toBeInViewport();
   await expect(page.getByTestId("inspector-prev")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  // a link that carries a sample (`day=`) marks it on the plot and offers its details; the card pins on a tap
+  await page.goto(`${OK}/research?station=HABs-MontereyWharf&var=pDA&from=2021-09-30&to=2022-09-30&day=2022-08-31`);
+  await expect(page.getByTestId("research-plot")).toBeInViewport({ ratio: 0.9 });
+  await expect(page.getByTestId("research-plot").locator("[data-selection]")).toBeVisible();
+  await expect(page.getByTestId("inspector-value")).toBeHidden();
+  await expect(page.getByTestId("research-sample-line")).toContainText("Aug 31, 2022: 0.052 ng/mL");
+  await page.getByTestId("sample-details").scrollIntoViewIfNeeded();
+  await page.getByTestId("sample-details").click();
+  await expect(page.getByTestId("inspector-value")).toBeInViewport();
+  await expect(page.getByTestId("inspector-value")).toHaveText("0.05220236 ng/mL");
   // the empty range on a phone keeps its actions inside the page
   await page.goto(`${OK}/research?${MW_1Y}`);
   await expect(page.getByTestId("empty-latest")).toBeVisible();

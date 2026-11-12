@@ -367,3 +367,31 @@ test("a port the layers do not reach is framed as itself, and the page says wher
   await mapReady(page);
   await expect(page.getByTestId("nx-coverage-note")).toHaveCount(0);
 });
+
+test("OLCI chlorophyll: the two pixels beside land are 'left out', in words and in the legend; cloud is still 'no view'", async ({ page }) => {
+  // a cell on Monterey Bay's shore (36.849 N, 121.809 W): within two pixels of the product's land mask
+  await page.goto(`${OK}/explore?place=port-592&layer=chl&frame=olci:latest&at=36.84875,-121.80875`);
+  await mapReady(page);
+  await expect(readout(page)).toContainText("Left out: beside land, where the satellite reads land and water together. No value is not a low value.");
+  await expect(readout(page)).not.toContainText("No view here");
+  await expect(readout(page)).not.toContainText("cloud");
+  // its own legend key, beside the ramp's "no view"
+  await expect(page.getByTestId("nx-key-beside-land")).toHaveText("Left out: beside land (two pixels, about 600 m)");
+  await expect(page.getByTestId("nx-key-outside")).toHaveCount(0);
+  // the next cells seaward carry their values (the third pixel and beyond are untouched)
+  await page.goto(`${OK}/explore?place=port-592&layer=chl&frame=olci:latest&at=36.84875,-121.81625`);
+  await mapReady(page);
+  await expect(readout(page)).toContainText("mg/m³");
+  await expect(readout(page)).not.toContainText("Left out");
+  // a cell under cloud, far from shore, is still "no view"
+  await page.goto(`${OK}/explore?place=port-592&layer=chl&frame=olci:latest&at=36.70375,-121.87375`);
+  await mapReady(page);
+  await expect(readout(page)).toContainText("No view here");
+  await expect(readout(page)).not.toContainText("Left out");
+  // VIIRS is not changed: its frame has no such key, and the same shore cell is never "left out" there
+  await page.goto(`${OK}/explore?place=port-592&layer=chl&frame=viirs:latest&at=36.84875,-121.80875`);
+  await mapReady(page);
+  await expect(page.getByTestId("nx-legend")).toBeVisible();
+  await expect(page.getByTestId("nx-key-beside-land")).toHaveCount(0);
+  await expect(readout(page)).not.toContainText("Left out");
+});

@@ -312,7 +312,7 @@ describe("the plot kit's points (plotData)", () => {
     expect(pts.map((p) => [p.kind, p.v, p.raw])).toEqual([
       ["measured", 0.2, undefined],
       ["reported-zero", null, "reported 0"],
-      ["missing", null, "rejected by QC"],
+      ["rejected", null, "rejected by QC"],
     ]);
     expect(pts[0]).toMatchObject({ id: "pDA-0", place: [-121.9, 36.6] });
     expect(pts[0].meta.i).toBe(0);

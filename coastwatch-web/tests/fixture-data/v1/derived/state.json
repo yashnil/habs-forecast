@@ -1,5 +1,5 @@
 {
-  "version": "estimate-state-1|tau=20.0|satellite-processing-4",
+  "version": "estimate-state-1|tau=20.0|satellite-processing-5",
   "description": "Background state of the chlorophyll estimate (derived/estimate.py): per-pixel exponentially weighted mean of valid log10 chlorophyll (e-folding 20 days) and its effective number of views. Pipeline input, not a product.",
   "through": "2026-10-06",
   "days_added_this_run": [
@@ -15,7 +15,7 @@
   "lat_first": 37.20125,
   "lon_first": -122.60125,
   "background": {
-    "url": "derived/state-2026-10-06-1165ee03bc/background/{row}_{col}.u16.gz",
+    "url": "derived/state-2026-10-06-7cd8f15d51/background/{row}_{col}.u16.gz",
     "encoding": "uint16le+gzip",
     "width": 341,
     "height": 321,
@@ -31,14 +31,14 @@
     "chunks": {
       "rows": 512,
       "cols": 512,
-      "url_template": "derived/state-2026-10-06-1165ee03bc/background/{row}_{col}.u16.gz",
+      "url_template": "derived/state-2026-10-06-7cd8f15d51/background/{row}_{col}.u16.gz",
       "present": [
         "0_0"
       ]
     }
   },
   "weight": {
-    "url": "derived/state-2026-10-06-1165ee03bc/weight/{row}_{col}.u16.gz",
+    "url": "derived/state-2026-10-06-7cd8f15d51/weight/{row}_{col}.u16.gz",
     "encoding": "uint16le+gzip",
     "width": 341,
     "height": 321,
@@ -54,7 +54,7 @@
     "chunks": {
       "rows": 512,
       "cols": 512,
-      "url_template": "derived/state-2026-10-06-1165ee03bc/weight/{row}_{col}.u16.gz",
+      "url_template": "derived/state-2026-10-06-7cd8f15d51/weight/{row}_{col}.u16.gz",
       "present": [
         "0_0"
       ]

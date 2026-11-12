@@ -14,7 +14,7 @@ import {
   Button,
   ButtonGroup,
   ChartToggle,
-  DataStateMark,
+  DataStateLegend,
   Desk,
   DeskBody,
   DeskFoot,
@@ -112,7 +112,7 @@ const PRESET_LABEL: Record<RangeId, string> = { "90d": "90 d", "1y": "1 y", "3y"
 const LEGEND_WORDS: Partial<Record<DataStateKind, string>> = {
   measured: "Measured",
   "reported-zero": "Reported 0: at or below an unpublished limit, not absent",
-  missing: "Rejected by QC: no value",
+  rejected: "Rejected by QC: no value",
   forecast: "Model: computed, not measured",
 };
 
@@ -243,7 +243,11 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     return focusPoints.find((p) => Math.abs(p.t - query.day!) < 1.01 * DAY && inWin(p.t, committed)) ?? null;
   }, [query.day, focusPoints, committed]);
   const record = useMemo(() => (selected ? inspectSample(observations, st, focus, selected.i) : null), [selected, observations, st, focus]);
+  // a sample the reader chose opens its card (pinned on a phone); one that arrived in a link's `day=` is marked on
+  // the plot with a one-line "Details" control on a phone, so the card does not cover the plot before it is read
+  const [opened, setOpened] = useState(false);
   const select = (p: RecPoint | null) => {
+    setOpened(p != null);
     if (!p) return commit(null, { day: null });
     // a sample outside the window brings the window to it (same width)
     commit(inWin(p.t, committed) ? null : windowAround(extent, committed, p.t), { day: p.t });
@@ -253,9 +257,11 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const position = selected ? `${(focusPoints.findIndex((p) => p.i === selected.i) + 1).toLocaleString("en-US")} of ${count(focusPoints.length, `${SHORT[focus]} sample`)} in the record` : null;
 
   // ------------------------------------------------------------ the plots' shared crosshair; the station lit on the chart while a sample is read
-  const [sync, setSync] = useState<PlotSyncValue>({ hoverT: null, pinned: null });
-  const onSync = (n: PlotSyncValue) => setSync((o) => (o.hoverT === n.hoverT ? o : { hoverT: n.hoverT, pinned: null }));
-  const reading = sync.hoverT != null || selected != null;
+  // the crosshair is the plots' own; the pinned sample is the page's (the address's `day`), given to the kit by its time
+  const [hoverT, setHoverT] = useState<number | null>(null);
+  const sync = useMemo<PlotSyncValue>(() => ({ hoverT, pinned: selected ? { t: selected.t } : null }), [hoverT, selected]);
+  const onSync = (n: PlotSyncValue) => setHoverT(n.hoverT);
+  const reading = hoverT != null || selected != null;
   useEffect(() => {
     setChartHighlight(reading ? { lon: st.lon, lat: st.lat } : null);
     return () => setChartHighlight(null);
@@ -265,7 +271,6 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const focusData = useMemo<SamplePoint[]>(() => (focusStrip ? plotPoints(focusStrip, place2) : []), [focusStrip, place2]);
   const cmpData = useMemo<SamplePoint[]>(() => (cmpStrip ? plotPoints(cmpStrip, place2) : []), [cmpStrip, place2]);
   const modelData = useMemo<SamplePoint[]>(() => (modelStrip ? plotPoints(modelStrip, place2) : []), [modelStrip, place2]);
-  const selectedPoint = selected ? (focusData.find((p) => p.meta.i === selected.i) ?? null) : null;
 
   // ------------------------------------------------------------ the model panel: collapsed when the window has no measured value to read it beside
   const collapsed = modelStrip != null && modelCollapsed(focusPoints, committed);
@@ -397,7 +402,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     const k = new Set<DataStateKind>();
     for (const d of [focusData, cmpData]) for (const p of d) if (inWin(p.t, committed)) k.add(p.kind ?? "measured");
     if (showModel && modelData.some((p) => inWin(p.t, committed))) k.add("forecast");
-    return (["measured", "reported-zero", "missing", "forecast"] as DataStateKind[]).filter((x) => k.has(x));
+    return (["measured", "reported-zero", "rejected", "forecast"] as DataStateKind[]).filter((x) => k.has(x));
   }, [focusData, cmpData, modelData, committed, showModel]);
 
   const tableRows = useMemo(() => logRows(focusPoints, committed, "date", "desc"), [focusPoints, committed]);
@@ -558,7 +563,6 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                             now={nowMs}
                             label={`${LABEL[focus]} at ${st.name}, ${range(win[0], win[1], { year: true })}`}
                             height={{ desktop: 360, phone: 240 }}
-                            selected={selectedPoint}
                             onSelect={(p) => select(p ? p.meta : null)}
                             testid="research-plot"
                           />
@@ -607,14 +611,9 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                   <div className={v.under}>
                     <div className={`${v.stationPick} ${v.onlyPhone}`}>{stationPicker(stationSelectPhone, "research-station-select-phone")}</div>
                     <Stamp provenance={provenance} now={now} />
-                    <ul className={v.legend} aria-label="Legend" data-testid="research-legend">
-                      {legendKinds.map((k) => (
-                        <li key={k}>
-                          <DataStateMark kind={k} />
-                          <span>{LEGEND_WORDS[k]}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div data-testid="research-legend">
+                      <DataStateLegend kinds={legendKinds} words={LEGEND_WORDS} />
+                    </div>
                     {measured.length > 1 ? (
                       <div className={v.cmpPick}>
                         <label htmlFor={cmpSelect}>Compare with</label>
@@ -644,7 +643,23 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                 </div>
 
                 {/* a direct child of the desk's main: on a phone the card pins above the destinations while the plot scrolls */}
-                <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
+                {record && !opened ? (
+                  <p className={`${v.arrivedSample} ${v.onlyPhone}`} data-testid="research-sample-line">
+                    <span>
+                      Sample · {day(record.time, { year: true })}: {record.words}
+                    </span>
+                    <Button variant="secondary" onClick={() => setOpened(true)} data-testid="sample-details">
+                      Details
+                    </Button>
+                  </p>
+                ) : null}
+                {record && !opened ? (
+                  <div className={v.onlyWide}>
+                    <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
+                  </div>
+                ) : (
+                  <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
+                )}
 
                 {/* ------------------------------------------------ this window */}
                 <section className={v.group} aria-labelledby="rx-g-window">

@@ -25,6 +25,7 @@ import { gridBounds } from "@/nx/chart/layers/grid";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
+import { ADJACENT_WORDS, isLandAdjacent, loadAdjacency } from "./adjacency";
 import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isothermLabels, KNOTS, NEARBY_KM, nearestCurrent, type CellGeometry, type GapPosition, type IsoLabel, pixelDate, readPoint, researchHref, RESEARCH_VAR, stationFor, transect, type TransectPoint } from "./read";
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
@@ -77,6 +78,8 @@ type Reading =
       cell: CellGeometry;
       /** where a cell without a value sits in its layer's grid */
       gap: GapPosition | null;
+      /** a measured cell with no value that is the pixel beside land the pipeline leaves out (not cloud) */
+      besideLand: boolean;
       pixel: string | null;
       transect: TransectPoint[];
       /** the next frame's value is being read: the last one stays, dimmed (no "Reading…" flash while playing) */
@@ -335,6 +338,13 @@ export function Explore({ model }: { model: ExploreModel }) {
         const t = await loadCodes(model.baseUrl, frame.typicalGrid);
         typical = readPoint(frame.typicalGrid, t.codes, at.lat, at.lon)?.value ?? null;
       }
+      // no value in a frame that leaves out the pixel beside land: is this that pixel, or cloud?
+      let besideLand = false;
+      if (pt.value === null && frame.besideLandLeftOut) {
+        const mask = await loadAdjacency();
+        const cell = cellGeometry(g, pt.row, pt.col);
+        besideLand = !!mask && isLandAdjacent(mask, cell.lat, cell.lon);
+      }
       if (!live) return;
       setReading({
         status: "ready",
@@ -345,6 +355,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         typical,
         cell: cellGeometry(g, pt.row, pt.col),
         gap: pt.value === null && frame.kind !== "measured" ? gapPosition(g, c.codes, pt.row, pt.col) : null,
+        besideLand,
         pixel,
         transect: transect(g, c.codes, at.lat, at.lon),
         updating: false,
@@ -554,10 +565,10 @@ export function Explore({ model }: { model: ExploreModel }) {
             title={title}
             lat={r.cell.lat}
             lon={r.cell.lon}
-            state={rf.kind === "measured" ? "noview" : "outside"}
+            state={rf.kind === "measured" && !r.besideLand ? "noview" : "outside"}
             subtitle={subtitle}
             actions={action}
-            message={rf.kind === "measured" ? `No view here (${rf.label === "Latest" ? `latest view, ${rf.stamp}` : rf.stamp}): cloud, fog or no pass. No value is not a low value.` : noValueWords(product, r.gap ?? "inside")}
+            message={r.besideLand ? ADJACENT_WORDS : rf.kind === "measured" ? `No view here (${rf.label === "Latest" ? `latest view, ${rf.stamp}` : rf.stamp}): cloud, fog or no pass. No value is not a low value.` : noValueWords(product, r.gap ?? "inside")}
             onClose={onClose}
           >
             {tr}

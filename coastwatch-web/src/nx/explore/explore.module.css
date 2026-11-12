@@ -24,6 +24,9 @@
 .swatchHatchPast line { stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.8; }
 .swatchDot { fill: var(--ink-2); }
 .swatchRule line { stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+/* beside land: the shore (heavy) and the narrow band left out along it (dashed) */
+.swatchShore { fill: none; stroke: var(--ink); stroke-width: 1.8; vector-effect: non-scaling-stroke; }
+.swatchShoreRing { fill: none; stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; }
 .isoKey { display: flex; align-items: center; gap: var(--s-12); margin-top: var(--s-8); font-size: var(--t-14); font-weight: 600; }
 .isoSvg { width: 96px; height: 24px; flex: none; }
 .isoMajor { fill: none; stroke: var(--ink); stroke-width: 1.9; }
