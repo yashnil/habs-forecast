@@ -58,6 +58,8 @@ export type ResearchQuery = {
   station: string | null;
   place: string | null;
   v: ObsVariableId | null;
+  /** v13: a second variable to read beside the first (`cmp`), on its own panel and axis */
+  cmp: ObsVariableId | null;
   /** the variable as asked, when it could not be read (said on the page, never silently swapped) */
   askedVar: string | null;
   from: number | null;
@@ -90,6 +92,7 @@ export function parseQuery(q: Q, hash = ""): ResearchQuery {
     station: q.get("station"),
     place: q.get("place"),
     v: mapVar(varRaw),
+    cmp: mapVar(q.get("cmp")),
     askedVar: varRaw && !mapVar(varRaw) ? varRaw : null,
     from: parseDay(fromRaw) ?? parseDay(q.get("start")),
     to: parseDay(q.get("to")) ?? parseDay(q.get("end")),
@@ -101,11 +104,12 @@ export function parseQuery(q: Q, hash = ""): ResearchQuery {
 }
 
 /** The canonical v12 address for a view (`place` and Back are kept as context). */
-export function queryFor(s: { station: string; v: ObsVariableId; win: [number, number]; place?: string | null; back?: string | null; day?: number | null }): string {
+export function queryFor(s: { station: string; v: ObsVariableId; win: [number, number]; place?: string | null; back?: string | null; day?: number | null; cmp?: ObsVariableId | null }): string {
   const q = new URLSearchParams();
   if (s.place) q.set("place", s.place);
   q.set("station", s.station);
   q.set("var", s.v);
+  if (s.cmp && s.cmp !== s.v) q.set("cmp", s.cmp);
   q.set("from", dayKey(s.win[0]));
   q.set("to", dayKey(s.win[1]));
   if (s.day != null) q.set("day", dayKey(s.day));

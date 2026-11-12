@@ -1,6 +1,6 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { loadToday } from "@/pilot/today/load";
-import { CHECK_EVERY_MS, RETRY_AFTER_MS, checkPort, due, portToday, runCheck, type TodayPayload } from "@/nx/alerts/check";
+import { CHECK_EVERY_MS, CLAIM_MS, RETRY_AFTER_MS, abandonCheck, checkPort, due, portToday, runCheck, type TodayPayload } from "@/nx/alerts/check";
 import { DEFAULT_TRIGGERS, FOLLOW_KEY, MAX_FOLLOWS, follow, isFollowed, readFollows, setTrigger, unfollow } from "@/nx/alerts/follow";
 import { CHECK_KEY, INBOX_KEY, SNAP_KEY, clearInbox, markRead, mergeInbox, readBaselines, readInbox, readStamp, unreadCount, type InboxItem } from "@/nx/alerts/inbox";
 import { isRegistered } from "@/nx/personal/keys";
@@ -255,6 +255,15 @@ describe("when a check is due", () => {
     expect(due(stamp(T0, [BODEGA], [MOSS]), [BODEGA, MOSS], later(RETRY_AFTER_MS - 1))).toBe(false);
     expect(due(stamp(T0, [BODEGA], [MOSS]), [BODEGA, MOSS], later(RETRY_AFTER_MS))).toBe(true);
   });
+  it("a check that started seconds ago is left to finish; one that never finished does not hold the next one back", () => {
+    const started = (ms: number, base: object = {}) => ({ at: "", ports: [], failed: [], data_at: null, ...base, claim: later(ms).toISOString() });
+    expect(due(started(0), [BODEGA], later(CLAIM_MS - 1))).toBe(false);
+    expect(due(started(0), [BODEGA], later(CLAIM_MS))).toBe(true);
+    // an abandoned claim on top of a real, recent check: the real check still decides
+    expect(due(started(60_000, { at: T0.toISOString(), ports: [BODEGA] }), [BODEGA], later(10 * 60_000))).toBe(false);
+    expect(due(started(60_000, { at: T0.toISOString(), ports: [BODEGA] }), [BODEGA], later(CHECK_EVERY_MS))).toBe(true);
+  });
+
   it("a device clock set back, or an unreadable time: due", () => {
     expect(due(stamp(later(60_000), [BODEGA]), [BODEGA], T0)).toBe(true);
     expect(due({ at: "nonsense", ports: [BODEGA], failed: [], data_at: null }, [BODEGA], T0)).toBe(true);
@@ -340,6 +349,32 @@ describe("the check a page runs when it opens (runCheck)", () => {
     // when it reads again, a change that happened meanwhile is caught
     await runCheck({ now: later(CHECK_EVERY_MS + RETRY_AFTER_MS), online: true, load: loader({ [BODEGA]: edited(BODEGA, statusChanges), [MOSS]: edited(MOSS, newTest) }) });
     expect(readInbox().map((i) => i.place_id).sort()).toEqual([BODEGA, MOSS]);
+  });
+
+  it("a check cut short (the page closed while it was reading) claims nothing: the next open checks, and still finds the change", async () => {
+    device();
+    follow(BODEGA, T0);
+    await runCheck({ now: T0, online: true, load: loader({ [BODEGA]: real[BODEGA] }) });
+    // the next due check starts and the page goes away before the records arrive: only its claim is written
+    let arrive: (v: TodayPayload | null) => void = () => {};
+    const never = new Promise<TodayPayload | null>((res) => (arrive = res));
+    const abandoned = runCheck({ now: later(CHECK_EVERY_MS), online: true, load: () => never });
+    await Promise.resolve();
+    expect(readStamp()).toMatchObject({ at: T0.toISOString(), ports: [BODEGA], claim: later(CHECK_EVERY_MS).toISOString() });
+    // leaving the page gives the claim back at once (AlertWatch calls this on pagehide)
+    abandonCheck();
+    expect(readStamp()).toEqual({ at: T0.toISOString(), ports: [BODEGA], failed: [], data_at: real[BODEGA].inputs.dataGeneratedAt });
+    abandonCheck();
+    // (a new page: the module's in-flight check is gone with the old one)
+    vi.resetModules();
+    const fresh = await import("@/nx/alerts/check");
+    const r = await fresh.runCheck({ now: later(CHECK_EVERY_MS + 2000), online: true, load: loader({ [BODEGA]: edited(BODEGA, statusChanges) }) });
+    expect(r.state).toBe("checked");
+    expect(readInbox().map((i) => i.fact_id)).toEqual(["status:dungeness_commercial"]);
+    expect(readStamp()!.claim).toBeUndefined();
+    // (let the abandoned one end, so this file's later checks are not waiting behind it)
+    arrive(null);
+    await abandoned;
   });
 
   it("two calls at once run one check (two tabs' worth of opens do not double up)", async () => {

@@ -5,6 +5,7 @@
  * nearest measured cell with its distance.
  */
 import { cellCentre, cellOf, decodeValue, type FieldGrid } from "@/nx/chart/layers/grid";
+import { stationsMeasuring, variableRecord, type ObsVariableId } from "@/lib/observations";
 import type { ExploreFrame, ExploreStation, ProductId } from "./model";
 
 const KM_PER_DEG = 111.32;
@@ -150,23 +151,33 @@ export type StationChoice = {
   link: (ExploreStation & { km: number }) | null;
   /** the nearest station that measures it at any distance (said with its distance, never as "nearby") */
   far: (ExploreStation & { km: number }) | null;
+  /**
+   * The station list does not say which stations measure this variable (it carries toxin and Pseudo-nitzschia
+   * only): the nearest station of any kind, offered as a place to look, never as one that measures it.
+   */
+  unknown: (ExploreStation & { km: number }) | null;
 };
 
 /**
- * The station a reading may send the reader to: it must measure the variable asked for and be within
- * NEARBY_KM. A station that is nearer but never measured the variable is not offered; one that measures it
- * but is farther is named with its distance, as an alternative. A local rule until Research exports
- * `stationsMeasuring(varId)` (src/lib/observations.ts); `vars` is each station's own list from the data.
+ * The station a reading may send the reader to (the Explore → Research contract): one that MEASURES the
+ * variable, by Research's own rule (`stationsMeasuring`), and within NEARBY_KM. A station that is nearer but
+ * never measured it is not offered; one that measures it but is farther is named with its distance. Where the
+ * station list cannot say which stations measure the variable (`variableRecord(...).known` is false: extracted
+ * chlorophyll, temperature), nothing is claimed: the nearest station is offered as a place to look.
  */
-export function stationFor(stations: ExploreStation[], lat: number, lon: number, varId: string, maxKm = NEARBY_KM): StationChoice {
-  let best: (ExploreStation & { km: number }) | null = null;
-  for (const s of stations) {
-    if (!s.vars.includes(varId)) continue;
-    const km = distanceKm(lat, lon, s.lat, s.lon);
-    if (!best || km < best.km) best = { ...s, km };
-  }
-  if (!best) return { link: null, far: null };
-  return best.km <= maxKm ? { link: best, far: null } : { link: null, far: best };
+export function stationFor(stations: ExploreStation[], lat: number, lon: number, varId: ObsVariableId, maxKm = NEARBY_KM): StationChoice {
+  const nearest = (list: ExploreStation[]) => {
+    let best: (ExploreStation & { km: number }) | null = null;
+    for (const s of list) {
+      const km = distanceKm(lat, lon, s.lat, s.lon);
+      if (!best || km < best.km) best = { ...s, km };
+    }
+    return best;
+  };
+  if (stations.length && !stations.some((s) => variableRecord(s, varId).known)) return { link: null, far: null, unknown: nearest(stations) };
+  const best = nearest(stationsMeasuring(stations, varId));
+  if (!best) return { link: null, far: null, unknown: null };
+  return best.km <= maxKm ? { link: best, far: null, unknown: null } : { link: null, far: best, unknown: null };
 }
 
 /** The nearest monitoring station (CalHABMAP shore samples) and how far it is. */
@@ -185,7 +196,7 @@ export function nearestStation(stations: ExploreStation[], lat: number, lon: num
  * `var` is an observations variable id (chl_extracted, temp, pDA, pn_seriata, …): the measurement nearest in
  * kind to the Explore layer. The window ends on the frame's (or pixel's) date and starts 60 days before it.
  */
-export const RESEARCH_VAR: Record<ProductId, string> = { chl: "chl_extracted", outlook: "chl_extracted", sst: "temp", charm: "pDA" };
+export const RESEARCH_VAR: Record<ProductId, ObsVariableId> = { chl: "chl_extracted", outlook: "chl_extracted", sst: "temp", charm: "pDA" };
 export const RESEARCH_WINDOW_DAYS = 60;
 
 export function researchHref(o: { station: string; to: string; product: ProductId; place?: string | null }): string {

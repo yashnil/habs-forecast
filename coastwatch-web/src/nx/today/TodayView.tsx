@@ -1,15 +1,15 @@
 "use client";
 
+import { FollowLine } from "@/nx/alerts/FollowLine";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { FisheryId } from "@/pilot/contracts";
-import { fisheryLabel as labelOf, snapFacts } from "@/pilot/facts";
-import { readSeen, storageWorks, writeSeen } from "@/pilot/today/prefs";
+import { fisheryLabel as labelOf } from "@/pilot/facts";
 import { readSaved } from "@/pilot/today/prefs";
 import { saveTodayOffline } from "@/pilot/today/offline";
 import { ChartRegulation, RAMP_FISHERIES, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
-import { Agenda, agendaPhase, type AgendaItem } from "@/nx/ds/Agenda";
+import { Agenda, type AgendaItem } from "@/nx/ds/Agenda";
 import { BigDate } from "@/nx/ds/BigDate";
 import { Button } from "@/nx/ds/Button";
 import { dayTime } from "@/nx/ds/format";
@@ -23,10 +23,13 @@ import { Statement } from "@/nx/ds/Statement";
 import { useMedia, usePhone } from "@/nx/ds/useMedia";
 import { CANYON_AXIS } from "@/nx/chart/features";
 import { distanceKm, phoneBounds, portWater, todayBounds } from "./camera";
-import { changeLine, type ChangeLine } from "./change";
+import type { ChangeLine } from "./change";
+import { useChangeLine } from "./useChangeLine";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
 import { PORT_NAME_LAYOUT } from "./layout";
+import { Advisories, GateList, type GateItem } from "@/nx/ds/GateList";
+import { gateHrefs, type Gate } from "./gates";
 import { buildToday, othersLine, scopeWords, type TodayInputs, type TodayView as View } from "./model";
 import { COMPACT, TodaySoundings } from "./Soundings";
 import { chooseFishery, useFisheries, useTourState } from "./store";
@@ -111,24 +114,6 @@ function PortHeading({ name, fishery }: { name: string; fishery?: FisheryId }) {
   );
 }
 
-/** The change line, computed once per visit; this visit then becomes the one the next compares with. */
-function useChangeLine(key: string, ready: boolean, facts: View["allFacts"], now: string): ChangeLine | null | undefined {
-  const [line, setLine] = useState<ChangeLine | null | undefined>(undefined);
-  const done = useRef<string | null>(null);
-  useEffect(() => {
-    if (!ready || done.current === key) return;
-    done.current = key;
-    if (!storageWorks()) {
-      setLine(null);
-      return;
-    }
-    const prev = readSeen(key);
-    writeSeen(key, { at: now, facts: snapFacts(facts) });
-    setLine(changeLine(prev, facts, now));
-  }, [ready, key, facts, now]);
-  return line;
-}
-
 /**
  * After the page has drawn, a copy for offline use (sw.js answers `/` with it), at most twice a day. Its time is
  * the page's clock (`now`, the server's, which a fixture preview pins), never the device's, so a saved copy is
@@ -172,6 +157,8 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   const bounds = phone ? phoneBounds(port, pts) : todayBounds(port, pts, compact ? { minHalfKm: 14 } : {});
   const sceneId = `today:${port.key}`;
   const st = v.statement;
+  // dated items the gates do not already hold: when the notice took effect, later assessments, coming NWS periods
+  const ahead = agendaItems(v).filter((it) => it.id !== "today" && it.id !== "test" && !it.id.startsWith("alert-"));
 
   return (
     <>
@@ -199,7 +186,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
               title={st.title}
               why={st.why}
             >
-              {st.provenance && !v.decision?.sameAs ? (
+              {st.provenance ? (
                 <span data-tour="stamp">
                   <Stamp provenance={st.provenance} now={v.now} />
                 </span>
@@ -242,23 +229,22 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
           </div>
         )}
 
+        {/* NWS advisories in force: under the status, in the first screen at every size (lead decision 6) */}
+        <Advisories label="In force now" items={v.advisories.map((a) => ({ id: a.id, text: a.text, source: a.provenance ? <Stamp provenance={a.provenance} now={v.now} /> : "NWS" }))} />
+
+        {/* what changed since the last visit sits with the status it may have changed */}
+        <Change line={change} />
+
+        {/* the next date that can change the status: said large, once (the whale gate below does not repeat it) */}
         {v.decision ? (
           <motion.div className={s.decision} initial={false} animate={{ opacity: 1 }} transition={settle}>
             <BigDate label={v.decision.label} start={v.decision.start} end={v.decision.end} now={v.now} size="lg">
-              {v.decision.sameAs && st.state === "ok" && st.provenance ? (
-                <span data-tour="stamp">
-                  <Stamp provenance={st.provenance} now={v.now} />
-                </span>
-              ) : v.decision.provenance ? (
-                <Stamp provenance={v.decision.provenance} now={v.now} />
-              ) : null}
+              {v.decision.provenance && !v.decision.sameAs ? <Stamp provenance={v.decision.provenance} now={v.now} /> : null}
             </BigDate>
           </motion.div>
         ) : st.state === "ok" ? (
           <p className={s.quietLine}>No decision date on record for this fishery.</p>
         ) : null}
-
-        <Change line={change} />
 
         <div className={s.actions}>
           {st.state === "ok" && st.source ? (
@@ -266,59 +252,40 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
               Read {st.source.agency}&rsquo;s notice
             </Button>
           ) : (
-            <Button variant="primary" href={`/coast?place=${encodeURIComponent(port.key)}`}>
+            <Button variant="primary" href={gateHrefs.trip(port.key)}>
               Plan a trip
             </Button>
           )}
           <span className={s.quiet}>
-            {st.state === "ok" && st.source ? (
-              <Button variant="text" href={`/coast?place=${encodeURIComponent(port.key)}`}>
-                Plan a trip
-              </Button>
-            ) : null}
-            <Button variant="text" href={`/account?place=${encodeURIComponent(port.key)}#alerts`}>
-              Alerts
+            <Button variant="text" href={gateHrefs.alerts(port.key)}>
+              Alerts for {port.name}
             </Button>
           </span>
+        </div>
+        {/* first-use guidance for alerts: one dismissible line, then a quiet "Following" line (src/nx/alerts) */}
+        <div data-slot="follow-line">
+          <FollowLine port={{ key: port.key, name: port.name }} />
         </div>
         {tour === "" ? <TourLink onStart={() => setTouring(true)} /> : null}
       </div>
 
-      <motion.div className={s.agendaWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register} data-tour="agenda">
-        <h2 className={s.head}>Dates</h2>
-        <DatesAgenda v={v} portName={port.name} />
+      <motion.div className={s.gatesWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register} data-tour="gates">
+        <h2 className={s.gatesHead}>What decides a trip</h2>
+        <GateList label={`What decides a trip from ${port.name}`} level={3} gates={v.gates.map((g) => gateItem(g, v.now, !!v.decision))} />
       </motion.div>
+
+      {ahead.length ? (
+        <div className={s.agendaWrap} data-tour="agenda">
+          <h2 className={s.head}>Dates on record</h2>
+          <Agenda className={s.agenda} label={`Dates at ${port.name}`} now={v.now} items={ahead} />
+        </div>
+      ) : null}
 
       <MarginRows className={s.rows} label={`More at ${port.name}`}>
         {v.rows
-          // the waves row stands in for the buoy figure where the chart has no room for it (phones)
-          .filter((r) => r.state === "unavailable" || !r.compactOnly || compact)
-          .map((r) =>
-          r.state === "unavailable" ? (
-            <MarginRow key={r.id} label={r.label} state="unavailable" note={r.note} />
-          ) : r.id === "models" ? (
-            <MarginRow key={r.id} label={r.label} value={<Figure text={r.value} />} detail={<Models v={v} />} />
-          ) : (
-            <MarginRow
-              key={r.id}
-              label={r.label}
-              state={r.state === "stale" ? "stale" : "default"}
-              value={<Figure text={r.value} />}
-              detail={
-                r.detail.length ? (
-                  <ul className={s.detailList}>
-                    {r.detail.map((d, i) => (
-                      <li key={i}>
-                        {d.text ? <p>{d.text}</p> : null}
-                        {d.provenance ? <Stamp provenance={d.provenance} now={v.now} /> : null}
-                      </li>
-                    ))}
-                  </ul>
-                ) : undefined
-              }
-            />
-          ),
-        )}
+          // the gates hold the whale measures, the tests and the sea; what is left is the models
+          .filter((r) => r.id === "models")
+          .map((r) => (r.state === "unavailable" ? <MarginRow key={r.id} label={r.label} state="unavailable" note={r.note} /> : <MarginRow key={r.id} label="Models" value={<Figure text={r.value} />} detail={<Models v={v} />} />))}
         <NoticesRow notices={inputs.notices} portKey={port.key} portName={port.name} />
         {v.others.length ? (
           <MarginRow
@@ -361,6 +328,33 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
       {touring ? <Tour hasSounding={v.soundings.length > 0} onEnd={() => setTouring(false)} /> : null}
     </>
   );
+}
+
+/**
+ * A gate of the view model as the ds GateList draws it: every line of fact carries its stamp (which opens where
+ * it comes from), a sample is read with its age (T6, T17), the fixed relationship sentences read as one
+ * paragraph. The sea gate's headline is its first fact (an advisory when one is in force). The whale gate's
+ * next assessment is not repeated when the page already sets that date large.
+ */
+function gateItem(g: Gate, now: string, dateShown: boolean): GateItem {
+  const lead = g.id === "sea" && g.state === "ok" ? g.facts[0] : null;
+  const facts = (lead ? g.facts.slice(1) : g.facts).filter((f) => !(dateShown && g.id === "whale" && f.id === "next"));
+  return {
+    id: g.id,
+    title: g.title,
+    authority: g.authority,
+    state: g.state,
+    headline: (
+      <span data-role={lead?.role} data-testid={`nx-gate-${g.id}-headline`}>
+        {g.headline}
+        {g.dateRole === "sampled" && g.age ? <span className={s.age}> · {g.age}</span> : null}
+      </span>
+    ),
+    date: g.provenance ? <Stamp provenance={g.provenance} now={now} /> : undefined,
+    facts: facts.map((f) => ({ id: f.id, text: f.text, role: f.role, old: f.old, stamp: f.provenance ? <Stamp provenance={f.provenance} now={now} /> : undefined })),
+    relation: g.relation.join(" "),
+    actions: g.actions,
+  };
 }
 
 const noticesHref = (key: string) => `/notices?place=${encodeURIComponent(key)}`;
@@ -407,28 +401,6 @@ function Figure({ text }: { text: string }) {
         {text}
       </motion.span>
     </AnimatePresence>
-  );
-}
-
-/**
- * The agenda opens on what is next: today's line and the next two dates. What is past (already said above, as
- * the test sounding and the status) and later dates wait behind one control, so the first screen stays short.
- */
-function DatesAgenda({ v, portName }: { v: View; portName: string }) {
-  const [all, setAll] = useState(false);
-  const items = agendaItems(v);
-  const ahead = items.filter((it) => agendaPhase(it, v.now) !== "past").slice(0, 2);
-  const shown = all ? items : ahead;
-  const hidden = items.length - ahead.length;
-  return (
-    <>
-      <Agenda className={s.agenda} label={`Dates at ${portName}`} now={v.now} items={shown} />
-      {hidden > 0 ? (
-        <Button variant="text" onClick={() => setAll((x) => !x)} aria-expanded={all} className={s.allDates}>
-          {all ? "Only what is next" : `All ${items.length} dates, earlier and later`}
-        </Button>
-      ) : null}
-    </>
   );
 }
 

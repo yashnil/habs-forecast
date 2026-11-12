@@ -14,6 +14,7 @@ import { DEMO_LABEL, DISCLAIMER, LIVE_LABEL, SAMPLE_DATA_LABEL } from "../templa
 import type { AskAnswer, AskMeta, Citation, SeenSnapshot } from "../types";
 import { savedCoverage, uncoveredWords, type AskPort } from "./coverage";
 import { savedPortKey } from "@/nx/shell/port";
+import { readSeen, writeSeen } from "./seen";
 
 /**
  * Ask Neritic, the calm chat, in the pilot's Almanac voice (pilot.css). Used full-page on /ask (its
@@ -23,23 +24,6 @@ import { savedPortKey } from "@/nx/shell/port";
  */
 
 type Turn = { q: string; a: AskAnswer | null; error?: string };
-
-const SEEN_KEY = (place: string) => `nx-ask-seen-v1:${place}`;
-function readSeen(place: string): SeenSnapshot | null {
-  try {
-    const raw = localStorage.getItem(SEEN_KEY(place));
-    return raw ? (JSON.parse(raw) as SeenSnapshot) : null;
-  } catch {
-    return null;
-  }
-}
-function writeSeen(place: string, s: SeenSnapshot) {
-  try {
-    localStorage.setItem(SEEN_KEY(place), JSON.stringify(s));
-  } catch {
-    /* storage unavailable: "what changed" just compares nothing */
-  }
-}
 
 const BASIS: Record<Citation["basis"], string> = {
   official: "Official record",

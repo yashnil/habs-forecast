@@ -3,7 +3,7 @@
 import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { range, sig, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
-import { axisLabels, axisX, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
+import { axisLabels, axisX, frameCount, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
 import { LAYER_LABEL, layerKindWord, oldMark } from "./words";
 import s from "./explore.module.css";
 
@@ -259,6 +259,7 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
   const labels = axisLabels(model.axis, T, nx);
   const frame = product.frames.find((f) => f.id === frameId);
   const cur = model.currents?.frames.find((f) => f.id === currentId) ?? null;
+  const count = frameCount(product, frameId, currentsOn ? (model.currents?.frames ?? []) : [], currentId);
   const [more, setMore] = useState(false);
   const moreId = `nx-rail-more-${uid}`;
   // a frame chosen on another sensor's row (from a link) keeps that row in view
@@ -270,6 +271,12 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
         <h2 className={s.railTitle}>Time</h2>
         <p className={s.railNow} data-testid="nx-frame-stamp">
           {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : ""}
+          {count ? (
+            <span className={s.railCount} data-testid="nx-frame-count">
+              {" "}
+              · {count}
+            </span>
+          ) : null}
           {currentsOn && cur ? (
             <span className={s.railNowSub}>
               Currents: {cur.mean ? cur.label : cur.stamp}
