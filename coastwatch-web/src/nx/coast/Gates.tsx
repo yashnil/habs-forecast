@@ -15,7 +15,13 @@ import s from "./coast.module.css";
  */
 export function Gates({ gates, fishery }: { gates: Loadable<CoastGates>; fishery: CoastFishery }) {
   if (gates.state === "idle") return null;
-  if (gates.state === "loading") return <Loading>Reading the season list, whale measures and CDPH tests…</Loading>;
+  // the loading line holds about the gates' own height, so the sea window and worksheet do not jump down when they land (CLS)
+  if (gates.state === "loading")
+    return (
+      <div className={s.gatesLoading}>
+        <Loading>Reading the season list, whale measures and CDPH tests…</Loading>
+      </div>
+    );
   if (gates.state === "error")
     return (
       <Unavailable

@@ -71,11 +71,23 @@ const PortSymbol = ({ focus }: { focus: boolean }) => (
 );
 
 /** The chart's own names: water features (Literata italic) and ports (upright sans, circled dot). */
+/**
+ * True once the page has hydrated. The water names wait for it: they cannot be placed before the chart has a
+ * camera anyway, and naming water in the server HTML made the browser fetch Literata italic (113 KB) at the
+ * highest priority beside the page's own code, which held the first statement back on a slow phone.
+ */
+function useHydrated() {
+  const [h, setH] = useState(false);
+  useEffect(() => setH(true), []);
+  return h;
+}
+
 export function ChartLabels({ ports }: { ports: ChartPort[] }) {
   const scene = useScene();
   const focus = scene?.focus?.key ?? null;
+  const hydrated = useHydrated();
   const marks: ChartMark[] = [
-    ...WATER_NAMES.map((w) => ({
+    ...(hydrated ? WATER_NAMES : []).map((w) => ({
       id: `water-${w.id}`,
       lon: w.lon,
       lat: w.lat,
@@ -118,6 +130,7 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
 
 /** "Monterey Canyon", set along the canyon's own axis (west to east, so it reads left to right). */
 export function CanyonName() {
+  const hydrated = useHydrated();
   const pathRef = useRef<SVGPathElement>(null);
   const textRef = useRef<SVGTextElement>(null);
   useEffect(
@@ -150,9 +163,11 @@ export function CanyonName() {
     <svg className="n12-canyon-name" aria-hidden="true">
       <path id="nx-canyon-axis" ref={pathRef} fill="none" />
       <text ref={textRef} visibility="hidden" className="n12-water-name-svg" style={{ fontSize: CANYON_NAME.size }} dy="-6">
-        <textPath href="#nx-canyon-axis" startOffset="58%" textAnchor="middle">
-          {CANYON_NAME.name}
-        </textPath>
+        {hydrated ? (
+          <textPath href="#nx-canyon-axis" startOffset="58%" textAnchor="middle">
+            {CANYON_NAME.name}
+          </textPath>
+        ) : null}
       </text>
     </svg>
   );

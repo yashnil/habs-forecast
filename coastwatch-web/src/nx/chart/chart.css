@@ -11,12 +11,13 @@
 @container n12-frame (max-width: 640px) { .n12-attrib { display: none; } }
 .n12-map, .n12-poster, .n12-overlay, .n12-still, .n12-underlay { position: absolute; inset: 0; overflow: hidden; }
 .n12-underlay { pointer-events: none; }
-.n12-static-field { position: absolute; max-width: none; image-rendering: pixelated; }
+/* placed by transform from the frame's corner: the chart moving them is a camera, never a layout shift (CLS) */
+.n12-static-field { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; image-rendering: pixelated; }
 .n12-map .maplibregl-canvas { outline: none; }
 .n12-map .maplibregl-canvas:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .n12-sheet[data-tier="static"] .n12-map { display: none; }
-.n12-poster img { position: absolute; max-width: none; user-select: none; }
-.n12-poster-land { position: absolute; background: var(--land); }
+.n12-poster img { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; user-select: none; }
+.n12-poster-land { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: var(--land); }
 .n12-overlay { pointer-events: none; }
 .n12-overlay a, .n12-overlay button { pointer-events: auto; }
 .n12-labels, .n12-marks { position: absolute; inset: 0; }

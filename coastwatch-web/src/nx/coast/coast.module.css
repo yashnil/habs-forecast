@@ -518,3 +518,8 @@
     grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+/* the gates while they load: about their loaded height (three rows and their stamps) */
+.gatesLoading {
+  min-height: calc(var(--s-64) * 8);
+}

@@ -419,12 +419,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           <div className="n12-poster" data-testid="nx-poster" aria-hidden="true">
             {(() => {
               const r = screenRect(cam, vp, posterLandEast());
-              return <span className="n12-poster-land" style={{ left: r.left, top: r.top, width: r.width, height: r.height }} />;
+              return <span className="n12-poster-land" style={{ transform: `translate(${r.left}px, ${r.top}px)`, width: r.width, height: r.height }} />;
             })()}
             {posterImages(mode).map((img) => {
               const r = screenRect(cam, vp, img.bounds);
               // eslint-disable-next-line @next/next/no-img-element
-              return <img key={img.url} src={img.url} alt="" style={{ left: r.left, top: r.top, width: r.width, height: r.height }} decoding="async" />;
+              return <img key={img.url} src={img.url} alt="" style={{ transform: `translate(${r.left}px, ${r.top}px)`, width: r.width, height: r.height }} decoding="async" />;
             })}
           </div>
         ) : null}
