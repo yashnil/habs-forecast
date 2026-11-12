@@ -56,8 +56,11 @@ test("Journey 1, desktop: opening → Find your port → fishery → Today, thre
     await expect(finder.getByRole("combobox")).toBeFocused();
     await finder.getByRole("combobox").pressSequentially("moss", { delay: 90 });
     await page.waitForTimeout(300);
-    // tap 2: the port
-    await finder.getByRole("option", { name: /Moss Landing/ }).click();
+    // the typed name is the best match, selected: one ranked list, no region groups
+    await expect(finder.getByRole("option").first()).toContainText("Moss Landing");
+    await expect(finder.getByRole("option", { selected: true })).toContainText("Moss Landing");
+    // tap 2: Enter opens what was typed
+    await page.keyboard.press("Enter");
     const chooser = page.getByTestId("nx-fishery-chooser");
     await expect(chooser.getByRole("heading", { level: 1, name: "Moss Landing" })).toBeVisible();
     await expect(chooser).toContainText("Suggested: Neritic has records for these here");
@@ -100,7 +103,7 @@ test("Journey 1, phone: the same three taps; the sheet rests on the status and t
     await expect.poll(() => opening(page), { timeout: 7_000 }).toBeNull();
     await page.getByTestId("nx-home").getByRole("button", { name: "Find your port" }).click();
     await page.getByTestId("nx-home-finder").getByRole("combobox").pressSequentially("moss", { delay: 90 });
-    await page.getByTestId("nx-home-finder").getByRole("option", { name: /Moss Landing/ }).click();
+    await page.keyboard.press("Enter");
     await page.getByTestId("nx-fishery-chooser").getByRole("button", { name: "Dungeness crab (commercial)" }).click();
     const h1 = page.getByTestId("nx-today").getByRole("heading", { level: 1 });
     await expect(h1).toHaveText("Season delayed to at least Jan 1, 2027");
@@ -111,6 +114,29 @@ test("Journey 1, phone: the same three taps; the sheet rests on the status and t
     await expect(page.locator("[data-nx-sounding=test]")).toBeVisible({ timeout: 10_000 });
     await page.waitForTimeout(1500);
   });
+});
+
+test("Find your port ranks by name: eureka → Eureka, zzz → no match said in words", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: { cookies: [], origins: [] } });
+  await ctx.addInitScript(() => localStorage.setItem("nx-opening-seen-v1", "1"));
+  const page = await ctx.newPage();
+  await page.goto(`${OK}/`);
+  await page.getByTestId("nx-home").getByRole("button", { name: "Find your port" }).click();
+  const finder = page.getByTestId("nx-home-finder");
+  const input = finder.getByRole("combobox");
+  await input.pressSequentially("zzz", { delay: 40 });
+  await expect(finder.getByRole("option")).toHaveCount(0);
+  await expect(finder.getByTestId("nx-port-finder-empty")).toContainText("No CDFW landing port matches “zzz”");
+  // Enter with no match opens nothing
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("nx-fishery-chooser")).toHaveCount(0);
+  await input.fill("");
+  await input.pressSequentially("eureka", { delay: 40 });
+  await expect(finder.getByTestId("nx-port-finder-empty")).toHaveCount(0);
+  await expect(finder.getByRole("option", { selected: true })).toContainText("Eureka");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("nx-fishery-chooser").getByRole("heading", { level: 1, name: "Eureka" })).toBeVisible();
+  await ctx.close();
 });
 
 test("Show me around: four steps, one sentence each, gone for good", async ({ browser }) => {
