@@ -559,7 +559,9 @@ export function buildTodayModel(inp: PortTodayInputs): TodayModel {
         causeWord: null,
         area: null,
         next_review: null,
-        source: { name: "CDFW and CDPH (Neritic's list)", url: "https://wildlife.ca.gov/Fishing/Ocean/Regulations" },
+        // T42: CDFW acts on fisheries (and its regulations page is the link); never "CDFW and CDPH", which a
+        // short stamp read as "CDPH" for a fishery with nothing on record
+        source: { name: "CDFW (Neritic's list)", url: "https://wildlife.ca.gov/Fishing/Ocean/Regulations" },
         checked_at: inp.fisheries?.generated_at ?? null,
         verified: null,
         records: [],

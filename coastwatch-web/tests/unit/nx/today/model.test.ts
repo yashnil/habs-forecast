@@ -69,6 +69,17 @@ describe("the status statement", () => {
     expect(v.statement.tone).toBe("ink");
   });
 
+  it("a fishery with nothing on record is attributed to CDFW, which acts on fisheries, never CDPH (T42)", () => {
+    const v = buildToday(inputs, { fishery: "dungeness_commercial", sea: null, place });
+    const g = v.others.find((o) => o.fishery === "groundfish")!;
+    expect(g.word).toBe("No restriction on record");
+    expect(g.provenance?.source).toBe("CDFW");
+    expect(g.provenance?.sourceLong).not.toMatch(/CDPH/);
+    const sq = buildToday(inputs, { fishery: "market_squid", sea: null, place });
+    if (sq.statement.state !== "ok") throw new Error("expected a statement");
+    expect(sq.statement.provenance?.source).toBe("CDFW");
+  });
+
   it("an unreadable season list is a designed unavailable state, never a calm one", () => {
     const v = buildToday({ ...inputs, fisheries: null }, { fishery: "groundfish", sea: null, place });
     expect(v.statement.state).toBe("unavailable");
