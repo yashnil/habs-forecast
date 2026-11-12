@@ -177,8 +177,8 @@ test.describe("G2: every control is reachable by scrolling alone", () => {
     // a real tap (Playwright refuses a covered or off-screen target), not a programmatic click
     await page.getByTestId("trip-save-new").tap();
     await expect(page.getByTestId("trip-said")).toContainText("Saved as");
-    // open defect F-07: "Copy numbers-only link" ends under the fixed result bar; everything else must be clear
-    expect((await unreachable(page, "nx-coast")).filter((x) => !/\[trip-copy-link\]/.test(x))).toEqual([]);
+    // every control can be scrolled clear of the fixed result bar (F-07, fixed)
+    expect(await unreachable(page, "nx-coast")).toEqual([]);
     await ctx.close();
   });
 });

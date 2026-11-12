@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { Button, ButtonGroup, Drawer, EditableText } from "@/nx/ds";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Button, ButtonGroup, Drawer, EditableText, usePhone } from "@/nx/ds";
 import { usePorts } from "@/nx/shell/port";
 import type { CoastFishery } from "./fisheries";
 import { compareTrips, exportTrips, failureWords, listTrips, shareLink, type SaveOutcome } from "./scenarios";
@@ -34,6 +34,16 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [link, setLink] = useState<string | null>(null);
+  // In the header (wide screens) a confirmation is said on the line kept for it, stays a few seconds and goes; a
+  // question (an exact copy: open it, or save anyway?) waits for its answer. On a phone the controls sit in the
+  // page, where a line that vanished would move everything under the reader's thumb: there it stays until the
+  // next action replaces it.
+  const phone = usePhone();
+  useEffect(() => {
+    if (!said || said.twin || phone) return;
+    const t = window.setTimeout(() => setSaid(null), 6000);
+    return () => window.clearTimeout(t);
+  }, [said, phone]);
   const rows = useMemo(() => listTrips(trip.data, { placeKey, portName }), [trip.data, placeKey, portName]);
   const st = trip.state;
   const entry = hasEntry(trip.ws);
@@ -73,7 +83,9 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
     <section className={s.scBar} aria-label="This trip" data-testid="trip-strip">
       <div className={s.stripHead}>
         {isOpen ? (
-          <EditableText label="Trip name" value={st.name} maxLength={90} size="body" onChange={(name) => tell(trip.rename(st.id, name), (n) => `Renamed to “${n}”.`)} data-testid="trip-name" />
+          <span className={s.nameOne} title={st.name}>
+            <EditableText label="Trip name" value={st.name} maxLength={90} size="body" onChange={(name) => tell(trip.rename(st.id, name), (n) => `Renamed to “${n}”.`)} data-testid="trip-name" />
+          </span>
         ) : (
           <p className={s.tripName} data-testid="trip-name">
             {entry ? "A trip not saved yet" : "A new trip"}
@@ -83,7 +95,7 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
           {st.words}
         </p>
       </div>
-      <ButtonGroup>
+      <ButtonGroup wrap={false} className={s.scButtons}>
         {isOpen ? (
           <Button variant={st.kind === "changed" ? "primary" : "secondary"} disabled={st.kind !== "changed"} onClick={() => tell(trip.update(), (n) => `Updated “${n}”. Kept on this device only.`)} data-testid="trip-update">
             Update
@@ -96,11 +108,12 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
           Saved trips ({trip.capacity.used})
         </Button>
       </ButtonGroup>
-      <p className={s.said} aria-live="polite" data-testid="trip-said">
-        {said?.words ?? "Kept on this device only. Nothing is sent to Neritic."}
+      <p className={s.said} aria-live="polite" data-testid="trip-said" title={said?.words}>
         {said?.twin ? (
           <>
-            {" "}
+            {/* the whole sentence for a screen reader; the short one for the line it has */}
+            <span className={s.vh}>{said.words}</span>
+            <span aria-hidden="true">Already saved with these exact numbers.</span>{" "}
             <Button
               variant="quiet"
               className={s.inlineButton}
@@ -115,13 +128,16 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
               Save a copy anyway
             </Button>
           </>
-        ) : null}
+        ) : (
+          (said?.words ?? "")
+        )}
       </p>
     </section>
   );
 
   const more = (
     <section className={s.scMore} aria-label="More for this trip, and your saved trips">
+      <p className={s.said}>Trips are kept on this device only. Nothing is sent to Neritic.</p>
       <div className={s.scMoreActions}>
         {isOpen ? (
           <Button variant="quiet" className={s.compact} onClick={() => tell(trip.duplicate(st.id), (n) => `Copied as “${n}”.`)} data-testid="trip-duplicate">

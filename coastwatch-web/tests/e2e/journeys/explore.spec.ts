@@ -120,7 +120,7 @@ async function journey(page: Page) {
   // extracted chlorophyll (it carries toxin and Pseudo-nitzschia only), so the pier is offered as a place to
   // look, never as "the record nearby" (v13, the Explore → Research contract)
   await expect(page.getByTestId("nx-record-link")).toHaveCount(0);
-  await expect(page.getByTestId("nx-record-unknown")).toContainText("does not say which piers measure this");
+  await expect(page.getByTestId("nx-record-unknown")).toContainText("No pier nearby is known to measure chlorophyll.");
   const link = page.getByTestId("nx-record-look");
   await expect(link).toContainText("Santa Cruz Wharf");
   await link.click();

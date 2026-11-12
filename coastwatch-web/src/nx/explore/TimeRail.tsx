@@ -15,7 +15,8 @@ import s from "./explore.module.css";
  * With currents on, the hours strip shows every published radar hour. Every other layer is one quiet line of
  * what it holds and when, each a way to switch to it, so the rail is short and its labels never collide.
  */
-const LABEL_W = 88;
+// the label column, as the stylesheet sets it (.railLabel is 96 px): the track, the axis and the now line share it
+const LABEL_W = 96;
 const ROW = 36;
 const ROW_ACTIVE = 56;
 
@@ -250,7 +251,42 @@ function Availability({ model, product, currentsShown, onProduct }: { model: Exp
   );
 }
 
-export function TimeRail({ model, product, frameId, onFrame, onProduct, currentsOn, currentId, onCurrent, playing, canPlay, onPlay }: Props) {
+/**
+ * What is on show and the Play control: the rail's head. On a phone Explore sets it at the top of the sheet,
+ * beside the layer switch, so stepping time never needs the sheet raised over the chart (review F-01).
+ */
+export function TimeHead({ model, product, frameId, currentsOn, currentId, playing, canPlay, onPlay }: Pick<Props, "model" | "product" | "frameId" | "currentsOn" | "currentId" | "playing" | "canPlay" | "onPlay">) {
+  const frame = product.frames.find((f) => f.id === frameId);
+  const cur = model.currents?.frames.find((f) => f.id === currentId) ?? null;
+  const count = frameCount(product, frameId, currentsOn ? (model.currents?.frames ?? []) : [], currentId);
+  return (
+    <div className={s.railHead} data-testid="nx-time-head">
+      <h2 className={s.railTitle}>Time</h2>
+      <p className={s.railNow} data-testid="nx-frame-stamp">
+        {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : ""}
+        {count ? (
+          <span className={s.railCount} data-testid="nx-frame-count">
+            {" "}
+            · {count}
+          </span>
+        ) : null}
+        {currentsOn && cur ? (
+          <span className={s.railNowSub}>
+            Currents: {cur.mean ? cur.label : cur.stamp}
+            {oldMark(cur.fresh)}
+          </span>
+        ) : null}
+      </p>
+      {canPlay ? (
+        <Button variant="text" onClick={onPlay} aria-pressed={playing} data-testid="nx-play">
+          {playing ? "Pause" : "Play"}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+export function TimeRail({ model, product, frameId, onFrame, onProduct, currentsOn, currentId, onCurrent, playing, canPlay, onPlay, head = true }: Props & { /** false where the page sets the head itself (a phone) */ head?: boolean }) {
   const [ref, width] = useElementWidth<HTMLDivElement>(320);
   const uid = useId().replace(/:/g, "");
   const hatchId = `nxh-${uid}`;
@@ -259,8 +295,6 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
   const nx = nowX(model.axis, model.now) * T;
   const labels = axisLabels(model.axis, T, nx);
   const frame = product.frames.find((f) => f.id === frameId);
-  const cur = model.currents?.frames.find((f) => f.id === currentId) ?? null;
-  const count = frameCount(product, frameId, currentsOn ? (model.currents?.frames ?? []) : [], currentId);
   const [more, setMore] = useState(false);
   const moreId = `nx-rail-more-${uid}`;
   // a frame chosen on another sensor's row (from a link) keeps that row in view
@@ -268,29 +302,7 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
   const tracks = all ? product.tracks : product.tracks.slice(0, 1);
   return (
     <section className={s.rail} ref={ref} aria-label="Time" data-testid="nx-timerail">
-      <div className={s.railHead}>
-        <h2 className={s.railTitle}>Time</h2>
-        <p className={s.railNow} data-testid="nx-frame-stamp">
-          {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : ""}
-          {count ? (
-            <span className={s.railCount} data-testid="nx-frame-count">
-              {" "}
-              · {count}
-            </span>
-          ) : null}
-          {currentsOn && cur ? (
-            <span className={s.railNowSub}>
-              Currents: {cur.mean ? cur.label : cur.stamp}
-              {oldMark(cur.fresh)}
-            </span>
-          ) : null}
-        </p>
-        {canPlay ? (
-          <Button variant="text" onClick={onPlay} aria-pressed={playing} data-testid="nx-play">
-            {playing ? "Pause" : "Play"}
-          </Button>
-        ) : null}
-      </div>
+      {head ? <TimeHead model={model} product={product} frameId={frameId} currentsOn={currentsOn} currentId={currentId} playing={playing} canPlay={canPlay} onPlay={onPlay} /> : null}
       <div className={s.railBody}>
         <svg width={width} height={0} className={s.defs} aria-hidden="true">
           <defs>

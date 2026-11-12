@@ -77,7 +77,7 @@ export function CoastPage() {
             ? { words: `${season.text} ${season.source}${season.verified === true ? "" : " · not verified"}`, tone: season.tone }
             : { words: "No season record loaded. Unknown is not open.", tone: "regulation" };
 
-  // the sticky header's height, for what sticks under it (the trip's result, the inputs column)
+  // the sticky header's height, for what sticks under it (the trip's result)
   const page = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = page.current;
@@ -85,7 +85,6 @@ export function CoastPage() {
     if (!el || !head || typeof ResizeObserver === "undefined") return;
     const set = () => {
       el.style.setProperty("--trip-top", `${head.offsetHeight}px`);
-      el.style.setProperty("--desk-aside-top", `${head.offsetHeight + 8}px`);
     };
     set();
     const ro = new ResizeObserver(set);
@@ -167,9 +166,11 @@ export function CoastPage() {
       }
     >
       {trip ? null : (
-        <Button variant="primary" onClick={() => setView("trip")} data-testid="coast-to-trip">
-          Work out the money
-        </Button>
+        <div className={t.lead}>
+          <Button variant="primary" onClick={() => setView("trip")} data-testid="coast-to-trip">
+            Work out the money
+          </Button>
+        </div>
       )}
     </DeskHeader>
   );
