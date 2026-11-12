@@ -72,7 +72,11 @@ export function checkPort(prev: PortBaseline | null, payload: TodayPayload, foll
   // what was seen before of the kinds that could not be read now stays as it was: neither gone nor, later, new
   const held = Object.fromEntries(Object.entries(prev.snap.facts).filter(([id, f]) => unread(f.sig.kind, id)));
   const comparable: PlaceSnapshot = { ...prev.snap, facts: Object.fromEntries(Object.entries(prev.snap.facts).filter(([id]) => !(id in held))) };
-  const items = diffFacts(comparable, today, follow.triggers, now).map((a): InboxItem => ({ ...a, read_at: null, ...(fixture ? { sample: true } : {}) }));
+  const items = diffFacts(comparable, today, follow.triggers, now).map((a): InboxItem => {
+    const before = comparable.facts[a.fact_id]?.sig.headline ?? null;
+    const change = a.fact_version.startsWith("gone-") ? "gone" : before === null ? "new" : "changed";
+    return { ...a, read_at: null, change, was: before, ...(fixture ? { sample: true } : {}) };
+  });
   return { state: "compared", baseline: { snap: { ...fresh, facts: { ...held, ...fresh.facts } }, data_at: dataAt ?? prev.data_at }, items };
 }
 

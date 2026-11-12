@@ -67,9 +67,8 @@ test("a record an agency release appears to lift is 'sources differ', quoting bo
 });
 
 test("Alerts and the Others row reach the same list; without a port the saved one opens", async ({ page }) => {
-  await page.goto(`${OK}/account?place=port-592`);
-  const fromAlerts = page.getByTestId("notices-all").or(page.getByTestId("notices-port-592"));
-  await expect(fromAlerts.first()).toHaveAttribute("href", /\/notices/);
+  await page.goto(`${OK}/alerts?place=port-592`);
+  await expect(page.getByTestId("alerts-notices")).toHaveAttribute("href", "/notices?place=port-592");
   await page.goto(`${OK}/notices`);
   await expect(page).toHaveURL(/\/notices\?place=port-592$/);
   await expect(page.getByTestId("nx-notices").getByRole("heading", { level: 1 })).toContainText("Moss Landing");

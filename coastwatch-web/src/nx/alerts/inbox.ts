@@ -17,6 +17,9 @@ export type InboxItem = AlertItem & {
   read_at: string | null;
   /** made from the test fixture, not published records: the item says so */
   sample?: boolean;
+  /** what kind of change this is, and what the record said before (the page words it; older items lack them) */
+  change?: "new" | "changed" | "gone";
+  was?: string | null;
 };
 
 /** A port's baseline: the pilot's snapshot plus when the records it came from were published. */
