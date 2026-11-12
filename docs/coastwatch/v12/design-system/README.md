@@ -152,10 +152,10 @@ Each has states: default, hover, focus, pressed, disabled, loading, empty, stale
 | `RampLegend` | Legend-as-title for the active layer, log ticks, "no view" hatch |
 | `Readout` | Tap result: value, kind, date, linked transect chart |
 | `SeriesChart` / `SmallMultiples` / `Brush` | d3-scale/d3-shape SVG, crosshair readout, censored marks (T7) |
-| `Worksheet` | Ruled ledger: inputs, live waterfall, sensitivity table, assumptions list |
+| `Worksheet` | Ruled ledger: inputs, live waterfall (gross and net solid ink, costs a lighter solid `--ink-2`, never hatch or hollow), sensitivity table with both axes named (catch down, price across), assumptions list |
 | `Stepper` / `Field` / `Segmented` / `Toggle` | Inputs with units, 48 px targets |
 | `Button` (primary ink, secondary ruled, text link) | One primary per view |
-| `PortFinder` | cmdk search plus north-to-south directory, recent ports |
+| `PortFinder` | Ranked search (port name prefix, then word prefix, then substring; county and code as keywords) in one flat list while typing, Enter opens the best match, no match said in words; north-to-south directory and recent ports when empty |
 | `Popover` / `Dialog` / `Tooltip` | Radix primitives styled here |
 | States: `Unavailable`, `Stale`, `Offline`, `SourcesDiffer`, `Loading` | Designed, worded, never a spinner alone |
 

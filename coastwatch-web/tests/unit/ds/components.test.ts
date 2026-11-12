@@ -36,6 +36,9 @@ import {
   agendaPhase,
   censoredWords,
   clampWindow,
+  frameEdges,
+  MIN_FRAME,
+  SensitivityTable,
   labelledTicks,
   classify,
   day,
@@ -204,6 +207,28 @@ describe("waterfall layout (E3) and brush", () => {
     expect(clampWindow([-50, 50], [0, 1000], 10)).toEqual([0, 100]);
     expect(clampWindow([990, 1100], [0, 1000], 10)).toEqual([890, 1000]);
     expect(clampWindow([500, 502], [0, 1000], 10)).toEqual([500, 510]);
+  });
+  it("draws a tiny brush window at a visible minimum width, about its centre, inside the track", () => {
+    expect(frameEdges(100, 300, 0, 1000)).toEqual([100, 300]);
+    expect(frameEdges(500, 505, 0, 1000)).toEqual([502.5 - MIN_FRAME / 2, 502.5 + MIN_FRAME / 2]);
+    expect(frameEdges(996, 1000, 0, 1000)).toEqual([1000 - MIN_FRAME, 1000]);
+    expect(frameEdges(0, 3, 0, 1000)).toEqual([0, MIN_FRAME]);
+  });
+  it("labels the sensitivity grid's axes: catch down the rows, price across the columns", () => {
+    const html = renderToStaticMarkup(
+      h(SensitivityTable, {
+        rows: [{ label: "+30 %", factor: 1.3 }, { label: "As entered", factor: 1 }],
+        cols: [{ label: "−20 %", factor: 0.8 }, { label: "As entered", factor: 1 }],
+        value: () => 100,
+        selected: null,
+        onSelect: () => undefined,
+        rowAxis: "Catch",
+        colAxis: "Price",
+        caption: "Net to boat.",
+      }),
+    );
+    expect(html).toMatch(/<th scope="colgroup" colSpan="2"[^>]*>Price <span aria-hidden="true">→/);
+    expect(html).toMatch(/<th scope="col" class="corner">Catch <span aria-hidden="true">↓/);
   });
 });
 
