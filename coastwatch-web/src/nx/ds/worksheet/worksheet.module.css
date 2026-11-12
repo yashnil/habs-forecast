@@ -179,7 +179,24 @@
   width: max-content;
   max-width: 100%;
 }
+/* nothing chosen: a dashed frame and hollow segments, so it never reads as a choice already made */
+.segmented[data-unset] {
+  border-style: dashed;
+}
+.segUnset {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.segWrap[data-fit="equal"] .segmented {
+  display: flex;
+  width: 100%;
+}
+.segWrap[data-fit="equal"] .segment {
+  flex: 1 1 0;
+  min-width: 0;
+}
 .segment {
+  position: relative;
   min-height: calc(var(--target) - 3px);
   padding: 0 var(--s-16);
   border: 0;
@@ -188,18 +205,35 @@
   color: var(--ink);
   font: 500 var(--t-16) / 1.2 var(--font-sans);
   cursor: pointer;
-  transition: background-color var(--dur-quick) linear, color var(--dur-quick) linear;
+  transition: color var(--dur-quick) linear;
+}
+.segWrap[data-size="s"] .segment {
+  min-height: 41px;
+  padding: 0 var(--s-12);
 }
 .segment + .segment {
   border-left: var(--hair) solid var(--ink);
 }
+/* the chosen segment's ink block: one element that slides to the next choice */
+.segOn {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+}
+.segWords {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+.segHint {
+  font-size: var(--t-14);
+  font-weight: 400;
+}
 .segment:hover:not([aria-checked="true"]) {
-  text-decoration: underline;
-  text-decoration-thickness: var(--rule);
-  text-underline-offset: 3px;
+  background: var(--wash);
 }
 .segment[aria-checked="true"] {
-  background: var(--ink);
   color: var(--paper);
   font-weight: 700;
 }
@@ -210,7 +244,6 @@
 .segment[aria-checked="false"]:focus-visible {
   outline-color: var(--ink);
 }
-
 /* ---------- Toggle ---------- */
 .toggle {
   display: flex;

@@ -12,6 +12,8 @@ export interface WaterfallStep {
   kind: StepKind;
   /** Words when the amount is null: "waiting for price". Never 0. */
   waiting?: string;
+  /** How the amount was worked out, shown when the bar is inspected: "20 % × ($3,600 − $347.20) = $650.56". */
+  formula?: string;
 }
 
 export interface Bar {

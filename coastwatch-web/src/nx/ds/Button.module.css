@@ -23,25 +23,43 @@
   width: 100%;
 }
 
+/* two sizes: 48 px, and 56 px for the action a view leads with */
+.large {
+  min-height: 56px;
+  padding: 0 var(--s-32);
+}
+
 /* primary: one per view, ink */
 .primary {
   background: var(--primary-bg);
   color: var(--primary-fg);
-  min-height: 52px;
 }
 .primary:hover:not([aria-disabled="true"]) {
   background: var(--primary-hover-bg);
   border-color: var(--primary-hover-line);
 }
 
-/* secondary: ruled */
-.secondary:hover:not([aria-disabled="true"]) {
+/* secondary: ruled. Hover is a wash and a heavier foot rule; it never inverts to an ink block */
+.secondary::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
   background: var(--ink);
-  color: var(--paper);
+  transition: height var(--dur-quick) linear;
+}
+.secondary:hover:not([aria-disabled="true"]) {
+  background: var(--wash);
+}
+.secondary:hover:not([aria-disabled="true"])::before,
+.secondary:active:not([aria-disabled="true"])::before {
+  height: 3px;
 }
 
-/* text link: no box, the underline is the affordance */
-.text {
+/* quiet: no box, the underline is the affordance */
+.quiet {
   min-height: auto;
   padding: 0;
   border: 0;
@@ -52,7 +70,12 @@
   text-underline-offset: 3px;
   justify-content: flex-start;
 }
-.text::after {
+.quiet.large {
+  padding: 0;
+  min-height: auto;
+  font-size: var(--t-18);
+}
+.quiet::after {
   /* hit area to the touch target without moving the line */
   content: "";
   position: absolute;
@@ -62,7 +85,7 @@
   height: var(--target);
   transform: translateY(-50%);
 }
-.text:hover:not([aria-disabled="true"]) {
+.quiet:hover:not([aria-disabled="true"]) {
   text-decoration-thickness: 3px;
 }
 
@@ -75,7 +98,7 @@
 .primary[aria-disabled="true"] {
   background: transparent;
 }
-.text[aria-disabled="true"] {
+.quiet[aria-disabled="true"] {
   text-decoration-style: dotted;
 }
 

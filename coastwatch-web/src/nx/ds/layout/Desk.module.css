@@ -1,0 +1,222 @@
+/* The desk (v13 README §1): the page's work, with the chart as a contextual pane beside it. Tokens only. */
+
+.desk {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  color: var(--ink);
+  container-type: inline-size;
+  container-name: nx-desk;
+}
+
+/* ---------------------------------------------------------------- header */
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-16) var(--s-24);
+  padding: var(--s-24) 0 var(--s-16);
+  background: var(--paper);
+  border-bottom: var(--rule) solid var(--ink);
+  z-index: 3;
+}
+.sticky {
+  position: sticky;
+  top: var(--desk-sticky-top, 0px);
+}
+.headMain {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.context {
+  margin: 0 0 var(--s-8);
+  font-size: var(--type-body);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+}
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: var(--type-title);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.012em;
+  font-variation-settings: "opsz" 48;
+  text-wrap: balance;
+}
+.status {
+  margin-top: var(--s-12);
+  font-size: var(--type-lead);
+  line-height: var(--lh-snug);
+  color: var(--ink-2);
+  max-width: var(--measure);
+}
+.actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+/* condensed: one line of context and the title, so what the page is about never leaves */
+.header[data-condensed] {
+  padding: var(--s-8) 0;
+  align-items: center;
+}
+.header[data-condensed] .title {
+  font-size: var(--type-head);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.header[data-condensed] .context {
+  margin-bottom: 0;
+  font-size: var(--type-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.header[data-condensed] .status,
+.header[data-condensed] .more {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- body */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-32);
+  padding: var(--s-24) 0;
+  flex: 1 1 auto;
+  align-content: start;
+}
+.main,
+.aside {
+  min-width: 0;
+}
+.foot {
+  padding: var(--s-16) 0 var(--s-32);
+  border-top: var(--hair) solid var(--rule-soft);
+  font-size: var(--type-small);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+
+/* the desk is wide enough for the inputs beside the primary visual */
+@container nx-desk (min-width: 880px) {
+  .body[data-layout="main-aside"] {
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 32%, 380px);
+    align-items: start;
+  }
+  .body[data-layout="main-aside"][data-aside="start"] {
+    grid-template-columns: clamp(320px, 32%, 380px) minmax(0, 1fr);
+  }
+  .asideSticky {
+    position: sticky;
+    top: var(--desk-aside-top, 96px);
+    max-height: calc(100dvh - var(--bar-h) - 96px - var(--s-24));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* ---------------------------------------------------------------- the phone's sticky bottom slot */
+.stickyBottom {
+  background: var(--paper);
+}
+@media (max-width: 720px) {
+  .stickyBottom {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    margin: 0 calc(-1 * var(--s-16));
+    padding: var(--s-8) var(--s-16);
+    border-top: var(--rule) solid var(--ink);
+  }
+  .header {
+    padding-top: var(--s-16);
+  }
+  .body {
+    gap: var(--s-24);
+    padding: var(--s-16) 0;
+  }
+}
+
+/* ---------------------------------------------------------------- the chart dock */
+.dock {
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  min-width: 0;
+}
+.dock[data-placed="pane"] {
+  display: flex;
+  flex-direction: column;
+  border-top: var(--rule) solid var(--ink);
+  padding: var(--s-12) var(--s-24) var(--s-16);
+}
+.dock[data-placed="inline"] {
+  margin-top: var(--s-16);
+  padding-top: var(--s-12);
+  border-top: var(--rule) solid var(--ink);
+}
+.dockBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.dockClose {
+  position: absolute;
+  top: 0;
+  right: var(--s-8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target);
+  height: var(--target);
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.dockGrip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8px;
+  height: 16px;
+  cursor: row-resize;
+  touch-action: none;
+  z-index: 1;
+}
+.dockGrip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: var(--s-32);
+  height: var(--s-4);
+  margin-left: -16px;
+  background: var(--ink-2);
+}
+.dockGrip[data-dragging]::after,
+.dockGrip:focus-visible::after {
+  left: 0;
+  width: 100%;
+  margin-left: 0;
+  background: var(--ink);
+}
+
+/* ---------------------------------------------------------------- the header's chart toggle */
+/* beside the desk the divider and the rail already do this; it is offered where the chart is an overlay */
+.chartToggle {
+  display: none;
+}
+@media (min-width: 721px) and (max-width: 1099px), (min-width: 721px) and (max-height: 519px) {
+  .chartToggle {
+    display: inline-flex;
+  }
+}
