@@ -243,7 +243,11 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     return focusPoints.find((p) => Math.abs(p.t - query.day!) < 1.01 * DAY && inWin(p.t, committed)) ?? null;
   }, [query.day, focusPoints, committed]);
   const record = useMemo(() => (selected ? inspectSample(observations, st, focus, selected.i) : null), [selected, observations, st, focus]);
+  // a sample the reader chose opens its card (pinned on a phone); one that arrived in a link's `day=` is marked on
+  // the plot with a one-line "Details" control on a phone, so the card does not cover the plot before it is read
+  const [opened, setOpened] = useState(false);
   const select = (p: RecPoint | null) => {
+    setOpened(p != null);
     if (!p) return commit(null, { day: null });
     // a sample outside the window brings the window to it (same width)
     commit(inWin(p.t, committed) ? null : windowAround(extent, committed, p.t), { day: p.t });
@@ -644,7 +648,23 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                 </div>
 
                 {/* a direct child of the desk's main: on a phone the card pins above the destinations while the plot scrolls */}
-                <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
+                {record && !opened ? (
+                  <p className={`${v.arrivedSample} ${v.onlyPhone}`} data-testid="research-sample-line">
+                    <span>
+                      Sample · {day(record.time, { year: true })}: {record.words}
+                    </span>
+                    <Button variant="secondary" onClick={() => setOpened(true)} data-testid="sample-details">
+                      Details
+                    </Button>
+                  </p>
+                ) : null}
+                {record && !opened ? (
+                  <div className={v.onlyWide}>
+                    <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
+                  </div>
+                ) : (
+                  <Inspector record={record} onPrev={prev ? () => select(prev) : null} onNext={next ? () => select(next) : null} onClose={() => select(null)} position={position} />
+                )}
 
                 {/* ------------------------------------------------ this window */}
                 <section className={v.group} aria-labelledby="rx-g-window">

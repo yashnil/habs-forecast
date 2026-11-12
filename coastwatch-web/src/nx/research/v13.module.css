@@ -452,6 +452,17 @@
   .stationPick.onlyPhone {
     display: inline-flex;
   }
+  .arrivedSample.onlyPhone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-8) var(--s-16);
+    margin: var(--s-16) 0 0;
+    padding-top: var(--s-12);
+    border-top: var(--rule) solid var(--ink);
+    font-weight: 600;
+  }
   /* the plot first: a compact selector over it, then the range, the sentence, and the full list with its ticks */
   .railBlock {
     order: 2;
