@@ -3,7 +3,7 @@
 import { LayoutGroup, MotionConfig } from "motion/react";
 import { useCallback, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { ChartScene } from "@/nx/chart/scene";
-import { Loading } from "@/nx/ds/States";
+import { Skeleton } from "@/nx/ds/DataState";
 import { choosePort, usePorts, useSavedPortKey } from "@/nx/shell/port";
 import { HOME_SCENE } from "@/nx/shell/views";
 import { TodayView } from "@/nx/today/TodayView";
@@ -59,7 +59,7 @@ export function FrontDoor({ finder }: { finder: FinderData }) {
                 <p className={t.scope}>
                   <RootPortName />
                 </p>
-                <Loading>Reading your port&rsquo;s records</Loading>
+                <Skeleton label="Reading your port’s records" figure lines={4} />
               </section>
             )}
           </div>

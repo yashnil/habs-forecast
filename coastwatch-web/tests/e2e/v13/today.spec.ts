@@ -118,7 +118,13 @@ for (const [name, size] of Object.entries({ desktop: SIZES.desktop, phone: SIZES
     await expect(adv).toContainText(/Advisory · NWS · issued/i);
     await expect(adv).not.toContainText("not verified");
     await page.waitForTimeout(600);
-    expect(await inViewport(page, "advisories"), `${name}: advisory inside the first viewport`).toBe(true);
+    // the sea's summary line names the advisory in the first screen at every width; the advisory's own block
+    // (its full words and stamp) is in the first screen on a desktop and follows the three lines on a phone
+    const seaLine = page.getByTestId("nx-gate-summary").locator('li[data-gate="sea"]');
+    await expect(seaLine).toHaveAttribute("data-advisory", "1");
+    await expect(seaLine).toContainText("Small Craft Advisory");
+    await expect(seaLine).toBeInViewport({ ratio: 1 });
+    if (name === "desktop") expect(await inViewport(page, "advisories"), "advisory block inside the first viewport").toBe(true);
     // it also leads the sea gate
     await expect(page.getByTestId("nx-gate-sea-headline")).toHaveAttribute("data-role", "advisory");
     await ctx.close();
@@ -175,5 +181,55 @@ test("first visit: what Neritic is, what choosing a port leads to, and the one a
   await expect(page.getByTestId("nx-home-next")).toContainText("each with its source and its date");
   await expect(page.getByTestId("nx-find-port")).toBeVisible();
   await expect(page.getByTestId("gate-list")).toHaveCount(0);
+  await ctx.close();
+});
+
+test("the three gates are said in three lines under the status: all in the first screen at 1440, the first at 390 at rest", async ({ browser }) => {
+  for (const [size, need] of [[SIZES.desktop, 3], [SIZES.phone, 1]] as const) {
+    const ctx = await browser.newContext({ viewport: size, storageState: { cookies: [], origins: [] } });
+    await reader(ctx);
+    const page = await ctx.newPage();
+    await page.goto(`${OK}/`);
+    const lines = page.getByTestId("nx-gate-summary").locator("li");
+    await expect(lines).toHaveCount(3);
+    await expect(page.getByTestId("gate-sea")).toContainText("Waves", { timeout: 15_000 });
+    await page.waitForTimeout(800);
+    expect(await lines.evaluateAll((els) => els.map((e) => e.getAttribute("data-gate")))).toEqual(["whale", "domoic", "sea"]);
+    await expect(lines.nth(0)).toHaveText(/^Whale\s*Delay · next Dec 15–18$/);
+    await expect(lines.nth(1)).toHaveText(/^Domoic acid\s*Test 14 days ago$/);
+    await expect(lines.nth(2)).toHaveText(/^Sea\s*Seas \d+–\d+ ft forecast$/);
+    // one line each: no summary wraps in the margin or the sheet
+    for (const h of await lines.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) expect(h).toBeLessThan(36);
+    for (let i = 0; i < need; i++) await expect(lines.nth(i), `${size.width}: line ${i + 1} in the first screen`).toBeInViewport({ ratio: 1 });
+    if (size.width === 1440) {
+      // and the summary sits above the advisory slot, the change line and the next date
+      const sum = (await page.getByTestId("nx-gate-summary").boundingBox())!;
+      expect(sum.y + sum.height).toBeLessThan(480);
+    }
+    await ctx.close();
+  }
+});
+
+test("nothing jumps when the port's records arrive: the placeholder stands at the page's own geometry", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: SIZES.phone, storageState: { cookies: [], origins: [] } });
+  await reader(ctx);
+  await ctx.addInitScript(() => {
+    const w = window as unknown as { __cls: number };
+    w.__cls = 0;
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries() as unknown as Array<{ value: number; hadRecentInput: boolean }>) if (!e.hadRecentInput) w.__cls += e.value;
+    }).observe({ type: "layout-shift", buffered: true });
+  });
+  const page = await ctx.newPage();
+  // the records arrive late, so the placeholder is on screen first
+  await page.route("**/today/data**", async (route) => {
+    await new Promise((r) => setTimeout(r, 900));
+    await route.continue();
+  });
+  await page.goto(`${OK}/`);
+  await expect(page.getByTestId("skeleton").first()).toBeVisible();
+  await expect(page.getByTestId("nx-gate-summary")).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBeLessThan(0.1);
   await ctx.close();
 });

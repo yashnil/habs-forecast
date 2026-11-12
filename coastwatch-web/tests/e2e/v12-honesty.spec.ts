@@ -189,17 +189,19 @@ test.describe("My Coast", () => {
   });
 
   test("the worksheet fills nothing in; a sourced reference enters only on a tap; every output is hypothetical and waits in words (T45, T47, E2)", async ({ page }) => {
-    await page.goto(`${OK}/coast?place=port-592`);
-    const ws = page.getByTestId("coast-worksheet");
-    await expect(page.getByText("Your own numbers; nothing is filled in.")).toBeVisible();
-    const values = await ws.locator("input[type=text], input:not([type])").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
+    // v13: the worksheet is the trip workspace, My Coast's second state (?view=trip)
+    await page.goto(`${OK}/coast?place=port-592&view=trip`);
+    const ws = page.getByTestId("nx-coast");
+    await expect(page.getByText("Nothing is filled in. A blank is a gap, never 0.")).toBeVisible();
+    const values = await page.getByTestId("trip-inputs").locator("input[type=text], input:not([type])").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
     expect(values.length).toBeGreaterThan(4);
     expect(values.every((v) => v === "")).toBe(true);
     await expect(ws).toContainText("Hypothetical, from your numbers.");
-    await expect(page.getByTestId("ledger-net")).toContainText("waiting for");
-    expect(await ws.innerText()).not.toMatch(/\$0\b/);
+    await expect(page.getByTestId("trip-net")).toContainText("waiting for");
+    // no figure reads as $0 while it waits (the waterfall's axis has a $0 tick: a scale, not a figure)
+    for (const id of ["trip-hero", "trip-figures"]) expect(await page.getByTestId(id).innerText()).not.toMatch(/\$0\b/);
     await ws.getByRole("button", { name: /Use \$3\.51\/lb, a 2024 statewide average/ }).click();
-    await expect(ws.getByRole("textbox", { name: /^Price/ })).toHaveValue("3.51");
+    await expect(ws.getByRole("textbox", { name: "Price", exact: true })).toHaveValue("3.51");
     await expect(ws).toContainText("CDFW's 2024 statewide average");
     expect(await ws.innerText()).not.toMatch(FORBIDDEN);
   });

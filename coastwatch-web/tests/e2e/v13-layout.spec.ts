@@ -60,7 +60,8 @@ test("the divider is a separator: arrows step the pane's sizes, Enter collapses 
   await expect.poll(() => page.evaluate(() => Math.abs(document.querySelector(".maplibregl-canvas")!.clientWidth - document.querySelector(".n12-frame")!.clientWidth))).toBeLessThanOrEqual(1);
   await page.keyboard.press("Enter");
   await expect(work).toHaveAttribute("data-pane", "rail");
-  expect((await box(page, "nx-pane")).width).toBeLessThanOrEqual(48);
+  // (the columns travel to the new size)
+  await expect.poll(async () => (await box(page, "nx-pane")).width).toBeLessThanOrEqual(48);
   expect((await box(page, "nx-margin")).width).toBeGreaterThan(1300);
   await page.getByTestId("nx-pane-rail").click();
   await expect(work).toHaveAttribute("data-pane", "split");
@@ -317,5 +318,85 @@ test.describe("phone sheet requests", () => {
     await page.evaluate(([lon, lat]) => (window as unknown as { __nxChart: { keep: (lon: number, lat: number) => void } }).__nxChart.keep(lon, lat), at);
     await page.waitForTimeout(800);
     expect(Math.abs((await screenY()) - y1)).toBeLessThan(2);
+  });
+});
+
+test("a desk header condenses once and stays: scrolling through its threshold never flips it back and forth or moves the page under the reader", async ({ page }) => {
+  {
+    await open(page, RESEARCH);
+    const header = page.locator("[data-nx-desk-header]");
+    await expect(header).toBeVisible();
+    const scroller = page.locator(".n12-margin-scroll");
+    const fullH = (await header.boundingBox())!.height;
+    // watch every change of the header's state and every position the scroller takes
+    await page.evaluate(() => {
+      const w = window as unknown as { __flips: number; __tops: number[] };
+      w.__flips = 0;
+      w.__tops = [];
+      const h = document.querySelector("[data-nx-desk-header]")!;
+      new MutationObserver(() => (w.__flips += 1)).observe(h, { attributes: true, attributeFilter: ["data-condensed"] });
+      const sc = document.querySelector(".n12-margin-scroll")!;
+      sc.addEventListener("scroll", () => w.__tops.push(sc.scrollTop));
+    });
+    // the reader's own scroll, in small steps, to just past the threshold, then left alone
+    for (let y = 8; y <= 96; y += 8) {
+      await scroller.evaluate((el, top) => el.scrollTo(0, top), y);
+      await page.waitForTimeout(40);
+    }
+    await page.waitForTimeout(700);
+    await expect(header).toHaveAttribute("data-condensed", /^$/);
+    const { flips, tops } = await page.evaluate(() => {
+      const w = window as unknown as { __flips: number; __tops: number[] };
+      return { flips: w.__flips, tops: w.__tops };
+    });
+    expect(flips).toBe(1);
+    // the scroller is where the reader put it: nothing adjusted it when the header changed height
+    expect(tops[tops.length - 1]).toBe(96);
+    expect(Math.max(...tops)).toBe(96);
+    // the header is shorter, and keeps the room it had (what was under it has not jumped up)
+    const small = (await header.boundingBox())!.height;
+    expect(small).toBeLessThan(fullH - 20);
+    expect(await header.evaluate((el) => parseFloat(getComputedStyle(el).marginBottom))).toBeGreaterThanOrEqual(fullH - small - 1);
+    // back to the top, it opens again, once
+    await scroller.evaluate((el) => el.scrollTo(0, 0));
+    await expect(header).not.toHaveAttribute("data-condensed", /^$/);
+    expect(await page.evaluate(() => (window as unknown as { __flips: number }).__flips)).toBe(2);
+  }
+});
+
+test("the menu shows the chart mode as it is now, not as it was when the page loaded", async ({ page }) => {
+  await open(page, "/today?place=port-592");
+  await page.getByTestId("nx-menu-button").click();
+  await expect(page.getByTestId("nx-mode-day")).toBeChecked();
+  await page.keyboard.press("Escape");
+  // changed elsewhere (Your data does this)
+  await page.evaluate(() => document.documentElement.setAttribute("data-chart-mode", "dusk"));
+  await page.getByTestId("nx-menu-button").click();
+  await expect(page.getByTestId("nx-mode-dusk")).toBeChecked();
+});
+
+test.describe("phone desk header and sheet", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test("a desk header's title has the width; its actions never squeeze it", async ({ page }) => {
+    await open(page, RESEARCH);
+    const title = page.getByTestId("research-title");
+    await expect(title).toBeVisible();
+    const header = (await page.locator("[data-nx-desk-header]").boundingBox())!;
+    expect((await title.boundingBox())!.width).toBeGreaterThanOrEqual(header.width * 0.9);
+  });
+  test("a sheet brought back to rest shows the page from its first line", async ({ page }) => {
+    await open(page, "/explore?place=port-592");
+    const margin = page.getByTestId("nx-margin");
+    const body = page.locator(".n12-margin-scroll");
+    const more = margin.getByRole("button", { name: /Show (more|less) of this page/ });
+    await more.click();
+    await more.click();
+    await expect(margin).toHaveAttribute("data-detent", "2");
+    await body.evaluate((el) => el.scrollTo(0, 300));
+    expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    await more.click();
+    await expect(margin).toHaveAttribute("data-detent", "0");
+    await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBe(0);
+    await expect(page.getByTestId("nx-explore-lead")).toBeInViewport();
   });
 });

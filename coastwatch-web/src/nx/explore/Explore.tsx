@@ -30,7 +30,7 @@ import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isoth
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, contextWords, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
+import { aboutWords, CHL_DOMAIN, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
@@ -621,7 +621,10 @@ export function Explore({ model }: { model: ExploreModel }) {
           {coverageNote(LAYER_LABEL[product.id], port.name, gridBounds(frame.grid))}
         </p>
       ) : null}
-      <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
+      {/* the legend stays at the head of the margin while a reading is open, so the ramp is always in sight */}
+      <MarginSticky edge="top" data-testid="nx-legend-sticky">
+        <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
+      </MarginSticky>
       {tier === "static" && frame?.grid && product.id !== "sst" ? (
         <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
       ) : null}
@@ -636,6 +639,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       ) : null}
       <div className={s.switch} role="radiogroup" aria-label="Layer" data-testid="nx-layers">
         {model.products.map((p) => (
+          // design-lint-allow raw-button: the layer switch is one radio group whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Segmented and OptionList are single-line
           <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`}>
             <span>{LAYER_LABEL[p.id]}</span>
             {/* the tab says only "past run"; its date is in the legend and on the rail (critic N8: no 3-line tab) */}
@@ -675,14 +679,6 @@ export function Explore({ model }: { model: ExploreModel }) {
       <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-open={readout ? "1" : "0"} data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
         {readout ?? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p>}
       </div>
-      {/* what the reading is a reading of stays at the margin's foot while the legend scrolls away */}
-      {readout ? (
-        <MarginSticky data-testid="nx-context">
-          <p className={s.context}>
-            <strong>{LAYER_LABEL[product.id]}</strong> · {unit} · {contextWords(product, frame)}
-          </p>
-        </MarginSticky>
-      ) : null}
     </section>
   );
 }

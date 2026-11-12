@@ -33,6 +33,7 @@ export type XSpec = { type?: "time" | "linear"; domain: [number, number]; /** a 
 export type YSpec = { type?: "linear" | "log"; domain?: [number, number]; unit?: string; format?: (v: number) => string };
 
 /** Kinds that have a place on the y axis when they carry a value. */
+/** (`rejected` is never on the axis: a value quality control rejected is not drawn as one.) */
 const ON_AXIS: DataStateKind[] = ["measured", "estimated", "forecast", "historical", "stale", "unverified", "below-detection"];
 export const onAxis = (p: PlotPoint) => p.v !== null && Number.isFinite(p.v) && ON_AXIS.includes(p.kind ?? "measured");
 

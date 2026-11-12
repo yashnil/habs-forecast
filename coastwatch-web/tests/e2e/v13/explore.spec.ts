@@ -121,11 +121,14 @@ test("the reading is the cell that was read: its centre in the header, its outli
   await expect.poll(() => hook(page, (h) => h.cell?.lat ?? null)).toBe(cell.lat);
   await tapWater(page, cell.lat + 0.05, cell.lon);
   await expect.poll(() => hook(page, (h) => h.cell?.lat ?? null)).not.toBe(cell.lat);
-  // the layer, its unit and its date stay in the margin's view above the reading
-  const ctx = page.getByTestId("nx-context");
-  await expect(ctx).toContainText("C-HARM · % · model, past run, valid Oct 10");
+  // the legend (its ramp, unit and date) stays whole at the head of the margin while the reading is scrolled through
   await readout(page).getByTestId("nx-coast-link").scrollIntoViewIfNeeded();
-  await expect(ctx).toBeInViewport();
+  const legend = page.getByTestId("nx-legend");
+  await expect(legend).toBeInViewport({ ratio: 1 });
+  await expect(legend).toContainText("P(pDA > 500 ng/L)");
+  const lb = (await legend.boundingBox())!, mb = (await page.getByTestId("nx-margin").boundingBox())!;
+  expect(lb.y).toBeGreaterThanOrEqual(mb.y - 1);
+  await expect(readout(page).getByTestId("nx-coast-link")).toBeInViewport();
 });
 
 test("a reading moves into My Coast with the port, the cell and its date", async ({ page }) => {

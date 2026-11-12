@@ -479,7 +479,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   const whaleDelay = !!row && (row.level === "delayed" || row.level === "closed") && row.cause === "whale_entanglement";
   let whaleIn: WhaleInput | null = null;
   if (w && isDungeness(o.fishery)) {
-    const wp = provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed" });
+    const wp = whaleProvenance(w, sectorOf(o.fishery));
     whaleIn = {
       zone: w.zone,
       // the status above already states a whale delay: the gate does not repeat that clause (one home per fact)
@@ -490,6 +490,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       sourceUrl: w.source_url ?? null,
       provenance: wp,
       next: decision && /whale assessment/i.test(decision.label) ? `${decision.label}: ${range(decision.start, decision.end ?? decision.start)}` : null,
+      nextDate: decision && /whale assessment/i.test(decision.label) ? range(decision.start, decision.end ?? decision.start) : null,
       record: (() => {
         const full = whaleMeasures(w, sectorOf(o.fishery));
         const text = [full.quote ? `CDFW, for ${sectorOf(o.fishery)} crabbers: “${full.quote}”` : null, ...full.fields].filter(Boolean).join(" ");
@@ -507,6 +508,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       state: "ok",
       headline: `${speciesShort(test.site.species)} test, ${test.site.site_label}, ${day(test.latest.date, { ref: now })}: highest ${max == null ? "not detected" : `${ppmWords(max)}${test.action != null ? ` of ${test.action}` : ""} ppm`}, ${n} sample${n === 1 ? "" : "s"}`,
       date: test.latest.date,
+      sampled: day(test.latest.date, { ref: now }),
       age: ageWords(test.latest.date, now),
       old: test.stale,
       staleDays: TEST_STALE_DAYS,
@@ -538,6 +540,26 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   };
 }
 
+/**
+ * Where the whale measures come from, for one reader (T42). The shared fact's value is CDFW's whole zone action,
+ * which names both sectors; a commercial crabber opening the stamp must not read the recreational rule as theirs.
+ * So the sheet leads with the reader's own clauses, and the whole official sentence follows, labelled as such.
+ */
+export function whaleProvenance(w: NonNullable<TodayModel["whale"]>, sector: ReturnType<typeof sectorOf>): Provenance | null {
+  const m = whaleMeasures(w, sector);
+  const base = provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed" });
+  if (!base) return null;
+  return {
+    ...base,
+    value: m.short,
+    caveats: [
+      m.quote ? `For ${sector} crabbers, in CDFW's words: “${m.quote}” ${m.fields.join(" ")}`.trim() : m.fields.join(" "),
+      ...(w.action ? [`Full CDFW text (all sectors): “${w.action.trim()}”`] : []),
+      ...(base.caveats ?? []),
+    ].filter(Boolean),
+  };
+}
+
 /** "4.9 ft at 17 s": a buoy's waves as measured. */
 function wavesWords(b: { waveFt: number | null; periodS: number | null }): string {
   return `${b.waveFt!.toFixed(1)} ft${b.periodS != null ? ` at ${Math.round(b.periodS)} s` : ""}`;
@@ -564,19 +586,20 @@ function seaInput(model: TodayModel, sea: TodayModel["sea"], now: string, today:
   const facts: GateFact[] = [];
   for (const a of sea.alerts) {
     const f = model.today.facts.find((x) => x.id.startsWith("weather:alert:") && x.headline.includes(a.event));
-    facts.push({ id: `alert-${a.event}`, role: "advisory", text: alertWords(a.event, a.headline), provenance: f ? alertProvenance(f, a.event) : null });
+    facts.push({ id: `alert-${a.event}`, role: "advisory", short: a.event, text: alertWords(a.event, a.headline), provenance: f ? alertProvenance(f, a.event) : null });
   }
   const nws = fact("weather:nws");
   const first = sea.lanes.find((l) => !l.date || l.date === today) ?? sea.lanes[0];
   if (first) {
     const line = periodLine(first);
-    facts.push({ id: "forecast", role: "forecast", text: `${cap1(line ?? strip(first.text))} (NWS forecast, ${periodNameWords(first.name)})`, provenance: nws ? provenanceOf(nws, `NWS forecast, zone ${sea.zone ?? ""}`.trim()) : null });
+    const seas = first.seasHi != null ? `Seas ${first.seasLo != null && first.seasLo !== first.seasHi ? `${first.seasLo}–${first.seasHi}` : first.seasHi} ft forecast` : null;
+    facts.push({ id: "forecast", role: "forecast", short: seas ?? (line ? cap1(line) : undefined), text: `${cap1(line ?? strip(first.text))} (NWS forecast, ${periodNameWords(first.name)})`, provenance: nws ? provenanceOf(nws, `NWS forecast, zone ${sea.zone ?? ""}`.trim()) : null });
   }
   const b = sea.buoy;
   if (b && b.at && b.waveFt != null) {
     const f = fact("sea:buoy");
     const old = (Date.parse(now) - Date.parse(b.at)) / 60000 > 180;
-    facts.push({ id: "waves", role: "measured", text: `Waves ${wavesWords(b)} at buoy ${b.id}`, old, provenance: f ? provenanceOf(f, `Buoy ${b.id}, ${b.name}`, { stale: old }) : null });
+    facts.push({ id: "waves", role: "measured", short: `Waves ${wavesWords(b)} measured`, text: `Waves ${wavesWords(b)} at buoy ${b.id}`, old, provenance: f ? provenanceOf(f, `Buoy ${b.id}, ${b.name}`, { stale: old }) : null });
   }
   const wb = sea.windBuoy ?? (b && b.windKt != null && b.at ? { id: b.id, windKt: b.windKt, windDir: b.windDir } : null);
   if (wb) {

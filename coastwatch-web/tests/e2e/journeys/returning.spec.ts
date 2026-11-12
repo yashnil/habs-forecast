@@ -72,7 +72,7 @@ test("Journey 2: Today at / at once, the change line from the last visit, proven
   const change = page.getByTestId("nx-change");
   await expect(change).toContainText("Since Oct 8: Dungeness crab (commercial) is now delayed.");
   await page.waitForTimeout(800);
-  await change.click();
+  await page.getByTestId("nx-change-more").click();
   await expect(page.getByText("Before: Dungeness crab (commercial): No closure or restriction on record here.")).toBeVisible();
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, "journey-2-changed-1440x900.png") });

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { readPortRecord } from "@/lib/portRecord";
 import type { FisheryId } from "@/pilot/contracts";
 import type { CoastError, CoastGates, CoastSea } from "./brief";
-import { coastFishery, defaultFishery } from "./fisheries";
+import { defaultFishery, tripFishery } from "./fisheries";
 
 export type Loadable<T> = { state: "idle" } | { state: "loading" } | { state: "ok"; data: T } | { state: "error"; error: string };
 
@@ -46,7 +47,7 @@ function readChoice(): string {
   try {
     const raw = window.localStorage.getItem(COAST_KEY);
     const v = raw ? (JSON.parse(raw) as { fishery?: unknown }) : null;
-    if (v && typeof v.fishery === "string" && coastFishery(v.fishery)) return v.fishery;
+    if (v && typeof v.fishery === "string" && tripFishery(v.fishery)) return v.fishery;
   } catch {
     /* storage blocked: fall through to the followed fisheries */
   }
@@ -80,3 +81,30 @@ export function useFishery(): [FisheryId | null | undefined, (f: FisheryId) => v
   return [((memo ?? v) || null) as FisheryId | null, set];
 }
 let memo: FisheryId | null = null;
+
+// ---------------------------------------------------------------- Brief or Trip
+
+export type CoastView = "brief" | "trip";
+
+/**
+ * My Coast's two states on one address: the brief (gates, sea window) and the trip workspace (`?view=trip`).
+ * Entering the workspace is a history entry, so Back returns to the brief; every other parameter (the port,
+ * a point and date carried from Explore) stays.
+ */
+export function useCoastView(): [CoastView, (v: CoastView) => void] {
+  const sp = useSearchParams();
+  const router = useRouter();
+  const path = usePathname();
+  const view: CoastView = sp.get("view") === "trip" ? "trip" : "brief";
+  const set = useCallback(
+    (v: CoastView) => {
+      const q = new URLSearchParams(sp.toString());
+      if (v === "trip") q.set("view", "trip");
+      else q.delete("view");
+      const s = q.toString();
+      router.push(`${path}${s ? `?${s}` : ""}`, { scroll: false });
+    },
+    [sp, router, path],
+  );
+  return [view, set];
+}
