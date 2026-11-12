@@ -406,23 +406,17 @@
 }
 .wfCalloutRow {
   display: grid;
+  align-content: start;
   gap: var(--s-4);
+  /* two lines of room, always: a bar's sum appearing or leaving never changes the chart's height */
+  min-height: 72px;
+  overflow: hidden;
   margin-top: var(--s-8);
   padding: var(--s-8) var(--s-12);
   border: var(--hair) solid var(--ink);
   font-variant-numeric: tabular-nums;
 }
-
-/* a step that cannot be drawn yet: a short open mark where its bar will stand, and one sentence under the chart */
-.wfPending {
-  stroke: var(--ink-2);
-  stroke-width: 1.5;
-  stroke-dasharray: 3 3;
-}
-.wfPendingNote {
-  margin: var(--s-4) 0 0;
-  font-size: var(--type-small);
-  line-height: var(--lh-snug);
-  color: var(--ink-2);
-  max-width: var(--measure);
+.wfCalloutRow[data-empty] {
+  border-style: dashed;
+  border-color: var(--rule-soft);
 }

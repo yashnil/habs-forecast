@@ -367,11 +367,15 @@ requests as a page would.
   what the page passes (`<PageLayout mode="desk" paneKey="research" chartLabel={station.name} />`). Without it
   they say "Chart": never a port's name over a chart that shows something else.
 - **Names keep clear of a zone's boundary line** (a parallel drawn by the regulation layer).
-- **`WaterfallChart` (F-03).** A step that cannot be drawn yet is a short open mark in its column; what each one
-  waits for is one sentence under the chart (`data-testid="waterfall-waiting"`), never a label per bar.
+- **`WaterfallChart` (F-03).** A step that cannot be drawn yet shows its `waiting` word clipped to its own column
+  (send a short word such as "waiting"; put the reason in `formula`, and say the rest in the page). The kit adds
+  no sentence of its own. In rows the worked sum's place under the chart is always kept (72 px), so choosing a
+  bar never moves the page.
+- **`EditableText truncate`.** One line with an ellipsis; the full name is the title.
 - **Checkboxes (F-12).** A native `<input type="checkbox">` inside the shell is drawn in the system's terms in
   every chart mode: an empty ruled box, or an ink box with a paper tick.
-- **`DeskHeader` gives its room in the same commit as it condenses** (from its two measured heights), so the
-  page is never laid out with the room missing and no page needs `overflow-anchor` for it.
+- **`DeskHeader` gives its room in the same commit as it condenses**, from its open and condensed heights (both
+  measured while it is open), so the page is never laid out with the room missing and no page needs
+  `overflow-anchor` for it.
 - **A sticky `DeskAside` and `DeskSticky` have paper under them** and stand above the column that scrolls beside
   them (F-17).

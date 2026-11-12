@@ -250,10 +250,9 @@ describe("v13 plot kit", () => {
     expect(out).toContain("Gross: $3,600.00. 400 lb × $9.00.");
     expect(out).toContain("Fuel: −$247.20. 30 gal × $8.24.");
     expect(out).toContain("Crew: waiting for who pays fuel.");
-    // what is not drawn yet is said once, as one sentence under the chart, never as a label per bar
-    expect(out.match(/data-testid="waterfall-waiting"/g)).toHaveLength(1);
-    expect(out).toContain("Not drawn yet: Crew (waiting for who pays fuel); Net to boat (waiting for crew).");
-    expect(out).not.toMatch(/<text[^>]*>waiting/);
+    // a bar that cannot be drawn says its short word inside its own column (clipped there); the kit adds no sentence
+    expect(out.match(/<text[^>]*clip-path="url\(#wf[^"]+\)"[^>]*>waiting/g)).toHaveLength(2);
+    expect(out).not.toContain("waterfall-waiting");
     expect(out).toContain("Break-even");
     expect(out.match(/class="wfSolid"/g)).toHaveLength(1);
   });
@@ -451,5 +450,23 @@ describe("v13 block 4", () => {
     const ends = [...out.matchAll(/<rect y="[\d.]+" height="[\d.]+"[^>]*class="wf(?:Solid|Cost)"/g)].length;
     expect(ends).toBe(3);
     expect(out).toContain("$122,500");
+  });
+});
+
+describe("v13 review round", () => {
+  it("the waterfall's rows keep the worked sum's place whether or not a bar is chosen", () => {
+    const steps = [
+      { id: "g", label: "Gross", amount: 3600, kind: "gross" as const },
+      { id: "n", label: "Net to boat", amount: 3600, kind: "net" as const },
+    ];
+    const out = html(h(WaterfallChart, { steps, label: "x", orientation: "rows" }));
+    expect(out).toContain('data-testid="waterfall-callout-slot"');
+    expect(out).toContain("Choose a bar to see how it was worked out.");
+  });
+  it("an editable name can be held to one line, with its full text as the title", () => {
+    const out = html(h(EditableText, { label: "Trip name", value: "Dungeness crab, 400 lb at $9.00 a pound, Tuesday", truncate: true }));
+    expect(out).toContain('data-truncate="true"');
+    expect(out).toContain('title="Dungeness crab, 400 lb at $9.00 a pound, Tuesday"');
+    expect(html(h(EditableText, { label: "Trip name", value: "x" }))).not.toContain("data-truncate");
   });
 });

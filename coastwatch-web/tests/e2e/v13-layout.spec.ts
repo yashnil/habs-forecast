@@ -350,10 +350,9 @@ test("a desk header condenses once and stays: scrolling through its threshold ne
       return { flips: w.__flips, tops: w.__tops };
     });
     expect(flips).toBe(1);
-    // the scroller is where the reader put it: the header's change of height did not throw it back toward the
-    // top (at most a few px the first time, while the header's condensed height is still an estimate)
-    expect(Math.abs(tops[tops.length - 1] - 96)).toBeLessThanOrEqual(8);
-    expect(Math.min(...tops.slice(-3))).toBeGreaterThan(80);
+    // the scroller is where the reader put it: nothing adjusted it when the header changed height
+    expect(tops[tops.length - 1]).toBe(96);
+    expect(Math.max(...tops)).toBe(96);
     // the header is shorter, and keeps the room it had (what was under it has not jumped up)
     const small = (await header.boundingBox())!.height;
     expect(small).toBeLessThan(fullH - 20);
@@ -386,19 +385,28 @@ test.describe("phone desk header and sheet", () => {
     expect((await title.boundingBox())!.width).toBeGreaterThanOrEqual(header.width * 0.9);
   });
   test("a sheet brought back to rest shows the page from its first line", async ({ page }) => {
-    await open(page, "/explore?place=port-592");
+    // Notices: a long page in a sheet (Explore's phone content is now shorter than one screen)
+    await open(page, "/notices?place=port-592");
     const margin = page.getByTestId("nx-margin");
     const body = page.locator(".n12-margin-scroll");
+    const first = page.getByRole("heading", { level: 1 });
+    await expect(first).toBeInViewport();
     const more = margin.getByRole("button", { name: /Show (more|less) of this page/ });
     await more.click();
     await more.click();
     await expect(margin).toHaveAttribute("data-detent", "2");
     await body.evaluate((el) => el.scrollTo(0, 300));
-    expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(await body.evaluate((el) => el.scrollTop)).toBe(300);
+    await expect(first).not.toBeInViewport();
     await more.click();
     await expect(margin).toHaveAttribute("data-detent", "0");
     await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBe(0);
-    await expect(page.getByTestId("nx-explore-lead")).toBeInViewport();
+    await expect(first).toBeInViewport();
+    // at rest the scroller ends where the visible sheet ends: its last line can be brought above the destinations bar
+    await body.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    const bodyBox = (await body.boundingBox())!;
+    const tabs = (await page.getByTestId("nx-tabs").boundingBox())!;
+    expect(bodyBox.y + bodyBox.height).toBeLessThanOrEqual(tabs.y + 0.5);
   });
 });
 

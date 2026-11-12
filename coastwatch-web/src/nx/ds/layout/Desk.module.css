@@ -60,11 +60,11 @@
   gap: var(--s-8);
 }
 /* condensed: one line of context and the title, so what the page is about never leaves */
-.header[data-condensed] {
+.header:is([data-condensed], [data-measuring]) {
   padding: var(--s-8) 0;
   align-items: center;
 }
-.header[data-condensed] .title {
+.header:is([data-condensed], [data-measuring]) .title {
   font-size: var(--type-head);
   font-family: var(--font-sans);
   font-weight: 600;
@@ -73,15 +73,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.header[data-condensed] .context {
+.header:is([data-condensed], [data-measuring]) .context {
   margin-bottom: 0;
   font-size: var(--type-small);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.header[data-condensed] .status,
-.header[data-condensed] .more {
+.header:is([data-condensed], [data-measuring]) .status,
+.header:is([data-condensed], [data-measuring]) .more {
   display: none;
 }
 
@@ -152,11 +152,11 @@
   .actions {
     flex-wrap: wrap;
   }
-  .header[data-condensed] {
+  .header:is([data-condensed], [data-measuring]) {
     flex-direction: row;
     align-items: center;
   }
-  .header[data-condensed] .actions {
+  .header:is([data-condensed], [data-measuring]) .actions {
     flex-wrap: nowrap;
   }
   .body {

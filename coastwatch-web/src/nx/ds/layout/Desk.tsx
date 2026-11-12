@@ -92,24 +92,30 @@ export function DeskHeader({ context, title, titleProps, status, actions, sticky
   // Condensing never moves the page. The header keeps the room it had: what it loses in height it carries as a
   // margin under itself, so nothing below shifts, the scroller's position is not adjusted, and the header cannot
   // flip back and forth across its own threshold however much taller it was (a 90 px change on Research).
-  // The room is given in the same commit as the change (from the header's two heights as last measured, an
-  // estimate the first time), so there is no moment in which the page is laid out with the room missing.
+  // The room is given in the same commit as the change, from the header's two heights. Both are measured while
+  // the header is open: its condensed height by putting it in that state for one synchronous read (never
+  // painted), so the page is never laid out, even for a moment, with the room missing or wrong.
   const [full, setFull] = useState(0);
-  const [slim, setSlim] = useState(64);
+  const [slim, setSlim] = useState(0);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || on) return;
     const read = () => {
       const h = el.offsetHeight;
-      if (on) setSlim((v) => (Math.abs(v - h) < 1 ? v : h));
-      else setFull((v) => (Math.abs(v - h) < 1 ? v : h));
+      // (its own attribute, styled as the condensed state: the real one is never touched, so nothing that
+      // watches or styles `data-condensed` sees a state the header is not in)
+      el.setAttribute("data-measuring", "");
+      const c = el.offsetHeight;
+      el.removeAttribute("data-measuring");
+      setFull((v) => (Math.abs(v - h) < 0.5 ? v : h));
+      setSlim((v) => (Math.abs(v - c) < 0.5 ? v : c));
     };
     read();
     const ro = new ResizeObserver(read);
     ro.observe(el);
     return () => ro.disconnect();
   }, [on, ref]);
-  const hold = on && full ? Math.max(0, full - slim) : 0;
+  const hold = on && full && slim ? Math.max(0, full - slim) : 0;
   return (
     <header ref={ref} className={cx(s.header, sticky && s.sticky, className)} data-condensed={on ? "" : undefined} style={hold ? { marginBottom: hold } : undefined} data-nx-desk-header>
       <div className={s.headMain}>
