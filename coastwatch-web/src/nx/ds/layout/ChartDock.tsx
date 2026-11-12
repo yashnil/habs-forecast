@@ -16,7 +16,7 @@ const clampH = (h: number) => Math.round(Math.min(Math.max(MIN, h), Math.max(MIN
  * the chart above it keeps the context and refits into what is left. On a phone it reads in place, in the
  * margin sheet. `resizable` adds a separator on its top edge (drag, or Up/Down arrows).
  */
-export function ChartDock({ label, height = 300, resizable, onClose, className, children }: ChartDockProps & { resizable?: boolean }) {
+export function ChartDock({ label, height = 300, resizable, align = "pane", variant = "panel", onClose, className, children }: ChartDockProps) {
   // undefined until measured (the server and the first client render read in place), null on a phone
   const [slot, setSlot] = useState<HTMLElement | null | undefined>(undefined);
   const [h, setH] = useState(height);
@@ -49,7 +49,7 @@ export function ChartDock({ label, height = 300, resizable, onClose, className, 
     setDrag(null);
   };
   const body = (
-    <section className={cx(s.dock, className)} aria-label={label} style={slot ? { height: h } : undefined} data-nx-chart-dock data-placed={slot ? "pane" : "inline"}>
+    <section className={cx(s.dock, className)} aria-label={label} style={slot ? { height: h } : undefined} data-nx-chart-dock data-placed={slot ? "pane" : "inline"} data-align={align} data-variant={variant}>
       {resizable && slot ? (
         <div
           className={s.dockGrip}

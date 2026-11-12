@@ -44,7 +44,7 @@
   shape-rendering: crispEdges;
 }
 .grid {
-  stroke: var(--rule-soft);
+  stroke: var(--plot-grid);
   stroke-width: 1;
   shape-rendering: crispEdges;
 }
@@ -64,38 +64,38 @@
 /* ---------------------------------------------------------------- marks */
 .line {
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--plot-point);
   stroke-width: 1.5;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 .lineModel {
   stroke-dasharray: 5 4;
-  stroke: var(--ink-2);
+  stroke: var(--plot-model);
 }
 .ptFill {
-  fill: var(--ink);
+  fill: var(--plot-point);
   stroke: var(--paper);
   stroke-width: 1;
 }
 .ptHollow {
   fill: var(--paper);
-  stroke: var(--ink);
+  stroke: var(--plot-censored);
   stroke-width: 1.5;
 }
 .ptDash {
   fill: var(--paper);
-  stroke: var(--ink);
+  stroke: var(--plot-censored);
   stroke-width: 1.5;
   stroke-dasharray: 2.5 2;
 }
 .ptCross {
   fill: none;
-  stroke: var(--ink-2);
+  stroke: var(--plot-zero);
   stroke-width: 1.5;
 }
 .hatch {
-  stroke: var(--hatch);
+  stroke: var(--plot-gap);
   stroke-width: 1;
 }
 .noDataWords {
@@ -129,14 +129,14 @@
   shape-rendering: crispEdges;
 }
 .cross {
-  stroke: var(--ink);
+  stroke: var(--plot-cross);
   stroke-width: 1;
   shape-rendering: crispEdges;
 }
 .focusRing {
   fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.5;
+  stroke: var(--plot-focus);
+  stroke-width: 2;
 }
 .pinRule {
   stroke: var(--ink);
@@ -371,4 +371,17 @@
   margin-right: var(--s-4);
   vertical-align: middle;
   background: var(--ink);
+}
+
+/* rows (WaterfallChart orientation="rows"): the bar under the pointer or the keyboard, and its sum under the chart */
+.wfRowOn {
+  fill: var(--sel);
+}
+.wfCalloutRow {
+  display: grid;
+  gap: var(--s-4);
+  margin-top: var(--s-8);
+  padding: var(--s-8) var(--s-12);
+  border: var(--hair) solid var(--ink);
+  font-variant-numeric: tabular-nums;
 }

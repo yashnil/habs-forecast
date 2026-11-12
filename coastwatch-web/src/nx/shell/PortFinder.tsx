@@ -6,7 +6,7 @@ import { Dialog } from "@/nx/ds/Overlay";
 import { PortFinder as Finder } from "@/nx/ds/PortFinder";
 import type { FinderData } from "@/nx/home/finder.server";
 import { OPEN_PORT_FINDER as OPEN } from "./finder";
-import { savePort, useCurrentPort } from "./port";
+import { choosePort, useCurrentPort } from "./port";
 import { hrefForPort } from "./redirects";
 
 export { openPortFinder } from "./finder";
@@ -40,7 +40,8 @@ export function PortFinder({ finder }: { finder: FinderData }) {
             onSelect={(p) => {
               const k = finder.keys[p.code];
               if (!k) return;
-              savePort(k);
+              // the reader picked it: the first such choice also becomes the home port (shell/port.tsx)
+              choosePort(k);
               setOpen(false);
               router.push(hrefForPort(pathname, k));
             }}
