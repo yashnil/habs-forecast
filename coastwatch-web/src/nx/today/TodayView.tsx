@@ -1,5 +1,6 @@
 "use client";
 
+import { FollowLine } from "@/nx/alerts/FollowLine";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { FisheryId } from "@/pilot/contracts";
@@ -255,15 +256,15 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
               Plan a trip
             </Button>
           )}
-          {/*
-            FOLLOW-LINE SLOT (Agent E, src/nx/alerts): the "Follow this port" line goes here at final integration,
-            in place of this link. Until then the link opens the alerts page for the port.
-          */}
-          <span className={s.quiet} data-slot="follow-line">
+          <span className={s.quiet}>
             <Button variant="text" href={gateHrefs.alerts(port.key)}>
               Alerts for {port.name}
             </Button>
           </span>
+        </div>
+        {/* first-use guidance for alerts: one dismissible line, then a quiet "Following" line (src/nx/alerts) */}
+        <div data-slot="follow-line">
+          <FollowLine port={{ key: port.key, name: port.name }} />
         </div>
         {tour === "" ? <TourLink onStart={() => setTouring(true)} /> : null}
       </div>
