@@ -109,8 +109,8 @@ test("Journey 1, phone: the same three taps; the sheet rests on the status and t
     await expect(h1).toHaveText("Season delayed to at least Jan 1, 2027");
     // at rest, the status and the date are inside the visible sheet, above the tab bar
     const tabs = await page.getByTestId("nx-tabs").boundingBox();
-    // the next date itself (the one-line gate summary above it names the same days)
-    const date = await page.getByText("Dec 15–18", { exact: true }).boundingBox();
+    // v13: the whale gate's one-line summary carries the next date at rest; the large date block follows below it
+    const date = await page.getByText("Delay · next Dec 15–18").boundingBox();
     expect(date!.y + date!.height).toBeLessThanOrEqual(tabs!.y);
     await expect(page.locator("[data-nx-sounding=test]")).toBeVisible({ timeout: 10_000 });
     await page.waitForTimeout(1500);
