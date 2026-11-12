@@ -119,22 +119,57 @@ async function packPage(request) {
 }
 
 /**
- * A navigation to a bare address (`/coast`, `/explore`, `/research`, `/today`) whose saved copy was saved for a
- * fuller one (`/coast?place=port-592`): sent on to that address, so the page hydrates at the address it was
- * rendered for and the address bar says what is shown. Anything else: the saved copy itself, or null.
+ * Which saved copy of a path answers an address it was not saved for. A page is rendered for its whole address
+ * (`/coast?place=port-592&view=trip` is the trip workspace, `/coast?place=port-592` the brief), so the copy
+ * that shares the most parameters with the request is the nearest thing this device holds: the trip view for a
+ * trip address, the brief for anything else. Ties go to the copy saved with the fewest parameters, then to the
+ * first saved. Pure (the unit test reads it): `saved` are the saved addresses of one path.
  */
-async function packNavigate(request) {
-  const url = new URL(request.url);
-  if (!url.search) {
-    const keys = (await caches.keys()).filter((k) => k.startsWith(PACK_PREFIX));
-    for (const k of keys) {
-      const c = await caches.open(k);
-      const [key] = await c.keys(request, { ignoreSearch: true });
-      if (!key) continue;
-      const ku = new URL(key.url);
-      if (ku.search && !ku.pathname.startsWith("/__pack__/")) return Response.redirect(ku.href, 302);
+function nearestSaved(requestUrl, saved) {
+  const want = new URL(requestUrl).searchParams;
+  let best = null;
+  let bestScore = -1;
+  let bestSize = Infinity;
+  for (const href of saved) {
+    const have = new URL(href).searchParams;
+    let score = 0;
+    let size = 0;
+    for (const [k, v] of have) {
+      size += 1;
+      if (want.get(k) === v) score += 1;
+    }
+    if (score > bestScore || (score === bestScore && size < bestSize)) {
+      best = href;
+      bestScore = score;
+      bestSize = size;
     }
   }
+  return best;
+}
+
+/**
+ * A navigation answered from a pack. The copy saved for exactly this address is served as it is. An address
+ * the pack holds only under other parameters (a bare `/coast`, another port, `?view=trip` from a link that
+ * also carries a fishery, a point and date carried from Explore) is SENT ON to the nearest saved address
+ * (`nearestSaved`), never answered with that copy's HTML in place: the page reads its address when it draws,
+ * so HTML rendered for one address and hydrated at another is a different page (React error 418, and a page
+ * rebuilt on the client). After the redirect the address bar says what is shown. A v4 pack's own pages
+ * (`/__pack__/…`) have no address to send to and are served as before.
+ */
+async function packNavigate(request) {
+  const names = (await caches.keys()).filter((k) => k.startsWith(PACK_PREFIX));
+  const saved = [];
+  for (const k of names) {
+    const c = await caches.open(k);
+    const [exact] = await c.keys(request);
+    if (exact) {
+      const r = await c.match(exact);
+      if (r) return marked(r, exact.url);
+    }
+    for (const key of await c.keys(request, { ignoreSearch: true })) if (!new URL(key.url).pathname.startsWith("/__pack__/")) saved.push(key.url);
+  }
+  const to = nearestSaved(request.url, saved);
+  if (to && to !== request.url) return Response.redirect(to, 302);
   return packPage(request);
 }
 
