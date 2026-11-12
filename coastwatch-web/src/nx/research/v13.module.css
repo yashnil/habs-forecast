@@ -97,6 +97,14 @@
 .rail {
   border-top: var(--rule) solid var(--ink);
 }
+/* the header's sentence on one line beside the station picker, so the plot below never moves down a line */
+.oneLine {
+  display: block;
+  max-width: min(100%, 60ch);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .stack {
   display: flex;
   flex-direction: column;
@@ -116,7 +124,7 @@
 }
 .railRow {
   display: grid;
-  grid-template-columns: minmax(0, 330px) minmax(96px, 1fr) 250px 96px;
+  grid-template-columns: minmax(0, 330px) minmax(96px, 1fr) 250px 112px;
   align-items: center;
   gap: 0 var(--s-16);
   width: 100%;
@@ -230,6 +238,13 @@
   grid-area: title;
   min-width: 0;
 }
+/* one line each beside the range controls, whatever the range says ("Custom" is wider): the plot never moves down */
+.titleCell .h2,
+.titleCell .windowLine {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .rangeCell {
   grid-area: range;
 }
@@ -262,6 +277,60 @@
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+/* The plot's box is fixed in the stylesheet (plot 360 + its axis room), not by the plot's own script: the server's
+   HTML and the hydrated page take the same room at every width, so nothing below it moves (CLS). */
+.main {
+  height: 402px;
+}
+.main[data-empty] {
+  height: auto;
+  min-height: 360px;
+  display: grid;
+}
+/* the comparison's and the model's plots: 130 and 110 px and their axis room, whatever the screen */
+.cmpBox {
+  height: 172px;
+}
+.modelBox {
+  height: 152px;
+}
+.drawing {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  border: var(--hair) dashed var(--rule-soft);
+  color: var(--ink-2);
+  font-size: var(--type-body);
+}
+.mainRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-24);
+  min-width: 0;
+}
+.mainRow[data-inspecting] {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+}
+.inspCell {
+  height: 402px;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.thresholdLine {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+.thresholdLabel {
+  font: 500 var(--type-small) / 1 var(--font-sans);
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  paint-order: stroke;
 }
 .emptyActions {
   max-width: 100%;
@@ -309,6 +378,18 @@
   stroke: var(--ink);
   stroke-width: 1;
   stroke-dasharray: 3 2;
+}
+.tip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: var(--s-4);
+  max-width: min(280px, 70%);
+  padding: var(--s-8) var(--s-12);
+  background: var(--paper);
+  border: var(--hair) solid var(--ink);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
 }
 .tipValue {
   font-size: var(--type-lead);
@@ -427,6 +508,28 @@
   .stationPick.onlyPhone {
     display: inline-flex;
   }
+  /* the plot's box on a phone: 240 + its axis room; clipped, so the taller plot of the server's HTML never pushes
+     the page before the script sets the phone's height */
+  .main {
+    height: 282px;
+    overflow: hidden;
+  }
+  .main[data-empty] {
+    min-height: 282px;
+    overflow: visible;
+  }
+  /* the card is the ds one, pinned above the destinations: it must be a child of the tall column, not of a cell */
+  .mainRow,
+  .mainRow[data-inspecting],
+  .inspCell {
+    display: contents;
+  }
+  .inspCell[data-closed] {
+    display: none;
+  }
+  .inspCard {
+    order: 20;
+  }
   .arrivedSample.onlyPhone {
     display: flex;
     flex-wrap: wrap;
@@ -462,6 +565,10 @@
   }
   .titleCell .h2 {
     font-size: var(--type-body);
+  }
+  .titleCell .h2,
+  .titleCell .windowLine {
+    white-space: normal;
   }
   .railRow {
     grid-template-columns: minmax(0, 1fr) auto;
