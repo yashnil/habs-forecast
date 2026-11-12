@@ -52,9 +52,9 @@ export function Home({ finder, onPick }: { finder: FinderData; onPick: (p: Picke
         <div className={s.find} data-testid="nx-home-finder">
           <div className={s.findHead}>
             <h1 className={s.findTitle}>Find your port</h1>
-            <button type="button" className={s.back} onClick={() => setStep("intro")}>
+            <Button variant="text" onClick={() => setStep("intro")}>
               Back
-            </button>
+            </Button>
           </div>
           {finder.ports.length ? (
             <PortFinder

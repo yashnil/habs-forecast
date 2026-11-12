@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/nx/ds/Button";
-import { Icon } from "@/nx/ds/Icon";
+import { IconButton } from "@/nx/ds/IconButton";
 import { register, registerFrom, registerTo } from "@/nx/ds/motion";
 import { dismissTour } from "./store";
 import s from "./today.module.css";
@@ -27,9 +27,7 @@ export function TourLink({ onStart }: { onStart: () => void }) {
       <Button variant="text" onClick={onStart}>
         Show me around
       </Button>
-      <button type="button" className={s.tourClose} onClick={dismissTour} aria-label="Hide Show me around for good">
-        <Icon name="close" size={20} />
-      </button>
+      <IconButton icon="close" size={44} label="Hide Show me around for good" onClick={dismissTour} />
     </p>
   );
 }
@@ -114,9 +112,9 @@ export function Tour({ hasSounding, onEnd }: { hasSounding: boolean; onEnd: () =
               Done
             </Button>
           )}
-          <button type="button" className={s.tourHide} onClick={end}>
+          <Button variant="text" onClick={end}>
             Don&rsquo;t show again
-          </button>
+          </Button>
         </div>
       </motion.div>
     </div>,
