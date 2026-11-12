@@ -5,7 +5,7 @@ import { dieselSnapshot, priceRef, priceSnapshot, type RefSnapshot } from "@/con
 import { Button, Field, Segmented, SensitivityTable, Waterfall } from "@/nx/ds";
 import { day, usd } from "@/nx/ds/format";
 import { cx } from "@/nx/ds/util";
-import { notifyTrip, tripStore, useTripData } from "@/v4/coast/economics/useTripData";
+import { notifyTrip, tripStore, useTripData } from "./useTripStore";
 import { fuelReference, priceReference, shareReference, type CoastFishery, type CoastReference } from "./fisheries";
 import {
   assumptions,
