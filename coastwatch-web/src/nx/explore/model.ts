@@ -7,6 +7,7 @@ import { allPast, isPastRun } from "@/lib/modelTime";
 import type { StationLite } from "@/lib/data";
 import { day, pacificYmd, range, time } from "@/nx/ds/format";
 import { gridBounds, type FieldGrid } from "@/nx/chart/layers/grid";
+import { appliesAdjacency } from "./adjacency";
 
 /**
  * What Explore shows, built on the server from the published manifest and the derived index (no field is added
@@ -52,6 +53,8 @@ export type ExploreFrame = {
   /** outlook: each cell's usual value for the period (equal means "no signal") */
   typicalGrid?: GridSpec | null;
   sensor: string;
+  /** the pipeline left the pixel beside land out of this frame (its QC says so): a no-value cell there is not cloud */
+  besideLandLeftOut?: boolean;
 };
 
 export type Track = {
@@ -165,12 +168,13 @@ function chlProduct(m: Manifest, now: Date): ExploreProduct | null {
       ageGrid: gridSpec(c?.age_grid),
       referenceDate: c?.reference_date ?? null,
       sensor: "Sentinel-3 OLCI, 300 m",
+      besideLandLeftOut: appliesAdjacency(olci),
     });
   }
   for (const d of days) {
     const date = d.time.observed_date;
     if (!date || !d.grid) continue;
-    frames.push({ id: `olci:${date}`, product: "chl", track: "olci", label: day(date), stamp: `seen ${day(date)}`, start: date, end: date, kind: "measured", past: false, volume: coverage(d), fresh: freshOf(d.freshness, date, now), grid: gridSpec(d.grid), sensor: "Sentinel-3 OLCI, 300 m" });
+    frames.push({ id: `olci:${date}`, product: "chl", track: "olci", label: day(date), stamp: `seen ${day(date)}`, start: date, end: date, kind: "measured", past: false, volume: coverage(d), fresh: freshOf(d.freshness, date, now), grid: gridSpec(d.grid), sensor: "Sentinel-3 OLCI, 300 m", besideLandLeftOut: appliesAdjacency(d) });
   }
   if (olci || days.length) tracks.push({ id: "olci", product: "chl", label: "OLCI 300 m", days: days.filter((d) => d.time.observed_date).map((d) => ({ date: d.time.observed_date!, volume: d.grid ? (coverage(d) ?? 0) : 0 })) });
   const viirs = satelliteLatest(m, "viirs750");
