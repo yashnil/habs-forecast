@@ -68,7 +68,7 @@ describe("the link to Research (station, from, to, var)", () => {
     expect(RESEARCH_VAR.charm).toBe("pDA");
   });
   it("picks the nearest station", () => {
-    const s = nearestStation([{ id: "a", name: "A", lat: 36.6, lon: -121.9, last: null }, { id: "b", name: "B", lat: 36.96, lon: -122.02, last: null }], 36.9, -122.0);
+    const s = nearestStation([{ id: "a", name: "A", lat: 36.6, lon: -121.9, last: null, vars: [] }, { id: "b", name: "B", lat: 36.96, lon: -122.02, last: null, vars: [] }], 36.9, -122.0);
     expect(s?.id).toBe("b");
   });
 });

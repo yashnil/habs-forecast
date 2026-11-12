@@ -24,6 +24,60 @@ export function readPoint(g: FieldGrid, codes: Uint16Array, lat: number, lon: nu
   return { value: decodeValue(g, codes[c.row * g.width + c.col]), row: c.row, col: c.col, lat: clat, lon: clon };
 }
 
+export type CellGeometry = {
+  row: number;
+  col: number;
+  /** the cell's centre */
+  lat: number;
+  lon: number;
+  /** its size on the ground, km (east-west at its own latitude, north-south) */
+  widthKm: number;
+  heightKm: number;
+  /** its outline, closed: [lon, lat] corners from the north-west, clockwise */
+  outline: [number, number][];
+};
+
+/** The footprint of one cell of a grid: what a readout's value stands for, so the chart can draw exactly it. */
+export function cellGeometry(g: FieldGrid, row: number, col: number): CellGeometry {
+  const { lat, lon } = cellCentre(g, row, col);
+  const hx = Math.abs(g.lon_step) / 2, hy = Math.abs(g.lat_step) / 2;
+  const w = lon - hx, e = lon + hx, s = lat - hy, n = lat + hy;
+  return {
+    row,
+    col,
+    lat,
+    lon,
+    widthKm: Math.abs(g.lon_step) * KM_PER_DEG * Math.cos((lat * Math.PI) / 180),
+    heightKm: Math.abs(g.lat_step) * KM_PER_DEG,
+    outline: [[w, n], [e, n], [e, s], [w, s], [w, n]],
+  };
+}
+
+/** "300 m", "1 km", "3 km": a cell's size in the fewest honest figures (its longer side). */
+export function cellSizeWords(c: Pick<CellGeometry, "widthKm" | "heightKm">): string {
+  const km = Math.max(c.widthKm, c.heightKm);
+  if (km < 0.95) return `${Math.round((km * 1000) / 50) * 50} m`;
+  return `${km < 9.5 ? Number(km.toFixed(km < 1.95 && Math.abs(km - Math.round(km)) > 0.15 ? 1 : 0)) : Math.round(km)} km`;
+}
+
+/**
+ * Where a cell without a value sits in its own grid's row, read from the data alone (the California coast runs
+ * down the east side of every grid here): cells with values only to the WEST mean the gap lies between the
+ * product's water and the shore; only to the EAST, beyond its seaward edge; on BOTH sides, a hole inside its
+ * area; on neither, the product has nothing at this latitude. Never a guess about why from a fixed sentence.
+ */
+export type GapPosition = "shoreward" | "seaward" | "inside" | "row-empty";
+
+export function gapPosition(g: FieldGrid, codes: Uint16Array, row: number, col: number): GapPosition {
+  const eastward = g.lon_step > 0 ? 1 : -1;
+  const has = (from: number, step: number) => {
+    for (let c = from; c >= 0 && c < g.width; c += step) if (codes[row * g.width + c] !== g.nodata) return true;
+    return false;
+  };
+  const east = has(col + eastward, eastward), west = has(col - eastward, -eastward);
+  return east && west ? "inside" : west ? "shoreward" : east ? "seaward" : "row-empty";
+}
+
 /** A latest view's pixel date: the reference date minus the pixel's age in days. */
 export function pixelDate(referenceDate: string, ageDays: number): string {
   return new Date(Date.parse(`${referenceDate}T12:00:00Z`) - ageDays * 86_400_000).toISOString().slice(0, 10);
@@ -88,6 +142,33 @@ const COMPASS = ["north", "northeast", "east", "southeast", "south", "southwest"
 export const compassWord = (deg: number) => COMPASS[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 export const KNOTS = 1.943844;
 
+/** How far a station may be and still be called "nearby" in a link (the Explore → Research contract). */
+export const NEARBY_KM = 25;
+
+export type StationChoice = {
+  /** the nearest station within NEARBY_KM that measures the variable: the one a "nearby" link may name */
+  link: (ExploreStation & { km: number }) | null;
+  /** the nearest station that measures it at any distance (said with its distance, never as "nearby") */
+  far: (ExploreStation & { km: number }) | null;
+};
+
+/**
+ * The station a reading may send the reader to: it must measure the variable asked for and be within
+ * NEARBY_KM. A station that is nearer but never measured the variable is not offered; one that measures it
+ * but is farther is named with its distance, as an alternative. A local rule until Research exports
+ * `stationsMeasuring(varId)` (src/lib/observations.ts); `vars` is each station's own list from the data.
+ */
+export function stationFor(stations: ExploreStation[], lat: number, lon: number, varId: string, maxKm = NEARBY_KM): StationChoice {
+  let best: (ExploreStation & { km: number }) | null = null;
+  for (const s of stations) {
+    if (!s.vars.includes(varId)) continue;
+    const km = distanceKm(lat, lon, s.lat, s.lon);
+    if (!best || km < best.km) best = { ...s, km };
+  }
+  if (!best) return { link: null, far: null };
+  return best.km <= maxKm ? { link: best, far: null } : { link: null, far: best };
+}
+
 /** The nearest monitoring station (CalHABMAP shore samples) and how far it is. */
 export function nearestStation(stations: ExploreStation[], lat: number, lon: number): (ExploreStation & { km: number }) | null {
   let best: (ExploreStation & { km: number }) | null = null;
@@ -112,6 +193,18 @@ export function researchHref(o: { station: string; to: string; product: ProductI
   const q = new URLSearchParams({ station: o.station, from, to: o.to, var: RESEARCH_VAR[o.product] });
   if (o.place) q.set("place", o.place);
   return `/research?${q.toString()}`;
+}
+
+/**
+ * The Explore → My Coast contract: `/coast?place=<port>&at=<lat>,<lon>&date=<YYYY-MM-DD>`. The point is the read
+ * cell's centre (what the value stands for), the date the reading's own.
+ */
+export function coastHref(o: { place?: string | null; lat: number; lon: number; date: string }): string {
+  const q = new URLSearchParams();
+  if (o.place) q.set("place", o.place);
+  q.set("at", `${o.lat.toFixed(4)},${o.lon.toFixed(4)}`);
+  q.set("date", o.date);
+  return `/coast?${q.toString().replace(/%2C/g, ",")}`;
 }
 
 /** The date a reading at a point belongs to: the pixel's own date in a latest view, else the frame's end. */

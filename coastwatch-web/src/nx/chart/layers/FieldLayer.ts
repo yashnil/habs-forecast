@@ -15,6 +15,8 @@ import { gridBounds, mercX, mercY, type FieldGrid } from "./grid";
  *   and cells where it equals the climatology carry dots and no colour ("no signal", E finding 2); C-HARM is
  *   drawn in cw-probability-classes-v1's ten display intervals on the quiet --prob ramp with a model hatch over
  *   it (T12: no alarm colour), lighter when the run is past (T3);
+ * - water a model or an outlook has no cell for is ruled "outside the model" to the chart's edge, never left as
+ *   plain water (outside the footprint is unavailable, not zero);
  * - a temperature analysis is drawn as isotherms (lines), so it never borrows the chlorophyll ramp (T22);
  * - colours come from the mode's tokens (day, dusk, night); a new frame swaps the texture, a cut (T26).
  * Screen-space patterns (hatch, dots) are drawn in device pixels, so they read the same at every zoom.
@@ -37,7 +39,7 @@ in vec2 a_pos;
 out vec2 v_merc;
 void main() { v_merc = a_pos; gl_Position = u_matrix * vec4(a_pos, 0.0, 1.0); }`;
 
-const FS = `#version 300 es
+export const FIELD_FS = `#version 300 es
 precision highp float;
 precision highp int;
 precision highp usampler2D;
@@ -92,6 +94,17 @@ float dots(float spacing, float radius) {
   vec2 p = mod(gl_FragCoord.xy, s) - 0.5 * s;
   return 1.0 - smoothstep(radius * u_dpr - 0.6, radius * u_dpr + 0.6, length(p));
 }
+// level lines in device pixels: 1 on a line
+float rules(float spacing, float width) {
+  float s = spacing * u_dpr;
+  float d = mod(gl_FragCoord.y, s);
+  float hw = width * u_dpr * 0.5;
+  return 1.0 - smoothstep(hw - 0.5, hw + 0.5, min(d, s - d));
+}
+// "outside the model": water a model or an outlook has no cell for (beyond its grid, its nearshore band, a hole).
+// Level rules over a paper veil: not the model's hatch, not the observed layers' "no view" hatch, never blank
+// water that could be read as a low value or as covered
+vec4 outsideModel() { return over(pm(u_ink2, 0.42 * rules(7.0, 1.0)), pm(u_paper, 0.3)); }
 vec4 ramp(float t) {
   float p = clamp(t, 0.0, 1.0) * 7.0;
   int i = int(min(floor(p), 6.0));
@@ -106,8 +119,9 @@ void main() {
   vec2 f = cellf();
   ivec2 c = ivec2(floor(f + 0.5));
   bool within = inside(c);
-  // an observed layer is drawn past its grid (the quad covers the chart): there is no view there either
-  if (!within && u_variant != 0) discard;
+  // an observed layer is drawn past its grid (the quad covers the chart): there is no view there either; a model
+  // or an outlook is too, with its own "outside the model" mark; isotherms stop at their grid
+  if (!within && u_variant == 3) discard;
   float v = within ? q(codeAt(c), u_dec) : -1e30;
   bool nodata = v < -1e29;
 
@@ -124,7 +138,7 @@ void main() {
     return;
   }
   if (u_variant == 1) {
-    if (nodata) discard;
+    if (nodata) { o = outsideModel(); return; }
     if (u_hasAux == 1) {
       float a = q(texelFetch(u_aux, c, 0).r, u_decAux);
       if (a > -1e29 && abs(v - a) < 0.002) {
@@ -137,7 +151,7 @@ void main() {
     return;
   }
   if (u_variant == 2) {
-    if (nodata) discard;
+    if (nodata) { o = outsideModel(); return; }
     // cw-probability-classes-v1: ten 10-point display intervals in the mode's quiet --prob ramp, at 0.72 as the
     // legend draws it (T23), with the model's hatch over it (T2); a past run steps back (T3)
     int k = int(clamp(floor(v * 10.0), 0.0, 9.0));
@@ -190,6 +204,15 @@ export function decimate(codes: Uint16Array, w: number, h: number, stride: numbe
 
 /** The chart's whole drawn extent (public/chart/chart.json frame.bounds): how far "no view" is hatched. */
 const OUTER = CHART_FRAME.bounds;
+
+/**
+ * How far a layer is drawn. An observed layer's "no view" hatch and a model's or outlook's "outside the model"
+ * rules reach past the grid to the chart's edge (the land masks them), so the grid's edge is never a line across
+ * the sea and no blank water reads as a value. Isotherms are lines and stop at their grid.
+ */
+export function fieldQuadBounds(kind: FieldStyle["kind"], grid: Parameters<typeof gridBounds>[0]): [number, number, number, number] {
+  return kind === "isolines" ? gridBounds(grid) : (OUTER as [number, number, number, number]);
+}
 
 const VARIANT: Record<FieldStyle["kind"], number> = { ramp: 0, outlook: 1, classes: 2, isolines: 3 };
 
@@ -245,9 +268,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       texAux ??= g.createTexture();
       upload(g, texAux!, a.codes, a.w, a.h);
     }
-    // an observed layer's "no view" hatch reaches past its grid to the chart's edge (the land masks it); the others
-    // stop at their grid
-    const [w, s, e, n] = style.kind === "ramp" ? OUTER : gridBounds(grid);
+    const [w, s, e, n] = fieldQuadBounds(style.kind, grid);
     g.bindBuffer(g.ARRAY_BUFFER, quad);
     g.bufferData(g.ARRAY_BUFFER, new Float32Array([mercX(w), mercY(n), mercX(e), mercY(n), mercX(w), mercY(s), mercX(e), mercY(s)]), g.STATIC_DRAW);
     g.bindTexture(g.TEXTURE_2D, null);
@@ -272,7 +293,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
     onAdd(m, ctx) {
       map = m;
       gl = ctx as WebGL2RenderingContext;
-      prog = compile(gl, VS, FS);
+      prog = compile(gl, VS, FIELD_FS);
       for (const k of ["u_matrix", "u_data", "u_aux", "u_hasAux", "u_geo", "u_size", "u_stride", "u_dec", "u_decAux", "u_takeLog", "u_variant", "u_ramp", "u_prob", "u_domain", "u_ink", "u_ink2", "u_hatch", "u_paper", "u_dpr", "u_opacity", "u_step", "u_index", "u_past", "u_iso"]) u[k] = gl.getUniformLocation(prog, k);
       vao = gl.createVertexArray();
       gl.bindVertexArray(vao);
