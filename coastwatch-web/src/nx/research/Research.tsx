@@ -189,8 +189,8 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const folded = useMemo(() => new Set(strips.filter((x) => !x.points.some((p) => inWin(p.t, committed))).map((x) => x.id)), [strips, committed]);
   const plotH = useMemo(() => {
     if (!wide || room == null) return 76;
-    // the tallest plots that fit the panel without scrolling; below 34 px the panel scrolls instead
-    let h = 34;
+    // the tallest plots that fit the panel without scrolling; below 26 px the panel scrolls instead
+    let h = 26;
     // (a threshold strip's header takes extra lines for what its dashes mean: RecordStrips stripHead)
     while (h < 160 && layoutStrips(strips, h + 2, folded, (st) => stripHead(st, roomW)).height <= room - 4) h += 2;
     return h;
@@ -656,7 +656,8 @@ function legendFor(strips: ReturnType<typeof buildStrips>, win: [number, number]
   if (pts.some((p) => p.flagged)) out.push({ id: "flagged", words: "Flagged high, kept" });
   if (m) out.push({ id: "model", words: "Model, hatched where none kept" });
   if (m?.partial && [...m.partial].some((t) => inWin(t, win))) out.push({ id: "partial", words: "Model day, few cells" });
-  if (strips.some((x) => x.threshold)) out.push({ id: "threshold", words: "C-HARM threshold" });
+  // the strips label each dashed line with its value; the legend says whose it is (and that Pseudo-nitzschia's counts all species)
+  if (strips.some((x) => x.threshold)) out.push({ id: "threshold", words: strips.some((x) => x.threshold && /^pn_/.test(x.id)) ? "C-HARM threshold (Pseudo-nitzschia: all species)" : "C-HARM threshold" });
   out.push({ id: "now", words: "Today" });
   return out;
 }

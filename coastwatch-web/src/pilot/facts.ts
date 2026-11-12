@@ -311,7 +311,7 @@ export type OutlookRead = {
   level: OutlookLevel;
   /** "higher than usual" | "about usual" | "lower than usual": the phrase inside the fact's headline */
   phrase: string;
-  /** "about 1.6× the typical level" (higher), "about 60% of the typical level" (lower); null for "about usual" */
+  /** "within the model's typical error" (higher), "about 60% of the typical level" (lower); null for "about usual" */
   ratioWords: string | null;
 };
 export type BloomView = {
@@ -894,11 +894,23 @@ export function skillWords(skill: OutlookInput["skill"]): string {
  */
 export const OUTLOOK_SIGNAL_RATIO = 1.5;
 
-/** higher / about usual / lower, from outlook ÷ usual (the ratio is compared unrounded). */
-export function outlookRead(value: number | null | undefined, typical: number | null | undefined): OutlookRead | null {
+/**
+ * higher / about usual / lower, from outlook ÷ usual (the ratio is compared unrounded). With the model's typical
+ * error factor known (outlookErrorFactor), a ratio inside that factor is never quoted as a multiple (T15: a
+ * "1.6×" beside "a typical error of a factor of 2" claims a precision the model does not have): the words say
+ * only that it is within the model's typical error. Beyond it, the multiple is given to one figure.
+ */
+export function outlookRead(value: number | null | undefined, typical: number | null | undefined, errorFactor: number | null = null): OutlookRead | null {
   if (value == null || typical == null || !(value > 0) || !(typical > 0)) return null;
   const ratio = value / typical;
   if (!Number.isFinite(ratio)) return null;
+  if (errorFactor != null && errorFactor > 1) {
+    const within = "within the model's typical error";
+    const one = (x: number) => Number(x.toPrecision(1));
+    if (ratio >= OUTLOOK_SIGNAL_RATIO) return { ratio, level: "higher", phrase: "higher than usual", ratioWords: ratio < errorFactor ? within : `about ${one(ratio)}× the typical level` };
+    if (ratio <= 1 / OUTLOOK_SIGNAL_RATIO) return { ratio, level: "lower", phrase: "lower than usual", ratioWords: ratio > 1 / errorFactor ? within : `about ${one(ratio * 100)}% of the typical level` };
+    return { ratio, level: "usual", phrase: "about usual", ratioWords: null };
+  }
   if (ratio >= OUTLOOK_SIGNAL_RATIO) return { ratio, level: "higher", phrase: "higher than usual", ratioWords: `about ${ratio >= 9.95 ? ratio.toFixed(0) : ratio.toFixed(1)}× the typical level` };
   if (ratio <= 1 / OUTLOOK_SIGNAL_RATIO) return { ratio, level: "lower", phrase: "lower than usual", ratioWords: `about ${Math.max(5, Math.round((ratio * 100) / 5) * 5)}% of the typical level` };
   return { ratio, level: "usual", phrase: "about usual", ratioWords: null };
@@ -981,8 +993,8 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
     sw = skillWords(outlook.skill);
     outlookStale = isPastRun(outlook.valid_from, outlook.valid_to, pacificDay(now));
     const win = rangeWords(outlook.valid_from, outlook.valid_to, now);
-    read = outlookRead(outlook.value, outlook.typical);
     errorFactor = outlookErrorFactor(outlook.skill);
+    read = outlookRead(outlook.value, outlook.typical, errorFactor);
     // what it is and how sure, always beside the reading: algae of every kind, one average, and the size of a typical miss
     const w = outlookWindow(outlook, now);
     honest = `A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one ${w.days}-day average, not a day-by-day forecast${errorFactor != null ? `, and its typical error is about a factor of ${factorWords(errorFactor)} either way` : ""}.`;

@@ -33,32 +33,15 @@ export type StripLayout = { strip: Strip; top: number; head: number; plotTop: nu
 /** One header line, px; each wrapped line of a threshold strip's unit adds another. */
 export const HEAD_LINE = 18;
 
-let ctx2d: CanvasRenderingContext2D | null | undefined;
-/** Text width in px with the page's sans at `size`/`weight` (canvas); off the browser, about 0.5 em a character. */
-function textWidth(text: string, size: number, weight = 400): number {
-  if (typeof document === "undefined") return text.length * size * 0.5;
-  if (ctx2d === undefined) ctx2d = document.createElement("canvas").getContext("2d");
-  if (!ctx2d) return text.length * size * 0.5;
-  // the system's sans, read where the tokens apply (the body itself is not set in it)
-  const root = document.querySelector("[data-chart-mode]") ?? document.documentElement;
-  const family = getComputedStyle(root).getPropertyValue("--font-sans").trim() || "sans-serif";
-  ctx2d.font = `${weight} ${size}px ${family}`;
-  return ctx2d.measureText(text).width;
-}
-
 /**
- * A strip's header height at a width: one line for most; a strip with a dashed threshold puts its unit and what
- * the dashes mean on lines of their own under the name, as many as the words need, so nothing is cut with an
- * ellipsis (critic 15). The name shares its line with the reading when both fit.
+ * A strip's header height: one line. A threshold strip's dashes are labelled on the plot, at the line's right end
+ * ("500 ng/L"), and the view's legend names them "C-HARM threshold", so a header never wraps: at 1440 × 900 every
+ * strip, C-HARM's included, fits its panel beside its caption (critic N3; before, wrapped headers pushed the model
+ * strip into a hidden inner scroll). `width` is kept for callers.
  */
-export function stripHead(strip: Strip, width: number): number {
-  if (!strip.threshold) return HEAD;
-  const room = Math.max(160, width - 8);
-  const name = textWidth(`${strip.kind === "model" ? "Model · " : ""}${strip.label}`, 16, 600) + 8 + textWidth("not measured that day", 16);
-  const words = textWidth(`${strip.unit}; dashes: ${strip.threshold.label}`, 14);
-  // a little over the bare width: wrapping at word breaks leaves the end of each line short
-  const lines = Math.min(4, Math.max(1, Math.ceil((words * 1.06) / room)));
-  return HEAD * (name > room ? 2 : 1) + lines * HEAD_LINE;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function stripHead(_strip: Strip, _width: number): number {
+  return HEAD;
 }
 
 /**
@@ -193,10 +176,8 @@ export const RecordStrips = forwardRef<RecordStripsHandle, RecordStripsProps>(fu
                 <span>Model · {st.label}</span>
               </span>
             )}
-            {/* a strip with a dashed threshold says what the dashes are on a line of its own, wrapped, never cut (critic 15) */}
             <span className={s.stripUnit} title={st.threshold ? `${st.unit}; dashed line: ${st.threshold.label}` : st.unit}>
               {st.unit}
-              {st.threshold && !row.folded ? `; dashes: ${st.threshold.label}` : ""}
             </span>
             <span className={s.stripReading} data-testid={`reading-${st.id}`}>
               {row.folded ? "none in this window" : cursor == null ? "" : reading ? valueWords(st, reading) : st.kind === "model" ? "no run kept that day" : "not measured that day"}
@@ -340,6 +321,10 @@ function StripPlot({ row, x, plotW, xTicks, win, clip, pxPerDay, now, cursor }: 
       {st.threshold ? (
         <g>
           <line x1={LEFT} x2={LEFT + plotW} y1={y(st.threshold.value)} y2={y(st.threshold.value)} className={s.threshold} />
+          {/* the dashes say what they are where they are drawn (the legend names them C-HARM's threshold) */}
+          <text x={LEFT + plotW - 4} y={Math.max(y(st.threshold.value) - 4, plotTop + 11)} className={s.thresholdLabel} data-testid={`threshold-${st.id}`}>
+            {st.threshold.short ?? st.threshold.label}
+          </text>
         </g>
       ) : null}
       {nowX >= LEFT && nowX <= LEFT + plotW ? <line x1={nowX} x2={nowX} y1={plotTop} y2={laneTop != null ? laneTop + LANE : bottom} className={s.now} /> : null}

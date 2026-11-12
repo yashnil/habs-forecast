@@ -502,7 +502,8 @@ export function Explore({ model }: { model: ExploreModel }) {
         {model.products.map((p) => (
           <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`}>
             <span>{LAYER_LABEL[p.id]}</span>
-            <small>{layerKindWord(p)}</small>
+            {/* the tab says only "past run"; its date is in the legend and on the rail (critic N8: no 3-line tab) */}
+            <small>{p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
           </button>
         ))}
         {model.currents ? (

@@ -38,7 +38,7 @@ describe("the outlook against usual, from the derived fixture", () => {
     expect(outlook!.value! / outlook!.typical!).toBeCloseTo(1.6, 2);
     expect(outlook!.typical_basis).toMatch(/usual chlorophyll for this 8-day period/);
     expect(bloom.outlookRead!.level).toBe("higher");
-    expect(bloom.outlookFact!.headline).toBe("Next 8 days (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level.");
+    expect(bloom.outlookFact!.headline).toBe("Next 8 days (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, within the model's typical error.");
   });
 
   it("Half Moon Bay: 1.1 times usual in the fixture is not a signal", async () => {

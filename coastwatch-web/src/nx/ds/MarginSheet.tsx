@@ -110,7 +110,7 @@ export function MarginSheet({ label, peek, children, detents = ["176px", 0.55, 0
     >
       <div className={s.top} onPointerDown={(e) => controls.start(e)}>
         <span className={s.handle} aria-hidden />
-        {!peek ? <Controls label={label} last={last} step={step} onClose={onClose} bodyId={bodyId} floating /> : null}
+        {!peek ? <Controls label={label} last={last} open={at > 0} step={step} onClose={onClose} bodyId={bodyId} floating /> : null}
       </div>
       <h2 id={titleId} className={s.vh}>
         {label}
@@ -118,7 +118,7 @@ export function MarginSheet({ label, peek, children, detents = ["176px", 0.55, 0
       {peek ? (
         <div className={s.peekRow} onPointerDown={(e) => controls.start(e)}>
           <div className={s.peek}>{peek}</div>
-          <Controls label={label} last={last} step={step} onClose={onClose} bodyId={bodyId} />
+          <Controls label={label} last={last} open={at > 0} step={step} onClose={onClose} bodyId={bodyId} />
         </div>
       ) : null}
       <div id={bodyId} className={cx(s.body, !peek && s.bodyBare)} data-scroll={last || scroll === "always" || undefined}>
@@ -131,11 +131,11 @@ export function MarginSheet({ label, peek, children, detents = ["176px", 0.55, 0
   return createPortal(el, container ?? document.body);
 }
 
-function Controls({ label, last, step, onClose, floating, bodyId }: { label: string; last: boolean; step: () => void; onClose?: () => void; floating?: boolean; bodyId: string }) {
+function Controls({ label, last, open, step, onClose, floating, bodyId }: { label: string; last: boolean; open: boolean; step: () => void; onClose?: () => void; floating?: boolean; bodyId: string }) {
   return (
     <div className={cx(s.controls, floating && s.floating)} onPointerDown={(e) => e.stopPropagation()}>
-      {/* expanded at reading height (the last detent); the words say where the next press goes (critic 18) */}
-      <button type="button" className={s.more} onClick={step} aria-expanded={last} aria-controls={bodyId} aria-label={last ? `Show less of ${label}` : `Show more of ${label}`}>
+      {/* expanded once it is above its resting detent (the middle one too); the words say where the next press goes (critic 18) */}
+      <button type="button" className={s.more} onClick={step} aria-expanded={open} aria-controls={bodyId} aria-label={last ? `Show less of ${label}` : `Show more of ${label}`}>
         {last ? "Less" : "More"}
         <Icon name="chevron" size={20} direction={last ? "down" : "up"} />
       </button>

@@ -130,7 +130,7 @@ describe("dates in the reader's terms, as Today words them", () => {
     expect(b.data_age!.stale).toContain("NOAA C-HARM of Oct 8 is out of date: it covered Oct 7–10.");
     // the outlook is quoted by its plain sentence and what it is; its mg/m³ and held-out skill stay on its Today card
     const o = b.lines.find((l) => l.cites.includes("outlook:chl8d"))!.text;
-    expect(o).toBe("Next 8 days (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level. A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast, and its typical error is about a factor of 2 either way. A higher-than-usual outlook is a reason to watch the next CDPH test results, not a sign of toxin.");
+    expect(o).toBe("Next 8 days (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, within the model's typical error. A bloom indicator, not a toxin forecast: chlorophyll is algae of every kind. It is one 8-day average, not a day-by-day forecast, and its typical error is about a factor of 2 either way. A higher-than-usual outlook is a reason to watch the next CDPH test results, not a sign of toxin.");
     for (const a of [t, b]) expect(JSON.stringify([a.lines, a.data_age?.label, a.data_age?.stale, a.caveats])).not.toMatch(/\d{4}-\d{2}-\d{2}|hours old/);
   });
   it("ages a day-dated record in days and a timestamp in hours; spans as Today writes them", () => {

@@ -290,6 +290,14 @@ describe("buildPortToday: words", () => {
     expect(outlookRead(1.34, 2.0)!.level).toBe("usual"); // 0.67x: just inside
     expect(outlookRead(1.3, 2.0)).toMatchObject({ level: "lower", phrase: "lower than usual", ratioWords: "about 65% of the typical level" });
     expect(outlookRead(24, 2.0)!.ratioWords).toBe("about 12× the typical level");
+    // T15: with the model's error factor known, a ratio inside it is never quoted as a multiple (critic N5)
+    expect(outlookRead(3.2, 2.0, 2.1)).toMatchObject({ level: "higher", phrase: "higher than usual", ratioWords: "within the model's typical error" });
+    expect(outlookRead(1.2, 2.0, 2.1)).toMatchObject({ level: "lower", ratioWords: "within the model's typical error" });
+    expect(outlookRead(2.4, 2.0, 2.1)).toMatchObject({ level: "usual", ratioWords: null });
+    // beyond it, one figure
+    expect(outlookRead(9.6, 2.0, 2.1)!.ratioWords).toBe("about 5× the typical level");
+    expect(outlookRead(24, 2.0, 2.1)!.ratioWords).toBe("about 10× the typical level");
+    expect(outlookRead(0.5, 2.0, 2.1)!.ratioWords).toBe("about 30% of the typical level");
     // nothing to compare with, nothing said
     for (const [v, t] of [[3.2, null], [3.2, undefined], [null, 2], [3.2, 0], [0, 2], [3.2, Number.NaN]] as const) expect(outlookRead(v, t)).toBeNull();
   });
@@ -299,7 +307,7 @@ describe("buildPortToday: words", () => {
     const m = buildTodayModel(base({ outlook: { ...OUTLOOK, typical: 2.0 } }));
     const f = m.bloom.outlookFact!;
     expect(f.id).toBe("outlook:chl8d");
-    expect(f.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, about 1.6× the typical level.");
+    expect(f.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run higher than usual for this time of year, within the model's typical error.");
     expect(m.bloom.outlookRead).toMatchObject({ level: "higher", phrase: "higher than usual" });
     expect(m.bloom.outlookRead!.ratio).toBeCloseTo(1.6, 5);
     // what it is, how sure (the factor comes from the published RMSE: e^0.754 = 2.1), and a neutral use
@@ -322,7 +330,7 @@ describe("buildPortToday: words", () => {
     expect(usual.outlookUse).toMatch(/says nothing about toxin either way: only CDPH's lab tests of seafood measure it/);
 
     const lower = buildTodayModel(base({ outlook: { ...OUTLOOK, value: 1.0, typical: 2.0 } })).bloom;
-    expect(lower.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run lower than usual for this time of year, about 50% of the typical level.");
+    expect(lower.outlookFact!.headline).toBe("This 8-day period (Oct 13–20): chlorophyll near Moss Landing is expected to run lower than usual for this time of year, within the model's typical error.");
     expect(lower.outlookUse).toMatch(/does not rule out toxin/);
     expect(text(lower.outlookFact!)).not.toMatch(SAFETY);
   });
