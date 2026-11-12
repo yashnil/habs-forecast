@@ -704,7 +704,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                         {counts.rows ? `: ${counts.by.filter((x) => x.n).map((x) => `${SHORT[x.v]} ${x.n.toLocaleString("en-US")}`).join(", ")}` : ""}. One row per sample and variable, with source columns.
                       </p>
                       <ButtonGroup>
-                        <Button variant="primary" icon="share" onClick={exportCsv} aria-describedby="rx-export-what">
+                        <Button variant="secondary" icon="share" onClick={exportCsv} aria-describedby="rx-export-what">
                           Export the window as CSV
                         </Button>
                         {modelStrip ? (
