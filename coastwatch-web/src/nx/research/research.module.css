@@ -675,3 +675,12 @@ button.stripName[aria-pressed="true"] {
     font-size: var(--t-22);
   }
 }
+
+/* T10 under the model strip: the C-HARM figure never stands without its words */
+.modelWords {
+  margin: 0;
+  padding: var(--s-4) 0 var(--s-8);
+  font-size: var(--t-14);
+  line-height: 1.45;
+  color: var(--ink-2);
+}

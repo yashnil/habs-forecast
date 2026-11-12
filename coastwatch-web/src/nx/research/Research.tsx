@@ -307,6 +307,12 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
             <Unavailable what={`${st.name} has published no samples`} why={st.error ?? "The station's last request returned nothing Neritic could read."} />
           )}
         </div>
+        {/* T10: the mandatory words sit under the model strip, always visible, never behind a tap */}
+        {modelStrip ? (
+          <p className={s.modelWords} data-testid="research-model-words">
+            C-HARM: {MODEL_WORDS.charAt(0).toLowerCase()}{MODEL_WORDS.slice(1)} No demonstrated skill at the shore; a high reading here is near-constant background, not an alarm.
+          </p>
+        ) : null}
         {strips.length ? (
           <div
             className={s.brushRow}

@@ -97,12 +97,24 @@ test.describe("Explore", () => {
     const m = margin(page);
     await expect(m).toContainText("Explore: Chlorophyll");
     await expect(m).toContainText("No view");
-    await expect(m).toContainText("Measured · Sentinel-3 OLCI, 300 m · latest view, pixels Oct 1–6, each its own latest day seen. Algae, not toxin.");
+    // the newest pixel is Oct 6, past OLCI's 3-day limit on Oct 12: "(old)" beside the dates (T17)
+    await expect(m).toContainText("Measured · Sentinel-3 OLCI, 300 m · latest view, pixels Oct 1–6, each its own latest day seen (old). Algae, not toxin.");
+    // the first line says what the view is, before any instrument (5-second test)
+    await expect(m.getByTestId("nx-explore-lead")).toHaveText("Algae seen from space, Oct 1–6: each spot shows its latest clear view. Not toxin.");
+    await expect(m.getByTestId("nx-rail-also")).toBeHidden();
   });
 
-  test("currents: measured hours only, relative speed, and no streak is no data (T24, T25)", async ({ page }) => {
+  test("currents: off by default over chlorophyll (T25, T27); switched on, an hour past the radar's limit is still and says (old) (T17, T24)", async ({ page }) => {
     await page.goto(`${OK}/explore?place=port-592`);
-    await expect(margin(page)).toContainText("Relative speed; fainter where the radar measured the cell in fewer hours. No streak is no data, not calm.");
+    const toggle = page.getByTestId("nx-currents-toggle");
+    await expect(toggle).toHaveAttribute("aria-checked", "false");
+    await expect(page.getByTestId("nx-currents-key")).toHaveCount(0);
+    await toggle.click();
+    await expect(toggle).toContainText("on, measured (old)");
+    await expect(page).toHaveURL(/cur=1/);
+    const key = page.getByTestId("nx-currents-key");
+    await expect(key).toContainText("(old). Older than the radar's own freshness limit, so drawn still.");
+    await expect(key).toContainText("Relative speed; fainter where the radar measured the cell in fewer hours. No streak is no data, not calm.");
   });
 
   test("C-HARM: the event and threshold, its mandatory words, classes that are not risk levels, a past run said so (T3, T9, T10, T12)", async ({ page }) => {
@@ -144,6 +156,9 @@ test.describe("Research", () => {
     await expect(rec).toContainText("ng/mL in seawater");
     await expect(rec).toContainText("%, median of model cells within 15 km");
     await expect(rec).toContainText(/No model history kept before /);
+    // T10: the model strip's words are visible beside it, with nothing expanded
+    await expect(page.getByTestId("research-model-words")).toBeVisible();
+    await expect(page.getByTestId("research-model-words")).toHaveText("C-HARM: probability of conditions in the water, not toxin in seafood. No demonstrated skill at the shore; a high reading here is near-constant background, not an alarm.");
   });
 
   test("a port with no station within 60 km is an honest gap, said in words (briefing-trust Shelter Cove)", async ({ page }) => {
