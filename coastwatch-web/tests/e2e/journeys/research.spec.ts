@@ -52,12 +52,13 @@ test("arrive from Explore, brush, read the filtered log, export exactly the wind
   await end.press("Shift+ArrowLeft");
   await expect.poll(() => params(page).to).toBe("2024-12-31");
   await page.waitForTimeout(900);
-  // and dragged by hand: the window's start, later
+  // and dragged by hand: the window's start, earlier. The record now runs from 2005, so a one-year window is
+  // about 30 px of the brush and its two handles meet: the start handle is taken by its outer (left) edge
   const start = page.getByRole("slider", { name: "Window start" });
   const sb = (await start.boundingBox())!;
-  await page.mouse.move(sb.x + sb.width / 2, sb.y + sb.height / 2);
+  await page.mouse.move(sb.x + 3, sb.y + sb.height / 2);
   await page.mouse.down();
-  await page.mouse.move(sb.x + sb.width / 2 + 40, sb.y + sb.height / 2, { steps: 10 });
+  await page.mouse.move(sb.x + 3 - 40, sb.y + sb.height / 2, { steps: 10 });
   await page.mouse.up();
   await expect.poll(() => params(page).from).not.toBe("2024-01-01");
   const { from, to } = params(page);

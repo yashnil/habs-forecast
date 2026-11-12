@@ -91,73 +91,73 @@
   "content_type": "application/x-netcdf",
   "file": "afea1574c5f2d7d0.bin"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLab.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLab.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "34e49fdc42cba7e2.csv"
+  "file": "3cee8d2e29788cee.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLabBuoy.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-BodegaMarineLabBuoy.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "52ee8f6aa1ce8e15.csv"
+  "file": "72f5c3bac8246fb1.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-CalPolyPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-CalPolyPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "e12ca088ad4cc564.csv"
+  "file": "0288146de9c19be9.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-Humboldt.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-Humboldt.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "822b658feeb44c2a.csv"
+  "file": "5a415ecaf833961e.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-HumboldtSouthBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-HumboldtSouthBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "952b83c59c7cbcf0.csv"
+  "file": "619c630d41eae4a3.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-InnerTomalesBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-InnerTomalesBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "731067a3f7ddc8aa.csv"
+  "file": "c9db24010357b3e5.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-MontereyWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-MontereyWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "b8347729519a064e.csv"
+  "file": "179c63f4d9da1358.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayBackBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayBackBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "17a5fc194ee8e56b.csv"
+  "file": "04b5521a712b825d.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayFrontBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-MorroBayFrontBay.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "e886ec2048fbf670.csv"
+  "file": "59763872865b488c.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-NewportBeachPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-NewportBeachPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "faefbee972631a74.csv"
+  "file": "abbaccb330a722ba.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-SantaCruzWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-SantaCruzWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "64bb60fae6c89818.csv"
+  "file": "a46e419f83c1013c.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-SantaMonicaPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-SantaMonicaPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "643c5a7b10bef97a.csv"
+  "file": "e5f12b5284a347ec.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-ScrippsPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-ScrippsPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "1ca82cd857a3f47c.csv"
+  "file": "42c6b79c43e3a6f5.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-StearnsWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-StearnsWharf.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "d1735b47f9d339f2.csv"
+  "file": "ea0640622bf95773.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMid-ChannelBuoy.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMid-ChannelBuoy.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "dc8e0f89e74682c7.csv"
+  "file": "90aabf71b05df1cd.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMouth.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-TomalesBayMouth.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "f9b3fba1d9c24c54.csv"
+  "file": "bc68e78dc7d7f35c.csv"
  },
- "https://erddap.sccoos.org/erddap/tabledap/HABs-TrinidadPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2014-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
+ "https://erddap.sccoos.org/erddap/tabledap/HABs-TrinidadPier.csv?time,latitude,longitude,depth,Location_Code,SampleID,pDA,dDA,tDA,Pseudo_nitzschia_seriata_group,Pseudo_nitzschia_delicatissima_group,Avg_Chloro,Temp&time%3E=2005-01-01T00%3A00%3A00Z&orderBy(\"time\")": {
   "content_type": "text/csv;charset=ISO-8859-1",
-  "file": "a63cf8367b39a4b5.csv"
+  "file": "663e19c6e8c31626.csv"
  },
  "https://services2.arcgis.com/wi1yEacfYjH5viqb/arcgis/rest/services/All_Bivalve_Shellfish_Health_Advisory_Special_Advisory/FeatureServer/3/query?where=1%3D1&outFields=TITLE&outSR=4326&f=geojson": {
   "content_type": "application/json; charset=utf-8",

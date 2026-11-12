@@ -50,7 +50,7 @@ from . import port_intel
 
 SOURCE_ID = "calhabmap"
 SERVER = "https://erddap.sccoos.org/erddap"
-WINDOW_START = "2014-01-01"
+WINDOW_START = "2005-01-01"  # CalHABMAP shore sampling at these piers begins in 2005 (pDA later); earlier rows, if any, stay at the source
 CHARM_HISTORY_DAYS = 180
 RETRY_ATTEMPTS = 3
 RETRY_SLEEP_S = 20.0  # SCCOOS ERDDAP briefly answers 404/502 while it reloads datasets
