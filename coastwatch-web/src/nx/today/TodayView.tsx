@@ -290,7 +290,10 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
       </motion.div>
 
       <MarginRows className={s.rows} label={`More at ${port.name}`}>
-        {v.rows.map((r) =>
+        {v.rows
+          // the waves row stands in for the buoy figure where the chart has no room for it (phones)
+          .filter((r) => r.state === "unavailable" || !r.compactOnly || compact)
+          .map((r) =>
           r.state === "unavailable" ? (
             <MarginRow key={r.id} label={r.label} state="unavailable" note={r.note} />
           ) : r.id === "models" ? (

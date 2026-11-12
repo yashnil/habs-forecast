@@ -10,19 +10,22 @@
  *               NWS periods that matter, later assessments
  *   soundings   at most two figures at their places: the test area, the buoy (README principle 2)
  *   rows        everything else, one line each, expanding in place (whale, tests, water, models, others)
+ *   gates       v13: the same facts grouped by what decides the next trip (whale, domoic acid, sea), with the
+ *               fixed sentences that say how they relate and each gate's next steps (gates.ts)
  *
  * Hierarchy (T44): official status, then measured tests and observations, then models. A test never
  * softens the status; a model never alarms (T12).
  */
 import type { FisheryId, PortFact, StatusLevel } from "@/pilot/contracts";
 import type { Conditions } from "@/lib/conditions";
-import { buildTodayModel, factorWords, FISHERY_OPTIONS, fisheryLabel, nextTide, pacificDay, rowHeadline, type PortTodayInputs, type StatusRow, type TestSiteView, type TodayModel } from "@/pilot/facts";
+import { buildTodayModel, factorWords, FISHERY_OPTIONS, TEST_STALE_DAYS, fisheryLabel, nextTide, pacificDay, rowHeadline, type PortTodayInputs, type StatusRow, type TestSiteView, type TodayModel } from "@/pilot/facts";
 import { periodLine, type LanePeriod } from "@/pilot/today/marine";
 import type { Provenance } from "@/nx/ds/Stamp";
-import { age as ageWords, day } from "@/nx/ds/format";
+import { age as ageWords, day, range } from "@/nx/ds/format";
 import { provenanceOf, shortSource } from "./provenance";
 import { sectorOf, whaleMeasures } from "@/nx/regulation/whale";
 import { runKindWord } from "@/lib/modelTime";
+import { advisoriesOf, buildGates, type Gate, type GateFact, type SeaInput, type TestInput, type WhaleInput } from "./gates";
 
 export type TodayInputs = Omit<PortTodayInputs, "conditions" | "selected">;
 export type SeaState = Conditions | null | "error";
@@ -84,7 +87,16 @@ export type SoundingDatum = {
 };
 
 export type RowDatum =
-  | { id: string; label: string; state: "ok" | "stale"; value: string; detail: Array<{ text: string; provenance?: Provenance | null }>; provenance?: Provenance | null }
+  | {
+      id: string;
+      label: string;
+      state: "ok" | "stale";
+      value: string;
+      detail: Array<{ text: string; provenance?: Provenance | null }>;
+      provenance?: Provenance | null;
+      /** shown only where the chart has no room for the figure (phones drop the buoy sounding): the waves row */
+      compactOnly?: boolean;
+    }
   | { id: string; label: string; state: "unavailable"; note: string };
 
 export type OtherFishery = { fishery: FisheryId; label: string; word: string; headline: string; flagged: boolean; provenance: Provenance | null };
@@ -108,6 +120,10 @@ export type TodayView = {
   rows: RowDatum[];
   models: ModelsView;
   others: OtherFishery[];
+  /** what decides the next trip, in order: whale (Dungeness), domoic acid, sea */
+  gates: Gate[];
+  /** NWS advisories in force: the first thing a returning reader must see */
+  advisories: GateFact[];
   /** every fishery's facts (for the change line: a change of fishery is not news) */
   allFacts: PortFact[];
   dataAt: string | null;
@@ -157,6 +173,19 @@ export function parseWindow(text: string | null | undefined, anchor: string | nu
     out.push({ start: ymd(ya, a, Number(m[2])), end: m[4] ? ymd(yb, b, Number(m[4])) : null });
   }
   return out;
+}
+
+/** NWS's period name inside a sentence: "tonight", "this afternoon", but "Thu" and "Thursday night" keep their capital. */
+export function periodNameWords(name: string): string {
+  const n = name.trim();
+  if (/^(today|tonight|overnight|this |rest of |late )/i.test(n)) return n.toLowerCase();
+  return n.charAt(0).toUpperCase() + n.slice(1).replace(/\b(Night|Afternoon|Morning|Evening)\b/g, (w) => w.toLowerCase());
+}
+
+/** A buoy's wind in a few words; under 1 kt is calm and has no direction. */
+export function windWords(kt: number, dir: string | null | undefined): string {
+  const r = Math.round(kt);
+  return r < 1 ? "Calm" : `${dir ? `${dir} ` : ""}${r} kt`;
 }
 
 const tideClock = (at: string) => {
@@ -313,12 +342,14 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   }
   const test = testFor(model, o.fishery);
   const testHasPlace = !!test?.latest && test.site.lat != null && test.site.lon != null;
+  // lead decision 6: a test older than TEST_STALE_DAYS is history; it is worded in its gate and its row, never a figure on the chart
+  const testOnChart = testHasPlace && !test!.stale;
   if (test?.latest) {
     agenda.push({
       id: "test",
       start: test.latest.date,
       title: `CDPH test, ${test.site.site_label} ${speciesShort(test.site.species) === "Dungeness" ? "Dungeness" : test.site.species.toLowerCase()}`,
-      detail: `${testHasPlace ? testPhrase(test) : test.sentence.replace(/^[^:]*:\s*/, "")}. ${cap1(ageWords(test.latest.date, now))}${test.stale ? " (old)" : ""}.`.replace(/\.\./g, "."),
+      detail: `${testOnChart ? testPhrase(test) : test.sentence.replace(/^[^:]*:\s*/, "")}. ${cap1(ageWords(test.latest.date, now))}${test.stale ? " (old)" : ""}.`.replace(/\.\./g, "."),
       provenance: testProvenance(test),
     });
   }
@@ -337,13 +368,13 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
         id: "today",
         start: today,
         title: line ? cap1(line) : first ? strip(first.text) : `Tide: ${tideLine}`,
-        detail: [first && line ? `NWS ${first.name.toLowerCase()}` : null, tideLine && (first || line) ? `Tide ${tideLine}` : null].filter(Boolean).join(". ") || null,
+        detail: [first && line ? `NWS ${periodNameWords(first.name)}` : null, tideLine && (first || line) ? `Tide ${tideLine}` : null].filter(Boolean).join(". ") || null,
         provenance: nwsProv,
       });
     }
     for (const a of sea.alerts) {
       const f = model.today.facts.find((x) => x.id.startsWith("weather:alert:") && x.headline.includes(a.event));
-      agenda.push({ id: `alert-${a.event}`, start: today, end: a.ends ? pacificDay(a.ends) : null, title: `NWS ${a.event}`, detail: strip(a.headline), provenance: f ? provenanceOf(f, `NWS ${a.event}`) : null });
+      agenda.push({ id: `alert-${a.event}`, start: today, end: a.ends ? pacificDay(a.ends) : null, title: `NWS ${a.event}`, detail: strip(a.headline), provenance: f ? alertProvenance(f, a.event) : null });
     }
     for (const p of comingThatMatter(lanes, first, today)) {
       agenda.push({ id: `nws-${p.date}`, start: p.date!, title: cap1(periodLine(p) ?? strip(p.text)), detail: `NWS forecast for ${p.name}`, provenance: nwsProv });
@@ -353,7 +384,7 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
 
   // ---- soundings (at most two, at their places)
   const soundings: SoundingDatum[] = [];
-  if (test?.latest && testHasPlace) {
+  if (test?.latest && testOnChart) {
     const max = maxOf(test);
     const n = test.latest.values_ppm.length;
     // no average (T8): CDPH's printed average counts results below detection as zero
@@ -414,20 +445,27 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
       detail: [{ text: [full.quote ? `CDFW, Zone ${w.zone}, for ${sector} crabbers: “${full.quote}”` : null, ...full.fields].filter(Boolean).join(" ") }, { text: `Zone ${w.zone}: ${w.label}. RAMP is about whale entanglement, not domoic acid.`, provenance: provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed", value: full.quote ?? full.fields.join(" ") }) }],
     });
   }
-  const moreTests = model.tests.filter((t) => t !== test && t.latest);
+  // the test that is not a figure on the chart (old, or without a place) is said here with the others
+  const moreTests = model.tests.filter((t) => (t !== test || !testOnChart) && t.latest);
   if (model.testsError) rows.push({ id: "tests", label: "Tests", state: "unavailable", note: "CDPH test results could not be read just now." });
   else if (!model.tests.length) rows.push({ id: "tests", label: "Tests", state: "ok", value: "No CDPH test site for this port", detail: [{ text: "CDPH publishes domoic acid results by site. None of its sites is tied to this port in Neritic's data." }] });
   else if (moreTests.length)
-    rows.push({ id: "tests", label: "Tests", state: moreTests.some((t) => t.stale) ? "stale" : "ok", value: `${moreTests.length} more ${moreTests.length === 1 ? "site" : "sites"} nearby`, detail: moreTests.map((t) => ({ text: `${t.sentence} ${cap1(ageWords(t.latest!.date, now))}${t.stale ? " (old)" : ""}.`, provenance: testProvenance(t) })) });
+    rows.push({ id: "tests", label: "Tests", state: moreTests.some((t) => t.stale) ? "stale" : "ok", value: `${moreTests.length}${testOnChart ? " more" : ""} ${moreTests.length === 1 ? "site" : "sites"} nearby`, detail: moreTests.map((t) => ({ text: `${t.sentence} ${cap1(ageWords(t.latest!.date, now))}${t.stale ? " (old)" : ""}.`, provenance: testProvenance(t) })) });
   if (sea.state === "error") rows.push({ id: "sea", label: "Sea", state: "unavailable", note: "NWS, the buoy and the tide could not be read just now. Check weather.gov." });
   else if (sea.state === "ok") {
+    if (b && b.at && b.waveFt != null) {
+      // phones have no room for the buoy figure on the chart: the measured waves are said here instead
+      const f = model.today.facts.find((x) => x.id === "sea:buoy");
+      const old = (Date.parse(now) - Date.parse(b.at)) / 60000 > 180;
+      rows.push({ id: "waves", label: "Waves", state: old ? "stale" : "ok", compactOnly: true, value: `${wavesWords(b)}, buoy ${b.id}`, detail: [{ text: `Measured at NDBC buoy ${b.id} (${b.name}), ${Math.round(b.km)} km from ${o.place.name}.`, provenance: f ? provenanceOf(f, `Buoy ${b.id}, ${b.name}`, { stale: old }) : null }] });
+    }
     if (sea.water) {
       const f = model.today.facts.find((x) => x.id === "sea:water");
       rows.push({ id: "water", label: "Water", state: sea.water.stale ? "stale" : "ok", value: `${Math.round((sea.water.c * 9) / 5 + 32)} °F, ${sea.water.where}`, detail: [{ text: `${((sea.water.c * 9) / 5 + 32).toFixed(1)} °F (${sea.water.c.toFixed(1)} °C), measured ${sea.water.where}.`, provenance: f ? provenanceOf(f, "Water temperature") : null }] });
     }
     if (sea.windBuoy) {
       const f = model.today.facts.find((x) => x.id === "sea:wind");
-      rows.push({ id: "wind", label: "Wind", state: "ok", value: `${sea.windBuoy.windDir ? `${sea.windBuoy.windDir} ` : ""}${Math.round(sea.windBuoy.windKt)} kt, buoy ${sea.windBuoy.id}`, detail: [{ text: f?.detail ?? "", provenance: f ? provenanceOf(f, `Wind, buoy ${sea.windBuoy.id}`) : null }] });
+      rows.push({ id: "wind", label: "Wind", state: "ok", value: `${windWords(sea.windBuoy.windKt, sea.windBuoy.windDir)}, buoy ${sea.windBuoy.id}`, detail: [{ text: f?.detail ?? "", provenance: f ? provenanceOf(f, `Wind, buoy ${sea.windBuoy.id}`) : null }] });
     }
     if (!sea.buoy && sea.buoyReason) rows.push({ id: "buoy", label: "Buoy", state: "unavailable", note: "No buoy reading near this port just now." });
   }
@@ -436,6 +474,42 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   const othersList = model.status
     .filter((r) => r.fishery !== o.fishery)
     .map((r): OtherFishery => ({ fishery: r.fishery, label: r.label, word: r.conflict ? "Status unclear" : r.word, headline: rowHeadline(r), flagged: r.severity === "red" || r.severity === "amber", provenance: r.level === "unknown" ? null : provenanceOf(r.fact, r.label, { value: r.word }) }));
+
+  // ---- gates (v13): the same facts under what they decide
+  const whaleDelay = !!row && (row.level === "delayed" || row.level === "closed") && row.cause === "whale_entanglement";
+  let whaleIn: WhaleInput | null = null;
+  if (w && isDungeness(o.fishery)) {
+    const wp = provenanceOf(w.fact, `Whale measures, RAMP zone ${w.zone}`, { dateRole: "assessed" });
+    whaleIn = {
+      zone: w.zone,
+      short: whaleMeasures(w, sectorOf(o.fishery)).short,
+      decidesSeason: whaleDelay,
+      assessed: w.fact.as_of ?? null,
+      age: w.fact.as_of ? ageWords(w.fact.as_of, now) : null,
+      sourceUrl: w.source_url ?? null,
+      provenance: wp,
+      next: decision && /whale assessment/i.test(decision.label) ? `${decision.label}: ${range(decision.start, decision.end ?? decision.start)}` : null,
+    };
+  }
+  let testIn: TestInput;
+  if (model.testsError) testIn = { state: "error" };
+  else if (!test?.latest) testIn = { state: "none" };
+  else {
+    const max = maxOf(test);
+    const n = test.latest.values_ppm.length;
+    testIn = {
+      state: "ok",
+      headline: `${speciesShort(test.site.species)} test, ${test.site.site_label}, ${day(test.latest.date, { ref: now })}: highest ${max == null ? "not detected" : `${ppmWords(max)}${test.action != null ? ` of ${test.action}` : ""} ppm`}, ${n} sample${n === 1 ? "" : "s"}`,
+      date: test.latest.date,
+      age: ageWords(test.latest.date, now),
+      old: test.stale,
+      staleDays: TEST_STALE_DAYS,
+      progress: test.showProgress ? test.progressWords : null,
+      sourceUrl: test.fact.source.url ?? null,
+      provenance: testProvenance(test),
+    };
+  }
+  const gates = buildGates({ place: o.place.key, whale: whaleIn, test: testIn, sea: seaInput(model, sea, now, today) });
 
   return {
     place: { key: o.place.key, name: o.place.name, lat: inp.place.lat, lon: inp.place.lon },
@@ -449,10 +523,63 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
     rows,
     models,
     others: othersList,
+    gates,
+    advisories: advisoriesOf(gates),
     allFacts: model.today.facts,
     dataAt: inp.dataGeneratedAt,
     model,
   };
+}
+
+/** "4.9 ft at 17 s": a buoy's waves as measured. */
+function wavesWords(b: { waveFt: number | null; periodS: number | null }): string {
+  return `${b.waveFt!.toFixed(1)} ft${b.periodS != null ? ` at ${Math.round(b.periodS)} s` : ""}`;
+}
+
+/**
+ * An NWS advisory is a live agency product read from NWS's own feed: it is stamped with its source and issue
+ * time. "Not verified" belongs to agency notices transcribed by machine (T38), not to it (lead decision 6).
+ */
+function alertProvenance(f: Parameters<typeof provenanceOf>[0], event: string): Provenance | null {
+  return provenanceOf(f, `NWS ${event}`, { kind: "prediction", dateRole: "issued" });
+}
+
+/** The sea gate's lines: advisories, today's forecast, then what was measured and the tide (gates.ts orders them). */
+function seaInput(model: TodayModel, sea: TodayModel["sea"], now: string, today: string): SeaInput {
+  if (sea.state !== "ok") return { state: sea.state };
+  const fact = (id: string) => model.today.facts.find((x) => x.id === id);
+  const facts: GateFact[] = [];
+  for (const a of sea.alerts) {
+    const f = model.today.facts.find((x) => x.id.startsWith("weather:alert:") && x.headline.includes(a.event));
+    facts.push({ id: `alert-${a.event}`, role: "advisory", text: `NWS ${a.event}: ${strip(a.headline)}`, provenance: f ? alertProvenance(f, a.event) : null });
+  }
+  const nws = fact("weather:nws");
+  const first = sea.lanes.find((l) => !l.date || l.date === today) ?? sea.lanes[0];
+  if (first) {
+    const line = periodLine(first);
+    facts.push({ id: "forecast", role: "forecast", text: `${cap1(line ?? strip(first.text))} (NWS forecast, ${periodNameWords(first.name)})`, provenance: nws ? provenanceOf(nws, `NWS forecast, zone ${sea.zone ?? ""}`.trim()) : null });
+  }
+  const b = sea.buoy;
+  if (b && b.at && b.waveFt != null) {
+    const f = fact("sea:buoy");
+    const old = (Date.parse(now) - Date.parse(b.at)) / 60000 > 180;
+    facts.push({ id: "waves", role: "measured", text: `Waves ${wavesWords(b)} at buoy ${b.id}`, old, provenance: f ? provenanceOf(f, `Buoy ${b.id}, ${b.name}`, { stale: old }) : null });
+  }
+  const wb = sea.windBuoy ?? (b && b.windKt != null && b.at ? { id: b.id, windKt: b.windKt, windDir: b.windDir } : null);
+  if (wb) {
+    const f = fact(sea.windBuoy ? "sea:wind" : "sea:buoy");
+    facts.push({ id: "wind", role: "measured", text: `Wind ${windWords(wb.windKt, wb.windDir).toLowerCase()} at buoy ${wb.id}`, provenance: f ? provenanceOf(f, `Wind, buoy ${wb.id}`) : null });
+  }
+  if (sea.water) {
+    const f = fact("sea:water");
+    facts.push({ id: "water", role: "measured", text: `Water ${Math.round((sea.water.c * 9) / 5 + 32)} °F, ${sea.water.where}`, old: sea.water.stale, provenance: f ? provenanceOf(f, "Water temperature") : null });
+  }
+  const next = nextTide(sea.tides, now);
+  if (next) {
+    const f = fact("tide:next");
+    facts.push({ id: "tide", role: "predicted", text: `Next tide: ${tideWords(next)}`, provenance: f ? provenanceOf(f, "Tide prediction") : null });
+  }
+  return { state: "ok", facts, marineUrl: sea.marineUrl, issued: sea.issued, age: sea.issued ? ageWords(sea.issued, now) : null };
 }
 
 /** The other fisheries in one line: "Anchovy & sardine restricted, 6 more". */
@@ -462,7 +589,8 @@ export function othersLine(list: OtherFishery[]): string {
   if (!flagged.length) return `${list.length} more, none flagged`;
   const first = flagged[0];
   const rest = list.length - 1;
-  return `${first.label.replace(/\s*\(.*\)$/, "")}: ${first.word.toLowerCase()}${rest ? `, ${rest} more` : ""}`;
+  // the sector stays (T42): "Dungeness crab, recreational: restricted" under a commercial reader's headline is not a contradiction
+  return `${scopeWords(first.label)}: ${first.word.toLowerCase()}${rest ? `, ${rest} more` : ""}`;
 }
 
 /**
@@ -513,7 +641,7 @@ function modelsOf(model: TodayModel): ModelsView {
       provenance: provenanceOf({ ...b.outlookFact, detail: b.outlookFact.detail ? plain(b.outlookFact.detail) : null }, "Chlorophyll outlook, 8 days", { stale: b.outlookStale }),
       signal,
     };
-    value = signal === "none" ? "No signal" : signal === "higher" ? "Algae higher than usual, not toxin" : signal === "lower" ? "Algae lower than usual, not toxin" : "Algae outlook, not toxin";
+    value = signal === "none" ? "Algae about usual for the season, not toxin" : signal === "higher" ? "Algae higher than usual, not toxin" : signal === "lower" ? "Algae lower than usual, not toxin" : "Algae outlook, not toxin";
     // the same words Explore uses for a run whose dates have passed (T3, src/lib/modelTime.ts)
     if (b.outlookStale) value = `Algae outlook, ${runKindWord("outlook", true, day(b.outlook.issued))}`;
   } else value = charm ? (charm.past ? "Past C-HARM run only" : "C-HARM model run") : "No model run nearby";
