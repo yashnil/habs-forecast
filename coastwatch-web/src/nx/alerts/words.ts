@@ -75,7 +75,7 @@ export function reportWords(r: CheckReport, name: (port: string) => string): str
 
 /** "Last checked" for the page: when, and what could not be read. Null when this device has never checked. */
 export function lastCheckedWords(stamp: CheckStamp | null, when: (iso: string) => string, name: (port: string) => string): string | null {
-  if (!stamp) return null;
+  if (!stamp || !stamp.at) return null;
   const failed = stamp.failed.length ? ` ${list(stamp.failed.map(name))} could not be read then.` : "";
   return `Last checked ${when(stamp.at)}.${failed}`;
 }

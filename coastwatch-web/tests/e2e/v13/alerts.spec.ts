@@ -54,7 +54,9 @@ test("arriving from a port outside the pilot: it is offered, followed in one tap
   await page.getByTestId("alerts-add").click();
   await expect(page.getByTestId(`alerts-port-${MOSS}`)).toBeVisible();
   await expect.poll(async () => Object.keys((await stored(page, "nx-alert-snap-v1")) ?? {}).sort()).toEqual([BODEGA, MOSS].sort());
-  await page.getByTestId(`alerts-port-${BODEGA}`).getByRole("button", { name: "What alerts you" }).click();
+  // (the port the address names is already open; any other opens from "What alerts you")
+  await expect(page.getByTestId(`alerts-port-${BODEGA}`).getByRole("button", { name: "What alerts you" })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByTestId(`alerts-port-${MOSS}`).getByRole("button", { name: "What alerts you" })).toHaveAttribute("aria-expanded", "false");
   await page.getByTestId(`alerts-unfollow-${BODEGA}`).click();
   await expect(page.getByTestId(`alerts-port-${BODEGA}`)).toHaveCount(0);
   expect(Object.keys(await stored(page, "nx-alert-snap-v1"))).toEqual([MOSS]);

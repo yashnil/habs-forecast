@@ -26,7 +26,16 @@ export type InboxItem = AlertItem & {
 export type PortBaseline = { snap: PlaceSnapshot; data_at: string | null };
 
 /** The last check: when (device clock), the ports read, the ports that could not be read, and why it could not run. */
-export type CheckStamp = { at: string; ports: string[]; failed: string[]; /** newest publish time among the ports read */ data_at: string | null };
+export type CheckStamp = {
+  /** when the last finished check ran; "" when none has finished yet */
+  at: string;
+  ports: string[];
+  failed: string[];
+  /** newest publish time among the ports read */
+  data_at: string | null;
+  /** a check that has started and not finished (this tab or another): when it started. Never shown as a check. */
+  claim?: string;
+};
 
 const isList = (v: unknown): v is InboxItem[] => Array.isArray(v);
 const isMap = (v: unknown): v is Record<string, PortBaseline> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -45,7 +54,9 @@ export const writeBaselines = (b: Record<string, PortBaseline>) => (Object.keys(
 
 export function readStamp(): CheckStamp | null {
   const s = readJSON<CheckStamp | null>(CHECK_KEY, null, (v): v is CheckStamp | null => v === null || isStamp(v));
-  return s ? { at: s.at, ports: s.ports.filter((p) => typeof p === "string"), failed: Array.isArray(s.failed) ? s.failed.filter((p) => typeof p === "string") : [], data_at: typeof s.data_at === "string" ? s.data_at : null } : null;
+  if (!s) return null;
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter((p): p is string => typeof p === "string") : []);
+  return { at: s.at, ports: list(s.ports), failed: list(s.failed), data_at: typeof s.data_at === "string" ? s.data_at : null, ...(typeof s.claim === "string" ? { claim: s.claim } : {}) };
 }
 export const writeStamp = (s: CheckStamp) => writeJSON(CHECK_KEY, s);
 

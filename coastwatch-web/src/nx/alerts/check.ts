@@ -23,6 +23,8 @@ import { mergeInbox, readBaselines, readInbox, readStamp, writeBaselines, writeI
  */
 export const CHECK_EVERY_MS = 30 * 60_000;
 export const RETRY_AFTER_MS = 5 * 60_000;
+/** how long a started check is given to finish before another may start */
+export const CLAIM_MS = 20_000;
 
 export type TodayPayload = { inputs: Omit<PortTodayInputs, "conditions" | "selected">; fixture: boolean };
 
@@ -101,6 +103,12 @@ const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((
 /** Is a check due? Not while the last one is under 30 minutes old and covered every followed port. */
 export function due(stamp: CheckStamp | null, follows: string[], now: Date): boolean {
   if (!stamp) return true;
+  // a check that started moments ago (another tab) is left to finish; one that never finished (the page was
+  // closed or left mid-check) is not a check, and does not hold the next one back
+  if (stamp.claim) {
+    const started = now.getTime() - Date.parse(stamp.claim);
+    if (Number.isFinite(started) && started >= 0 && started < CLAIM_MS) return false;
+  }
   const age = now.getTime() - Date.parse(stamp.at);
   // a clock set back, or an unreadable time: check
   if (!Number.isFinite(age) || age < 0 || age >= CHECK_EVERY_MS) return true;
@@ -131,6 +139,16 @@ export function runCheck(o: CheckOptions = {}): Promise<CheckReport> {
   return running;
 }
 
+/**
+ * The page is going away with a check under way (a navigation, the tab closing): give its claim back, so the
+ * next page opened checks at once instead of waiting for a check that will never finish.
+ */
+export function abandonCheck(): void {
+  if (!running) return;
+  const s = readStamp();
+  if (s?.claim) writeStamp({ at: s.at, ports: s.ports, failed: s.failed, data_at: s.data_at });
+}
+
 async function check(o: CheckOptions): Promise<CheckReport> {
   const now = o.now ?? new Date();
   const iso = now.toISOString();
@@ -147,8 +165,9 @@ async function check(o: CheckOptions): Promise<CheckReport> {
   const ports = follows.map((f) => f.port);
   if (!o.force && last && !due(last, ports, now)) return { state: "throttled", last };
 
-  // claim the check before reading anything, so another tab opening now waits its turn
-  writeStamp({ at: iso, ports, failed: [], data_at: last?.data_at ?? null });
+  // claim the check before reading anything, so another tab opening now waits its turn. The last finished
+  // check stays as it was: if this one is cut short (the page closed), nothing claims to have been checked.
+  writeStamp({ at: last?.at ?? "", ports: last?.ports ?? [], failed: last?.failed ?? [], data_at: last?.data_at ?? null, claim: iso });
 
   const load = o.load ?? loadFromServer;
   const added: InboxItem[] = [];
