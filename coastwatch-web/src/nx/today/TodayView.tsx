@@ -125,24 +125,28 @@ function useChangeLine(key: string, ready: boolean, facts: View["allFacts"], now
   return line;
 }
 
-/** After the page has drawn, a copy for offline use (sw.js answers `/` with it), at most twice a day. */
-function useOfflineCopy(key: string, name: string, url: string, ready: boolean) {
+/**
+ * After the page has drawn, a copy for offline use (sw.js answers `/` with it), at most twice a day. Its time is
+ * the page's clock (`now`, the server's, which a fixture preview pins), never the device's, so a saved copy is
+ * never stamped after the moment the page shows.
+ */
+function useOfflineCopy(key: string, name: string, url: string, ready: boolean, now: string) {
   const [at, setAt] = useState<string | null>(null);
   useEffect(() => {
     const saved = readSaved().find((x) => x.place === key);
     if (saved) setAt(saved.at);
     if (!ready || process.env.NODE_ENV !== "production") return;
-    if (saved && Date.now() - Date.parse(saved.at) < 12 * 3_600_000) return;
+    if (saved && Math.abs(Date.parse(now) - Date.parse(saved.at)) < 12 * 3_600_000) return;
     const idle = (window as unknown as { requestIdleCallback?: (f: () => void) => number }).requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 2500));
     let live = true;
     idle(() => {
       if (!live || (window as unknown as { __NERITIC_SAVED__?: unknown }).__NERITIC_SAVED__) return;
-      void saveTodayOffline(key, name, url).then((r) => live && r.ok && setAt(r.at));
+      void saveTodayOffline(key, name, url, now).then((r) => live && r.ok && setAt(r.at));
     });
     return () => {
       live = false;
     };
-  }, [key, name, url, ready]);
+  }, [key, name, url, ready, now]);
   return at;
 }
 
@@ -151,7 +155,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
   const sea = useConditions(curl);
   const v = useMemo(() => buildToday(inputs, { fishery, sea, place: { key: port.key, name: port.name } }), [inputs, fishery, sea, port.key, port.name]);
   const change = useChangeLine(port.key, sea !== null, v.allFacts, v.now);
-  const savedAt = useOfflineCopy(port.key, port.name, curl, sea !== null);
+  const savedAt = useOfflineCopy(port.key, port.name, curl, sea !== null, inputs.now);
   const [open, setOpen] = useState<Provenance | null>(null);
   const tour = useTourState();
   const phone = usePhone();

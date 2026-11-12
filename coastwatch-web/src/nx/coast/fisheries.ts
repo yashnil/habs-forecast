@@ -79,9 +79,13 @@ export function priceReference(f: CoastFishery | null): CoastReference | null {
   };
 }
 
-/** EIA's California on-road diesel week: a dated static value, old after 14 days, never a marine dock price. */
-export function fuelReference(now: Date | null): CoastReference {
-  const { stale } = dieselAge(now);
+/**
+ * EIA's California on-road diesel week: a dated static value, old after 14 days, never a marine dock price.
+ * Not offered on a page whose clock is before that week (a reference cannot be read before it was published).
+ */
+export function fuelReference(now: Date | null): CoastReference | null {
+  const { days, stale } = dieselAge(now);
+  if (days != null && days < 0) return null;
   const week = new Date(`${DIESEL_REF.week}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   return {
     value: DIESEL_REF.usdPerGal.toFixed(2),
