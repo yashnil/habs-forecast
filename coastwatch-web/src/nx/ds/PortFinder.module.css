@@ -22,7 +22,7 @@
   border-radius: var(--r-1) var(--r-1) 0 0;
   background: transparent;
   color: var(--ink);
-  font: 400 var(--t-18) / 1 var(--font-sans);
+  font: 400 var(--type-lead) / 1 var(--font-sans);
 }
 .input::placeholder {
   color: var(--ink-2);
@@ -41,7 +41,7 @@
 
 .group [cmdk-group-heading] {
   padding: var(--s-12) 0 var(--s-4);
-  font: 600 var(--t-14) / 1.3 var(--font-sans);
+  font: 600 var(--type-small) / 1.3 var(--font-sans);
   color: var(--ink-2);
   border-bottom: var(--hair) solid var(--rule-soft);
 }
@@ -75,12 +75,12 @@
   font-weight: 600;
 }
 .county {
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   color: var(--ink-2);
   white-space: nowrap;
 }
 .currentWord {
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   font-weight: 700;
 }
 
@@ -91,6 +91,6 @@
 
 .foot {
   margin: var(--s-8) 0 0;
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   color: var(--ink-2);
 }

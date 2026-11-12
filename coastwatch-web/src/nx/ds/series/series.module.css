@@ -11,7 +11,7 @@
   font-weight: 600;
 }
 .head small {
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   font-weight: 400;
   color: var(--ink-2);
 }
@@ -53,7 +53,7 @@
 .nowLabel,
 .thresholdLabel {
   font-family: var(--font-sans);
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   font-variant-numeric: tabular-nums;
   fill: var(--ink-2);
 }
@@ -62,7 +62,7 @@
 }
 .emptyText {
   font-family: var(--font-sans);
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   fill: var(--ink-2);
   text-anchor: middle;
 }
@@ -141,6 +141,8 @@
 .brush {
   position: relative;
   width: 100%;
+  /* a handle at the record's end reaches past the track: it never widens the page */
+  overflow-x: clip;
   margin-top: var(--s-8);
   touch-action: none;
   user-select: none;
@@ -210,7 +212,7 @@
 }
 .brushCaption {
   margin: var(--s-4) 0 0;
-  font-size: var(--t-14);
+  font-size: var(--type-small);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }

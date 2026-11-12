@@ -16,7 +16,7 @@
   border: var(--rule) solid var(--ink);
   border-radius: var(--r-0);
   font-family: var(--font-sans);
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   line-height: 1.42;
   outline: none;
 }
@@ -108,7 +108,7 @@
   border-radius: var(--r-0);
   padding: var(--s-16);
   font-family: var(--font-sans);
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   line-height: 1.42;
   outline: none;
 }
@@ -120,7 +120,7 @@
   color: var(--ink);
   border: var(--hair) solid var(--ink);
   padding: var(--s-4) var(--s-8);
-  font: 400 var(--t-14) / 1.36 var(--font-sans);
+  font: 400 var(--type-small) / 1.36 var(--font-sans);
 }
 
 @media (max-width: 720px) {

@@ -123,7 +123,8 @@ export function Plot({ label, data, x: xs, y: ys = {}, height = 280, margin, des
   const phone = usePhone();
   const [setEl, width] = useElementWidth<HTMLDivElement>(640);
   const H = typeof height === "number" ? height : phone ? height.phone : height.desktop;
-  const m = { left: 56, right: 12, top: 12, bottom: 28, ...margin };
+  // room for six-character tick labels at the left and for the y title above the top tick
+  const m = { left: 64, right: 12, top: 28, bottom: 28, ...margin };
   const left = m.left, right = Math.max(left + 40, width - m.right), top = m.top, bottom = top + H;
   const time = (xs.type ?? "time") === "time";
   const yType = ys.type ?? "linear";
@@ -401,7 +402,7 @@ export function AxisY({ title, ticks }: AxisYProps) {
         </text>
       ))}
       {title ? (
-        <text x={0} y={g.top - 2} className={s.axisTitle}>
+        <text x={0} y={g.top - 14} className={s.axisTitle}>
           {title}
         </text>
       ) : null}

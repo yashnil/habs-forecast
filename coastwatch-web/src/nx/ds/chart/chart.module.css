@@ -62,7 +62,7 @@
   background: none;
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   line-height: 1.28;
   font-variant-numeric: tabular-nums;
   pointer-events: auto;
@@ -90,7 +90,7 @@
 .unit {
   font-style: normal;
   /* never under the 14 px floor: at the phone's 28 px figure, 0.46em alone is 12.9 px (critic 12) */
-  font-size: max(0.46em, var(--t-14));
+  font-size: max(0.46em, var(--type-small));
   font-weight: 600;
   letter-spacing: 0;
   margin-left: 0.16em;
@@ -109,7 +109,7 @@
   font-weight: 500;
 }
 .figOld {
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   letter-spacing: 0;
   font-weight: 400;
 }
@@ -144,15 +144,15 @@
 }
 .place {
   font-weight: 600;
-  font-size: var(--t-16);
+  font-size: var(--type-body);
 }
 .port {
   font-weight: 700;
-  font-size: var(--t-18);
+  font-size: var(--type-lead);
 }
 .regulation {
   font-weight: 600;
-  font-size: var(--t-16);
+  font-size: var(--type-body);
   color: var(--reg-text);
 }
 
@@ -164,6 +164,6 @@
     font-size: var(--t-28);
   }
   .port {
-    font-size: var(--t-16);
+    font-size: var(--type-body);
   }
 }

@@ -3,7 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, ViewTransition, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { usePathname } from "next/navigation";
 import { animate, motion, useDragControls, useMotionValue, type PanInfo } from "motion/react";
-import { marginSwap, sheet as sheetSpring } from "@/nx/ds/motion";
+import { marginSwap, pane as paneMove, sheet as sheetSpring } from "@/nx/ds/motion";
 import { useChartCover } from "@/nx/chart/cover";
 import { Icon } from "@/nx/ds/Icon";
 import { CHART_DOCK_ID } from "@/nx/ds/layout/Desk";
@@ -146,9 +146,14 @@ function PaneDivider({ work }: { work: React.RefObject<HTMLDivElement | null> })
     let best: PaneDetent = pane.detent;
     // a click without travel leaves the size alone
     if (Math.abs(st.x - e.clientX) > 4) for (const d of PANE_DETENTS) if (Math.abs(widths[d] - w) < Math.abs(widths[best] - w)) best = d;
-    el.style.removeProperty("--pane-w");
-    el.style.removeProperty("--pane-hold");
-    el.removeAttribute("data-pane-resizing");
+    if (best === pane.detent) {
+      // back where it was: nothing travels
+      el.style.removeProperty("--pane-w");
+      el.style.removeProperty("--pane-hold");
+      el.removeAttribute("data-pane-resizing");
+      return;
+    }
+    // the new size takes over from where the hand left the divider (Workspace's travel clears the hold)
     setPaneDetent(best);
   };
   return (
@@ -242,6 +247,40 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
   const restRef = useRef<HTMLDivElement>(null);
   useChartCover("phone-margin", restRef, "bottom", sheetOn);
 
+  // ------------------------------------------------------------ the pane changing size beside the desk: the columns travel (`pane`)
+  // The chart is never resized per frame: growing, it takes its new size at once and the column uncovers it;
+  // shrinking, it keeps its size, is clipped, and resizes once when the column has arrived.
+  useLayoutEffect(() => {
+    const el = workRef.current;
+    const paneEl = el?.querySelector<HTMLElement>(".n12-pane");
+    const from = layout.fromW;
+    if (!el || !paneEl) return;
+    const done = () => {
+      el.style.removeProperty("--pane-w");
+      el.style.removeProperty("--pane-hold");
+      el.removeAttribute("data-pane-resizing");
+    };
+    // (a drag that ended on a new size leaves its hold in place for this travel to take over)
+    if (from === null || layout.mode !== "desk" || panePlacement() !== "beside" || performance.now() - layout.changedAt > 200) return done();
+    // the width the new size gives, measured without the drag's or a previous travel's inline width
+    el.style.removeProperty("--pane-w");
+    const to = paneEl.offsetWidth;
+    if (Math.abs(to - from) < 2) return done();
+    el.style.setProperty("--pane-hold", `${Math.max(from, to)}px`);
+    el.style.setProperty("--pane-w", `${from}px`);
+    el.setAttribute("data-pane-resizing", "");
+    const a = animate(from, to, { ...paneMove, onUpdate: (v) => el.style.setProperty("--pane-w", `${Math.round(v)}px`), onComplete: done });
+    return () => {
+      a.stop();
+      done();
+    };
+  }, [layout.detent, layout.fromW, layout.changedAt, layout.mode]);
+
+  // for tests: the page-facing sheet request, as a page would call it
+  useEffect(() => {
+    (window as unknown as { __nxShell?: { openMargin: typeof openMargin } }).__nxShell = { openMargin };
+  }, []);
+
   // ------------------------------------------------------------ the pane as an overlay: Escape closes it
   useEffect(() => {
     if (!layout.open) return;
@@ -303,9 +342,10 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
         {chart}
         <div id={CHART_DOCK_ID} className="n12-dock-slot" />
         {/* desk pages only (the stylesheet shows each where it applies): the rail, the phone strip's bar, the overlay's close */}
-        <button type="button" className="n12-pane-rail" onClick={pane.toggle} aria-label="Show the chart" data-testid="nx-pane-rail">
+        <button type="button" className="n12-pane-rail" onClick={pane.toggle} aria-label={port ? `Show the chart of ${port.name}` : "Show the chart"} data-testid="nx-pane-rail">
           <Icon name="chevron" size={20} direction="left" />
-          <span>Chart</span>
+          {/* words, not a picture: the chart is out of sight here, so the rail says what opening it shows */}
+          <span suppressHydrationWarning>{port ? `Chart · ${port.name}` : "Chart"}</span>
         </button>
         <div className="n12-pane-bar">
           <span className="n12-pane-bar-name" suppressHydrationWarning>

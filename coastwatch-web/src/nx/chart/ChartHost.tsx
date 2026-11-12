@@ -9,7 +9,7 @@ import { alignIn, coverCamera, fillZoom, fitAtZoom, fitBounds, keepInFrame, NO_I
 import { placeAll, type Anchor, type Rect } from "./placement";
 import { allMarks, getFrame, onMarksChange, publishFrame, staticProjector, type ChartFrame } from "./runtime";
 import { getScene, subscribeScene, useScene, type ChartScene } from "./scene";
-import { onChartCommand, refitChart, setChartMap, zoomChart, fitChartBounds, type ChartCommand } from "./control";
+import { keepChartPointInView, onChartCommand, refitChart, setChartMap, zoomChart, fitChartBounds, type ChartCommand } from "./control";
 import { drawnObstacles, measureCovers, onCoversChange } from "./cover";
 import { Icon } from "@/nx/ds/Icon";
 import { chartStyle, CHART_FRAME, modePaint, posterImages, posterLandEast, readPalette } from "./style";
@@ -59,7 +59,7 @@ function ChartControls() {
   );
 }
 
-type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null } };
+type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView } };
 
 const bezier = (t: number) => {
   // cubic-bezier(EASE_CHART) solved for y at x = t
@@ -309,6 +309,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     const w = window as Win;
     w.__nxChart ??= { inits: 0, map: null, tier: c.tier, camera: null, scene: null };
     w.__nxChart.tier = c.tier;
+    // for tests: the page-facing camera request, as a page would call it
+    w.__nxChart.keep = keepChartPointInView;
     const mo = new MutationObserver(() => setMode(chartModeOf()));
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-chart-mode"] });
     const mq = matchMedia("(prefers-reduced-motion: reduce)");
@@ -569,9 +571,13 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         const pad = c.margin ?? 56;
         const p = m.project([c.lon, c.lat]);
         const x0 = cover.left + pad, x1 = fr.width - cover.right - pad, y0 = cover.top + pad, y1 = fr.height - cover.bottom - pad;
-        const dx = p.x < x0 ? p.x - x0 : p.x > x1 ? p.x - x1 : 0;
-        const dy = p.y < y0 ? p.y - y0 : p.y > y1 ? p.y - y1 : 0;
+        // brought a few px inside the edge, so a place already brought clear is clear when asked again
+        const IN = 6;
+        const dx = p.x < x0 ? p.x - x0 - IN : p.x > x1 ? p.x - x1 + IN : 0;
+        const dy = p.y < y0 ? p.y - y0 - IN : p.y > y1 ? p.y - y1 + IN : 0;
         if (!dx && !dy) return;
+        // the chart's extent reaches past its drawing by what covers it now (a raised sheet covers more than a resting one)
+        m.setMaxBounds(frameFor(cover, m.getMinZoom()));
         const ctr = m.unproject([fr.width / 2 + dx, fr.height / 2 + dy]);
         go([ctr.lng, ctr.lat], m.getZoom());
       }),

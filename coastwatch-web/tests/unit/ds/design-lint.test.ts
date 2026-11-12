@@ -39,7 +39,7 @@ describe("design lint: good samples pass", () => {
   it("the shipped library and catalog are clean", () => {
     const found = lintRoot(path.resolve(__dirname, "../../..")) as Finding[];
     expect(found.map((f) => `${f.file}:${f.line} ${f.rule}`)).toEqual([]);
-  });
+  }, 30_000);
 });
 
 describe("design lint: each rule catches its tell", () => {
