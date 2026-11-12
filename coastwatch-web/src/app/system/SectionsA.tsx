@@ -187,16 +187,16 @@ function BigDates() {
 function Agendas() {
   const items: AgendaItem[] = [
     { id: "anchovy", start: D.anchovyRestriction, title: "Anchovy: no take for human consumption", detail: anchovy.area_label, stamp: <Stamp provenance={{ ...P.season, title: anchovy.label, value: "No take for human consumption", sourceUrl: anchovy.source_url }} now={NOW} /> },
-    { id: "crab", start: D.crabSampled, title: "Crab tested, Monterey Bay", detail: "Dungeness highest 9.8 of 30 ppm; rock crab highest 20.", stamp: <Stamp provenance={P.crab} now={NOW} /> },
-    { id: "ramp", start: D.rampAssessed, title: "Commercial season delayed", tone: "regulation", detail: "Humpback whale entanglements, Zones 1 to 5." },
-    { id: "charm", start: D.charmIssued, title: "Newest C-HARM run issued", detail: "Its leads are all past; nothing newer since." },
+    { id: "crab", start: D.crabSampled, kind: "measured", title: "Crab tested, Monterey Bay", detail: "Dungeness highest 9.8 of 30 ppm; rock crab highest 20.", stamp: <Stamp provenance={P.crab} now={NOW} /> },
+    { id: "ramp", start: D.rampAssessed, kind: "official", title: "Commercial season delayed", tone: "regulation", detail: "Humpback whale entanglements, Zones 1 to 5." },
+    { id: "charm", start: D.charmIssued, kind: "model", title: "Newest C-HARM run issued", detail: "Its leads are all past; nothing newer since." },
     { id: "rec", start: D.recreationalOpen, title: "Recreational crab with hoop nets and snares", tone: "regulation" },
-    { id: "next", start: D.nextAssessment.start, end: D.nextAssessment.end, title: "Whale assessment, Zone 4", tone: "regulation", tentative: true },
+    { id: "next", start: D.nextAssessment.start, end: D.nextAssessment.end, kind: "official", title: "Whale assessment, Zone 4", tone: "regulation", tentative: true },
     { id: "jan", start: D.earliestCommercial, title: "Commercial delay runs to at least this date", tone: "regulation", detail: ramp.label },
     { id: "then", start: D.thenAssessment.start, end: D.thenAssessment.end, title: "Following assessment", tentative: true },
   ];
   return (
-    <Section id="agenda" name="Agenda" purpose="Dated items on a rail: past solid, coming hollow, today ruled across. Dates are absolute and set in their own column.">
+    <Section id="agenda" name="Agenda" purpose="Dated items on a rail, today ruled across: each mark is the item's kind as the legend draws it (measured solid, model hatched, official a ring), and time is its place against the now line. Dates are absolute and set in their own column.">
       <Specimen state="Past, today, coming" wide>
         <Agenda items={items} now={NOW} label="Dates for Moss Landing, commercial Dungeness" />
       </Specimen>

@@ -12,6 +12,7 @@ import { Agenda, agendaPhase, type AgendaItem } from "@/nx/ds/Agenda";
 import { BigDate } from "@/nx/ds/BigDate";
 import { Button } from "@/nx/ds/Button";
 import { dayTime } from "@/nx/ds/format";
+import { markFor } from "@/nx/ds/kinds";
 import { Legend } from "@/nx/ds/Mark";
 import { MarginRow, MarginRows } from "@/nx/ds/Margin";
 import { pan, register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
@@ -430,6 +431,8 @@ function agendaItems(v: View): AgendaItem[] {
     detail: a.detail ?? undefined,
     tone: a.tone,
     tentative: a.tentative,
+    // the legend's mark for the item's kind (T2): an NWS forecast is a prediction, never a solid "measured" dot
+    kind: a.provenance ? markFor(a.provenance.kind) : undefined,
     // a stamp already shown above (the status's, the decision's) is not repeated
     stamp: a.provenance && a.provenance !== statementStamp && a.provenance !== v.decision?.provenance ? <Stamp provenance={a.provenance} now={v.now} /> : undefined,
   }));

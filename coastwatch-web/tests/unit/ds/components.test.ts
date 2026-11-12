@@ -247,6 +247,28 @@ describe("agenda, legend and type render accessibly", () => {
     expect(line).not.toContain("nowWhat");
     expect(html.match(/>Nov 10</g)?.length).toBe(1);
   });
+  it("the rail mark is the item's kind, as the legend draws it, never its time (T2)", () => {
+    const html = renderToStaticMarkup(
+      h(Agenda, {
+        label: "Dates",
+        now: NOW,
+        items: [
+          { id: "t", start: "2026-10-30", title: "Crab tested", kind: "measured" },
+          { id: "w", start: "2026-11-10", title: "NWS tonight", kind: "model" },
+          { id: "a", start: "2026-12-15", title: "Assessment", kind: "official" },
+        ],
+      }),
+    );
+    const markOf = (title: string) => {
+      const at = html.indexOf(title);
+      const before = html.slice(0, at);
+      return /data-kind="(\w+)"/.exec(before.slice(before.lastIndexOf("<li")))?.[1];
+    };
+    // an NWS forecast for today is under way, yet it is drawn as a prediction, not as a solid measurement
+    expect(markOf("NWS tonight")).toBe("model");
+    expect(markOf("Crab tested")).toBe("measured");
+    expect(markOf("Assessment")).toBe("official");
+  });
   it("official marks carry their words; the no-view mark is named", () => {
     expect(renderToStaticMarkup(h(Mark, { kind: "official" }))).toContain("not verified");
     expect(renderToStaticMarkup(h(Mark, { kind: "noview" }))).toContain('aria-label="no view"');

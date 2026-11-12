@@ -20,7 +20,7 @@ export const KIND_WORD: Record<Kind, string> = {
 };
 
 /** Observed things are solid; anything computed about the water is hollow or hatched. */
-export function markFor(kind: Kind): MarkKind {
+export function markFor(kind: Kind): Extract<MarkKind, "measured" | "model" | "official"> {
   switch (kind) {
     case "measured":
       return "measured";
