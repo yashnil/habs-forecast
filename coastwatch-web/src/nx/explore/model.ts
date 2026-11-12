@@ -3,6 +3,7 @@ import { CHARM_LEADS, charmLayer, charmRun, satelliteDays, satelliteLatest } fro
 import { chooseHour, currentsHourly, currentsMean } from "@/lib/currents";
 import { derivedOutlook, derivedSst, sstIsAnalysis, type DerivedGrid, type DerivedIndex } from "@/lib/derived";
 import { classifyDate, type FreshnessState } from "@/lib/freshness";
+import { allPast, isPastRun } from "@/lib/modelTime";
 import type { StationLite } from "@/lib/data";
 import { day, pacificYmd, range, time } from "@/nx/ds/format";
 import { gridBounds, type FieldGrid } from "@/nx/chart/layers/grid";
@@ -191,7 +192,7 @@ function charmProduct(m: Manifest, today: string, now: Date): ExploreProduct | n
       start: valid,
       end: valid,
       kind: "model",
-      past: valid < today,
+      past: isPastRun(valid, valid, today),
       volume: 1,
       fresh: freshOf(l.freshness, l.time.issued_date ?? null, now),
       grid: gridSpec(l.grid),
@@ -199,7 +200,7 @@ function charmProduct(m: Manifest, today: string, now: Date): ExploreProduct | n
     });
   });
   if (!frames.length) return null;
-  const pastRun = frames.every((f) => f.past);
+  const pastRun = allPast(frames.map((f) => f.end), today);
   // open on the lead valid today, else the next one after today, else (a past run) its last lead
   const pick = frames.find((f) => f.start === today) ?? frames.find((f) => f.start > today) ?? frames[frames.length - 1];
   const l0 = layers.find(Boolean)!;
@@ -222,8 +223,10 @@ function outlookProduct(d: DerivedIndex | null, today: string): ExploreProduct |
   const o = derivedOutlook(d);
   if (!o) return null;
   const typ = o.typical_grid && o.typical_grid.width === o.grid.width && o.typical_grid.height === o.grid.height ? gridSpec(o.typical_grid) : null;
-  const frame: ExploreFrame = { id: "outlook", product: "outlook", track: "outlook", label: range(o.valid_from, o.valid_to), stamp: `mean of ${range(o.valid_from, o.valid_to)}, issued ${day(o.issued)}`, start: o.valid_from, end: o.valid_to, kind: "outlook", past: o.valid_to < today, volume: null, fresh: "current", grid: gridSpec(o.grid), typicalGrid: typ, sensor: "Neritic outlook" };
-  return { id: "outlook", name: "Chlorophyll outlook", unit: "mg/m³", kind: "outlook", source: "Neritic, from NASA MODIS-Aqua 8-day", sourceUrl: null, frames: [frame], tracks: [{ id: "outlook", product: "outlook", label: "Outlook", days: [] }], defaultFrame: frame.id };
+  // T3: once every day of its window has passed, the outlook is a past run, worded and drawn like C-HARM's
+  const past = isPastRun(o.valid_from, o.valid_to, today);
+  const frame: ExploreFrame = { id: "outlook", product: "outlook", track: "outlook", label: range(o.valid_from, o.valid_to), stamp: `mean of ${range(o.valid_from, o.valid_to)}, issued ${day(o.issued)}`, start: o.valid_from, end: o.valid_to, kind: "outlook", past, volume: null, fresh: past ? "historical" : "current", grid: gridSpec(o.grid), typicalGrid: typ, sensor: "Neritic outlook" };
+  return { id: "outlook", name: "Chlorophyll outlook", unit: "mg/m³", kind: "outlook", source: "Neritic, from NASA MODIS-Aqua 8-day", sourceUrl: null, frames: [frame], tracks: [{ id: "outlook", product: "outlook", label: "Outlook", days: [] }], defaultFrame: frame.id, pastRun: past, runIssued: o.issued };
 }
 
 function sstProduct(d: DerivedIndex | null): ExploreProduct | null {

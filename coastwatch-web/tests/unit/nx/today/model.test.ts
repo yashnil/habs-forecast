@@ -187,6 +187,11 @@ describe("models behind a tap (T3, T5, T9–T12)", () => {
     expect(v.models.outlook?.provenance?.kind).toBe("outlook");
   });
 
+  it("an outlook whose dates have passed says 'past run', in Explore's words (T3, one helper)", () => {
+    const v = buildToday({ ...inputs, now: "2026-10-22T18:00:00Z" }, { fishery: "dungeness_commercial", sea: null, place });
+    expect(v.models.value).toMatch(/^Algae outlook, past run \(Oct \d+\)$/);
+  });
+
   it("an outlook about usual is said as no signal", () => {
     const o = { ...inputs.outlook!, value: 1, typical: 1 };
     const v = buildToday({ ...inputs, outlook: o }, { fishery: "dungeness_commercial", sea: null, place });

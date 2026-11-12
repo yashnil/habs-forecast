@@ -28,7 +28,7 @@ import { compassWord, isothermLabels, KNOTS, nearestCurrent, type IsoLabel, near
 import { nextOf, playFrames, playHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, ISO_F, LAYER_LABEL } from "./words";
+import { aboutWords, CHL_DOMAIN, currentsByDefault, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, oldMark } from "./words";
 import s from "./explore.module.css";
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
@@ -36,7 +36,8 @@ type Win = Window & { __nxExplore?: Record<string, unknown> };
 /** How each product is drawn (src/nx/chart/layers/FieldLayer.ts). */
 function styleFor(p: ExploreProduct, f: ExploreFrame): FieldStyle {
   if (p.id === "chl") return { kind: "ramp", domain: CHL_DOMAIN, scale: "log" };
-  if (p.id === "outlook") return { kind: "outlook", domain: CHL_DOMAIN, scale: "log", opacity: 0.9 };
+  // a past outlook steps back like a past C-HARM run (T3)
+  if (p.id === "outlook") return { kind: "outlook", domain: CHL_DOMAIN, scale: "log", opacity: p.pastRun ? 0.5 : 0.9 };
   // a past run is past in every frame: drawn lighter, as its legend is (T3, T23)
   if (p.id === "charm") return { kind: "classes", past: f.past || !!p.pastRun };
   return { kind: "isolines", ...ISO_F };
@@ -73,7 +74,11 @@ function readUrl(model: ExploreModel, sp: URLSearchParams) {
   const f = p?.frames.find((x) => x.id === sp.get("frame")) ?? p?.frames.find((x) => x.id === p.defaultFrame) ?? null;
   const hour = model.currents?.frames.find((x) => x.id === sp.get("hour"))?.id ?? model.currents?.defaultFrame ?? null;
   const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(sp.get("at") ?? "");
-  return { product: p?.id ?? null, frame: f?.id ?? null, currents: sp.get("cur") !== "0" && !!model.currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null };
+  const cur = sp.get("cur");
+  const hourFrame = model.currents?.frames.find((x) => x.id === hour) ?? null;
+  // an explicit ?cur=1 / ?cur=0 wins; otherwise the default for this layer and this hour's freshness
+  const currents = !!model.currents && (cur === "1" ? true : cur === "0" ? false : currentsByDefault(p, hourFrame));
+  return { product: p?.id ?? null, frame: f?.id ?? null, currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null };
 }
 
 export function Explore({ model }: { model: ExploreModel }) {
@@ -113,7 +118,8 @@ export function Explore({ model }: { model: ExploreModel }) {
     const set = (k: string, v: string | null) => (v === null ? q.delete(k) : q.set(k, v));
     set("layer", productId && productId !== model.products[0]?.id ? productId : null);
     set("frame", frame && product && frame.id !== product.defaultFrame ? frame.id : null);
-    set("cur", model.currents && !currentsOn ? "0" : null);
+    const byDefault = currentsByDefault(product, model.currents?.frames.find((x) => x.id === model.currents?.defaultFrame) ?? null);
+    set("cur", model.currents && currentsOn !== byDefault ? (currentsOn ? "1" : "0") : null);
     set("hour", hourId && hourId !== model.currents?.defaultFrame ? hourId : null);
     set("at", at ? `${at.lat.toFixed(4)},${at.lon.toFixed(4)}` : null);
     const next = `${window.location.pathname}${q.toString() ? `?${q}` : ""}`;
@@ -202,7 +208,9 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
   }, [currentsOn, model, quality, tier]);
 
-  const flowState = useMemo(() => ({ still: reduce, paused: false }), [reduce]);
+  // an hour past the radar's current limit is drawn still and labelled "(old)", never animated as if live (T17)
+  const currentOld = !!current && isOld(current.fresh);
+  const flowState = useMemo(() => ({ still: reduce || currentOld, paused: false }), [reduce, currentOld]);
   // the streak layer is added once while currents are on; a new hour swaps its field (a cut)
   useEffect(() => {
     if (!map || !streaks || !tier) return;
@@ -319,7 +327,7 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   const hours = useMemo(() => (model.currents ? playHours(model.currents.frames) : []), [model.currents]);
   const dayFrames = useMemo(() => (product ? playFrames(product) : []), [product]);
-  const playsHours = streaks && hours.length > 1;
+  const playsHours = streaks && hours.length > 1 && !currentOld;
   const canPlay = playsHours || dayFrames.length > 1;
   useEffect(() => {
     if (!playing) return;
@@ -394,7 +402,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       const curLine =
         streaks && current
           ? cur
-            ? `Nearest measured current ${cur.km < 1 ? "here" : `${sig(cur.km, 2)} km away`}: ${sig(cur.speed * KNOTS, 2)} kt toward the ${compassWord(cur.dirTo)} (HF radar, ${current.mean ? current.label : current.stamp}).`
+            ? `Nearest measured current ${cur.km < 1 ? "here" : `${sig(cur.km, 2)} km away`}: ${sig(cur.speed * KNOTS, 2)} kt toward the ${compassWord(cur.dirTo)} (HF radar, ${current.mean ? current.label : current.stamp}${oldMark(current.fresh)}).`
             : `No measured current within 6 km in ${current.mean ? "the 24 h mean" : "this hour"}.`
           : null;
       const note =
@@ -473,6 +481,9 @@ export function Explore({ model }: { model: ExploreModel }) {
       {phone ? <Locator /> : null}
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
       <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
+      <p className={s.lead} data-testid="nx-explore-lead">
+        {leadSentence(product, frame)}
+      </p>
       <ExploreLegend product={product} frame={frame} currents={streaks ? current : null} />
       {tier === "static" && frame?.grid && product.id !== "sst" ? (
         <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
@@ -490,13 +501,13 @@ export function Explore({ model }: { model: ExploreModel }) {
         {model.products.map((p) => (
           <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`}>
             <span>{LAYER_LABEL[p.id]}</span>
-            <small>{p.kind === "measured" ? "measured" : p.kind === "analysis" ? "analysis" : p.pastRun ? "past run" : p.kind}</small>
+            <small>{layerKindWord(p)}</small>
           </button>
         ))}
         {model.currents ? (
           <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
             <span>Currents</span>
-            <small>{!currentsOn ? "off" : overModel ? "not over a model" : tier === "static" ? "not on a still picture" : "on, measured"}</small>
+            <small>{!currentsOn ? "off" : overModel ? "not over a model" : tier === "static" ? "not on a still picture" : `on, measured${current ? oldMark(current.fresh) : ""}`}</small>
           </button>
         ) : null}
       </div>

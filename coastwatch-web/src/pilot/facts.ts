@@ -36,6 +36,7 @@ import type {
 } from "./contracts";
 import type { Conditions, Tide } from "@/lib/conditions";
 import { compass } from "@/lib/conditions";
+import { allPast, isPastRun } from "@/lib/modelTime";
 import { lanePeriods, periodLine, type LanePeriod } from "./today/marine";
 
 // ---------------------------------------------------------------- inputs
@@ -933,7 +934,7 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
   });
   const withPda = days.filter((d) => d.pda != null);
   const todayPT = pacificDay(now);
-  const charmPast = days.length > 0 && days.every((d) => !!d.date && d.date < todayPT);
+  const charmPast = allPast(days.map((d) => d.date), todayPT);
   let charmFact: PortFact;
   const src = { name: "NOAA C-HARM", url: charm?.url ?? "https://coastalscience.noaa.gov/science-areas/habs/hab-forecasts/california/" };
   if (!charm || charm.state === "unavailable" || !days.length) {
@@ -976,7 +977,7 @@ function bloomView(charm: CharmInput | null, outlook: OutlookInput | null, place
   let use: string | null = null;
   if (outlook) {
     sw = skillWords(outlook.skill);
-    outlookStale = outlook.valid_to < pacificDay(now);
+    outlookStale = isPastRun(outlook.valid_from, outlook.valid_to, pacificDay(now));
     const win = rangeWords(outlook.valid_from, outlook.valid_to, now);
     read = outlookRead(outlook.value, outlook.typical);
     errorFactor = outlookErrorFactor(outlook.skill);

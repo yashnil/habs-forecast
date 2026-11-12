@@ -1,10 +1,10 @@
 "use client";
 
-import { useId, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { range, sig, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
 import { axisLabels, axisX, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
-import { LAYER_LABEL } from "./words";
+import { LAYER_LABEL, layerKindWord, oldMark } from "./words";
 import s from "./explore.module.css";
 
 /**
@@ -43,12 +43,12 @@ function Hatch({ id, dense }: { id: string; dense?: boolean }) {
 }
 
 function frameWords(f: ExploreFrame): string {
-  const kind = f.kind === "measured" ? "measured" : f.kind === "analysis" ? "analysis" : f.kind === "outlook" ? "outlook" : f.past ? "model, past run" : "model";
+  const kind = f.kind === "measured" ? "measured" : f.kind === "analysis" ? "analysis" : f.past ? `${f.kind}, past run` : f.kind;
   const cov = f.volume != null && f.kind === "measured" ? `, values over ${Math.round(f.volume * 100)} % of the coastal ocean` : "";
   return `${f.label === "Latest" ? `Latest view, ${f.stamp}` : f.stamp}, ${kind}${cov}`;
 }
 
-function TrackRow({ model, product, track, active, height, frameId, onFrame, width, hatchId, hatchPastId }: { model: ExploreModel; product: ExploreProduct; track: Track; active: boolean; height: number; frameId: string; onFrame: Props["onFrame"]; width: number; hatchId: string; hatchPastId: string }) {
+function TrackRow({ model, product, track, active, height, frameId, onFrame, width, hatchId, hatchPastId, plain }: { model: ExploreModel; product: ExploreProduct; track: Track; active: boolean; height: number; frameId: string; onFrame: Props["onFrame"]; width: number; hatchId: string; hatchPastId: string; plain?: boolean }) {
   const frames = product.frames.filter((f) => f.track === track.id);
   const T = Math.max(40, width - LABEL_W);
   const H = height;
@@ -68,8 +68,9 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
     if (f) onFrame(product, f);
   };
   const measured = product.kind === "measured";
-  const name = track.id === "viirs" ? "VIIRS" : track.id === "olci" ? "OLCI" : product.id === "chl" ? "Chlorophyll" : product.id === "sst" ? "Temperature" : product.id === "charm" ? "C-HARM" : "Outlook";
-  const pastRun = product.pastRun && track.id === "charm";
+  // with the sources folded away, the row is named for what it shows, not the satellite
+  const name = plain ? LAYER_LABEL[product.id] : track.id === "viirs" ? "VIIRS" : track.id === "olci" ? "OLCI" : product.id === "chl" ? "Chlorophyll" : product.id === "sst" ? "Temperature" : product.id === "charm" ? "C-HARM" : "Outlook";
+  const pastRun = product.pastRun && (track.id === "charm" || track.id === "outlook");
   return (
     <div className={s.railRow} data-active={active ? "1" : "0"} style={{ height: H }} data-testid={`nx-rail-${track.id}`}>
       <span className={s.railLabel}>
@@ -215,7 +216,6 @@ function HoursStrip({ model, currentId, onCurrent, width, on }: { model: Explore
   );
 }
 
-const kindWord = (p: ExploreProduct) => (p.kind === "measured" ? "measured" : p.kind === "analysis" ? "analysis" : p.pastRun ? "past run" : p.kind);
 
 /** The other layers in one line: what each holds and when, each a button that makes it the active layer. */
 function Availability({ model, product, currentsShown, onProduct }: { model: ExploreModel; product: ExploreProduct; currentsShown: boolean; onProduct: (id: ProductId) => void }) {
@@ -225,7 +225,7 @@ function Availability({ model, product, currentsShown, onProduct }: { model: Exp
     const sp = productSpan(p);
     const when = sp ? range(sp.first, sp.last) : "nothing published";
     const days = sp && (p.kind === "measured" || p.kind === "analysis") && sp.days > 1 ? `, ${sp.days} days with a view` : "";
-    return { id: p.id, text: `${LAYER_LABEL[p.id]} ${when}`, sub: `${kindWord(p)}${days}` };
+    return { id: p.id, text: `${LAYER_LABEL[p.id]} ${when}`, sub: `${layerKindWord(p)}${days}` };
   });
   if (!items.length && (currentsShown || !hours.length)) return null;
   return (
@@ -259,13 +259,23 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
   const labels = axisLabels(model.axis, T, nx);
   const frame = product.frames.find((f) => f.id === frameId);
   const cur = model.currents?.frames.find((f) => f.id === currentId) ?? null;
+  const [more, setMore] = useState(false);
+  const moreId = `nx-rail-more-${uid}`;
+  // a frame chosen on another sensor's row (from a link) keeps that row in view
+  const all = more || (!!frame && frame.track !== product.tracks[0]?.id);
+  const tracks = all ? product.tracks : product.tracks.slice(0, 1);
   return (
     <section className={s.rail} ref={ref} aria-label="Time" data-testid="nx-timerail">
       <div className={s.railHead}>
         <h2 className={s.railTitle}>Time</h2>
         <p className={s.railNow} data-testid="nx-frame-stamp">
           {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : ""}
-          {currentsOn && cur ? <span className={s.railNowSub}>Currents: {cur.mean ? cur.label : cur.stamp}</span> : null}
+          {currentsOn && cur ? (
+            <span className={s.railNowSub}>
+              Currents: {cur.mean ? cur.label : cur.stamp}
+              {oldMark(cur.fresh)}
+            </span>
+          ) : null}
         </p>
         {canPlay ? (
           <button type="button" className={s.textButton} onClick={onPlay} aria-pressed={playing} data-testid="nx-play">
@@ -292,17 +302,24 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
         </div>
         <div className={s.railRows}>
           <span className={s.nowLine} style={{ left: LABEL_W + nx }} aria-hidden="true" />
-          {product.tracks.map((t, i) => (
-            <TrackRow key={t.id} model={model} product={product} track={t} active height={i === 0 ? ROW_ACTIVE : ROW} frameId={frameId} onFrame={onFrame} width={width} hatchId={hatchId} hatchPastId={hatchPastId} />
+          {tracks.map((t, i) => (
+            <TrackRow key={t.id} model={model} product={product} track={t} active height={i === 0 ? ROW_ACTIVE : ROW} frameId={frameId} onFrame={onFrame} width={width} hatchId={hatchId} hatchPastId={hatchPastId} plain={!all} />
           ))}
           {model.currents && currentsOn ? <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on /> : null}
         </div>
       </div>
-      <p className={s.railKey}>
-        {product.kind === "measured" ? "Bars: share of the coastal ocean with a value that day." : "Hatched: a model or outlook frame, the days it is valid for."} {product.pastRun ? "Past run: every day it covers is before today." : ""}
-        {frame && frame.volume != null && frame.kind === "measured" ? ` This frame: values over ${sig(frame.volume * 100, 2)} %.` : ""}
-      </p>
-      <Availability model={model} product={product} currentsShown={!!model.currents && currentsOn} onProduct={onProduct} />
+      <div className={s.railMore}>
+        <button type="button" className={s.railMoreButton} aria-expanded={more} aria-controls={moreId} onClick={() => setMore((v) => !v)} data-testid="nx-rail-more">
+          {more ? "Hide sources and coverage" : "Sources and coverage"}
+        </button>
+        <div id={moreId} hidden={!more} className={s.railMoreBody}>
+          <p className={s.railKey}>
+            {product.kind === "measured" ? "Bars: share of the coastal ocean with a value that day." : "Hatched: a model or outlook frame, the days it is valid for."} {product.pastRun ? "Past run: every day it covers is before today." : ""}
+            {frame && frame.volume != null && frame.kind === "measured" ? ` This frame: values over ${sig(frame.volume * 100, 2)} %.` : ""}
+          </p>
+          <Availability model={model} product={product} currentsShown={!!model.currents && currentsOn} onProduct={onProduct} />
+        </div>
+      </div>
     </section>
   );
 }

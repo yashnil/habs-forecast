@@ -22,6 +22,7 @@ import type { Provenance } from "@/nx/ds/Stamp";
 import { age as ageWords, day } from "@/nx/ds/format";
 import { provenanceOf, shortSource } from "./provenance";
 import { sectorOf, whaleMeasures } from "@/nx/regulation/whale";
+import { runKindWord } from "@/lib/modelTime";
 
 export type TodayInputs = Omit<PortTodayInputs, "conditions" | "selected">;
 export type SeaState = Conditions | null | "error";
@@ -513,7 +514,8 @@ function modelsOf(model: TodayModel): ModelsView {
       signal,
     };
     value = signal === "none" ? "No signal" : signal === "higher" ? "Algae higher than usual, not toxin" : signal === "lower" ? "Algae lower than usual, not toxin" : "Algae outlook, not toxin";
-    if (b.outlookStale) value = "Algae outlook past its dates";
+    // the same words Explore uses for a run whose dates have passed (T3, src/lib/modelTime.ts)
+    if (b.outlookStale) value = `Algae outlook, ${runKindWord("outlook", true, day(b.outlook.issued))}`;
   } else value = charm ? (charm.past ? "Past C-HARM run only" : "C-HARM model run") : "No model run nearby";
   return { value, charm, outlook };
 }

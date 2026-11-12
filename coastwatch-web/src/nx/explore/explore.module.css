@@ -3,6 +3,8 @@
 .explore { display: flex; flex-direction: column; gap: var(--s-24); padding-bottom: var(--s-24); }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
 .kicker { margin: 0; font-weight: 600; }
+/* the first line: what this view is, before any instrument (5-second test) */
+.lead { margin: 0; font: 400 var(--t-18) / 1.4 var(--font-serif); color: var(--ink); max-width: 34em; }
 
 /* ---------------------------------------------------------------- legend-as-title */
 .legendBlock { display: grid; gap: var(--s-12); }
@@ -79,6 +81,10 @@
 .railTick { font: 400 var(--t-14) / 1 var(--font-sans); fill: var(--ink-2); }
 .railHit { position: absolute; top: 0; bottom: 0; padding: 0; background: none; border: 0; cursor: pointer; }
 .railHit:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
+/* sensor rows, coverage words and the other layers: one tap away, not the first thing read */
+.railMore { display: grid; gap: var(--s-8); }
+.railMoreBody:not([hidden]) { display: grid; gap: var(--s-8); }
+.railMoreButton { justify-self: start; min-height: var(--target); padding: 0; font-size: var(--t-14); font-weight: 600; text-decoration: underline; text-decoration-thickness: var(--hair); text-underline-offset: 4px; }
 .railKey { margin: 0; font-size: var(--t-14); line-height: 1.4; color: var(--ink-2); }
 /* the other layers: one quiet line, each a way to switch */
 .railAlso { margin: 0; padding-top: var(--s-8); border-top: var(--hair) solid var(--rule-soft); font-size: var(--t-14); line-height: 1.6; color: var(--ink-2); }
