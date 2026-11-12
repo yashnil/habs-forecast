@@ -29,7 +29,7 @@ export interface PlotPoint {
   id?: string;
 }
 
-export type XSpec = { type?: "time" | "linear"; domain: [number, number] };
+export type XSpec = { type?: "time" | "linear"; domain: [number, number]; /** a linear axis: its unit ("lb") and how a position is written, for ticks, the tooltip and the live region */ unit?: string; format?: (t: number) => string };
 export type YSpec = { type?: "linear" | "log"; domain?: [number, number]; unit?: string; format?: (v: number) => string };
 
 /** Kinds that have a place on the y axis when they carry a value. */
@@ -101,10 +101,10 @@ export function stepIndex(points: PlotPoint[], from: number, key: StepKey, time 
 }
 
 /** What a point says, for the tooltip, the live region and the table: "Jun 3, 2025 · 6.2 ng/mL · measured". */
-export function describePoint(p: PlotPoint, o: { unit?: string; time?: boolean; format?: (v: number) => string } = {}): string {
+export function describePoint(p: PlotPoint, o: { unit?: string; time?: boolean; format?: (v: number) => string; xFormat?: (t: number) => string; xUnit?: string } = {}): string {
   const kind = p.kind ?? "measured";
   const word = DATA_STATE_WORDS[kind].word.toLowerCase();
-  const where = o.time === false ? plain(p.t) : day(p.t, { year: true });
+  const where = o.time === false ? `${(o.xFormat ?? plain)(p.t)}${o.xUnit ? ` ${o.xUnit}` : ""}` : day(p.t, { year: true });
   if (p.raw && (kind === "below-detection" || kind === "reported-zero")) return `${where} · ${p.raw} · ${word}`;
   if (p.v === null || !Number.isFinite(p.v)) return `${where} · ${word}`;
   return `${where} · ${(o.format ?? plain)(p.v)}${o.unit ? ` ${o.unit}` : ""} · ${word}`;

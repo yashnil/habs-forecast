@@ -23,6 +23,10 @@
   --hatch: rgba(14, 20, 23, 0.55);
   --wash: #f4f2ea;                    /* a hover or surface ground, a shade under paper; ink on it 16.5 */
   --sel: rgba(14, 20, 23, 0.1);       /* a selection ground (a pinned sample, a chosen cell): ink, not a hue */
+  /* the plot kit's marks (ds/plot): the crosshair and focus ring, a censored or reported-zero mark's stroke, the
+     model's dashed line, grid and gaps. Each mode's own values, so a hollow mark never sinks into a dark ground. */
+  --plot-cross: #0e1417; --plot-focus: #0e1417; --plot-point: #0e1417; --plot-censored: #0e1417; --plot-zero: #2f4a5b;
+  --plot-model: #2f4a5b; --plot-grid: rgba(14, 20, 23, 0.14); --plot-gap: rgba(14, 20, 23, 0.4);
   --chl-0: #f6f4dc; --chl-1: #e6ebb8; --chl-2: #bdd68f; --chl-3: #82b77c;
   --chl-4: #418f74; --chl-5: #1b635b; --chl-6: #0b3e41; --chl-7: #052327;
   --streak: #0e1417;
@@ -59,6 +63,8 @@
   --hatch: rgba(226, 231, 232, 0.5);
   --wash: #262d32;
   --sel: rgba(226, 231, 232, 0.14);
+  --plot-cross: #e2e7e8; --plot-focus: #ffffff; --plot-point: #e2e7e8; --plot-censored: #e2e7e8; --plot-zero: #aebbc0;
+  --plot-model: #aebbc0; --plot-grid: rgba(226, 231, 232, 0.16); --plot-gap: rgba(226, 231, 232, 0.42);
   /* Dusk and Night are their own tables (README §4), not an inversion of Day: on a dark ground every data ramp
      runs dark to light, high is LIGHT (as the depth tints run shoal-light to deep-dark here), lightness monotone.
      High-is-dark on this ground would sink the highest values into the water. The legend says so in words. */
@@ -94,6 +100,8 @@
   --hatch: rgba(168, 156, 136, 0.45);
   --wash: #0f1417;
   --sel: rgba(168, 156, 136, 0.16);
+  --plot-cross: #a89c88; --plot-focus: #c9bda8; --plot-point: #a89c88; --plot-censored: #a89c88; --plot-zero: #8a8070;
+  --plot-model: #8a8070; --plot-grid: rgba(168, 156, 136, 0.16); --plot-gap: rgba(168, 156, 136, 0.4);
   /* night, as dusk: high is light on the dark ground, lightness monotone; the legend says so */
   --ramp-says-darker: none; --ramp-says-lighter: inline;
   --chl-0: #0b1715; --chl-1: #10221e; --chl-2: #163027; --chl-3: #213f2f;

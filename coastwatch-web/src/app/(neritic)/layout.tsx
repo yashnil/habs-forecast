@@ -3,6 +3,7 @@ import "@/nx/ds/tokens.css";
 import "@/nx/chart/chart.css";
 import "@/nx/shell/shell.css";
 import { PAPER_DAY } from "@/nx/ds/palette";
+import { AlertWatch } from "@/nx/alerts/AlertWatch";
 import { ChartHost } from "@/nx/chart/ChartHost";
 import { MotionPrefs } from "@/nx/ds/MotionPrefs";
 import { OpeningController, OpeningStill } from "@/nx/opening/Opening";
@@ -37,6 +38,8 @@ export default async function NeriticLayout({ children }: { children: React.Reac
       {/* before the first paint: what `/` is (home, the opening, or Today at the saved port) and the chart mode */}
       <script dangerouslySetInnerHTML={{ __html: ENTRY_SCRIPT }} />
       <MotionPrefs />
+      {/* the alert check for followed ports: draws nothing, runs after the page has drawn (src/nx/alerts) */}
+      <AlertWatch />
       <PortsProvider value={ports}>
         <Shell />
         <Workspace chart={<ChartHost ports={ports.map((p) => ({ key: p.key, name: p.name, lon: p.lon, lat: p.lat, pilot: p.pilot }))} opening={<OpeningStill />} />}>{children}</Workspace>

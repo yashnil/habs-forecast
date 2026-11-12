@@ -1,6 +1,6 @@
 "use client";
 import { scaleLinear, scaleLog, scaleUtc } from "d3-scale";
-import { useImperativeHandle, useRef, type KeyboardEvent, type PointerEvent, type Ref } from "react";
+import { useImperativeHandle, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent, type Ref } from "react";
 import { windowAround } from "../plot/model";
 import { day, monthYear } from "../format";
 import { useElementWidth } from "../useMedia";
@@ -126,6 +126,10 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
   };
 
   const H = height;
+  // a narrow frame (a year on a 21-year record is about 30 px): the handles stand outside it, facing outward, so
+  // the start and end never share a hit area and the frame between them still pans
+  const narrow = xb - xa < 72;
+  const OUT = 40;
   return (
     <div className={cx(s.brush, className)}>
       <div ref={ref} style={{ position: "relative", height: H + 24 }} onPointerDown={centre}>
@@ -148,7 +152,7 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
         <button
           type="button"
           className={s.brushPan}
-          style={{ left: xa + 12, width: Math.max(0, xb - xa - 24), height: H }}
+          style={narrow ? { left: xa + 4, width: Math.max(12, xb - xa - 8), height: H } : { left: xa + 12, width: Math.max(0, xb - xa - 24), height: H }}
           role="slider"
           aria-label={`Window for ${label}`}
           aria-valuemin={extent[0]}
@@ -164,7 +168,8 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
         <button
           type="button"
           className={s.brushHandle}
-          style={{ left: xa, height: H }}
+          style={narrow ? ({ left: xa - OUT, width: OUT + 4, marginLeft: 0, height: H, "--tick": `${OUT}px` } as CSSProperties) : { left: xa, height: H }}
+          data-outward={narrow || undefined}
           role="slider"
           aria-label="Window start"
           aria-valuemin={extent[0]}
@@ -180,7 +185,8 @@ export function Brush({ extent, value, onChange, points = [], scale = "log", hei
         <button
           type="button"
           className={s.brushHandle}
-          style={{ left: xb, height: H }}
+          style={narrow ? ({ left: xb - 4, width: OUT + 4, marginLeft: 0, height: H, "--tick": "4px" } as CSSProperties) : { left: xb, height: H }}
+          data-outward={narrow || undefined}
           role="slider"
           aria-label="Window end"
           aria-valuemin={value[0]}
