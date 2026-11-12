@@ -36,6 +36,15 @@ test("a plot is one tab stop: arrows step real samples, each is read out, Enter 
   expect(Number(await focusT(page))).toBe(first);
   // the tooltip stands beside the sample; the secondary plot reads the same date
   await expect(page.getByTestId("plot-tip").first()).toBeVisible();
+  // wherever the sample is, high or on the baseline, the tooltip is whole inside the plot: never cut at its foot
+  for (const k of ["End", "ArrowLeft", "ArrowLeft", "ArrowLeft", "PageUp", "PageUp", "Home", "ArrowRight"]) {
+    await page.keyboard.press(k);
+    const tip = (await page.getByTestId("sys-plot").getByTestId("plot-tip").boundingBox())!;
+    const box = (await plot(page).boundingBox())!;
+    expect(tip.y, k).toBeGreaterThanOrEqual(box.y - 1);
+    expect(tip.y + tip.height, k).toBeLessThanOrEqual(box.y + box.height + 1);
+  }
+  await page.keyboard.press("Home");
   // Enter pins: the inspector opens with the exact value, and the pin stays when focus moves on
   await page.keyboard.press("Enter");
   await expect(plot(page)).toHaveAttribute("data-pinned-t", String(first));

@@ -25,13 +25,9 @@ test.use({ storageState: { cookies: [], origins: [] } });
  *        switch and time rail). Needs "More" or a drag first.
  *  F-07  the trip workspace at 320 px: the last links sit under the fixed result bar at the end of the page.
  */
-const KNOWN: Record<string, string> = {
-  "Today at 390 px": "F-01",
-  "Explore at 390 px": "F-01",
-  "Explore at 320 px": "F-01",
-  "Notices at 390 px": "F-01",
-  "Notices at 320 px": "F-01",
-};
+// F-01 is fixed in the shell (the sheet's scroller ends where the visible sheet ends at every detent): its five
+// entries are gone, so the guard now holds those pages to it.
+const KNOWN: Record<string, string> = {};
 
 const PHONES = [
   { width: 390, height: 844 },
@@ -181,8 +177,8 @@ test.describe("G2: every control is reachable by scrolling alone", () => {
     // a real tap (Playwright refuses a covered or off-screen target), not a programmatic click
     await page.getByTestId("trip-save-new").tap();
     await expect(page.getByTestId("trip-said")).toContainText("Saved as");
-    // open defect F-07: "Copy numbers-only link" ends under the fixed result bar; everything else must be clear
-    expect((await unreachable(page, "nx-coast")).filter((x) => !/\[trip-copy-link\]/.test(x))).toEqual([]);
+    // every control can be scrolled clear of the fixed result bar (F-07, fixed)
+    expect(await unreachable(page, "nx-coast")).toEqual([]);
     await ctx.close();
   });
 });

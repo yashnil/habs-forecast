@@ -385,18 +385,116 @@ test.describe("phone desk header and sheet", () => {
     expect((await title.boundingBox())!.width).toBeGreaterThanOrEqual(header.width * 0.9);
   });
   test("a sheet brought back to rest shows the page from its first line", async ({ page }) => {
-    await open(page, "/explore?place=port-592");
+    // Notices: a long page in a sheet (Explore's phone content is now shorter than one screen)
+    await open(page, "/notices?place=port-592");
     const margin = page.getByTestId("nx-margin");
     const body = page.locator(".n12-margin-scroll");
+    const first = page.getByRole("heading", { level: 1 });
+    await expect(first).toBeInViewport();
     const more = margin.getByRole("button", { name: /Show (more|less) of this page/ });
     await more.click();
     await more.click();
     await expect(margin).toHaveAttribute("data-detent", "2");
     await body.evaluate((el) => el.scrollTo(0, 300));
-    expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(await body.evaluate((el) => el.scrollTop)).toBe(300);
+    await expect(first).not.toBeInViewport();
     await more.click();
     await expect(margin).toHaveAttribute("data-detent", "0");
     await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBe(0);
-    await expect(page.getByTestId("nx-explore-lead")).toBeInViewport();
+    await expect(first).toBeInViewport();
+    // at rest the scroller ends where the visible sheet ends: its last line can be brought above the destinations bar
+    await body.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    const bodyBox = (await body.boundingBox())!;
+    const tabs = (await page.getByTestId("nx-tabs").boundingBox())!;
+    expect(bodyBox.y + bodyBox.height).toBeLessThanOrEqual(tabs.y + 0.5);
+  });
+});
+
+test.describe("phone chart", () => {
+  for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+    test(`at ${size.width} px the chart's buttons are one small column that covers neither the port's name nor the scale`, async ({ browser }) => {
+      const ctx = await browser.newContext({ viewport: size, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
+      const page = await ctx.newPage();
+      await open(page, "/explore?place=port-592");
+      await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
+      const controls = page.getByTestId("nx-chart-controls");
+      await expect(controls).toBeVisible();
+      // zoom is a pinch on a phone: its buttons are not shown; what is shown is 44 px wide and named
+      await expect(page.getByTestId("nx-zoom-in")).toBeHidden();
+      const c = (await controls.boundingBox())!;
+      expect(c.width).toBeLessThanOrEqual(48);
+      expect(c.height).toBeLessThanOrEqual(92);
+      for (const b of await controls.getByRole("button").all()) if (await b.isVisible()) expect(await b.getAttribute("aria-label")).toBeTruthy();
+      // above the resting sheet, inside the chart
+      const sheetTop = (await page.getByTestId("nx-margin").boundingBox())!.y;
+      expect(c.y + c.height).toBeLessThanOrEqual(sheetTop);
+      const hit = (r: { x: number; y: number; width: number; height: number } | null) => !!r && r.x < c.x + c.width && r.x + r.width > c.x && r.y < c.y + c.height && r.y + r.height > c.y;
+      expect(hit(await page.locator(".n12-port-name-focus").boundingBox())).toBe(false);
+      expect(hit(await page.locator(".n12-scale").boundingBox())).toBe(false);
+      await ctx.close();
+    });
+  }
+
+  test("a desk page's chart strip names only what the page says its chart shows", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
+    const page = await ctx.newPage();
+    await open(page, RESEARCH);
+    const subject = page.getByTestId("nx-pane-subject");
+    await expect(subject).toBeVisible();
+    // never the saved port's name over a chart that shows a station
+    await expect(subject).not.toContainText("Moss Landing");
+    await expect(subject).toHaveText(/^Chart( · .+)?$/);
+    await ctx.close();
+  });
+});
+
+test("an unticked checkbox is an empty ruled box and a ticked one is filled, in day and night", async ({ page }) => {
+  await open(page, "/today?place=port-592");
+  for (const mode of ["day", "night"]) {
+    const r = await page.evaluate((mode) => {
+      document.documentElement.setAttribute("data-chart-mode", mode);
+      const app = document.querySelector(".n12-app")!;
+      const mk = (checked: boolean) => {
+        const el = document.createElement("input");
+        el.type = "checkbox";
+        el.checked = checked;
+        app.appendChild(el);
+        const cs = getComputedStyle(el);
+        const out = { bg: cs.backgroundColor, border: cs.borderTopColor, w: el.offsetWidth, appearance: cs.appearance };
+        el.remove();
+        return out;
+      };
+      const paper = getComputedStyle(app).backgroundColor;
+      return { off: mk(false), on: mk(true), paper };
+    }, mode);
+    expect(r.off.appearance).toBe("none");
+    expect(r.off.bg, mode).toBe(r.paper);
+    expect(r.on.bg, mode).not.toBe(r.paper);
+    expect(r.off.border, mode).toBe(r.on.bg);
+    expect(r.off.w).toBe(20);
+  }
+});
+
+test.describe("phone desk page, before the chart pane has arrived", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  test("the page starts under the strip's place whether or not the pane is in the document yet (no shift when it arrives)", async ({ page }) => {
+    for (const url of [RESEARCH, "/coast?place=port-592"]) {
+      await open(page, url);
+      await expect(page.getByTestId("nx-pane")).toBeVisible();
+      const tops = await page.evaluate(() => {
+        const main = document.querySelector<HTMLElement>(".n12-margin")!;
+        const pane = document.querySelector<HTMLElement>(".n12-pane")!;
+        const work = pane.parentElement!;
+        const withPane = main.getBoundingClientRect().top;
+        // as a browser has it while the page's HTML is still arriving: the pane comes after the page in the document
+        const next = pane.nextSibling;
+        pane.remove();
+        const without = main.getBoundingClientRect().top;
+        work.insertBefore(pane, next);
+        return { withPane, without, back: main.getBoundingClientRect().top };
+      });
+      expect(Math.abs(tops.without - tops.withPane), url).toBeLessThanOrEqual(2);
+      expect(tops.back).toBe(tops.withPane);
+    }
   });
 });

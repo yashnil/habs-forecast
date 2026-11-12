@@ -80,6 +80,17 @@
 .n12-controls button:hover { background: var(--wash); }
 .n12-controls button:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
 .n12-controls-word { padding: 0 var(--s-8) !important; max-width: 96px; white-space: normal; }
+.n12-controls-icon { display: none; }
+/* a phone: the chart is small and a pinch zooms it, so the buttons are two at most (back to the page's view, fit
+   the data), one 44 px column in the foot corner by the sheet, clear of the port's name and the scale bar */
+@media (max-width: 720px) {
+  /* above the scale bar's row, which can reach the whole width of a 320 px chart */
+  .n12-controls { top: auto; bottom: calc(var(--nx-cover-bottom, 0px) + var(--s-8) + var(--s-32)); right: calc(var(--nx-cover-right, 0px) + var(--s-8)); }
+  .n12-controls-zoom { display: none !important; }
+  .n12-controls-word { padding: 0 !important; }
+  .n12-controls-words { display: none; }
+  .n12-controls-icon { display: block; }
+}
 html[data-nx-opening="on"] .n12-controls, html[data-nx-opening="run"] .n12-controls { visibility: hidden; }
 
 /* the neatline */

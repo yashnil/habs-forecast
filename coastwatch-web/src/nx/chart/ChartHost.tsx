@@ -41,18 +41,19 @@ function ChartControls() {
   const fit = scene.controls?.fit;
   return (
     <div className="n12-controls" role="group" aria-label="Chart view" data-testid="nx-chart-controls">
-      <button type="button" onClick={() => zoomChart(1)} aria-label="Zoom in" title="Zoom in" data-testid="nx-zoom-in">
+      <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(1)} aria-label="Zoom in" title="Zoom in" data-testid="nx-zoom-in">
         <Icon name="plus" size={20} />
       </button>
-      <button type="button" onClick={() => zoomChart(-1)} aria-label="Zoom out" title="Zoom out" data-testid="nx-zoom-out">
+      <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(-1)} aria-label="Zoom out" title="Zoom out" data-testid="nx-zoom-out">
         <Icon name="minus" size={20} />
       </button>
       <button type="button" onClick={refitChart} aria-label={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} title={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} data-testid="nx-refit">
         <Icon name="port" size={20} />
       </button>
       {fit ? (
-        <button type="button" className="n12-controls-word" onClick={() => fitChartBounds(fit.bounds)} data-testid="nx-fit-data">
-          {fit.label}
+        <button type="button" className="n12-controls-word" onClick={() => fitChartBounds(fit.bounds)} aria-label={fit.label} title={fit.label} data-testid="nx-fit-data">
+          <span className="n12-controls-words">{fit.label}</span>
+          <Icon name="layers" size={20} className="n12-controls-icon" />
         </button>
       ) : null}
     </div>
@@ -213,6 +214,11 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       if (t.getAttribute("visibility") === "hidden") return;
       const b = t.getBBox();
       if (b.width) obstacles.push({ x0: b.x - 2, y0: b.y - 2, x1: b.x + b.width + 2, y1: b.y + b.height + 2 });
+    });
+    // a zone's boundary line (a parallel of latitude): a name is never set across it, struck through
+    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg path.n12-reg-line, .n12-reg path.n12-reg-limitline").forEach((ln) => {
+      const b = ln.getBBox();
+      if (b.width > 24 && b.height < 3) obstacles.push({ x0: b.x, y0: b.y - 7, x1: b.x + b.width, y1: b.y + b.height + 7 });
     });
     const z = f.camera.zoom;
     const entries = allMarks().filter((e) => (e.spec.minZoom ?? -1) <= z && z <= (e.spec.maxZoom ?? 99));

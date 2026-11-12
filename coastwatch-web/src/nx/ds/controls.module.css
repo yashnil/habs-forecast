@@ -632,6 +632,18 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.editable[data-truncate] {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.editable[data-truncate] .editText {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
 .editEmpty {
   color: var(--ink-2);
   font-weight: 400;

@@ -1,6 +1,6 @@
 # Neritic v13: before and after
 
-The owner's twelve visual-gate states, v12 (`49efcedf7`, left) beside v13 (`f50375db3` + the first-visit test fix, right), both on **staging data** on 2026-11-12, both shot by a script walking the page as a reader would (`coastwatch-web/scripts/v13-gate-shots.mjs`; the v12 walk is the same script against v12's markup). Desktop stills are 1440 × 900 scaled to 1080 px; phone stills are 390 × 844 and 320 × 640 at 1x. The stills are evidence, not a verdict: the review's findings, including what is still wrong in the "after" column, are in [review.md](review.md).
+The owner's twelve visual-gate states, v12 (`49efcedf7`, left) beside the final v13 (`71f198a04`, after the fix round, right), both on **staging data** on 2026-11-12, both shot by a script walking the page as a reader would (`coastwatch-web/scripts/v13-gate-shots.mjs`; the v12 walk is the same script against v12's markup). Desktop stills are 1440 × 900 scaled to 1080 px; phone stills are 390 × 844 and 320 × 640 at 1x. The stills are evidence, not a verdict: the findings, including what is still open, are in [review.md](review.md).
 
 
 ## 1 First-time: the front door
@@ -51,7 +51,7 @@ Three gates in three lines under the status (Whale, Domoic acid, Sea). NWS advis
 
 ## 2 Returning Today
 
-As above. The chart keeps one measured figure (the buoy). Chart controls are new.
+As above. The chart keeps one measured figure (the buoy). On a phone the chart has one compact control and the sheet scrolls to its end.
 
 **1440 px**
 
@@ -74,7 +74,7 @@ As above. The chart keeps one measured figure (the buoy). Chart controls are new
 
 ## 3 Explore with a layer (chlorophyll)
 
-The legend leads and stays in view; the time rail moved from the margin to the foot of the chart at desktop. Open defects: "Play" is clipped at the right edge at 1440; on a phone the chart's own buttons cover the port's name and the layer switch rests under the destinations bar.
+The legend leads and stays in view; the time rail runs along the foot of the chart at desktop. On a phone the layer switch and Play are the first things in the sheet, at every sheet height, and the chart's own buttons are two compact ones.
 
 **1440 px**
 
@@ -97,7 +97,7 @@ The legend leads and stays in view; the time rail moved from the margin to the f
 
 ## 4 Explore at a harbour, a cell read
 
-The reading is titled as one cell of its grid with the cell's centre; "Use this place in My Coast" and the nearest pier's record are new.
+The reading is titled as one cell of its grid with the cell's centre; "Use this place in My Coast" and the nearest pier's record are new. At 320 px the reading's value rests just under the destinations bar (open, P2).
 
 **1440 px**
 
@@ -143,7 +143,7 @@ My Coast is a desk: the gates and the sea window take the width, the chart is a 
 
 ## 6 Economics with inputs
 
-Inputs on the left, the result beside them, the waterfall drawn as the numbers arrive. Open defect: with some fields blank the waterfall's "waiting for…" labels overprint each other (1440).
+Inputs on the left, the result beside them, the waterfall drawn as the numbers arrive; a bar that is still waiting says "waiting" in its own column.
 
 **1440 px**
 
@@ -212,7 +212,7 @@ One large plot for the chosen variable, a rail that says when each variable was 
 
 ## 8b Research, Monterey Wharf, whole record
 
-The headline says it: "last measured Aug 31, 2022 (4.2 years ago)". v12 stamped the station "sampled Nov 4" from temperature alone.
+The headline says it: last measured Aug 31, 2022 (4.2 years ago). v12 stamped the station "sampled Nov 4" from temperature alone.
 
 **1440 px**
 
@@ -258,7 +258,7 @@ The headline says it: "last measured Aug 31, 2022 (4.2 years ago)". v12 stamped 
 
 ## 10 Research, sample inspection
 
-A sample panel: exact value and unit, UTC and Pacific time, depth, location, QC, the source row. At 1440 it opens below the plot (open defect: not in view after "Latest sample"); on a phone it is a sheet.
+A sample panel: exact value and unit, UTC and Pacific time, depth, location, QC, the source row. At 1440 it now opens beside the plot. On a phone a tap on the plot opens it as a sheet; "Latest sample" there leaves a bare "Details" button (open, P1).
 
 **1440 px**
 

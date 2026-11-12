@@ -14,7 +14,8 @@ import s from "./trip.module.css";
 
 /**
  * The trip workspace (v13): inputs in the aside, the result, what it is made of and the waterfall in the main,
- * all in one screen on a wide display. The saving controls go in the desk header there (`header` is the page's
+ * all in one screen on a wide display. The page has one scroll: the result stays pinned under the header while
+ * the reader works down the inputs, so a figure typed low in the column is still answered in view. The saving controls go in the desk header there (`header` is the page's
  * header, which takes them as its actions), so the results column spends its height on the figures. On a phone
  * the page scrolls inputs first, a bar above the destinations keeps the result (and any held scenario) in
  * reach, and the saving controls sit with the results. All of it is the headless model in ./useTripWorkspace;
@@ -61,7 +62,7 @@ export function TripWorkspace({ fishery, placeKey, onFishery, now, flag, header 
     <>
       {header(phone ? null : bar)}
       <DeskBody layout="main-aside" aside="start">
-        <DeskAside label="Trip inputs" sticky className={s.aside}>
+        <DeskAside label="Trip inputs" className={s.aside}>
           <h2 className={s.h2}>Your numbers</h2>
           <p className={s.sub}>Nothing is filled in. A blank is a gap, never 0.</p>
           <TripInputs ws={trip.ws} edit={trip.edit} result={trip.result} fishery={fishery} now={now} />

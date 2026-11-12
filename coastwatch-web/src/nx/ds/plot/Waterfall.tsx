@@ -1,6 +1,6 @@
 "use client";
 import { motion, useReducedMotion } from "motion/react";
-import { createContext, useContext, useState, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useId, useState, type KeyboardEvent, type ReactNode } from "react";
 import { usd } from "../format";
 import { settle } from "../motion";
 import { useElementWidth, usePhone } from "../useMedia";
@@ -45,6 +45,7 @@ export interface WaterfallChartProps {
 export function WaterfallChart({ steps, label, preview, domain: fixed, height = { desktop: 360, phone: 260 }, cents, orientation = "auto", children, className, ...rest }: WaterfallChartProps) {
   const reduce = useReducedMotion();
   const phone = usePhone();
+  const uid = `wf${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const [setEl, width] = useElementWidth<HTMLDivElement>(640);
   const [at, setAt] = useState<number | null>(null);
   const H = typeof height === "number" ? height : phone ? height.phone : height.desktop;
@@ -128,23 +129,33 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
                     ) : null}
                   </>
                 ) : (
-                  <text x={x0} y={y0 + RH / 2} dy="0.34em" className={s.wfWaiting}>
-                    {st.waiting ?? "waiting"}
-                  </text>
+                  <>
+                    <clipPath id={`${uid}-w${i}`}>
+                      <rect x={x0} y={y0} width={Math.max(0, width - x0)} height={RH} />
+                    </clipPath>
+                    <text x={x0 + 2} y={y0 + RH / 2} dy="0.34em" clipPath={`url(#${uid}-w${i})`} className={s.wfWaiting}>
+                      {st.waiting ?? "waiting"}
+                    </text>
+                  </>
                 )}
               </g>
             );
           })}
         </svg>
-        {focusStep ? (
-          <div className={s.wfCalloutRow} aria-hidden="true" data-testid="waterfall-callout">
-            <span className={s.tipValue}>
-              {focusStep.label}
-              {amount(focusStep) !== null ? ` ${money(amount(focusStep)!)}` : ""}
-            </span>
-            <span className={s.tipMeta}>{focusStep.formula ?? focusStep.waiting ?? (focusStep.kind === "cost" ? "Taken off" : focusStep.kind === "net" ? "What is left" : "Catch × price")}</span>
-          </div>
-        ) : null}
+        {/* the worked sum's place is kept whether or not a bar is chosen: showing it never moves the page */}
+        <div className={s.wfCalloutRow} aria-hidden="true" data-empty={focusStep ? undefined : ""} data-testid={focusStep ? "waterfall-callout" : "waterfall-callout-slot"}>
+          {focusStep ? (
+            <>
+              <span className={s.tipValue}>
+                {focusStep.label}
+                {amount(focusStep) !== null ? ` ${money(amount(focusStep)!)}` : ""}
+              </span>
+              <span className={s.tipMeta}>{focusStep.formula ?? focusStep.waiting ?? (focusStep.kind === "cost" ? "Taken off" : focusStep.kind === "net" ? "What is left" : "Catch × price")}</span>
+            </>
+          ) : (
+            <span className={s.tipMeta}>Choose a bar to see how it was worked out.</span>
+          )}
+        </div>
         <p className={s.vh} role="status" aria-live="polite">
           {at !== null ? say(at) : ""}
         </p>
@@ -180,9 +191,16 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
                 {!b.waiting ? (
                   <motion.rect x={x} width={bw} initial={false} animate={{ y: y(b.to), height: Math.max(1.5, y(b.from) - y(b.to)) }} transition={t} className={st.kind === "cost" ? s.wfCost : s.wfSolid} />
                 ) : (
-                  <text x={cx0(i)} y={(top + bottom) / 2} textAnchor="middle" className={s.wfWaiting}>
-                    {st.waiting ?? "waiting"}
-                  </text>
+                  // a bar that cannot be drawn yet: its short word, kept inside its own column (a long one is cut there,
+                  // never set over the next bar); the reason is the bar's worked sum, and the page says the rest
+                  <>
+                    <clipPath id={`${uid}-w${i}`}>
+                      <rect x={left + band * i + 2} y={top} width={Math.max(0, band - 4)} height={bottom - top} />
+                    </clipPath>
+                    <text x={cx0(i)} y={(top + bottom) / 2} textAnchor="middle" clipPath={`url(#${uid}-w${i})`} className={s.wfWaiting}>
+                      {st.waiting ?? "waiting"}
+                    </text>
+                  </>
                 )}
                 {g && !g.waiting ? <motion.rect x={x - 3} width={bw + 6} initial={false} animate={{ y: y(g.to), height: Math.max(1.5, y(g.from) - y(g.to)) }} transition={t} className={s.wfGhost} /> : null}
                 {a !== null && !b.waiting ? (

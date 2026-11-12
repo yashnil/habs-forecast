@@ -14,7 +14,7 @@ const checkName = (n: string) => ({ units: "Units", duplicates: "Duplicates", ti
  * and how to cite it. Previous and Next step through this variable's samples (not the station's visits). With
  * nothing selected it says how to select.
  */
-export function Inspector({ record, onPrev, onNext, onClose, position }: { record: SampleRecord | null; onPrev: (() => void) | null; onNext: (() => void) | null; onClose: () => void; position: string | null }) {
+export function Inspector({ record, onPrev, onNext, onClose, position, className }: { record: SampleRecord | null; onPrev: (() => void) | null; onNext: (() => void) | null; onClose: () => void; position: string | null; className?: string }) {
   if (!record) {
     return (
       <p className={s.inspHint} data-testid="research-inspector" data-empty="">
@@ -30,6 +30,7 @@ export function Inspector({ record, onPrev, onNext, onClose, position }: { recor
       title={`Sample · ${day(r.time, { year: true })}`}
       subtitle={position}
       onClose={onClose}
+      className={className}
       data-testid="research-inspector"
     >
       <div data-testid="inspector-body" data-index={r.index} data-state={r.state}>

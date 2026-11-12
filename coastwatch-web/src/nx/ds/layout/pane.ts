@@ -24,10 +24,12 @@ export type LayoutState = {
   changedAt: number;
   /** the pane's width in px just before its size last changed (the columns travel from it), or null */
   fromW: number | null;
+  /** what the chart shows on this page, for the phone strip's bar and the rail ("Monterey Wharf"); null: just "Chart" */
+  subject: string | null;
 };
 
 const KEY = "nx-pane-v1";
-const SERVER: LayoutState = { mode: "chart", paneKey: null, detent: "context", open: false, changedAt: -1e9, fromW: null };
+const SERVER: LayoutState = { mode: "chart", paneKey: null, detent: "context", open: false, changedAt: -1e9, fromW: null, subject: null };
 let state: LayoutState = SERVER;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -51,11 +53,11 @@ export const getLayout = () => state;
 /** True for a moment after the pane changed size: the chart host refits with `pan` instead of a jump. */
 export const paneJustChanged = () => typeof performance !== "undefined" && performance.now() - state.changedAt < 900;
 
-export function setPageLayout(mode: PageMode, paneKey: string | null, defaultPane: PaneDetent) {
+export function setPageLayout(mode: PageMode, paneKey: string | null, defaultPane: PaneDetent, subject: string | null = null) {
   const saved = paneKey ? stored()[paneKey] : undefined;
   const detent = saved && PANE_DETENTS.includes(saved) ? saved : defaultPane;
-  if (state.mode === mode && state.paneKey === paneKey && state.detent === detent) return;
-  state = { mode, paneKey, detent, open: false, changedAt: state.changedAt, fromW: null };
+  if (state.mode === mode && state.paneKey === paneKey && state.detent === detent && state.subject === subject) return;
+  state = { mode, paneKey, detent, open: state.mode === mode && state.paneKey === paneKey ? state.open : false, changedAt: state.changedAt, fromW: null, subject };
   emit();
 }
 
@@ -119,9 +121,9 @@ export function useChartPane() {
 }
 
 /** Writes the page's layout before paint; the hidden marker carries the mode for the stylesheet (no script needed). */
-export function usePageLayoutEffect(mode: PageMode, paneKey: string | null, defaultPane: PaneDetent) {
+export function usePageLayoutEffect(mode: PageMode, paneKey: string | null, defaultPane: PaneDetent, subject: string | null = null) {
   useLayoutEffect(() => {
-    setPageLayout(mode, paneKey, defaultPane);
+    setPageLayout(mode, paneKey, defaultPane, subject);
     return () => setPageLayout("chart", null, "context");
-  }, [mode, paneKey, defaultPane]);
+  }, [mode, paneKey, defaultPane, subject]);
 }

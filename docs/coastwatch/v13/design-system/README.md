@@ -355,3 +355,33 @@ requests as a page would.
 - **Phone sheet.** Brought back to rest from a raised detent it shows the page from its first line. The handle's
   grab area reaches 12 px above the sheet's edge.
 - **Menu.** The chart-mode choice is read each time the menu opens.
+
+## 13. Changes from the independent review
+
+- **Phone sheet (F-01).** The sheet's scroller ends where the visible sheet ends at every detent (above the
+  destinations bar), so a page's last control is reached by scrolling without raising the sheet.
+- **Chart buttons on a phone (F-06).** At 720 px and under the zoom buttons are not shown (a pinch zooms). What
+  remains is one 44 px column in the chart's foot corner: back to the page's view and, when a scene names one,
+  "fit the data" as an icon with its name.
+- **`PageLayout chartLabel` (F-15).** The phone strip's bar and the collapsed rail say "Chart · …" only with
+  what the page passes (`<PageLayout mode="desk" paneKey="research" chartLabel={station.name} />`). Without it
+  they say "Chart": never a port's name over a chart that shows something else.
+- **Names keep clear of a zone's boundary line** (a parallel drawn by the regulation layer).
+- **`WaterfallChart` (F-03).** A step that cannot be drawn yet shows its `waiting` word clipped to its own column
+  (send a short word such as "waiting"; put the reason in `formula`, and say the rest in the page). The kit adds
+  no sentence of its own. In rows the worked sum's place under the chart is always kept (72 px), so choosing a
+  bar never moves the page.
+- **`EditableText truncate`.** One line with an ellipsis; the full name is the title.
+- **Checkboxes (F-12).** A native `<input type="checkbox">` inside the shell is drawn in the system's terms in
+  every chart mode: an empty ruled box, or an ink box with a paper tick.
+- **`DeskHeader` gives its room in the same commit as it condenses**, from its open and condensed heights (both
+  measured while it is open), so the page is never laid out with the room missing and no page needs
+  `overflow-anchor` for it.
+- **A sticky `DeskAside` and `DeskSticky` have paper under them** and stand above the column that scrolls beside
+  them (F-17).
+- **Phone desk pages reserve the chart strip's place before the pane is in the document** (the pane follows the
+  page in the HTML), so a long page does not jump down when the pane arrives. No page needs its own reservation.
+- **`Tip` stands above the sample in the plot's lower half**, so it is never cut at the plot's foot.
+  **`Threshold`'s name is at the right end on a paper halo**; draw it after the data marks.
+- A page that styles the condensed header (`[data-condensed] …`) should match `[data-measuring]` too: the header
+  measures its condensed height under that attribute.

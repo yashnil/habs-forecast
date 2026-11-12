@@ -49,9 +49,10 @@ test("Monterey Wharf, pDA, one year: the empty range is explained, and one press
   await expect(page.getByTestId("research-empty-neighbour")).toContainText("Santa Cruz Wharf, 41 km away");
   await expect(page.getByTestId("empty-source")).toHaveAttribute("href", "https://erddap.sccoos.org/erddap/tabledap/HABs-MontereyWharf.html");
 
-  // jump to the latest sample: the window holds it and the inspector reads it exactly
+  // jump to the latest sample: the window holds it and the inspector reads it exactly, in the first screen
   await page.getByTestId("empty-latest").click();
   await expect.poll(() => params(page).day).toBe("2022-08-31");
+  await inFirstScreen(page);
   await expect(page.getByTestId("research-plot")).toBeVisible();
   await expect(page.getByTestId("research-plot").locator("[data-selection]")).toBeVisible();
   const insp = page.getByTestId("research-inspector");
@@ -89,6 +90,27 @@ test("1440 × 900, on load: the whole plot is in the first screen with the varia
   await open(page, "station=HABs-MontereyWharf&var=temp&range=1y");
   const mw = (await page.getByTestId("research-plot").boundingBox())!;
   expect(mw.y + mw.height).toBeLessThanOrEqual(900);
+  // F-04: the tooltip of a sample on the baseline (a reported 0) is whole, not cut by the plot's foot
+  await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
+  const p2 = page.getByTestId("research-plot");
+  await p2.focus();
+  for (let i = 0; i < 60; i++) {
+    await page.keyboard.press(i ? "ArrowLeft" : "End");
+    if (/reported 0/.test((await page.getByTestId("research-plot-live").textContent()) ?? "")) break;
+  }
+  await expect(page.getByTestId("research-plot-live")).toContainText("reported 0");
+  const tip = p2.getByTestId("plot-tip");
+  await expect(tip).toBeInViewport({ ratio: 1 });
+  const tb = (await tip.boundingBox())!;
+  const covered = await page.evaluate(([x, y, w, h]) => [[x + 4, y + 4], [x + w - 4, y + h - 4], [x + w / 2, y + h - 3]].every(([px, py]) => !!document.elementFromPoint(px, py)?.closest("[data-testid=plot-tip], [data-plot]")), [tb.x, tb.y, tb.width, tb.height]);
+  expect(covered).toBe(true);
+  // F-13: the threshold's name is at the plot's right end with a paper halo, on the plot and in the whole record
+  const lab = page.getByTestId("research-threshold-label").first();
+  await expect(lab).toHaveText("C-HARM threshold, 500 ng/L");
+  const pb = (await p2.boundingBox())!;
+  const lb = (await lab.boundingBox())!;
+  expect(lb.x + lb.width).toBeGreaterThan(pb.x + pb.width - 40);
+  expect(await lab.evaluate((el) => getComputedStyle(el).paintOrder)).toContain("stroke");
   // the empty range: the message and all four actions, without scrolling
   await open(page, MW_1Y);
   await expect(page.getByTestId("research-empty")).toBeInViewport({ ratio: 1 });
@@ -151,6 +173,7 @@ test("keyboard: focus the plot, step to a sample, Enter opens it in the inspecto
   expect(said).toMatch(/^[A-Z][a-z]{2} \d{1,2}, 2026 · .+ · (measured|at or below an unpublished limit, not absent)/);
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("inspector-body")).toHaveAttribute("data-index", /\d+/);
+  await inFirstScreen(page);
   await expect.poll(() => params(page).day).toMatch(/^2026-09-/);
   await expect(page.getByTestId("inspector-utc")).toContainText("2026-09-");
   // a reported 0 is inspected as a reported 0, never as "none"
@@ -159,7 +182,26 @@ test("keyboard: focus the plot, step to a sample, Enter opens it in the inspecto
   await page.getByTestId("range-latest").click();
   await expect.poll(() => params(page).day).toBe("2026-09-30");
   await expect(page.getByTestId("inspector-utc")).toContainText("2026-09-30");
+  // F-04: the inspector is in the first screen beside the plot, whole, without scrolling the page
+  await inFirstScreen(page);
 });
+
+/** The inspector's box is inside the 1440 × 900 screen, beside the plot, and the page has not been scrolled to get it there. */
+async function inFirstScreen(page: Page) {
+  await expect(page.getByTestId("inspector-value")).toBeInViewport({ ratio: 1 });
+  const card = (await page.getByTestId("research-inspector-cell").boundingBox())!;
+  const plot = (await page.getByTestId("research-plot").boundingBox())!;
+  expect(card.y).toBeGreaterThanOrEqual(0);
+  expect(card.y + card.height).toBeLessThanOrEqual(900);
+  expect(card.x).toBeGreaterThanOrEqual(plot.x + plot.width);
+  expect(Math.abs(card.y - plot.y)).toBeLessThan(4);
+  expect(plot.height).toBeGreaterThanOrEqual(360);
+  expect(await page.getByTestId("nx-work").evaluate((el) => el.scrollTop)).toBe(0);
+  // everything the card holds is reachable inside it
+  await page.getByTestId("inspector-citation").scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("inspector-citation")).toBeInViewport();
+  await page.getByTestId("research-inspector-cell").evaluate((el) => el.scrollTo(0, 0));
+}
 
 test("a reported 0 is its own state in the table and the inspector", async ({ page }) => {
   await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");

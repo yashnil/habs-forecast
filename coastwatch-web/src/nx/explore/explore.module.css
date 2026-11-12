@@ -56,14 +56,18 @@
 .switchItem[data-missing="1"] span { text-decoration: line-through; text-decoration-thickness: var(--hair); }
 
 /* ---------------------------------------------------------------- the time rail */
-.rail { display: grid; gap: var(--s-8); }
-.railHead { display: flex; align-items: flex-start; gap: var(--s-12); }
+/* the rail never grows wider than what holds it: a track drawn at a width measured a frame ago is clipped, not
+   allowed to push Play past the edge (review F-10) */
+.rail { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-8); min-width: 0; max-width: 100%; overflow: hidden; }
+.railHead > :last-child { flex: none; }
+/* room at the end for the Play button's touch target, which reaches 4 px past its words (ds Button) */
+.railHead { display: flex; align-items: flex-start; gap: var(--s-12); padding-right: var(--s-4); }
 .railTitle { margin: 0; font: 600 var(--t-16) / 1.5 var(--font-sans); }
 .railNow { flex: 1; margin: 0; font-size: var(--t-14); line-height: 1.4; padding-top: var(--s-4); font-variant-numeric: tabular-nums; }
 .railNowSub { display: block; color: var(--ink-2); }
 .textButton { min-height: var(--target); margin-top: calc(-1 * var(--s-12)); padding: 0 var(--s-8); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
 .textButton[aria-pressed="true"] { text-decoration-thickness: 2px; }
-.railBody { position: relative; }
+.railBody { position: relative; min-width: 0; overflow: hidden; }
 .defs { position: absolute; }
 .railAxis { position: relative; height: var(--s-24); font-size: var(--t-14); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .railDay { position: absolute; top: 0; white-space: nowrap; padding-left: var(--s-4); border-left: var(--hair) solid var(--rule-soft); line-height: 1.2; }
@@ -154,7 +158,22 @@
 
 .railCount { font-weight: 600; white-space: nowrap; }
 
-/* phone: an open reading leads the sheet, so the peek detent shows its value and date over the chart */
+/*
+ * Phone (review F-01): the primary controls lead the sheet, so they are in reach at its lowest height with the
+ * chart in view: the layer switch in one row that scrolls sideways, then what is on show and Play, then an open
+ * reading. The legend, the full rail and the rest follow when the sheet is raised.
+ */
+.timeBar { display: none; }
 @media (max-width: 720px) {
+  .switch { order: -3; display: flex; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; margin-top: 0; }
+  .switch::-webkit-scrollbar { display: none; }
+  .switch .switchItem { flex: none; padding-right: var(--s-16); }
+  .timeBar { display: block; order: -2; }
+  /* one line: what is on show, cut with an ellipsis before it wraps (the full stamp is in the legend) */
+  .timeBar .railHead { align-items: center; }
+  .timeBar .railTitle { display: none; }
+  .timeBar .railNow { padding-top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .timeBar .railNowSub { display: inline; }
+  .switch { scroll-margin-top: var(--s-8); }
   .readoutSlot[data-open="1"] { order: -1; }
 }

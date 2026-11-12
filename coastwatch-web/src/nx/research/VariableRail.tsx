@@ -24,7 +24,7 @@ export type RailRow = {
  * short at the foot: a reported 0; short at the head: rejected; a dot: visited, this variable not measured),
  * with the window framed. So "is there any pDA here, and when" is answered before a range is guessed.
  */
-export function VariableRail({ rows, selected, onSelect, extent, win, now, stationName }: { rows: RailRow[]; selected: ObsVariableId; onSelect: (v: ObsVariableId) => void; extent: [number, number]; win: [number, number]; now: number; stationName: string }) {
+export function VariableRail({ rows, drawTicks = true, selected, onSelect, extent, win, now, stationName }: { rows: RailRow[]; /** the ticks are drawn in the browser (their box is always there): as HTML they are 8 KB a row */ drawTicks?: boolean; selected: ObsVariableId; onSelect: (v: ObsVariableId) => void; extent: [number, number]; win: [number, number]; now: number; stationName: string }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const span = Math.max(1, extent[1] - extent[0]);
   const pct = (t: number) => Math.min(100, Math.max(0, ((t - extent[0]) / span) * 100));
@@ -43,7 +43,7 @@ export function VariableRail({ rows, selected, onSelect, extent, win, now, stati
         const last = r.a.last;
         const days = last ? Math.floor((now - last.t) / DAY) : null;
         const strip = { kind: "measured" as const, v: r.a.v, unitShort: r.unitShort };
-        const paths = tickPaths(r.ticks, extent);
+        const paths = tickPaths(drawTicks ? r.ticks : [], extent);
         const inWindow = `${r.a.withValue.toLocaleString("en-US")} in window`;
         return (
           <button

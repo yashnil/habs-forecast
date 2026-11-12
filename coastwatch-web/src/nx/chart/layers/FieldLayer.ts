@@ -15,6 +15,8 @@ import { gridBounds, mercX, mercY, type FieldGrid } from "./grid";
  *   and cells where it equals the climatology carry dots and no colour ("no signal", E finding 2); C-HARM is
  *   drawn in cw-probability-classes-v1's ten display intervals on the quiet --prob ramp with a model hatch over
  *   it (T12: no alarm colour), lighter when the run is past (T3);
+ * - cells the pipeline left out beside land (QC `land_adjacency`) are a flat pale band, never the cloud hatch
+ *   (adjacent.ts marks them; the published codes are untouched);
  * - water a model or an outlook has no cell for is ruled "outside the model" to the chart's edge, never left as
  *   plain water (outside the footprint is unavailable, not zero);
  * - a temperature analysis is drawn as isotherms (lines), so it never borrows the chlorophyll ramp (T22);
@@ -31,7 +33,8 @@ export type FieldStyle =
   /** lines of equal value every `step` (in `value * scale + offset`: °C drawn as whole °F), heavier every `index` steps */
   | { kind: "isolines"; step: number; index: number; scale?: number; offset?: number };
 
-export type FieldData = { grid: FieldGrid; codes: Uint16Array; aux?: { grid: FieldGrid; codes: Uint16Array } | null };
+/** `adjacentCode`: the marker `markAdjacent` (adjacent.ts) wrote for cells left out beside land; null or absent: none */
+export type FieldData = { grid: FieldGrid; codes: Uint16Array; aux?: { grid: FieldGrid; codes: Uint16Array } | null; adjacentCode?: number | null };
 
 const VS = `#version 300 es
 uniform mat4 u_matrix;
@@ -65,6 +68,7 @@ uniform float u_opacity;
 uniform float u_step;
 uniform float u_index;
 uniform float u_past;
+uniform float u_adj;
 uniform vec2 u_iso;
 in vec2 v_merc;
 out vec4 o;
@@ -122,6 +126,12 @@ void main() {
   // an observed layer is drawn past its grid (the quad covers the chart): there is no view there either; a model
   // or an outlook is too, with its own "outside the model" mark; isotherms stop at their grid
   if (!within && u_variant == 3) discard;
+  // left out beside land (an observed layer only): a flat pale band along the shore, its own mark: no hatch, so
+  // it is never read as cloud, and no ramp colour, so it is never read as a value
+  if (within && u_variant == 0 && u_adj >= 0.0 && codeAt(c) == uint(u_adj)) {
+    o = over(pm(u_ink2, 0.30), pm(u_paper, 0.62));
+    return;
+  }
   float v = within ? q(codeAt(c), u_dec) : -1e30;
   bool nodata = v < -1e29;
 
@@ -294,7 +304,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       map = m;
       gl = ctx as WebGL2RenderingContext;
       prog = compile(gl, VS, FIELD_FS);
-      for (const k of ["u_matrix", "u_data", "u_aux", "u_hasAux", "u_geo", "u_size", "u_stride", "u_dec", "u_decAux", "u_takeLog", "u_variant", "u_ramp", "u_prob", "u_domain", "u_ink", "u_ink2", "u_hatch", "u_paper", "u_dpr", "u_opacity", "u_step", "u_index", "u_past", "u_iso"]) u[k] = gl.getUniformLocation(prog, k);
+      for (const k of ["u_matrix", "u_data", "u_aux", "u_hasAux", "u_geo", "u_size", "u_stride", "u_dec", "u_decAux", "u_adj", "u_takeLog", "u_variant", "u_ramp", "u_prob", "u_domain", "u_ink", "u_ink2", "u_hatch", "u_paper", "u_dpr", "u_opacity", "u_step", "u_index", "u_past", "u_adj", "u_iso"]) u[k] = gl.getUniformLocation(prog, k);
       vao = gl.createVertexArray();
       gl.bindVertexArray(vao);
       quad = gl.createBuffer();
@@ -368,6 +378,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       g.uniform1f(u.u_step, style.kind === "isolines" ? style.step : 1);
       g.uniform1f(u.u_index, style.kind === "isolines" ? style.index : 1);
       g.uniform1f(u.u_past, style.kind === "classes" && style.past ? 1 : 0);
+      g.uniform1f(u.u_adj, style.kind === "ramp" && data.adjacentCode != null ? data.adjacentCode : -1);
       g.uniform2f(u.u_iso, style.kind === "isolines" ? (style.scale ?? 1) : 1, style.kind === "isolines" ? (style.offset ?? 0) : 0);
       g.bindVertexArray(vao);
       g.drawArrays(g.TRIANGLE_STRIP, 0, 4);

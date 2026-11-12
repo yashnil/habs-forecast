@@ -12,7 +12,8 @@ const mb = (b: number) => (b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max
 
 /** What a saved pack holds, in one or two plain lines. */
 export function PackContents({ r }: { r: FieldRecord }) {
-  const pages = r.pages.filter((p) => p.ok).map((p) => p.label);
+  // the trip worksheet is part of My Coast: one name for the reader, two saved documents
+  const pages = r.pages.filter((p) => p.ok && p.id !== "trip").map((p) => p.label);
   const frames = r.frames.filter((f) => f.ok).map((f) => `${f.layer === "C-HARM" ? f.layer : f.layer.toLowerCase()} (${f.label === "Latest" ? "latest view" : f.label})`);
   return (
     <>

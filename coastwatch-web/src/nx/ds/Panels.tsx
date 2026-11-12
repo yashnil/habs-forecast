@@ -30,6 +30,8 @@ export interface EditableTextProps {
   maxLength?: number;
   /** head: a heading-sized name; body: in a line of text. */
   size?: "head" | "body";
+  /** One line: a long name is cut with an ellipsis (its full text is the title), and the rename control stays beside it. */
+  truncate?: boolean;
   className?: string;
   "data-testid"?: string;
 }
@@ -39,7 +41,7 @@ export interface EditableTextProps {
  * the name selected. Enter or leaving the field keeps the change, Escape puts the old name back, and an empty
  * name is never kept.
  */
-export function EditableText({ label, value, onChange, placeholder = "Untitled", maxLength = 60, size = "head", className, ...rest }: EditableTextProps) {
+export function EditableText({ label, value, onChange, placeholder = "Untitled", maxLength = 60, size = "head", truncate, className, ...rest }: EditableTextProps) {
   const id = useId();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -69,7 +71,7 @@ export function EditableText({ label, value, onChange, placeholder = "Untitled",
     }
   };
   return (
-    <span className={cx(s.editable, className)} data-size={size} data-editing={editing || undefined} data-testid={rest["data-testid"]}>
+    <span className={cx(s.editable, className)} data-size={size} data-truncate={truncate || undefined} data-editing={editing || undefined} data-testid={rest["data-testid"]}>
       {editing ? (
         <>
           <label htmlFor={id} className={s.vh}>
@@ -79,7 +81,9 @@ export function EditableText({ label, value, onChange, placeholder = "Untitled",
         </>
       ) : (
         <>
-          <span className={cx(s.editText, !value && s.editEmpty)}>{value || placeholder}</span>
+          <span className={cx(s.editText, !value && s.editEmpty)} title={truncate && value ? value : undefined}>
+            {value || placeholder}
+          </span>
           <button ref={button} type="button" className={s.editBtn} onClick={begin} aria-label={`Rename: ${label}`}>
             Rename
           </button>
