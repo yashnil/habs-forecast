@@ -25,7 +25,8 @@ import {
   stepSample,
   visitTicks,
 } from "@/nx/research/availability";
-import { buildStrips, DAY, extentOf, findStation, inWin, located, northToSouth, parseQuery, pointsOf } from "@/nx/research/model";
+import { buildStrips, DAY, extentOf, findStation, inWin, located, northToSouth, parseQuery, pointsOf, queryFor } from "@/nx/research/model";
+import { ageWords, modelLine, plotPoints, sayPoint, tickPaths } from "@/nx/research/plotData";
 
 const dir = path.resolve(__dirname, "../../../fixture-data/v1");
 const ds = JSON.parse(readFileSync(path.join(dir, readdirSync(dir).find((f) => f.startsWith("observations-"))!), "utf8")) as ObservationDataset;
@@ -300,5 +301,55 @@ describe("the address and the stations", () => {
     // the 2014 request (what staging holds): the first sample sits on the request start, so earlier ones may exist
     expect(copyStart({ window_start: "2014-01-01" }, { sample_times: ["2014-01-08T16:45:00Z"], source_url: "u" })).toMatchObject({ mayBeCut: true, firstSample: "2014-01-08" });
     expect(copyStart({ window_start: "2014-01-01" }, { sample_times: [], source_url: "u" })).toMatchObject({ mayBeCut: false, firstSample: null });
+  });
+});
+
+describe("the plot kit's points (plotData)", () => {
+  it("a reported 0 and a rejected sample have no place on the y axis; a visit without the variable is not a point", () => {
+    const st = { ...mw, sample_times: ["2026-01-05T16:00:00Z", "2026-01-12T16:00:00Z", "2026-01-19T16:00:00Z", "2026-01-26T16:00:00Z"], depths_m: [1, 1, 1, 1], series: [{ variable: "pDA", values: [0.2, 0, null, null], qualifiers: { "1": "reported_zero", "2": "rejected_negative" } }] } as unknown as ObsStation;
+    const strip = buildStrips(st, "pDA").find((x) => x.v === "pDA")!;
+    const pts = plotPoints(strip, [-121.9, 36.6]);
+    expect(pts.map((p) => [p.kind, p.v, p.raw])).toEqual([
+      ["measured", 0.2, undefined],
+      ["reported-zero", null, "reported 0"],
+      ["missing", null, "rejected by QC"],
+    ]);
+    expect(pts[0]).toMatchObject({ id: "pDA-0", place: [-121.9, 36.6] });
+    expect(pts[0].meta.i).toBe(0);
+    expect(sayPoint(strip, strip.points[0])).toBe("Jan 5, 2026 · 0.20 ng/mL · measured");
+    expect(sayPoint(strip, strip.points[1])).toBe("Jan 12, 2026 · reported 0 · at or below an unpublished limit, not absent");
+    expect(sayPoint(strip, strip.points[2])).toBe("Jan 19, 2026 · rejected by QC · no value");
+  });
+
+  it("the model is its own kind, and a day with few cells breaks its line", () => {
+    const model = buildStrips(scw, "pDA").find((x) => x.kind === "model")!;
+    const pts = plotPoints(model);
+    expect(pts.every((p) => p.kind === "forecast" && p.v != null && p.v >= 0 && p.v <= 100)).toBe(true);
+    expect(sayPoint(model, model.points[0])).toMatch(/ · \d+ % · model, not measured/);
+    const partial = new Set([pts[1].t]);
+    const line = modelLine(pts, partial);
+    expect(line[1]).toMatchObject({ v: null, kind: "missing" });
+    expect(line[0]).toBe(pts[0]);
+  });
+
+  it("the rail's ticks: one stroke per visit by state, inside the 0–1000 box", () => {
+    const ticks = visitTicks(mw, "pDA");
+    const paths = tickPaths(ticks, extentOf(buildStrips(mw, "pDA"), NOW));
+    const n = (d: string) => (d.match(/M/g) ?? []).length;
+    expect(n(paths.quantified) + n(paths.zero) + n(paths.rejected) + n(paths.absent)).toBe(ticks.length);
+    expect(n(paths.quantified)).toBe(ticks.filter((k) => k.state === "quantified").length);
+    expect(n(paths.absent)).toBeGreaterThan(40); // the recent temperature-only visits are drawn, as visits without pDA
+    for (const m of paths.quantified.matchAll(/M([\d.]+) /g)) expect(Number(m[1])).toBeLessThanOrEqual(1000);
+  });
+
+  it("ages a sample in the unit that fits", () => {
+    expect([0, 1, 12, 150, 800, 1500].map(ageWords)).toEqual(["today", "yesterday", "12 days ago", "5 months ago", "2.2 years ago", "4.1 years ago"]);
+  });
+
+  it("the address carries a comparison variable, never the selected one twice", () => {
+    expect(parseQuery(new URLSearchParams({ var: "pDA", cmp: "temp" })).cmp).toBe("temp");
+    const w: [number, number] = [D("2026-01-01"), D("2026-06-01")];
+    expect(queryFor({ station: "HABs-MontereyWharf", v: "pDA", win: w, cmp: "temp" })).toContain("cmp=temp");
+    expect(queryFor({ station: "HABs-MontereyWharf", v: "pDA", win: w, cmp: "pDA" })).not.toContain("cmp=");
   });
 });

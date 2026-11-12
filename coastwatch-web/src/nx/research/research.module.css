@@ -3,6 +3,9 @@
 
 .page {
   color: var(--ink);
+  /* the desk header changes height when it condenses; with scroll anchoring a page barely taller than the screen
+     (the inspector just closed, every row shut) is pushed back over the condense threshold and flickers */
+  overflow-anchor: none;
 }
 
 .title {
