@@ -187,3 +187,10 @@ export function contextWords(p: Pick<ExploreProduct, "kind" | "pastRun">, f: Exp
   const when = f.label === "Latest" && f.start !== f.end ? `latest view ${range(f.start, f.end)}` : f.kind === "outlook" ? `mean of ${range(f.start, f.end)}` : f.kind === "model" ? `valid ${day(f.end)}` : day(f.end);
   return `${kind}, ${when}${oldMark(f.fresh)}`;
 }
+
+const latWords = (lat: number) => `${Math.floor(Math.abs(lat))}°${String(Math.round((Math.abs(lat) % 1) * 60)).padStart(2, "0")}′ ${lat < 0 ? "S" : "N"}`;
+
+/** A layer that has no cells at the reader's port: what is missing, and where the layer does have cells. */
+export function coverageNote(layer: string, portName: string, box: [number, number, number, number]): string {
+  return `${layer} is not published for the water at ${portName} in this data run: its cells run from ${latWords(box[1])} to ${latWords(box[3])}. The chart is on ${portName}; "Fit the data" on the chart goes to where the layer is.`;
+}

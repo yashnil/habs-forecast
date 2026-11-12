@@ -340,3 +340,27 @@ test("the chart's own buttons: zoom, back to this view, fit the data", async ({ 
   expect(b[0]).toBeLessThan(-122.5);
   expect(b[3] - b[1]).toBeGreaterThan(0.7);
 });
+
+test("a port the layers do not reach is framed as itself, and the page says where the layer is", async ({ page }) => {
+  // Bodega Bay, north of the fixture's Monterey Bay grids: the bar and the chart must agree
+  await page.goto(`${OK}/explore?place=port-473`);
+  await mapReady(page);
+  await page.waitForTimeout(1500);
+  const b = (await page.evaluate(`(() => { const b = window.__cwMap.getBounds(); return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]; })()`)) as number[];
+  const port = (await page.evaluate(`(() => { const c = window.__nxChart.scene; return c; })()`)) as string;
+  expect(port).toBe("explore:port-473");
+  // Bodega Bay is at about 38.33 N, 123.05 W: inside the view; Monterey Bay (36.8 N) is not
+  expect(b[1]).toBeLessThan(38.33);
+  expect(b[3]).toBeGreaterThan(38.33);
+  expect(b[0]).toBeLessThan(-123.05);
+  expect(b[2]).toBeGreaterThan(-123.05);
+  expect(b[1]).toBeGreaterThan(37.3);
+  await expect(page.getByTestId("nx-coverage-note")).toContainText("Chlorophyll is not published for the water at Bodega Bay in this data run");
+  await page.getByTestId("nx-fit-data").click();
+  await page.waitForTimeout(1500);
+  expect((await page.evaluate(`window.__cwMap.getCenter().lat`)) as number).toBeLessThan(37.3);
+  // a port inside the data has no such note
+  await page.goto(`${OK}/explore?place=port-592`);
+  await mapReady(page);
+  await expect(page.getByTestId("nx-coverage-note")).toHaveCount(0);
+});

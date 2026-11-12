@@ -150,6 +150,14 @@
   font: 600 var(--type-small) / var(--lh-snug) var(--font-sans);
   color: var(--ink-2);
 }
+/*
+ * A gate's next steps stack in the narrow margin, and each quiet link's touch target is 48 px tall (ds Button):
+ * at the list's own 4 px row gap the targets overlap and a tap on one link lands on the next. Until the ds
+ * GateList spaces them itself (asked of its owner), the rows are set a target apart here.
+ */
+.gatesWrap ol > li > div:last-child {
+  row-gap: var(--s-24);
+}
 .age {
   font: 500 var(--type-body) / var(--lh-snug) var(--font-sans);
   color: var(--ink-2);

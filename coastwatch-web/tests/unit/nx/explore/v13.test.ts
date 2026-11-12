@@ -14,7 +14,8 @@ import { CHART_FRAME } from "@/nx/chart/style";
 import { buildExploreModel, shortSensor, SST_FRESHNESS, type ExploreFrame, type ExploreStation } from "@/nx/explore/model";
 import { cellGeometry, cellSizeWords, coastHref, gapPosition, NEARBY_KM, stationFor } from "@/nx/explore/read";
 import { qualityHours } from "@/nx/explore/timeline";
-import { coverageWords, currentsCaption, currentsStill, currentsToggleWords, legendCaption, noValueWords, OUTSIDE_KEY, readingStamp, unitOf, valueWords } from "@/nx/explore/words";
+import { coversPort, exploreBounds, withinFor } from "@/nx/explore/camera";
+import { coverageNote, coverageWords, currentsCaption, currentsStill, currentsToggleWords, legendCaption, noValueWords, OUTSIDE_KEY, readingStamp, unitOf, valueWords } from "@/nx/explore/words";
 
 /**
  * Explore's v13 logic fixes (audit-C E-1 … E-13 and lead decision 7), each a rule the v12 baseline broke.
@@ -319,5 +320,28 @@ describe("lead decision 7: a streak is about one cell long", () => {
       const joined = out[q] === out[q - SEG + 2] && out[q + 1] === out[q - SEG + 3];
       if (joined) expect(out[q + 4]).toBeGreaterThanOrEqual(out[q - SEG + 4]);
     }
+  });
+});
+
+describe("a port the layers do not reach (Bodega Bay over a Monterey Bay grid)", () => {
+  const monterey: [number, number, number, number] = [-122.6, 36.4, -121.75, 37.2];
+  const bodega = { lon: -123.05, lat: 38.33 }, moss = { lon: -121.79, lat: 36.8 };
+  it("is not covered, so the view is not held inside the data; a port in the data, or no port, is", () => {
+    expect(coversPort(monterey, bodega)).toBe(false);
+    expect(coversPort(monterey, moss)).toBe(true);
+    expect(withinFor(monterey, bodega)).toBeNull();
+    expect(withinFor(monterey, moss)).not.toBeNull();
+    expect(withinFor(monterey, null)).not.toBeNull();
+    expect(withinFor(null, moss)).toBeNull();
+  });
+  it("the opening view frames the port itself", () => {
+    const [[w, s], [e, n]] = exploreBounds(bodega, monterey);
+    expect(bodega.lon).toBeGreaterThan(w);
+    expect(bodega.lon).toBeLessThan(e);
+    expect(bodega.lat).toBeGreaterThan(s);
+    expect(bodega.lat).toBeLessThan(n);
+  });
+  it("the page says what is missing and where the layer is", () => {
+    expect(coverageNote("Chlorophyll", "Bodega Bay", monterey)).toBe('Chlorophyll is not published for the water at Bodega Bay in this data run: its cells run from 36°24′ N to 37°12′ N. The chart is on Bodega Bay; "Fit the data" on the chart goes to where the layer is.');
   });
 });

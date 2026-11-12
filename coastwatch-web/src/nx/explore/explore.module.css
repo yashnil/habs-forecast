@@ -7,6 +7,7 @@
 .lead { margin: 0; font: 400 var(--t-18) / 1.4 var(--font-serif); color: var(--ink); max-width: 34em; }
 
 /* ---------------------------------------------------------------- legend-as-title */
+.coverage { margin: 0; padding: var(--s-8) 0 var(--s-8) var(--s-12); border-left: var(--rule) solid var(--ink); font-size: var(--type-body); line-height: var(--lh-snug); }
 .legendBlock { display: grid; gap: var(--s-12); }
 .legend { max-width: none; }
 .legend figcaption span:first-child { font-size: var(--t-28); line-height: 1.1; font-weight: 500; letter-spacing: -0.01em; }

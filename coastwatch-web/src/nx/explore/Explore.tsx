@@ -20,7 +20,8 @@ import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLaye
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, boxAround } from "./codes";
-import { EXPLORE_ZOOM, exploreBounds, extentBounds } from "./camera";
+import { coversPort, EXPLORE_ZOOM, exploreBounds, withinFor } from "./camera";
+import { gridBounds } from "@/nx/chart/layers/grid";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
@@ -28,7 +29,7 @@ import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isoth
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, contextWords, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
+import { aboutWords, CHL_DOMAIN, contextWords, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
@@ -424,7 +425,8 @@ export function Explore({ model }: { model: ExploreModel }) {
       id: `explore:${port?.key ?? "coast"}`,
       // the view stops at the data's own edge rather than showing a sliver of chart past it
       // the data's water fills the free area (the box's longer side cropped) rather than leaving inland hills beside it
-      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: extentBounds(extent), fill: !!extent },
+      // a port the data does not reach is framed as itself, never slid to another bay's data (camera.ts coversPort)
+      view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: withinFor(extent, port ? { lon: port.lon, lat: port.lat } : null), fill: !!extent && coversPort(extent, port ? { lon: port.lon, lat: port.lat } : null) },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
       // the chart's own buttons, with a way back to everything the layers hold
@@ -602,6 +604,12 @@ export function Explore({ model }: { model: ExploreModel }) {
       <p className={s.lead} data-testid="nx-explore-lead">
         {leadSentence(product, frame)}
       </p>
+      {/* the layer has no cells at the reader's port: said in words, with where it does have them */}
+      {port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
+        <p className={s.coverage} data-testid="nx-coverage-note">
+          {coverageNote(LAYER_LABEL[product.id], port.name, gridBounds(frame.grid))}
+        </p>
+      ) : null}
       <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
       {tier === "static" && frame?.grid && product.id !== "sst" ? (
         <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />

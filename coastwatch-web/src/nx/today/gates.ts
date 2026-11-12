@@ -14,6 +14,7 @@
  * does not lift a whale delay; an old test is not the water now; the sea and the season are separate.
  */
 import type { Provenance } from "@/nx/ds/Stamp";
+import { alertsHref } from "@/nx/shell/unread";
 
 export type GateId = "whale" | "domoic" | "sea";
 export type GateState = "ok" | "old" | "loading" | "unavailable" | "none";
@@ -66,7 +67,8 @@ const q = (key: string) => encodeURIComponent(key);
 
 /** Where each gate's next steps lead; every in-app address keeps the port (`place`). */
 export const gateHrefs = {
-  alerts: (place: string) => `/alerts?place=${q(place)}`,
+  // the shell's own address for a port's alerts (the bar's link uses the same one)
+  alerts: (place: string) => alertsHref(place),
   /** water samples near the port, opened on particulate domoic acid (the Explore → Research contract's `var`) */
   research: (place: string) => `/research?place=${q(place)}&var=pDA`,
   explore: (place: string) => `/explore?place=${q(place)}&layer=sst`,
