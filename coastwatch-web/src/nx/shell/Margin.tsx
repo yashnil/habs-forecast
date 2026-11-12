@@ -242,6 +242,16 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
     if (best === at) animate(y, offset(at), sheetSpring);
     else setAt(best);
   };
+  // back at rest from a raised detent, the sheet shows the page from its first line: a resting sheet never
+  // rests on the middle of a paragraph. (The peek detent is a page's own request and keeps the page's scroll.)
+  const prevAt = useRef(at);
+  useEffect(() => {
+    const from = prevAt.current;
+    prevAt.current = at;
+    if (!sheetOn || at !== 0 || from <= 0) return;
+    const body = document.getElementById(bodyId);
+    if (body) body.scrollTop = 0;
+  }, [at, sheetOn, bodyId]);
   const last = at === heights.length - 1;
   // the chart frames its scenes in the part the resting sheet leaves free, whatever detent the reader drags to
   const restRef = useRef<HTMLDivElement>(null);

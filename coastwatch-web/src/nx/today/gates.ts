@@ -14,6 +14,7 @@
  * does not lift a whale delay; an old test is not the water now; the sea and the season are separate.
  */
 import type { Provenance } from "@/nx/ds/Stamp";
+import { alertsHref } from "@/nx/shell/unread";
 
 export type GateId = "whale" | "domoic" | "sea";
 export type GateState = "ok" | "old" | "loading" | "unavailable" | "none";
@@ -25,6 +26,8 @@ export type GateFact = {
   /** what kind of line it is: an advisory leads the sea gate */
   role: "advisory" | "forecast" | "measured" | "predicted" | "record" | "note";
   text: string;
+  /** the line in a few words, for the gate's one-line summary ("Small Craft Advisory", "seas 6–9 ft") */
+  short?: string;
   /** past its stale limit: said as "(old)" beside the words (T17) */
   old?: boolean;
   provenance?: Provenance | null;
@@ -37,6 +40,11 @@ export type Gate = {
   /** who decides or measures: "CDFW RAMP", "CDPH tests", "NWS and NDBC" */
   authority: string;
   state: GateState;
+  /**
+   * The gate in a few words, for the three-line summary under the status (one line each in the 340 px margin):
+   * "Delay · next Dec 15–18", "Test 45 days ago", "Small Craft Advisory". At most about 25 characters. Never a verdict.
+   */
+  summary: string;
   /** the gate in one line (for the sea gate, the words of its first fact: an advisory when one is in force) */
   headline: string;
   /** the date the headline rests on (ISO), what it is, and its age in words ("45 days ago") */
@@ -66,7 +74,8 @@ const q = (key: string) => encodeURIComponent(key);
 
 /** Where each gate's next steps lead; every in-app address keeps the port (`place`). */
 export const gateHrefs = {
-  alerts: (place: string) => `/account?place=${q(place)}#alerts`,
+  // the shell's own address for a port's alerts (the bar's link uses the same one)
+  alerts: (place: string) => alertsHref(place),
   /** water samples near the port, opened on particulate domoic acid (the Explore → Research contract's `var`) */
   research: (place: string) => `/research?place=${q(place)}&var=pDA`,
   explore: (place: string) => `/explore?place=${q(place)}&layer=sst`,
@@ -86,6 +95,10 @@ export type WhaleInput = {
   provenance: Provenance | null;
   /** "Next whale assessment, subject to change: Dec 15–18" */
   next: string | null;
+  /** "Dec 15–18" */
+  nextDate: string | null;
+  /** CDFW's own clauses for the reader's sector, quoted, and the zone's extent */
+  record: GateFact[];
 };
 
 export type TestInput =
@@ -96,12 +109,16 @@ export type TestInput =
       /** "Dungeness test, Monterey Bay: highest 9.8 of 30 ppm, 6 samples" */
       headline: string;
       date: string;
+      /** "Sep 28" */
+      sampled: string;
       age: string;
       old: boolean;
       staleDays: number;
       progress: string | null;
       sourceUrl: string | null;
       provenance: Provenance | null;
+      /** the port's other CDPH test sites, each in one sentence with its age */
+      others: GateFact[];
     };
 
 export type SeaInput =
@@ -132,11 +149,12 @@ function whaleGate(w: WhaleInput, place: string): Gate {
     title: "Whale measures",
     authority: "CDFW RAMP",
     state: "ok",
+    summary: `${w.decidesSeason ? "Delay" : `Zone ${w.zone}`}${w.nextDate ? ` · next ${w.nextDate}` : w.decidesSeason ? " in force" : " measures"}`,
     headline: `Zone ${w.zone}: ${w.short}`,
     date: w.assessed,
     dateRole: w.assessed ? "assessed" : null,
     age: w.age,
-    facts: w.next ? [{ id: "next", role: "record", text: w.next, provenance: w.provenance }] : [],
+    facts: [...(w.next ? [{ id: "next", role: "record" as const, text: w.next, provenance: w.provenance }] : []), ...w.record],
     relation: [w.decidesSeason ? RELATION.whaleDecides : RELATION.whaleGeneral],
     actions,
     provenance: w.provenance,
@@ -147,9 +165,9 @@ function domoicGate(t: TestInput, whaleDelay: boolean, place: string): Gate {
   const research: GateAction = { id: "research", label: "Water samples nearby in Research", href: gateHrefs.research(place) };
   const base = { id: "domoic" as const, title: "Domoic acid", authority: "CDPH tests" };
   if (t.state === "error")
-    return { ...base, state: "unavailable", headline: "CDPH test results could not be read just now.", date: null, dateRole: null, age: null, facts: [], relation: whaleDelay ? [RELATION.testDoesNotLift] : [], actions: [research], provenance: null };
+    return { ...base, state: "unavailable", summary: "Tests could not be read just now", headline: "CDPH test results could not be read just now.", date: null, dateRole: null, age: null, facts: [], relation: whaleDelay ? [RELATION.testDoesNotLift] : [], actions: [research], provenance: null };
   if (t.state === "none")
-    return { ...base, state: "none", headline: "No CDPH test site is tied to this port.", date: null, dateRole: null, age: null, facts: [], relation: [RELATION.testWhoDecides, ...(whaleDelay ? [RELATION.testDoesNotLift] : [])], actions: [research], provenance: null };
+    return { ...base, state: "none", summary: "No test site for this port", headline: "No CDPH test site is tied to this port.", date: null, dateRole: null, age: null, facts: [], relation: [RELATION.testWhoDecides, ...(whaleDelay ? [RELATION.testDoesNotLift] : [])], actions: [research], provenance: null };
   const relation = [...(t.old ? [RELATION.testOld(t.staleDays)] : []), ...(whaleDelay ? [RELATION.testDoesNotLift] : []), RELATION.testWhoDecides];
   const actions: GateAction[] = [];
   if (t.sourceUrl && /^https?:/.test(t.sourceUrl)) actions.push({ id: "cdph", label: "CDPH's results", href: t.sourceUrl, external: true });
@@ -157,11 +175,12 @@ function domoicGate(t: TestInput, whaleDelay: boolean, place: string): Gate {
   return {
     ...base,
     state: t.old ? "old" : "ok",
+    summary: `Test ${t.age}`,
     headline: t.headline,
     date: t.date,
     dateRole: "sampled",
     age: t.age,
-    facts: t.progress ? [{ id: "progress", role: "record", text: t.progress, old: t.old, provenance: t.provenance }] : [],
+    facts: [...(t.progress ? [{ id: "progress", role: "record" as const, text: t.progress, old: t.old, provenance: t.provenance }] : []), ...t.others],
     relation,
     actions,
     provenance: t.provenance,
@@ -174,15 +193,16 @@ function seaGate(s: SeaInput, place: string): Gate {
     { id: "explore", label: "Conditions on the chart in Explore", href: gateHrefs.explore(place) },
     { id: "trip", label: "Plan a trip (hypothetical)", href: gateHrefs.trip(place) },
   ];
-  if (s.state === "loading") return { ...base, state: "loading", headline: "Reading NWS, the buoy and the tide", date: null, dateRole: null, age: null, facts: [], relation: [RELATION.seaSeparate], actions, provenance: null };
+  if (s.state === "loading") return { ...base, state: "loading", summary: "Reading NWS and the buoy", headline: "Reading NWS, the buoy and the tide", date: null, dateRole: null, age: null, facts: [], relation: [RELATION.seaSeparate], actions, provenance: null };
   if (s.state === "error")
-    return { ...base, state: "unavailable", headline: "NWS, the buoy and the tide could not be read just now.", date: null, dateRole: null, age: null, facts: [], relation: [RELATION.seaSeparate], actions: [{ id: "nws", label: "NWS marine forecast", href: "https://www.weather.gov/marine", external: true }, ...actions], provenance: null };
+    return { ...base, state: "unavailable", summary: "Could not be read just now", headline: "NWS, the buoy and the tide could not be read just now.", date: null, dateRole: null, age: null, facts: [], relation: [RELATION.seaSeparate], actions: [{ id: "nws", label: "NWS marine forecast", href: "https://www.weather.gov/marine", external: true }, ...actions], provenance: null };
   const facts = orderSeaFacts(s.facts);
   const lead = facts[0];
   if (s.marineUrl && /^https?:/.test(s.marineUrl)) actions.unshift({ id: "nws", label: "NWS marine forecast", href: s.marineUrl, external: true });
   return {
     ...base,
     state: facts.length ? "ok" : "none",
+    summary: seaSummary(facts),
     headline: lead ? lead.text : "No NWS forecast, buoy or tide for this port just now.",
     date: s.issued,
     dateRole: s.issued ? "issued" : null,
@@ -192,6 +212,14 @@ function seaGate(s: SeaInput, place: string): Gate {
     actions,
     provenance: lead?.provenance ?? null,
   };
+}
+
+/** Advisories in force by name, else the forecast and the waves in a few words. */
+function seaSummary(facts: GateFact[]): string {
+  const adv = facts.filter((f) => f.role === "advisory");
+  if (adv.length) return adv.map((f) => f.short ?? f.text).join(", ");
+  const lead = facts.find((f) => f.role === "forecast") ?? facts.find((f) => f.id === "waves") ?? facts[0];
+  return lead ? (lead.short ?? lead.text) : "Nothing to read for this port";
 }
 
 /** The gates in their fixed order: whale (when RAMP applies), domoic acid, sea. */

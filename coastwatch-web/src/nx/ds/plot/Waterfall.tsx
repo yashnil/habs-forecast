@@ -61,6 +61,8 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
   const t = reduce ? { duration: 0 } : settle;
   const money = (v: number) => usd(cents ? Math.round(v * 100) / 100 : Math.round(v), { cents });
   const amount = (st: WaterfallStep) => (st.amount === null ? null : st.kind === "cost" ? -st.amount : st.amount);
+  /** a figure's width as set, px (16 px tabular digits; the net figure is larger) */
+  const labelW = (v: number, net: boolean) => usd(Math.round(v)).length * (net ? 13.5 : 10) + 4;
   const say = (i: number) => {
     const st = steps[i];
     const a = amount(st);
@@ -86,7 +88,9 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
   const rows = orientation === "rows" || (orientation === "auto" && band < 88);
   if (rows) {
     // one bar per line: the label at the left, the bar on a money axis running right, the amount after it
-    const RH = 44, LAB = Math.min(132, Math.max(88, width * 0.3)), AMT = 76;
+    // the amounts' column is as wide as the widest figure, so none is set over its bar or past the edge
+    const AMT = Math.max(64, ...steps.map((st) => (amount(st) === null ? 0 : labelW(amount(st)!, st.kind === "net") + 8)));
+    const RH = 44, LAB = Math.min(132, Math.max(92, width * 0.3));
     const x0 = LAB, x1 = Math.max(x0 + 60, width - AMT);
     const x = (v: number) => Math.round((x0 + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo || 1)) * (x1 - x0)) * 100) / 100;
     const Hh = steps.length * RH;
@@ -182,7 +186,8 @@ export function WaterfallChart({ steps, label, preview, domain: fixed, height = 
                 )}
                 {g && !g.waiting ? <motion.rect x={x - 3} width={bw + 6} initial={false} animate={{ y: y(g.to), height: Math.max(1.5, y(g.from) - y(g.to)) }} transition={t} className={s.wfGhost} /> : null}
                 {a !== null && !b.waiting ? (
-                  <motion.text x={cx0(i)} textAnchor="middle" initial={false} animate={{ y: y(b.to) - 8 }} transition={t} className={cx(s.wfAmount, st.kind === "net" && s.wfAmountNet)}>
+                  // kept inside the drawing: a wide figure over the last bar is set back from the right edge
+                  <motion.text x={Math.max(left + labelW(a, st.kind === "net") / 2, Math.min(cx0(i), width - labelW(a, st.kind === "net") / 2))} textAnchor="middle" initial={false} animate={{ y: y(b.to) - 8 }} transition={t} className={cx(s.wfAmount, st.kind === "net" && s.wfAmountNet)}>
                     {usd(Math.round(a))}
                   </motion.text>
                 ) : null}

@@ -90,8 +90,17 @@
 .gateActions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-4) var(--s-24);
-  margin-top: var(--s-12);
+  gap: 0 var(--s-24);
+  margin-top: var(--s-8);
+}
+/* each link is its own 44 px target in the flow, so stacked links never share a hit area (the quiet button's
+   own centred 48 px target would reach into the link above and below) */
+.gateActions > * {
+  min-height: 44px;
+  align-items: center;
+}
+.gateActions > *::after {
+  display: none;
 }
 
 .advisories {

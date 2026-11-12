@@ -75,6 +75,33 @@ export function setVessel(v: Vessel | null): boolean {
   return kept;
 }
 
+/** Day, dusk or night, now and on every later visit (the same key and attribute the Menu sets). */
+export function setChartMode(m: ChartMode): boolean {
+  try {
+    document.documentElement.setAttribute("data-chart-mode", m);
+  } catch {
+    // no document: nothing to show it on
+  }
+  let kept = true;
+  try {
+    window.localStorage.setItem(CHART_MODE_KEY, m);
+  } catch {
+    kept = false;
+  }
+  emit();
+  return kept;
+}
+
+/** The mode on screen now (the pre-paint script chose it: the saved one, else Dusk for a dark system, else Day). */
+export function shownChartMode(): ChartMode {
+  try {
+    const m = document.documentElement.getAttribute("data-chart-mode");
+    return m === "dusk" || m === "night" ? m : "day";
+  } catch {
+    return "day";
+  }
+}
+
 /** "Show me around" is offered again on Today. */
 export function replayTour() {
   remove(TOUR_KEY);

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { runCheck } from "./check";
+import { abandonCheck, runCheck } from "./check";
 
 /**
  * Runs the alert check when a page opens, and again when the reader comes back to the tab or the connection
@@ -22,7 +22,10 @@ export function AlertWatch() {
     };
     document.addEventListener("visibilitychange", again);
     window.addEventListener("online", again);
+    // leaving with a check under way: it will not finish, so it must not hold back the next page's check
+    window.addEventListener("pagehide", abandonCheck);
     return () => {
+      window.removeEventListener("pagehide", abandonCheck);
       document.removeEventListener("visibilitychange", again);
       window.removeEventListener("online", again);
     };

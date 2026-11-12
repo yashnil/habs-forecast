@@ -31,6 +31,10 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
   useEffect(() => {
     setMode((document.documentElement.getAttribute("data-chart-mode") as ChartMode) || "day");
   }, []);
+  // the mode may have been changed elsewhere (Your data) since this menu last opened: read it each time it opens
+  useEffect(() => {
+    if (open) setMode((document.documentElement.getAttribute("data-chart-mode") as ChartMode) || "day");
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const off = (e: PointerEvent) => {

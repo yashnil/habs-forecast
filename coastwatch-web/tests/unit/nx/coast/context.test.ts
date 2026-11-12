@@ -23,14 +23,14 @@ describe("a delayed or closed season makes the hypothetical unmistakable", () =>
   it("quotes an unverified record as the agency's, not verified, and says the trip cannot be made now", () => {
     const f = tripFlag(season(), crab)!;
     expect(f).toMatchObject({ level: "delayed", verified: false, source: "CDFW", short: "Season delayed · CDFW · not verified" });
-    expect(f.words).toBe("CDFW's record, which nobody at Neritic has verified, says the dungeness crab season here is delayed. These figures are hypothetical: they do not describe a trip that can be made now. Check CDFW before you plan around them.");
+    expect(f.words).toBe("Dungeness crab season delayed per CDFW's unverified record: not a trip you can make now.");
     expect(tripFlag(season({ verified: null }), crab)!.verified).toBe(false);
   });
   it("a record a person reviewed is still the agency's record", () => {
     const f = tripFlag(season({ level: "closed", verified: true }), crab)!;
     expect(f.short).toBe("Season closed · CDFW");
-    expect(f.words.startsWith("CDFW's record says the dungeness crab season here is closed.")).toBe(true);
-    expect(tripFlag(season({ level: "closed", seasonal: true }), tripFishery("dungeness_recreational"))!.words).toContain("the dungeness crab season here is closed for the season");
+    expect(f.words).toBe("Dungeness crab season closed per CDFW's record: not a trip you can make now.");
+    expect(tripFlag(season({ level: "closed", seasonal: true }), tripFishery("dungeness_recreational"))!.words).toContain("Dungeness crab season closed for the season per CDFW's unverified record");
   });
   it("says nothing for an open or restricted season, a missing record, or sources that differ", () => {
     expect(tripFlag(season({ level: "no_restriction_on_record" }), crab)).toBeNull();

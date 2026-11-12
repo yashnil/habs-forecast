@@ -95,3 +95,13 @@
     margin-top: 0;
   }
 }
+
+/* what choosing a port leads to, in one sentence under the action */
+.next {
+  margin: var(--s-24) 0 0;
+  max-width: var(--measure);
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}

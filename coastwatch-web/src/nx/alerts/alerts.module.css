@@ -1,0 +1,276 @@
+/* Alerts and Your data: desk pages of lists and settings. Tokens only (src/nx/ds/tokens.css). */
+
+.page {
+  display: block;
+  color: var(--ink);
+}
+.section + .section {
+  margin-top: var(--s-32);
+}
+.h2 {
+  margin: 0 0 var(--s-12);
+  font: 600 var(--type-head) / var(--lh-snug) var(--font-sans);
+}
+.h3 {
+  margin: 0;
+  font: 600 var(--type-lead) / var(--lh-snug) var(--font-sans);
+}
+.lede {
+  margin: 0 0 var(--s-16);
+  max-width: var(--measure);
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+.small {
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-small);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+.status {
+  margin: var(--s-12) 0 0;
+  min-height: var(--s-24);
+  font-size: var(--type-body);
+  line-height: var(--lh-snug);
+}
+.link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 0.2em;
+}
+.link:hover {
+  text-decoration-thickness: var(--rule);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-8) var(--s-16);
+  margin-top: var(--s-12);
+}
+
+/* ---------------------------------------------------------------- the inbox */
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+}
+.item {
+  display: grid;
+  grid-template-columns: var(--s-16) minmax(0, 1fr);
+  column-gap: var(--s-12);
+  padding: var(--s-16) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.dot {
+  width: var(--s-8);
+  height: var(--s-8);
+  margin-top: var(--s-8);
+  background: var(--ink);
+}
+.item[data-read] .dot {
+  background: transparent;
+  outline: var(--hair) solid var(--ink-2);
+  outline-offset: -1px;
+}
+.itemPort {
+  margin: 0 0 var(--s-4);
+  font-size: var(--type-small);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+}
+.itemTitle {
+  margin: 0;
+  font: 600 var(--type-lead) / var(--lh-snug) var(--font-sans);
+  text-wrap: pretty;
+}
+.item[data-read] .itemTitle {
+  font-weight: 500;
+}
+.itemChange {
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+  max-width: var(--measure);
+}
+.itemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-12);
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-small);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+.tag {
+  padding: 0 var(--s-4);
+  border: var(--hair) solid var(--ink-2);
+  color: var(--ink);
+}
+.itemBody {
+  margin: var(--s-8) 0 0;
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+  max-width: var(--measure);
+}
+.empty {
+  margin: 0;
+  padding: var(--s-16) 0;
+  border-top: var(--rule) solid var(--ink);
+  border-bottom: var(--hair) solid var(--rule-soft);
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+  max-width: var(--measure);
+}
+
+/* ---------------------------------------------------------------- followed ports */
+.ports {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+}
+.port {
+  padding: var(--s-12) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.portHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8) var(--s-16);
+}
+.portName {
+  font: 500 var(--type-head) / var(--lh-snug) var(--font-serif);
+}
+.portNote {
+  margin: var(--s-4) 0 0;
+  font-size: var(--type-small);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+.offer {
+  margin-bottom: var(--s-24);
+  padding: var(--s-16);
+  background: var(--wash);
+  border-left: 3px solid var(--ink);
+}
+.offer p {
+  margin: var(--s-8) 0 var(--s-12);
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+}
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--s-8) var(--s-12);
+  margin-top: var(--s-16);
+}
+.field {
+  display: grid;
+  gap: var(--s-4);
+  min-width: 0;
+  flex: 1 1 200px;
+}
+.label {
+  font-size: var(--type-small);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+}
+.select {
+  width: 100%;
+  min-height: var(--target);
+  padding: 0 var(--s-12);
+  border: var(--rule) solid var(--ink);
+  border-radius: var(--r-1);
+  background: var(--paper);
+  color: var(--ink);
+  font: 500 var(--type-body) / 1.2 var(--font-sans);
+}
+
+/* ---------------------------------------------------------------- rows: how alerts reach you, the inventory */
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--rule) solid var(--ink);
+}
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-16);
+  min-height: var(--target);
+  padding: var(--s-12) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  font-size: var(--type-body);
+  line-height: var(--lh-snug);
+}
+.rowLabel {
+  min-width: 0;
+}
+.rowValue {
+  flex: none;
+  max-width: 55%;
+  text-align: right;
+  font-weight: 600;
+}
+.row[data-off] .rowValue {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.group + .group {
+  margin-top: var(--s-24);
+}
+
+/* ---------------------------------------------------------------- preferences */
+.order {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+  counter-reset: fishery;
+}
+.orderItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-12);
+  min-height: var(--target);
+  padding: var(--s-4) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+  font-size: var(--type-body);
+  counter-increment: fishery;
+}
+.orderName::before {
+  content: counter(fishery) ". ";
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.orderButtons {
+  flex: none;
+  display: flex;
+  gap: var(--s-4);
+}
+.pref {
+  display: grid;
+  gap: var(--s-8);
+  max-width: 480px;
+}
+.pref + .pref {
+  margin-top: var(--s-24);
+}
+.confirm {
+  font-size: var(--type-body);
+  line-height: var(--lh-body);
+}
+.confirm ul {
+  margin: var(--s-12) 0;
+  padding-left: var(--s-24);
+}

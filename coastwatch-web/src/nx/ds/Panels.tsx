@@ -98,6 +98,8 @@ export interface OptionItem<T extends string> {
   meta?: ReactNode;
   /** At the row's end: a mark, a count, a small figure. */
   end?: ReactNode;
+  /** Across the row's whole width, under its words: a thin strip (when this variable was measured). Decorative: say the same in `meta`. */
+  strip?: ReactNode;
   disabled?: boolean;
 }
 export interface OptionListProps<T extends string> {
@@ -156,11 +158,18 @@ export function OptionList<T extends string>({ label, hideLabel, options, value,
             onKeyDown={key(i)}
             data-testid={`option-${o.value}`}
           >
-            <span className={s.optText}>
-              <span className={s.optName}>{o.label}</span>
-              {o.meta ? <span className={s.optMeta}>{o.meta}</span> : null}
+            <span className={s.optRow}>
+              <span className={s.optText}>
+                <span className={s.optName}>{o.label}</span>
+                {o.meta ? <span className={s.optMeta}>{o.meta}</span> : null}
+              </span>
+              {o.end ? <span className={s.optEnd}>{o.end}</span> : null}
             </span>
-            {o.end ? <span className={s.optEnd}>{o.end}</span> : null}
+            {o.strip ? (
+              <span className={s.optStrip} aria-hidden="true">
+                {o.strip}
+              </span>
+            ) : null}
           </button>
         ))}
       </div>

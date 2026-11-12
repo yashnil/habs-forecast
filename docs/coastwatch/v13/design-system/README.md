@@ -332,3 +332,26 @@ by composing the parts; they do not need to re-test it.
 
 For tests only, `window.__nxShell.openMargin(detent)` and `window.__nxChart.keep(lon, lat)` call the page-facing
 requests as a page would.
+
+## 12. Changes after the pages were built (block 4)
+
+- **`DeskHeader` condenses without moving the page.** What the header loses in height it keeps as a margin under
+  itself, and it is never the scroll anchor. A page no longer needs `overflow-anchor: none` for it. On a phone
+  its `actions` take their own line under the title.
+- **Data states.** A fifteenth kind, `rejected` ("Rejected by QC"): kept in the record, never drawn on the axis.
+  The default sentence for `reported-zero` no longer says "none": it claims neither a limit nor an absence.
+  `DataStateLegend` takes `words` (a sentence per kind) and `DataState` takes `word`, for a source's own terms.
+- **Plot.** `PlotSync` accepts `pinned: { t }` with no plot id: every plot inside shows its sample there as
+  pinned. With under 24 px above the plot, `AxisY`'s title takes the top tick label's place.
+- **`OptionList`** options take `strip`: a full-width decorative strip under the row's words.
+- **`Segmented size="s"`** segments are 44 px tall.
+- **`SensitivityGrid`** previews only for a mouse (a touch chooses), has tighter cells in a narrow column and
+  scrolls inside itself.
+- **`WaterfallChart`** keeps every figure inside the drawing: the amounts' column is as wide as the widest
+  figure, and a wide net figure over the last bar is set back from the edge.
+- **`GateList`** links are each their own 44 px target in the flow; stacked links no longer share a hit area.
+- **`MarginSticky edge="top"`** keeps a legend at the head of the margin while it scrolls to a reading under it.
+  The margin's scroller has scroll padding, so something scrolled into view keeps a line of air above it.
+- **Phone sheet.** Brought back to rest from a raised detent it shows the page from its first line. The handle's
+  grab area reaches 12 px above the sheet's edge.
+- **Menu.** The chart-mode choice is read each time the menu opens.

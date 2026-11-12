@@ -84,8 +84,15 @@ describe("the owner's test, to the cent", () => {
     expect(breakEvenPriceText(v(r.out.breakEvenPrice), "lb")).toBe("$0.87/lb");
   });
   it("carries the engine's worked sum for each figure and the waterfall's steps", () => {
-    const net = r.out.net;
-    expect(net.status === "value" && net.formula).toContain("Net to boat $2,602");
+    const sum = Object.fromEntries(r.steps.map((s) => [s.id, s.formula]));
+    expect(sum).toEqual({
+      gross: "400 lb × $9.00 = $3,600.00",
+      fees: "0 % × $3,600.00 = $0.00",
+      fuel: "30 gal × $8.24/gal = $247.20",
+      "cost-0": "$100.00, as entered; shared, off the top",
+      crew: "20 % × ($3,600.00 gross − $0.00 fees − $347.20 shared costs) = $650.56",
+      net: "$3,600.00 gross − $0.00 fees − $347.20 trip costs − $650.56 crew = $2,602.24",
+    });
     expect(r.steps.map((s) => [s.id, s.amount === null ? null : Math.round(s.amount * 100) / 100])).toEqual([
       ["gross", 3600],
       ["fees", 0],
@@ -182,6 +189,39 @@ describe("every pay model, without and with fees (audit B, section 2)", () => {
     // 800 / (1000 − 10) = 0.808 ton → 0.81; (800 + 200) / 20 = $50/ton
     expect(breakEvenCatchText(v(r.out.breakEvenCatch), "ton")).toBe("0.81 ton");
     expect(breakEvenPriceText(v(r.out.breakEvenPrice), "ton")).toBe("$50/ton");
+  });
+});
+
+describe("each bar's worked sum, to the cent", () => {
+  const sums = (ws: Workspace, f = crab, scale?: { catch: number; price: number }) => Object.fromEntries(evaluateWorkspace(ws, f, scale).steps.map((st) => [st.id, st.formula]));
+  it("says who pays each line, and the shared costs it names are the engine's", () => {
+    // fuel shared (247.20), bait paid by the boat: N = 3352.80, crew 670.56, net 2582.24
+    const got = sums(base({ costs: [{ label: "Bait and ice", usd: "100", payer: "boat" }] }));
+    expect(got["cost-0"]).toBe("$100.00, as entered; paid by the boat");
+    expect(got.crew).toBe("20 % × ($3,600.00 gross − $0.00 fees − $247.20 shared costs) = $670.56");
+    expect(got.net).toBe("$3,600.00 gross − $0.00 fees − $347.20 trip costs − $670.56 crew = $2,582.24");
+  });
+  it("fees, a day rate, a share of gross, nobody paid, and the distance route", () => {
+    const fees = sums(base({ feesPct: "5", feesPerUnit: "0.10" }));
+    expect(fees.fees).toBe("5 % × $3,600.00 + $0.10/lb × 400 lb = $220.00");
+    expect(fees.crew).toBe("20 % × ($3,600.00 gross − $220.00 fees − $347.20 shared costs) = $606.56");
+    expect(sums(base({ crew: "2", crewKind: "dayRate", dayRate: "200", days: "2" })).crew).toBe("2 crew × $200.00 a day × 2 days = $800.00");
+    const gross = sums(base({ crewKind: "ofGross" }));
+    expect(gross.crew).toBe("20 % × $3,600.00 gross = $720.00");
+    expect(gross["cost-0"]).toBe("$100.00, as entered"); // who pays moves nothing here, so it is not said
+    expect(sums(base({ crew: "0" })).crew).toBe("Nobody else is paid");
+    expect(sums(base({ fuelRoute: "distance", fuelGal: "", roundTripNm: "20", cruiseKt: "8", steamGph: "6", fishingHours: "5", fishingGph: "3" })).fuel).toBe("30 gal (20 nm ÷ 8 kt × 6 gal/h + 5 h × 3 gal/h) × $8.24/gal = $247.20");
+    expect(sums(base({ fuelGal: "0", fuelPrice: "" })).fuel).toBe("No fuel burned");
+  });
+  it("costs over gross: nothing is left to share, and it says so", () => {
+    expect(sums(base({ catch: [{ label: "Dungeness crab", ref: null, amount: "20", price: "9" }] })).crew).toBe("Gross less fees and shared costs is −$167.20: nothing is left to share");
+  });
+  it("a previewed scenario is worked from its own catch and price; a bar still waiting has no sum", () => {
+    const up = sums(base(), crab, { catch: 1.3, price: 1.2 });
+    expect(up.gross).toBe("520 lb × $10.80 = $5,616.00");
+    expect(up.net).toBe("$5,616.00 gross − $0.00 fees − $347.20 trip costs − $1,053.76 crew = $4,215.04");
+    expect(sums(base({ fuelPayer: null })).crew).toBeUndefined();
+    expect(sums({ ...emptyWorkspace(sport), fuelGal: "30", fuelPrice: "8.24", costs: [{ label: "Bait and ice", usd: "100", payer: null }] }, sport).net).toBe("$247.20 fuel + $100.00 other costs = $347.20");
   });
 });
 
@@ -295,7 +335,7 @@ describe("zero, impossible and inconsistent inputs", () => {
     expect(breakEvenPriceText(0.8701, "lb")).toBe("$0.88/lb");
     // the most fuel can cost is rounded down: a cent more would lose money
     expect(breakEvenFuelText(12.349)).toBe("$12.34/gal");
-    expect(breakEvenFuelText(116.67)).toBe("above $50.00/gal");
+    expect(breakEvenFuelText(116.679)).toBe("$116.67/gal");
     expect(money(-0.001)).toBe("$0.00");
   });
 });

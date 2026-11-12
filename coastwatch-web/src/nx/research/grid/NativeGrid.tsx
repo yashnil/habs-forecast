@@ -18,6 +18,7 @@ import { currentsHourly, fieldFeatures } from "@/lib/currents";
 import { cellEdges, loadGrid } from "@/lib/grid";
 import { labelledGeometry } from "@/lib/officialGeometry";
 import { Dialog } from "@/nx/ds/Overlay";
+import { Loading } from "@/nx/ds/States";
 import { day } from "@/nx/ds/format";
 import { ReadinessProvider } from "@/v4/readiness/store";
 import { AreaModel, CellBody } from "@/v4/explore/Inspect";
@@ -250,7 +251,7 @@ function GridInstrument({ manifest, ports, official, baseUrl, station: st, now: 
                   </ExportButton>
                 </>
               ) : (
-                <p className={g.small}>Reading the grid…</p>
+                <Loading>Reading the grid…</Loading>
               )}
             </div>
           ) : null}

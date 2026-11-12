@@ -2,7 +2,7 @@
 
 import { useRef, useState, type KeyboardEvent } from "react";
 import { ChartMarks, type ChartMark } from "@/nx/chart/Labels";
-import { Icon, Loading, MarginRow, MarginRows, Stamp, Unavailable, type Provenance } from "@/nx/ds";
+import { Icon, MarginRow, MarginRows, Skeleton, Stamp, Unavailable, type Provenance } from "@/nx/ds";
 import { hatchSegments } from "@/nx/ds/Mark";
 import { sig } from "@/nx/ds/format";
 import { cx } from "@/nx/ds/util";
@@ -22,7 +22,8 @@ const HATCH = hatchSegments(0, 0, 200, 20, 4);
 export function SeaWindow({ sea, placeKey }: { sea: Loadable<CoastSea>; placeKey: string }) {
   const [chosen, setChosen] = useState<string | null>(null);
   if (sea.state === "idle") return null;
-  if (sea.state === "loading") return <Loading>Reading NWS, the buoys and the tide…</Loading>;
+  // a placeholder at the sea window's own height (the buoys' line, then the days), so the page under it holds still
+  if (sea.state === "loading") return <Skeleton label="Reading NWS, the buoys and the tide…" lines={8} className={s.seaLoading} />;
   if (sea.state === "error" || sea.data.sea.state !== "ok")
     return (
       <Unavailable

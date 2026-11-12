@@ -68,7 +68,7 @@ def test_noaa21_first_noaa20_only_where_noaa21_has_no_value(tmp_path, region):
     assert lyr.platforms == ["VIIRS", "NOAA-21", "NOAA-20"]
     assert lyr.provenance.dataset_id == f"{N21},{N20}" and "coastwatch.noaa.gov" in lyr.provenance.source_url
     md = lyr.provenance.upstream_metadata
-    assert md["processing"] == sat.PROCESSING_VERSION == "satellite-processing-4"
+    assert md["processing"] == sat.PROCESSING_VERSION == "satellite-processing-5"
     assert "-0.020" in md["offsets"] and "not corrected" in md["offsets"]
     assert lyr.native_resolution_m == 750.0 and lyr.resolution_deg == 0.0075
     # overpass-time stamps, verbatim, ~19 UTC on the observation date

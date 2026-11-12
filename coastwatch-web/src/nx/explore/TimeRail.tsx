@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { range, sig, useElementWidth } from "@/nx/ds";
+import { Button, range, sig, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
-import { axisLabels, axisX, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
+import { axisLabels, axisX, frameCount, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
 import { LAYER_LABEL, layerKindWord, oldMark } from "./words";
 import s from "./explore.module.css";
 
@@ -105,6 +105,7 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
         {frames.map((f) => {
           const a = x(f.start), b = x(f.end, 1);
           return (
+            // design-lint-allow raw-button: the rail's frames and hours are invisible hit areas laid over an SVG track, sized and placed by the time axis (a radio group drawn as bars); no ds control draws on a time axis
             <button
               key={f.id}
               type="button"
@@ -259,6 +260,7 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
   const labels = axisLabels(model.axis, T, nx);
   const frame = product.frames.find((f) => f.id === frameId);
   const cur = model.currents?.frames.find((f) => f.id === currentId) ?? null;
+  const count = frameCount(product, frameId, currentsOn ? (model.currents?.frames ?? []) : [], currentId);
   const [more, setMore] = useState(false);
   const moreId = `nx-rail-more-${uid}`;
   // a frame chosen on another sensor's row (from a link) keeps that row in view
@@ -270,6 +272,12 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
         <h2 className={s.railTitle}>Time</h2>
         <p className={s.railNow} data-testid="nx-frame-stamp">
           {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : ""}
+          {count ? (
+            <span className={s.railCount} data-testid="nx-frame-count">
+              {" "}
+              · {count}
+            </span>
+          ) : null}
           {currentsOn && cur ? (
             <span className={s.railNowSub}>
               Currents: {cur.mean ? cur.label : cur.stamp}
@@ -278,9 +286,9 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
           ) : null}
         </p>
         {canPlay ? (
-          <button type="button" className={s.textButton} onClick={onPlay} aria-pressed={playing} data-testid="nx-play">
+          <Button variant="text" onClick={onPlay} aria-pressed={playing} data-testid="nx-play">
             {playing ? "Pause" : "Play"}
-          </button>
+          </Button>
         ) : null}
       </div>
       <div className={s.railBody}>
@@ -309,9 +317,9 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
         </div>
       </div>
       <div className={s.railMore}>
-        <button type="button" className={s.railMoreButton} aria-expanded={more} aria-controls={moreId} onClick={() => setMore((v) => !v)} data-testid="nx-rail-more">
+        <Button variant="text" aria-expanded={more} aria-controls={moreId} onClick={() => setMore((v) => !v)} data-testid="nx-rail-more">
           {more ? "Hide sources and coverage" : "Sources and coverage"}
-        </button>
+        </Button>
         <div id={moreId} hidden={!more} className={s.railMoreBody}>
           <p className={s.railKey}>
             {product.kind === "measured" ? "Bars: share of the coastal ocean with a value that day." : "Hatched: a model or outlook frame, the days it is valid for."} {product.pastRun ? "Past run: every day it covers is before today." : ""}

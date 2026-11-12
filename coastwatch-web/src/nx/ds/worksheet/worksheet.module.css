@@ -208,7 +208,8 @@
   transition: color var(--dur-quick) linear;
 }
 .segWrap[data-size="s"] .segment {
-  min-height: 41px;
+  /* 44 px on its own, whatever frame a page gives the group */
+  min-height: 44px;
   padding: 0 var(--s-12);
 }
 .segment + .segment {

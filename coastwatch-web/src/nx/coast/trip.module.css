@@ -1,0 +1,489 @@
+/* The trip workspace (v13): page-local layout over the ds kit. Tokens only (src/nx/ds/tokens.css). */
+
+.aside {
+  font-variant-numeric: tabular-nums;
+}
+/* the inputs column holds its place under the header and scrolls inside itself, so typing in a lower field never
+   moves the results; its height follows the header's real height (set by the page as --desk-aside-top) */
+@container nx-desk (min-width: 880px) {
+  .aside {
+    max-height: calc(100dvh - var(--bar-h) - var(--desk-aside-top, 96px) - var(--s-16));
+    padding-right: var(--s-8);
+  }
+}
+.compact {
+  justify-self: start;
+  min-height: var(--s-32);
+  font-size: var(--type-small);
+}
+.h2 {
+  margin: 0;
+  font: 600 var(--type-head) / var(--lh-snug) var(--font-sans);
+}
+.h3 {
+  margin: 0 0 var(--s-8);
+  font: 600 var(--t-18) / var(--lh-snug) var(--font-sans);
+}
+.sub,
+.small,
+.derived,
+.said,
+.swing {
+  margin: var(--s-4) 0 0;
+  font-size: var(--type-small);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+  max-width: var(--measure);
+}
+.swing {
+  margin-top: var(--s-12);
+}
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- inputs */
+.inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-16);
+  margin-top: var(--s-12);
+}
+.group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+  padding-top: var(--s-8);
+  border-top: var(--rule) solid var(--ink);
+}
+.groupHead {
+  margin: 0;
+  font: 600 var(--t-18) / var(--lh-snug) var(--font-sans);
+}
+.line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+}
+.derived {
+  margin: 0 0 var(--s-4);
+  line-height: var(--lh-snug);
+}
+.line + .line {
+  padding-top: var(--s-8);
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.lineHead {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-8);
+}
+.lineHead > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.nameInput,
+.linkBox {
+  width: 100%;
+  min-height: var(--target);
+  padding: 0 var(--s-8);
+  border: 0;
+  border-bottom: var(--rule) solid var(--ink);
+  border-radius: var(--r-1);
+  background: transparent;
+  color: var(--ink);
+  font: 600 var(--type-body) / 1.2 var(--font-sans);
+}
+.nameInput::placeholder {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+.nameInput:focus-visible,
+.linkBox:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.offer {
+  justify-self: start;
+  max-width: 100%;
+  text-align: left;
+  white-space: normal;
+  font-size: var(--type-small);
+}
+
+/* ---------------------------------------------------------------- results */
+.results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-8);
+  font-variant-numeric: tabular-nums;
+}
+.anchor {
+  scroll-margin-top: var(--trip-top, 120px);
+}
+.hero {
+  background: var(--paper);
+}
+/* the one result, with the catch and the price that break even beside it */
+.heroRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-8) var(--s-32);
+}
+.heroRow > * {
+  min-width: 0;
+}
+/* wide: the break-evens stand beside the result, not under it */
+@container nx-desk (min-width: 880px) {
+  /* once there is a result; while it waits, its words take the line and the break-evens go under */
+  .heroRow[data-ready] {
+    flex-wrap: nowrap;
+  }
+  .heroRow[data-ready] > :first-child {
+    flex: 0 1 auto;
+  }
+  .heroRow[data-ready] > .heroSide {
+    flex: 0 0 auto;
+  }
+}
+.heroSide {
+  display: grid;
+  gap: 0;
+  padding-bottom: var(--s-8);
+}
+.heroSideNote {
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.heroNote {
+  margin: var(--s-4) 0 0;
+  font-size: var(--type-small);
+  line-height: var(--lh-snug);
+  color: var(--ink-2);
+}
+.fall {
+  min-width: 0;
+}
+.hypo {
+  font-size: var(--type-small);
+  font-weight: 400;
+  color: var(--ink-2);
+}
+/* the scenario line keeps its own line whether or not it has words, so the grid never moves under the pointer */
+.showing {
+  display: block;
+  min-height: calc(var(--type-small) * 1.5);
+}
+.inlineButton {
+  min-height: 0;
+  padding: 0;
+  font-size: inherit;
+  vertical-align: baseline;
+}
+.flag {
+  margin: var(--s-4) 0 0;
+  padding-left: var(--s-8);
+  border-left: var(--rule) solid var(--reg-text);
+  font-size: var(--type-small);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+  color: var(--reg-text);
+}
+/* what the result is made of: one compact row */
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-32);
+  padding: var(--s-4) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.figures > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sens {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-12);
+}
+.sensHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8) var(--s-16);
+}
+.sensHead .h3 {
+  margin: 0;
+}
+.assume {
+  margin: 0;
+  padding-left: var(--s-16);
+  max-width: var(--measure);
+  font-size: var(--type-small);
+  line-height: var(--lh-body);
+  color: var(--ink-2);
+}
+.assume li + li {
+  margin-top: var(--s-4);
+}
+
+/* the result stays in view while the rest of the main column scrolls under it (wide, tall screens) */
+@container nx-desk (min-width: 880px) {
+  @media (min-height: 700px) {
+    .hero {
+      position: sticky;
+      top: var(--trip-top, 120px);
+      z-index: 2;
+      padding: var(--s-4) 0 var(--s-8);
+    }
+  }
+}
+
+/* ---------------------------------------------------------------- scenario strip, saved trips */
+.scBar {
+  display: grid;
+  gap: var(--s-4);
+  min-width: 0;
+  max-width: 420px;
+}
+.scBar .said {
+  margin: 0;
+  line-height: var(--lh-snug);
+}
+.scMore {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-8) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.scMoreActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-24);
+}
+.stripHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-4) var(--s-16);
+}
+.tripName {
+  margin: 0;
+  font: 600 var(--t-18) / var(--lh-snug) var(--font-sans);
+  overflow-wrap: anywhere;
+}
+.tripState {
+  margin: 0;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.tripState[data-state="changed"],
+.tripState[data-state="unsaved"] {
+  color: var(--reg-text);
+  font-weight: 600;
+}
+.saved {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.saved li {
+  padding: var(--s-12) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+}
+.saved li[data-open] {
+  border-top: var(--rule) solid var(--ink);
+}
+.savedName {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.savedOpen {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.savedMeta {
+  margin: var(--s-4) 0 0;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.savedActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-16);
+}
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  min-height: var(--target);
+  cursor: pointer;
+}
+.pick input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--ink);
+}
+.rename {
+  display: grid;
+  gap: var(--s-8);
+}
+.compare {
+  margin-top: var(--s-16);
+  padding-top: var(--s-16);
+  border-top: var(--rule) solid var(--ink);
+}
+.cmpTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--type-small);
+  font-variant-numeric: tabular-nums;
+}
+.cmpTable th,
+.cmpTable td {
+  padding: var(--s-8) var(--s-8) var(--s-8) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.cmpTable thead th {
+  font-weight: 600;
+  border-top: 0;
+}
+.cmpTable tr[data-net] th,
+.cmpTable tr[data-net] td {
+  font-weight: 600;
+  border-top: var(--rule) solid var(--ink);
+}
+
+/* ---------------------------------------------------------------- the phone's result bar */
+.netBar {
+  display: none;
+}
+@media (max-width: 720px) {
+  .netBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-12);
+  }
+  .netBarText {
+    display: grid;
+    margin: 0;
+    min-width: 0;
+    font-size: var(--type-small);
+    line-height: var(--lh-snug);
+    font-variant-numeric: tabular-nums;
+  }
+  .netBarText strong {
+    font-size: var(--t-18);
+  }
+  .netBarLabel,
+  .netBarShowing {
+    color: var(--ink-2);
+  }
+  /* thumbs: the quiet actions keep a full target on a phone */
+  .compact {
+    min-height: var(--target);
+    font-size: var(--type-body);
+  }
+  .scBar {
+    max-width: none;
+    padding: var(--s-8) 0;
+  }
+  /* a phone opens with the first input in reach: the column's own heading gives way to the group's */
+  .aside > .h2 {
+    display: none;
+  }
+  /* the fishery and the way back share one line on a phone: the select says "fishery" by what it holds */
+  .pinned > :first-child {
+    flex: 0 1 auto;
+    display: block;
+    max-width: 50%;
+  }
+  .pinned {
+    column-gap: var(--s-12);
+  }
+  .pinned > :first-child > label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pinned > :first-child > select {
+    max-width: 100%;
+    text-align: left;
+    padding-left: 0;
+  }
+  .inputs {
+    margin-top: var(--s-8);
+  }
+}
+
+/* ---------------------------------------------------------------- the header's pinned context (CoastPage) */
+.pinned {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-24);
+}
+/* the fishery and the way back share a line; the season line takes its own, whole */
+.pinned > :first-child {
+  flex: 0 1 300px;
+  margin-top: 0;
+}
+.pinned .chip {
+  flex: 1 0 100%;
+  order: 3;
+}
+.pinned .carried {
+  flex: 1 0 100%;
+  order: 4;
+}
+.chip {
+  justify-content: flex-start;
+  text-align: left;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  font-size: var(--type-small);
+  line-height: var(--lh-snug);
+}
+.chip[data-tone="closure"] {
+  color: var(--closure);
+}
+.chip[data-tone="regulation"] {
+  color: var(--reg-text);
+}
+.carried {
+  margin: 0;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.briefMoney {
+  display: grid;
+  gap: var(--s-12);
+  justify-items: start;
+  padding: var(--s-16) 0;
+  border-top: var(--rule) solid var(--ink);
+}
+.briefMoney p {
+  margin: 0;
+  max-width: var(--measure);
+}

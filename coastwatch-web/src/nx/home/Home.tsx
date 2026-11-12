@@ -38,6 +38,10 @@ export function Home({ finder, onPick }: { finder: FinderData; onPick: (p: Picke
             </Button>
             <SkipOpening />
           </div>
+          {/* what happens next, and what it is not: said before the first tap (the brief's what / why / next) */}
+          <p className={s.next} data-testid="nx-home-next">
+            Choose your port and what you fish. One page then shows what decides a trip: the official status, toxin tests and the sea, each with its source and its date. Neritic reports; it never tells you to fish.
+          </p>
           <nav className={s.paths} aria-label="Other ways in">
             <Link href="/explore">See the water</Link>
             <Link href="/coast">Plan a trip</Link>
@@ -48,9 +52,9 @@ export function Home({ finder, onPick }: { finder: FinderData; onPick: (p: Picke
         <div className={s.find} data-testid="nx-home-finder">
           <div className={s.findHead}>
             <h1 className={s.findTitle}>Find your port</h1>
-            <button type="button" className={s.back} onClick={() => setStep("intro")}>
+            <Button variant="text" onClick={() => setStep("intro")}>
               Back
-            </button>
+            </Button>
           </div>
           {finder.ports.length ? (
             <PortFinder

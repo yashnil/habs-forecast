@@ -104,7 +104,10 @@ export function SensitivityGrid({ caption, rows, cols, rowAxis, colAxis, value, 
                   onKeyDown={key(r, c)}
                   onFocus={() => onPreview?.({ row: r, col: c })}
                   onBlur={() => onPreview?.(null)}
-                  onPointerEnter={() => onPreview?.({ row: r, col: c })}
+                  onPointerEnter={(e) => {
+                    // a preview is for a pointer that can hover: a touch chooses, it does not preview and then stick
+                    if (e.pointerType === "mouse") onPreview?.({ row: r, col: c });
+                  }}
                   data-testid={`sens-${r}-${c}`}
                 >
                   {v === null ? <span className={s.sensNone}>n/a</span> : format(v)}

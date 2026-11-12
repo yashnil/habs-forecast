@@ -77,7 +77,8 @@ VIIRS_WINDOW_DAYS = WINDOW_DAYS
 # 3: VIIRS from NOAA-21/NOAA-20 (per-cell platform grid) instead of S-NPP; no S-NPP day is
 # ever reused as a NOAA-21/NOAA-20 one.
 # 4: scope adds the marine bays and estuaries connected to the coastal ocean (MARINE_WATER_MASK).
-PROCESSING_VERSION = "satellite-processing-4"
+# 5: the first water ring beside land is left out where the evidence supports it (LAND_ADJACENCY_MASK).
+PROCESSING_VERSION = "satellite-processing-5"
 CHUNK = 512
 LOG_RANGE = (-3.0, 3.0)  # quantization domain for log10(chl): 0.001 .. 1000 mg m-3
 IMPLAUSIBLE_MG_M3 = 200.0  # flagged in QC, never silently removed
@@ -91,6 +92,13 @@ IMPLAUSIBLE_MG_M3 = 200.0  # flagged in QC, never silently removed
 #   by pipeline/scripts/build_marine_water_mask.py. The C-HARM layers are not affected.
 COASTAL_DILATE_CELLS = 4
 MARINE_WATER_MASK = "marine_water_mask.json"
+# Land adjacency (docs/coastwatch/v13/research/coastal-adjacency.md): in the OLCI 300 m product the
+# water pixel that touches the product's own land mask reads ten to fifty times the open water on every
+# clear day, and the next one several times (land and water in one pixel, stray light from the land);
+# the product has no flag for it. Those cells (data/reference/olci_land_adjacency.json, built from the product's own never-valid
+# cells by pipeline/scripts/build_land_adjacency_mask.py) are left out: no value, never a changed one.
+# Applied per product (Product.land_adjacent_rings), only where the same measurement supports it.
+LAND_ADJACENCY_MASK = "olci_land_adjacency.json"
 MAX_IMPLAUSIBLE_FRACTION = 0.01
 
 LICENSE_OLCI = (
@@ -115,6 +123,10 @@ CAVEATS_BASE = [
     "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
     "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
 ]
+CAVEAT_ADJACENCY = (
+    "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the "
+    "product's value is far too high. They are shown as left out, not as a low or a missing observation."
+)
 CAVEAT_SCOPE = (
     "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); "
     "inland lakes, reservoirs and inland land/water pixels are left out."
@@ -168,6 +180,9 @@ class Product:
     offsets: str | None = None
     # Latest clear view: days back from the run date
     window_days: int = WINDOW_DAYS
+    # How many water pixels beside the product's land mask are left out (LAND_ADJACENCY_MASK: 0, 1 or 2);
+    # set per product from the measurement in docs/coastwatch/v13/research/coastal-adjacency.md
+    land_adjacent_rings: int = 0
 
 
 SPLIT = -120.0
@@ -189,6 +204,9 @@ OLCI = Product(
     license=LICENSE_OLCI,
     source_name="Sentinel-3 OLCI chlorophyll-a, near real time (NOAA CoastWatch)",
     sensor_text="the OLCI sensor on Sentinel-3A, with Sentinel-3B filling gaps",
+    # ring 1 reads 8-50 mg m-3 (35-83% of it in the top display class) and ring 2 2-17 mg m-3 (9-38%) on every
+    # clear scene measured, against 0-1% offshore; ring 3 is clean in the Southern California Bight
+    land_adjacent_rings=2,
 )
 # Measured on 98 days with all three sensors, February-October 2026, California, same cells
 # (research/viirs-jpss-overlap/report.md): median log10 ratio, pooled.
@@ -522,6 +540,38 @@ def coastal_mask(target: Target) -> np.ndarray:
     return charm_scope(target) | marine_water(target)
 
 
+@functools.lru_cache(maxsize=1)
+def _load_adjacency() -> tuple[dict, np.ndarray]:
+    """The reference, as one array: 1 = touches the product's land mask, 2 = touches ring 1, 0 = neither."""
+    m = json.loads((REPO / "data" / "reference" / LAND_ADJACENCY_MASK).read_text())
+    cells = np.zeros((m["height"], m["width"]), dtype=np.uint8)
+    for k, key in ((2, "rows_rle_ring2"), (1, "rows_rle")):
+        for r, runs in enumerate(m[key]):
+            for s, n in runs:
+                cells[r, s : s + n] = k
+    return m, cells
+
+
+def land_adjacent(target: Target, rings: int = 1) -> np.ndarray:
+    """True where a target cell is one of the first `rings` water pixels beside the OLCI product's
+    land mask (LAND_ADJACENCY_MASK). The reference is on the OLCI lattice, so this is exact for OLCI."""
+    m, cells = _load_adjacency()
+    return _on_target(m, (cells > 0) & (cells <= rings), target)
+
+
+def drop_land_adjacent(values: np.ndarray, src: np.ndarray, adjacency: np.ndarray) -> int:
+    """Set valid pixels beside land to no value, in place (and their platform to none).
+    Returns how many. No other cell is touched and no value is altered."""
+    hit = np.isfinite(values) & adjacency
+    values[hit] = np.nan
+    src[hit] = 0
+    return int(hit.sum())
+
+
+def caveats_for(p: "Product") -> list[str]:
+    return list(CAVEATS) + ([CAVEAT_ADJACENCY] if p.land_adjacent_rings else [])
+
+
 def coverage(values: np.ndarray, target: Target) -> Coverage:
     """Share of C-HARM ocean cells (3 km) that contain at least one valid pixel."""
     rr, cc = np.nonzero(np.isfinite(values))
@@ -669,7 +719,7 @@ def day_layer(ctx: RunContext, p: Product, target: Target, day: Day, zooms: rang
         resolution_deg=p.step, native_resolution_m=p.native_m, platforms=platform_labels(p, day.platforms),
         time=TimeInfo(observed_date=day.date.isoformat(), valid_date=day.date.isoformat(), observed_times=sorted(day.observed_times)),
         freshness=FRESHNESS, grid=grid if has else None, tiles=tiles if has else None, palette=CHLOROPHYLL,
-        caveats=list(CAVEATS), qc=_qc(day.values, day.checks), coverage=coverage(day.values, target),
+        caveats=caveats_for(p), qc=_qc(day.values, day.checks), coverage=coverage(day.values, target),
         provenance=_provenance(ctx, p, [s.url for s in day.scenes], {"scenes": ", ".join(f"{s.platform} {s.dataset} {s.time}" for s in day.scenes), "processing": PROCESSING_VERSION}, day.platforms),
     )
     return layer, nbytes
@@ -726,7 +776,7 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
         resolution_deg=p.step, native_resolution_m=p.native_m, platforms=platform_labels(p, platforms),
         time=TimeInfo(observed_date=newest.isoformat(), valid_date=newest.isoformat(), observed_times=sorted(t for d in observed_days for t in d.observed_times)),
         freshness=FRESHNESS, grid=grid, tiles=tiles, palette=CHLOROPHYLL,
-        caveats=[CAVEAT_COMPOSITE.format(n=p.window_days)] + list(CAVEATS), qc=_qc(comp, [c for d in days for c in d.checks]),
+        caveats=[CAVEAT_COMPOSITE.format(n=p.window_days)] + caveats_for(p), qc=_qc(comp, [c for d in days for c in d.checks]),
         coverage=coverage(comp, target),
         composite=CompositeInfo(
             window_days=p.window_days, reference_date=ref.isoformat(), newest_observed_date=newest.isoformat(),
@@ -816,6 +866,7 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     # OLCI's lattice is fixed and known; VIIRS's is read from the first scene.
     target = target_for(p, domain) if p.lattice_lat or p.lattice_lon else None
     scope: np.ndarray | None = None
+    adjacency: np.ndarray | None = None
 
     by_day: dict[date, list[tuple[str, str, str]]] = {}
     for (plat, ds), ts in listings.items():
@@ -866,6 +917,11 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
         checks = [c for s in scenes for c in s.checks] + [
             QCCheck(name="coastal_scope", passed=True, detail=f"{dropped} valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out")
         ]
+        if p.land_adjacent_rings:
+            if adjacency is None:
+                adjacency = land_adjacent(target, p.land_adjacent_rings)
+            n_adj = drop_land_adjacent(vals, src, adjacency)
+            checks.append(QCCheck(name="land_adjacency", passed=True, detail=f"{n_adj} valid pixels within {p.land_adjacent_rings} pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"))
         day = Day(d, vals, scenes=scenes, observed_times=sorted(s.time for s in scenes),
                   platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=checks, source=src)
         days.append(day)

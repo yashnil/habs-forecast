@@ -117,6 +117,7 @@ def test_grid_alignment_with_source_coordinates(tmp_path):
     pub = satellite.load_published(ctx.out_dir, g)
     target = satellite.Target(g.lat_first, g.lon_first, 0.0025, g.height, g.width)
     scope = satellite.coastal_mask(target)
+    adjacent = satellite.land_adjacent(target, satellite.OLCI.land_adjacent_rings)
     rows, cols = np.nonzero(np.isfinite(a) & (a > 0))
     compared = 0
     for k in np.linspace(0, rows.size - 1, 60).astype(int):
@@ -129,7 +130,8 @@ def test_grid_alignment_with_source_coordinates(tmp_path):
             assert abs(np.log10(pub[r, c]) - np.log10(a[rows[k], cols[k]])) <= g.max_quantization_error + 1e-9
             compared += 1
         else:
-            assert not scope[r, c]  # only pixels outside the coastal-ocean scope are left out
+            # only pixels outside the coastal-ocean scope, or the pixel beside land, are left out
+            assert not scope[r, c] or adjacent[r, c]
     assert compared >= 40
 
 

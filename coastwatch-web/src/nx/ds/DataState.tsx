@@ -38,6 +38,13 @@ export function DataStateMark({ kind, size = 14, className }: { kind: DataStateK
         );
       case "stale":
         return <rect x="2.75" y="2.75" width="8.5" height="8.5" className={s.mDash} />;
+      case "rejected":
+        return (
+          <>
+            <circle cx={c} cy={c} r="4.6" className={s.mLine} />
+            <path d="M3.4 10.6l7.2-7.2" className={s.mLine} />
+          </>
+        );
       case "missing":
         return <path d="M2.5 7h3M8.5 7h3" className={s.mLine} />;
       case "not-collected":
@@ -79,6 +86,8 @@ export interface DataStateProps {
   action?: ReactNode;
   /** inline: mark and word in a line of text; block: a ruled note with the reason and action; plot: fills a plot's area. */
   variant?: "inline" | "block" | "plot";
+  /** The state's word, when the source has its own for it ("At or below an unpublished limit"). The mark does not change. */
+  word?: string;
   className?: string;
   children?: ReactNode;
   "data-testid"?: string;
@@ -89,8 +98,8 @@ export interface DataStateProps {
  * its source, why, and what to do next. Loading and offline are announced politely; nothing here is a spinner
  * alone or an empty box.
  */
-export function DataState({ kind, what, date, now, source, reason, action, variant = "inline", className, children, ...rest }: DataStateProps) {
-  const { word } = DATA_STATE_WORDS[kind];
+export function DataState({ kind, what, date, now, source, reason, action, variant = "inline", word: ownWord, className, children, ...rest }: DataStateProps) {
+  const word = ownWord ?? DATA_STATE_WORDS[kind].word;
   const live = kind === "loading" || kind === "offline";
   const when = date ? `${day(date, { ref: now, year: true })}${now ? ` (${age(date, now)})` : ""}` : null;
   if (variant === "inline") {
@@ -131,14 +140,18 @@ export function DataState({ kind, what, date, now, source, reason, action, varia
   );
 }
 
-/** One legend for a view: the states present on it, each with its mark and its sentence. */
-export function DataStateLegend({ kinds, className }: { kinds: DataStateKind[]; className?: string }) {
+/**
+ * One legend for a view: the states present on it, each with its mark and its sentence. `words` replaces a
+ * state's sentence where the page's source says something more exact than the default (a source that publishes
+ * no detection limit: "Reported 0: at or below a limit the source does not publish, not absent").
+ */
+export function DataStateLegend({ kinds, words, className }: { kinds: DataStateKind[]; words?: Partial<Record<DataStateKind, string>>; className?: string }) {
   return (
     <ul className={cx(s.stateLegend, className)} aria-label="Legend">
       {kinds.map((k) => (
         <li key={k}>
           <DataStateMark kind={k} />
-          <span>{DATA_STATE_WORDS[k].legend}</span>
+          <span>{words?.[k] ?? DATA_STATE_WORDS[k].legend}</span>
         </li>
       ))}
     </ul>

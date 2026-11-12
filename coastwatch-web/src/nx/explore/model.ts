@@ -7,6 +7,7 @@ import { allPast, isPastRun } from "@/lib/modelTime";
 import type { StationLite } from "@/lib/data";
 import { day, pacificYmd, range, time } from "@/nx/ds/format";
 import { gridBounds, type FieldGrid } from "@/nx/chart/layers/grid";
+import { appliesAdjacency } from "./adjacency";
 
 /**
  * What Explore shows, built on the server from the published manifest and the derived index (no field is added
@@ -52,6 +53,8 @@ export type ExploreFrame = {
   /** outlook: each cell's usual value for the period (equal means "no signal") */
   typicalGrid?: GridSpec | null;
   sensor: string;
+  /** the pipeline left the pixel beside land out of this frame (its QC says so): a no-value cell there is not cloud */
+  besideLandLeftOut?: boolean;
 };
 
 export type Track = {
@@ -91,8 +94,12 @@ export type CurrentFrame = {
   v: GridSpec;
 };
 
-/** `vars`: the variables the station has samples of (its own `latest` list), for the nearby-record rule */
-export type ExploreStation = { id: string; name: string; lat: number; lon: number; last: string | null; vars: string[] };
+/**
+ * `latest`: the station's own newest measured value per variable, in the shape Research's `stationsMeasuring`
+ * reads (src/lib/observations.ts). The slim list knows particulate domoic acid and the two Pseudo-nitzschia
+ * groups only; for any other variable a station is "not known to measure it", never assumed to.
+ */
+export type ExploreStation = { id: string; name: string; lat: number; lon: number; last: string | null; latest: { variable: string; value: number | null; date: string; n_last_365d: number }[] };
 
 /** A layer the product offers but this data run does not hold: it stays in the switch, disabled, with the reason. */
 export type MissingLayer = { id: ProductId; label: string; why: string };
@@ -161,12 +168,13 @@ function chlProduct(m: Manifest, now: Date): ExploreProduct | null {
       ageGrid: gridSpec(c?.age_grid),
       referenceDate: c?.reference_date ?? null,
       sensor: "Sentinel-3 OLCI, 300 m",
+      besideLandLeftOut: appliesAdjacency(olci),
     });
   }
   for (const d of days) {
     const date = d.time.observed_date;
     if (!date || !d.grid) continue;
-    frames.push({ id: `olci:${date}`, product: "chl", track: "olci", label: day(date), stamp: `seen ${day(date)}`, start: date, end: date, kind: "measured", past: false, volume: coverage(d), fresh: freshOf(d.freshness, date, now), grid: gridSpec(d.grid), sensor: "Sentinel-3 OLCI, 300 m" });
+    frames.push({ id: `olci:${date}`, product: "chl", track: "olci", label: day(date), stamp: `seen ${day(date)}`, start: date, end: date, kind: "measured", past: false, volume: coverage(d), fresh: freshOf(d.freshness, date, now), grid: gridSpec(d.grid), sensor: "Sentinel-3 OLCI, 300 m", besideLandLeftOut: appliesAdjacency(d) });
   }
   if (olci || days.length) tracks.push({ id: "olci", product: "chl", label: "OLCI 300 m", days: days.filter((d) => d.time.observed_date).map((d) => ({ date: d.time.observed_date!, volume: d.grid ? (coverage(d) ?? 0) : 0 })) });
   const viirs = satelliteLatest(m, "viirs750");
@@ -295,17 +303,6 @@ function currentsModel(m: Manifest, now: Date): ExploreModel["currents"] {
   };
 }
 
-/**
- * The variables a station has samples of, from what the slim station list carries: its latest toxin and
- * Pseudo-nitzschia values and its recent series (which include extracted chlorophyll). The slim list carries no
- * water temperature, which every CalHABMAP pier samples with each bottle, so it is taken as measured. A local
- * rule until Research exports `stationsMeasuring(varId)` (lead plan, cross-agent contracts).
- */
-export function stationVars(s: Pick<StationLite, "latest" | "recent">): string[] {
-  const recent = Object.entries(s.recent ?? {}).filter(([, series]) => series.some(([, v]) => v !== null)).map(([k]) => k);
-  return [...new Set([...s.latest.map((x) => x.variable), ...recent, "temp"])];
-}
-
 const LAYER_ORDER: ProductId[] = ["chl", "sst", "charm", "outlook"];
 const MISSING_LABEL: Record<ProductId, string> = { chl: "Chlorophyll", sst: "Temperature", charm: "C-HARM", outlook: "Outlook" };
 
@@ -328,7 +325,7 @@ export function buildExploreModel({ manifest, derived, stations, baseUrl, now }:
     products,
     missing,
     currents,
-    stations: (stations ?? []).map((s) => ({ id: s.station_id, name: s.name, lat: s.lat, lon: s.lon, last: s.latest.map((x) => x.date).sort().pop() ?? null, vars: stationVars(s) })),
+    stations: (stations ?? []).map((s) => ({ id: s.station_id, name: s.name, lat: s.lat, lon: s.lon, last: s.latest.map((x) => x.date).sort().pop() ?? null, latest: s.latest.map((x) => ({ variable: x.variable, value: x.value, date: x.date, n_last_365d: x.n_last_365d })) })),
     axis: [first, addDays(last, 1)],
     extent: g ? gridBounds(g) : null,
   };

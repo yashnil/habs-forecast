@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import { cx } from "../util";
 import { SCROLL_CONDENSE } from "../motion";
 import { usePageLayoutEffect, type PageMode, type PaneDetent } from "./pane";
@@ -50,7 +50,8 @@ export function useScrollCondense<T extends HTMLElement>(after = SCROLL_CONDENSE
   useEffect(() => {
     const sc = scrollerOf(ref.current);
     if (!sc) return;
-    // hysteresis, so the header's own change of height never flips it back
+    // hysteresis: it lets go well before the top, and a caller that changes height keeps its room (DeskHeader),
+    // so the scroller's position never moves under the reader because of the change
     const read = () => setOn((was) => (was ? sc.scrollTop > after * 0.4 : sc.scrollTop > after));
     read();
     sc.addEventListener("scroll", read, { passive: true });
@@ -82,8 +83,33 @@ export interface DeskHeaderProps {
 
 export function DeskHeader({ context, title, titleProps, status, actions, sticky = true, condense = true, pinned, className, children }: DeskHeaderProps) {
   const [ref, small] = useScrollCondense<HTMLElement>();
+  const on = condense && small;
+  // Condensing never moves the page. The header keeps the room it had: what it loses in height it carries as a
+  // margin under itself, so nothing below shifts, the scroller's position is not adjusted, and the header cannot
+  // flip back and forth across its own threshold however much taller it was (a 90 px change on Research).
+  const full = useRef(0);
+  const [hold, setHold] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (!on) {
+      setHold(0);
+      const read = () => {
+        full.current = el.offsetHeight;
+      };
+      read();
+      const ro = new ResizeObserver(read);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+    const read = () => setHold(Math.max(0, full.current - el.offsetHeight));
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [on, ref]);
   return (
-    <header ref={ref} className={cx(s.header, sticky && s.sticky, className)} data-condensed={condense && small ? "" : undefined} data-nx-desk-header>
+    <header ref={ref} className={cx(s.header, sticky && s.sticky, className)} data-condensed={on ? "" : undefined} style={on && hold ? { marginBottom: hold } : undefined} data-nx-desk-header>
       <div className={s.headMain}>
         {context ? <p className={s.context}>{context}</p> : null}
         <h1 className={s.title} {...titleProps}>
@@ -163,9 +189,9 @@ export function DeskSticky({ className, children, ...rest }: ComponentPropsWitho
  * a reading that is open, so its marks stay explained however far the reader scrolls. An ordinary block on a
  * phone sheet, where it would crowd the resting detent.
  */
-export function MarginSticky({ className, children, ...rest }: ComponentPropsWithoutRef<"div">) {
+export function MarginSticky({ edge = "bottom", className, children, ...rest }: ComponentPropsWithoutRef<"div"> & { /** bottom (default): at the column's foot; top: at its head, for a legend above the reading it explains */ edge?: "top" | "bottom" }) {
   return (
-    <div className={cx(s.marginSticky, className)} data-nx-margin-sticky {...rest}>
+    <div className={cx(s.marginSticky, className)} data-nx-margin-sticky data-edge={edge} {...rest}>
       {children}
     </div>
   );

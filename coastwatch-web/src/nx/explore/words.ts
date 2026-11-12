@@ -9,7 +9,7 @@ import { day, fixed, range, sig } from "@/nx/ds/format";
 import { runKindWord } from "@/lib/modelTime";
 import type { FreshnessState } from "@/lib/freshness";
 import type { CurrentFrame, ExploreFrame, ExploreProduct, ProductId } from "./model";
-import type { GapPosition } from "./read";
+import { cellSizeWords, type GapPosition } from "./read";
 
 export const CHL_DOMAIN: [number, number] = [0.05, 50];
 export const CHL_TICKS = [0.1, 1, 10];
@@ -173,4 +173,24 @@ export function aboutWords(v: number): string {
 
 export function frameSpanWords(f: ExploreFrame): string {
   return f.start === f.end ? day(f.start) : range(f.start, f.end);
+}
+
+/** "Chlorophyll in this 300 m cell": a reading is one cell of the layer's grid, and its title says which. */
+export function readoutTitle(id: ProductId, cell: { widthKm: number; heightKm: number } | null): string {
+  const what = id === "chl" ? "Chlorophyll" : id === "sst" ? "Sea temperature" : id === "charm" ? "C-HARM" : "Outlook";
+  return cell ? `${what} in this ${cellSizeWords(cell)} cell` : `${what} here`;
+}
+
+/** The layer's kind and date in a few words, for the line that stays above a reading: "measured, latest view Nov 2–7 (old)". */
+export function contextWords(p: Pick<ExploreProduct, "kind" | "pastRun">, f: ExploreFrame): string {
+  const kind = p.pastRun && (p.kind === "model" || p.kind === "outlook") ? `${p.kind}, past run` : p.kind;
+  const when = f.label === "Latest" && f.start !== f.end ? `latest view ${range(f.start, f.end)}` : f.kind === "outlook" ? `mean of ${range(f.start, f.end)}` : f.kind === "model" ? `valid ${day(f.end)}` : day(f.end);
+  return `${kind}, ${when}${oldMark(f.fresh)}`;
+}
+
+const latWords = (lat: number) => `${Math.floor(Math.abs(lat))}°${String(Math.round((Math.abs(lat) % 1) * 60)).padStart(2, "0")}′ ${lat < 0 ? "S" : "N"}`;
+
+/** A layer that has no cells at the reader's port: what is missing, and where the layer does have cells. */
+export function coverageNote(layer: string, portName: string, box: [number, number, number, number]): string {
+  return `${layer} is not published for the water at ${portName} in this data run: its cells run from ${latWords(box[1])} to ${latWords(box[3])}. The chart is on ${portName}; "Fit the data" on the chart goes to where the layer is.`;
 }

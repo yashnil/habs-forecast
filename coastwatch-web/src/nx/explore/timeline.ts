@@ -125,3 +125,17 @@ export function qualityHours<T extends { id: string; time: string; mean: boolean
   const from = Math.max(0, Math.min(hours.length - n, i - Math.floor(n / 2)));
   return hours.slice(from, from + n);
 }
+
+/**
+ * Where the frame on show sits among the frames that play: "day 2 of 6", or "hour 5 of 24" while the radar's
+ * hours are the ones stepping. A latest view (which mixes days), a model lead and the 24 h mean are not steps
+ * of a sequence, so they have no count.
+ */
+export function frameCount(p: ExploreProduct, frameId: string, hours: CurrentFrame[], hourId: string | null): string | null {
+  const hs = playHours(hours);
+  const hi = hs.findIndex((h) => h.id === hourId);
+  if (hs.length > 1 && hi >= 0) return `hour ${hi + 1} of ${hs.length}`;
+  const days = playFrames(p);
+  const di = days.findIndex((f) => f.id === frameId);
+  return di >= 0 ? `day ${di + 1} of ${days.length}` : null;
+}

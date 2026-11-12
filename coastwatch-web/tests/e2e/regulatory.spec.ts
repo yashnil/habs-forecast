@@ -6,7 +6,8 @@ import { OK } from "./ports";
  *  (2026-10-09) are listed, unverified. The v12 pages (/, Today, Explore, My Coast, Research) carry
  *  "not verified" on each official stamp instead (tests/e2e/v12-honesty.spec.ts). */
 const WIDTHS: [number, number][] = [[1440, 900], [1024, 768], [768, 1024], [390, 844], [320, 640]];
-for (const path of ["/fisheries", "/sources", "/about", "/ask", "/account", "/privacy", "/terms"]) {
+// v13: /ask and /account are pages of the v13 shell now (no trust pill; official stamps say "not verified" there)
+for (const path of ["/fisheries", "/sources", "/about", "/privacy", "/terms"]) {
   test(`${path}: the trust pill says "not verified" in words at every width and opens the agencies`, async ({ page }) => {
     for (const [width, height] of WIDTHS) {
       await page.setViewportSize({ width, height });

@@ -18,8 +18,11 @@ const DAY = 86_400_000;
 export interface PlotSyncValue {
   /** Where the crosshair is, on x (ms on a time axis); null when nothing is hovered. */
   hoverT: number | null;
-  /** The pinned sample: which plot and where on x. */
-  pinned: { plot: string; t: number } | null;
+  /**
+   * The pinned sample: where on x, and which plot pinned it. A page may pin from outside with `{ t }` alone (a
+   * row chosen in a table, a day in the address): every plot inside then shows its own sample there as pinned.
+   */
+  pinned: { plot?: string; t: number } | null;
 }
 type SyncCtx = PlotSyncValue & { setHover: (t: number | null, p?: PlotPoint | null) => void; setPinned: (v: PlotSyncValue["pinned"], p?: PlotPoint | null) => void };
 const Sync = createContext<SyncCtx | null>(null);
@@ -155,7 +158,7 @@ export function Plot({ label, data, x: xs, y: ys = {}, height = 280, margin, des
     return Math.abs(geo.x(shown[i].t) - geo.x(t)) <= tolPx ? shown[i] : null;
   };
   const focus = near(sync.hoverT, 24);
-  const pinned = sync.pinned && sync.pinned.plot === id ? near(sync.pinned.t, 0.5) : null;
+  const pinned = sync.pinned && (sync.pinned.plot === undefined || sync.pinned.plot === id) ? near(sync.pinned.t, 0.5) : null;
   const [announce, setAnnounce] = useState("");
 
   const pin = (p: PlotPoint | null) => {
@@ -396,13 +399,16 @@ export function AxisY({ title, ticks }: AxisYProps) {
   const fmt = g.ySpec.type === "log" ? logTickLabel : g.ySpec.format;
   return (
     <g className={s.axis} data-axis="y">
-      {yTickList(g, ticks).map((v) => (
-        <text key={v} x={g.left - 8} y={g.y(v)} dy="0.32em" textAnchor="end" className={s.tickLabel}>
-          {fmt(v)}
-        </text>
-      ))}
+      {yTickList(g, ticks).map((v) =>
+        // with little room above the plot the title takes the top tick's place: the two are never set on each other
+        title && g.top < 24 && g.y(v) < g.top + 14 ? null : (
+          <text key={v} x={g.left - 8} y={g.y(v)} dy="0.32em" textAnchor="end" className={s.tickLabel}>
+            {fmt(v)}
+          </text>
+        ),
+      )}
       {title ? (
-        <text x={0} y={g.top - 14} className={s.axisTitle}>
+        <text x={0} y={Math.max(11, g.top - 14)} className={s.axisTitle}>
           {title}
         </text>
       ) : null}
@@ -468,6 +474,13 @@ function PointMark({ p, x, y, base, r = 3.5 }: { p: PlotPoint; x: number; y: num
       return <circle cx={x} cy={cy} r={r} className={s.ptHollow} />;
     case "stale":
       return <circle cx={x} cy={cy} r={r} className={s.ptDash} />;
+    case "rejected":
+      return (
+        <g>
+          <circle cx={x} cy={base} r={r + 0.5} className={s.ptHollow} />
+          <path d={`M${x - r} ${base + r}L${x + r} ${base - r}`} className={s.ptCross} />
+        </g>
+      );
     default:
       // missing, not collected, unavailable, outside coverage: a small cross on the baseline, never a value
       return <path d={`M${x - r} ${base - r}l${r * 2} ${r * 2}M${x + r} ${base - r}l${-r * 2} ${r * 2}`} className={s.ptCross} />;

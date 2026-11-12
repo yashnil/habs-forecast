@@ -38,13 +38,14 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await expect(m).toContainText("Official, not verified");
   });
 
-  test("a test is a named lab result with its age; the agenda keeps it as a dated line (T6, T8, T17)", async ({ page }) => {
+  test("a test is a named lab result with its age, in the domoic acid gate (T6, T8, T17)", async ({ page }) => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
-    // the agenda opens on what is next; the earlier dates are one control away
-    await m.getByRole("button", { name: /^All \d+ dates, earlier and later$/ }).click();
-    await expect(m).toContainText("CDPH test, Monterey Bay Dungeness");
-    await expect(m).toContainText("All 6 under the action level. 14 days ago.");
+    // v13: the test is held by the gate it informs (CDPH tests), with the highest result, the count and the age
+    const gate = m.getByTestId("gate-domoic");
+    await expect(gate).toContainText("CDPH tests");
+    await expect(gate).toContainText("Dungeness test, Monterey Bay, Sep 28: highest 9.8 of 30 ppm, 6 samples");
+    await expect(gate).toContainText("14 days ago");
     await expect(m.getByRole("button", { name: /^Measured · CDPH · sampled Sep 28/ }).first()).toBeVisible();
     // the figure set on the chart names the action level beside it, never a bare number
     await expect(page.locator("[data-nx-sounding=test]")).toContainText("of 30 ppm", { timeout: 15_000 });
@@ -63,7 +64,8 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
     await expect(m.getByRole("heading", { level: 1 })).toBeVisible();
-    for (const name of ["Whale", "Tests", "Models", "Others"]) await m.getByRole("button", { name: new RegExp(`^${name}`) }).click();
+    // v13: CDFW's own clauses and the other test sites are lines of their gates; models and others are rows
+    for (const name of ["Models", "Others"]) await m.getByRole("button", { name: new RegExp(`^${name}`) }).click();
     const text = await m.innerText();
     expect(text).not.toMatch(FORBIDDEN);
     for (const w of ["Measured", "Model or prediction", "Official, not verified", "No view: no data, not a low value", "(old)"]) await expect(m).toContainText(w);
@@ -127,7 +129,8 @@ test.describe("Explore", () => {
     await expect(m).toContainText("a lower probability does not mean open or safe");
     await expect(m).toContainText("Past run: every day it covers is before today.");
     await expect(m).toContainText("Currents");
-    await expect(m).toContainText("not over a model");
+    // v13: the time rail (and its "Also" line) runs along the foot of the chart, outside the margin
+    await expect(page.getByTestId("nx-timerail")).toContainText("not over a model");
     expect(await m.innerText()).not.toMatch(FORBIDDEN);
   });
 
@@ -186,17 +189,19 @@ test.describe("My Coast", () => {
   });
 
   test("the worksheet fills nothing in; a sourced reference enters only on a tap; every output is hypothetical and waits in words (T45, T47, E2)", async ({ page }) => {
-    await page.goto(`${OK}/coast?place=port-592`);
-    const ws = page.getByTestId("coast-worksheet");
-    await expect(page.getByText("Your own numbers; nothing is filled in.")).toBeVisible();
-    const values = await ws.locator("input[type=text], input:not([type])").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
+    // v13: the worksheet is the trip workspace, My Coast's second state (?view=trip)
+    await page.goto(`${OK}/coast?place=port-592&view=trip`);
+    const ws = page.getByTestId("nx-coast");
+    await expect(page.getByText("Nothing is filled in. A blank is a gap, never 0.")).toBeVisible();
+    const values = await page.getByTestId("trip-inputs").locator("input[type=text], input:not([type])").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
     expect(values.length).toBeGreaterThan(4);
     expect(values.every((v) => v === "")).toBe(true);
     await expect(ws).toContainText("Hypothetical, from your numbers.");
-    await expect(page.getByTestId("ledger-net")).toContainText("waiting for");
-    expect(await ws.innerText()).not.toMatch(/\$0\b/);
+    await expect(page.getByTestId("trip-net")).toContainText("waiting for");
+    // no figure reads as $0 while it waits (the waterfall's axis has a $0 tick: a scale, not a figure)
+    for (const id of ["trip-hero", "trip-figures"]) expect(await page.getByTestId(id).innerText()).not.toMatch(/\$0\b/);
     await ws.getByRole("button", { name: /Use \$3\.51\/lb, a 2024 statewide average/ }).click();
-    await expect(ws.getByRole("textbox", { name: /^Price/ })).toHaveValue("3.51");
+    await expect(ws.getByRole("textbox", { name: "Price", exact: true })).toHaveValue("3.51");
     await expect(ws).toContainText("CDFW's 2024 statewide average");
     expect(await ws.innerText()).not.toMatch(FORBIDDEN);
   });
