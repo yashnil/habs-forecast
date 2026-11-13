@@ -1,6 +1,6 @@
 # Neritic v15 QA: acceptance, offline, accessibility, performance
 
-Recorded 2026-11-13 on branch `v15/e` merged with `feat/neritic-v15` at fd1dce321 (A, B, C, D, E and the lead's fixes). Every run below used the
+Recorded 2026-11-13; the final numbers below are for `feat/neritic-v15` at f54e10d1a (the code of the preview). Every run below used the
 production build on fixture data, with the server clock and the device clock both pinned to 2026-10-13T06:00Z:
 
 ```
@@ -26,7 +26,7 @@ Local runs use installed Chrome on macOS. They have not been run in a Linux cont
 
 Walkthrough at the desk size: [walkthrough-1-online.webm](walkthrough-1-online.webm), which covers planning, the
 comparison and the recheck. [walkthrough-2-offline.webm](walkthrough-2-offline.webm) covers the same profile reopened
-with no network: the briefing, the outcome and the history. The script also takes the 320 × 640 frames, which stay in
+with no network: the briefing, the outcome and the history. The script also takes the 1280 × 800 (laptop) and 320 × 640 frames, which stay in
 the scratch output and are not copied here.
 
 ## Acceptance (DIRECTION §17): `tests/e2e/v15/`
@@ -45,7 +45,7 @@ the scratch output and are not copied here.
 | K: known evidence survives (review blocker) | `k-known-evidence.spec.ts` | NWS adds a small craft advisory and raises the departure day to 15–25 kt, and a recheck finds both. The sea endpoint then returns 503 and the next recheck is incomplete. Offline, a third recheck compares with the saved copy. At every step the workspace's departure day and the briefing still show the advisory and 15–25 kt, and the briefing says when each was last read. The feed never says "nothing new" or "No changes found" | pass |
 | J: existing pages | `j-existing.spec.ts` | Today, Explore, My Coast and its worksheet, Research, Alerts and Notices load at desk and phone sizes with their primary element and no page errors. The chart host is mounted | pass |
 
-Final run of `tests/e2e/v15` (44 tests: A–K, a11y and perf): **44 passed, 0 failed**.
+Final run of `tests/e2e/v15` at f54e10d1a (49 tests: A–K, a11y, perf, the not-found state and the desk/laptop layout at 1440, 1280, 1100 and 1024 px): **49 passed, 0 failed** (inside the full run below).
 
 Routed tests (B, C, D) block the service worker in their context, because once the trips page has registered it, the
 worker fetches `/coast/data` itself and bypasses `page.route`. K keeps the worker on and routes on the context instead,
@@ -53,18 +53,17 @@ which also catches the worker's own requests.
 
 ## Regression (the whole e2e suite)
 
-The full `tests/e2e` (449 tests in 49 files: v13, v14, journeys, a11y, offline, pilot, v15 and the rest) ran under the
-official `playwright.config.ts` (six fixture servers, `CW_E2E_PORT_BASE=6500`) in 8 shards at 3 workers, at 03894550e:
-**411 passed, 38 skipped, 0 failed**. The 38 skips are the suites' own conditional skips (live and pilot paths). After
-the final merge (fd1dce321), `tests/e2e/v15` was rerun: 44 passed.
+The full `tests/e2e` (455 tests: v13, v14, journeys, a11y, offline, pilot, v15 and the rest) ran under the official
+`playwright.config.ts` (six fixture servers, `CW_E2E_PORT_BASE=6600`) in 8 shards at 3 workers, at f54e10d1a:
+**417 passed, 38 skipped, 0 failed** (455 tests, at f54e10d1a). The 38 skips are the suites' own conditional skips (live and pilot paths). 
 
-Unit (`npm test`, vitest) at fd1dce321: **1853 passed, 74 skipped** in 136 files. `typecheck`, `lint` (0 errors) and
+Unit (`npm test`, vitest) at f54e10d1a: **1857 passed, 74 skipped**. `typecheck`, `lint` (0 errors) and
 `lint:design` are clean.
 
 ## Offline
 
 - `npm run test:offline` (`scripts/offline-proof.mjs`, the v12/v13 field-pack proof) passes against service worker
-  `neritic-sw-7`: exit 0, 57 PASS and 0 FAIL (at 03894550e).
+  `neritic-sw-7`: exit 0, 57 PASS and 0 FAIL (at f54e10d1a).
 - The trips page keeps itself, its code, its fonts and the static tier's chart pictures in `neritic-trips-v1` each
   time it opens online. Offline, every `/coast/trips` address (history, `?id=`, `&view=briefing`) is answered from that
   copy, marked with the time it was kept. The offline notice then reads "Offline. Showing what this device saved …";
@@ -101,8 +100,8 @@ workspace passes it. LCP rises when the whole suite shares one machine, so read 
 2. After an offline navigation, and briefly after a recheck, the trips page can show its "Reading the trips kept on this
    device…" placeholder for a moment before the history or the workspace returns. The screenshot script waits for the
    page to settle.
-3. The change feed's headline and change-history stops take about 3 s after a recheck to reach full opacity (their
-   entrance motion), so screenshots wait for that.
+3. (Resolved at 77606658c: the change feed, the trip's state and its next action are readable from their first frame;
+   motion is a 0.16 s settle, none with reduced motion.)
 4. Offline at phone widths, the static-tier chart picture can draw as a partial rectangle over the water. This is shell
    behaviour, not specific to trips.
 5. The trip id travels in `?id=` (an opaque random key), so the site's server sees it like any address. Nothing the trip

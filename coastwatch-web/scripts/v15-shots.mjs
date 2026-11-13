@@ -27,6 +27,7 @@ const MOSS = "port-592";
 const CHANNEL = process.env.CW_SHOTS_CHANNEL ?? "chrome";
 const SIZES = [
   { tag: "1440", viewport: { width: 1440, height: 900 } },
+  { tag: "1280", viewport: { width: 1280, height: 800 } },
   { tag: "390", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { tag: "320", viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true },
 ];
