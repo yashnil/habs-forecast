@@ -582,6 +582,7 @@
   background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-variant-numeric: tabular-nums;
 }
 .tag[data-compact] { max-width: 180px; padding: var(--s-6) var(--s-10); }
+.tag > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tagFig { margin: 0; font: var(--w7) var(--fs-18) / 1.2 var(--font); white-space: nowrap; }
 .tagFig small { font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); }
 .tag[data-compact] .tagFig { font-size: var(--fs-15); }

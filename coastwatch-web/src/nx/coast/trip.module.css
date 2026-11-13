@@ -158,11 +158,14 @@
   .pass [role="radio"] { min-height: 44px; }
   /* what is scrolled to stays clear of the pinned strip above and the result bar below */
   .pass :is(input, button, select, a, [tabindex]) { scroll-margin: 132px 0 140px; }
+  @media (max-height: 720px) {
+    .pass :is(input, button, select, a, [tabindex]) { scroll-margin: 100px 0 100px; }
+  }
   .netFig { font-size: var(--fs-54); }
   .front { display: flex; flex-direction: column; }
   .strip { display: block; margin: 0 calc(-1 * var(--gutter)); border-top: var(--hair) solid var(--line); order: 0; }
   .hy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-10); min-height: 0; padding: var(--s-8) var(--gutter) var(--s-6); white-space: normal; }
-  .warn.warn { display: flex; width: 100%; margin: 0; min-height: 44px; padding: var(--s-6) var(--gutter) var(--s-8); border-top: var(--hair) solid var(--line); font-size: var(--fs-15); line-height: 1.3; }
+  .warn.warn { display: flex; width: 100%; margin: 0; min-height: 44px; padding: var(--s-4) var(--gutter) var(--s-6); border-top: var(--hair) solid var(--line); font-size: var(--fs-13); line-height: 1.3; }
   .carried { padding: var(--s-4) var(--gutter); }
   .figs { display: contents; }
   .wf { order: 1; height: 196px; margin-top: var(--s-14); flex: none; }
@@ -182,10 +185,11 @@
     position: sticky; bottom: 0; z-index: 3; display: grid; gap: var(--s-8); margin: 0 calc(-1 * var(--gutter)); padding: var(--s-8) var(--gutter) var(--s-10);
     border-top: var(--hair) solid var(--line); background: var(--paper);
   }
-  .netBarText { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-8); margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+  /* one line whatever the font: the scenario words give way with an ellipsis (their whole text stays in the bar) */
+  .netBarText { display: flex; flex-wrap: nowrap; align-items: baseline; gap: 0 var(--s-8); margin: 0; font-size: var(--fs-13); color: var(--ink-2); white-space: nowrap; min-width: 0; }
   .netBarText strong { font: var(--w7) var(--fs-18) / 1.2 var(--font); color: var(--ink); }
   .netBarLabel { color: var(--ink-2); }
-  .netBarShowing { margin-left: auto; }
+  .netBarShowing { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .netBarText[data-quiet] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 
