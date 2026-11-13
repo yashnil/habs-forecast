@@ -19,7 +19,7 @@ import { useCurrentPort, useHomePortKey, usePorts, useSavedPortKey } from "@/nx/
 import { portScene } from "@/nx/shell/views";
 import type { FisheryId } from "@/pilot/contracts";
 import { FISHERY_OPTIONS } from "@/pilot/facts";
-import s from "@/nx/alerts/alerts.module.css";
+import s from "./account.module.css";
 
 /**
  * Your data and preferences: what Neritic remembers in this browser and how it behaves, in one place. The home

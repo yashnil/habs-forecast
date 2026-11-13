@@ -132,11 +132,18 @@ export function publicRefs(html: string): string[] {
   return [...out];
 }
 
-/** The baked chart the static tier draws, in every mode, and the land it bakes data frames against. */
+/**
+ * The baked chart the static tier draws, in every mode, and the land it bakes data frames against; and the v14 lit
+ * sea's depth (the depth areas, their seamless isobath edges and the fathom contours), so the live chart still
+ * shows depth offline (about 0.6 MB together).
+ */
 export const CHART_FILES = [
   ...["day", "dusk", "night"].flatMap((m) => [`/chart/chart-${m}-ca.webp`, `/chart/chart-${m}-monterey.webp`]),
   "/chart/land.geojson",
   "/chart/opening-canyon.webp",
+  "/chart/depth.geojson",
+  "/chart/contours.geojson",
+  "/chart/isobaths.geojson",
 ];
 
 const savedHtml = (html: string, at: string, url: string, label: string) =>

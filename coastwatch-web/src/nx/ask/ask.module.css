@@ -13,21 +13,23 @@
 }
 .label {
   font-size: var(--type-body);
-  font-weight: 600;
+  font-weight: var(--w6);
 }
 .select {
   min-height: var(--target);
   max-width: 100%;
   padding: 0 var(--s-12);
-  border: var(--rule) solid var(--ink);
-  border-radius: var(--r-1);
+  border: 1.5px solid var(--ink-3);
+  border-radius: var(--r-ctl);
   background: var(--paper);
   color: var(--ink);
-  font: 500 var(--type-body) / 1.2 var(--font-sans);
+  font: var(--w5) var(--type-body) / 1.2 var(--font-sans);
 }
 .tag {
   padding: 0 var(--s-8);
   border: var(--hair) solid var(--ink-2);
+  border-radius: var(--r-tag);
+  font-weight: var(--w6);
   font-size: var(--type-small);
   line-height: var(--lh-body);
   white-space: nowrap;
@@ -70,7 +72,7 @@
 }
 .h2 {
   margin: var(--s-24) 0 var(--s-12);
-  font: 600 var(--type-head) / var(--lh-snug) var(--font-sans);
+  font: var(--w7) var(--type-head) / var(--lh-snug) var(--font-sans);
 }
 
 /* ---------------------------------------------------------------- turns */
@@ -87,14 +89,14 @@
 .asked {
   margin: 0 0 var(--s-4);
   font-size: var(--type-body);
-  font-weight: 600;
+  font-weight: var(--w6);
   color: var(--ink-2);
 }
 .question {
   margin: 0 0 var(--s-12);
   padding-bottom: var(--s-8);
   border-bottom: var(--rule) solid var(--ink);
-  font: 500 var(--type-head) / var(--lh-snug) var(--font-serif);
+  font: var(--w5) var(--type-head) / var(--lh-snug) var(--font-sans);
   text-wrap: pretty;
 }
 .answer {
@@ -117,7 +119,7 @@
   border-top: var(--hair) solid var(--rule-soft);
 }
 .lead {
-  font: 600 var(--type-lead) / var(--lh-snug) var(--font-sans);
+  font: var(--w6) var(--type-lead) / var(--lh-snug) var(--font-sans);
   color: var(--ink);
 }
 .plain {
@@ -125,18 +127,18 @@
 }
 .by {
   font-size: var(--type-small);
-  font-weight: 400;
+  font-weight: var(--w5);
   color: var(--ink-2);
 }
 .cite {
   margin-left: var(--s-4);
   font-size: var(--type-small);
-  font-weight: 400;
+  font-weight: var(--w5);
   color: var(--ink-2);
 }
 .kicker {
   font-size: var(--type-body);
-  font-weight: 600;
+  font-weight: var(--w6);
 }
 .chips {
   list-style: none;
@@ -152,10 +154,10 @@
 }
 .chip {
   max-width: 100%;
-  font-weight: 500;
+  font-weight: var(--w5);
 }
 .chipNo {
-  font-weight: 600;
+  font-weight: var(--w6);
 }
 .chipName {
   overflow: hidden;
@@ -187,14 +189,14 @@
 }
 .old {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: var(--w6);
 }
 .ruled {
   padding-top: var(--s-8);
   border-top: var(--hair) solid var(--rule-soft);
 }
 .error {
-  font-weight: 600;
+  font-weight: var(--w6);
 }
 
 /* ---------------------------------------------------------------- asking */
@@ -207,7 +209,7 @@
   gap: var(--s-8);
 }
 .suggest {
-  font-weight: 400;
+  font-weight: var(--w5);
   text-align: left;
 }
 .form {
@@ -220,11 +222,11 @@
   min-width: 0;
   min-height: var(--target);
   padding: 0 var(--s-12);
-  border: var(--rule) solid var(--ink);
-  border-radius: var(--r-1);
+  border: 1.5px solid var(--ink-3);
+  border-radius: var(--r-ctl);
   background: var(--paper);
   color: var(--ink);
-  font: 400 var(--type-body) / 1.2 var(--font-sans);
+  font: var(--w5) var(--type-body) / 1.2 var(--font-sans);
 }
 .input::placeholder {
   color: var(--ink-2);
@@ -237,3 +239,6 @@
   line-height: var(--lh-body);
   overflow-wrap: anywhere;
 }
+
+/* v14: fields take the synthesis focus ring */
+.select:focus-visible, .input:focus-visible { outline: 2px solid var(--ultra); outline-offset: 2px; border-color: var(--ink); }

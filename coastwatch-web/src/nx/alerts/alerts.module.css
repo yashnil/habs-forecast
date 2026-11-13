@@ -1,276 +1,109 @@
-/* Alerts and Your data: desk pages of lists and settings. Tokens only (src/nx/ds/tokens.css). */
+/* Alerts (v14 synthesis): the change ticket anchored to its port and the delivery dock. From the approved prototype's
+   style.css (.alert-ticket, .al-*, .alerts-dock, .kinds); tokens only (src/nx/ds/tokens.css). */
 
-.page {
-  display: block;
-  color: var(--ink);
-}
-.section + .section {
-  margin-top: var(--s-32);
-}
-.h2 {
-  margin: 0 0 var(--s-12);
-  font: 600 var(--type-head) / var(--lh-snug) var(--font-sans);
-}
-.h3 {
-  margin: 0;
-  font: 600 var(--type-lead) / var(--lh-snug) var(--font-sans);
-}
-.lede {
-  margin: 0 0 var(--s-16);
-  max-width: var(--measure);
-  font-size: var(--type-body);
-  line-height: var(--lh-body);
-  color: var(--ink-2);
-}
-.small {
-  margin: var(--s-8) 0 0;
-  font-size: var(--type-small);
-  line-height: var(--lh-body);
-  color: var(--ink-2);
-}
-.status {
-  margin: var(--s-12) 0 0;
-  min-height: var(--s-24);
-  font-size: var(--type-body);
-  line-height: var(--lh-snug);
-}
-.link {
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-thickness: var(--hair);
-  text-underline-offset: 0.2em;
-}
-.link:hover {
-  text-decoration-thickness: var(--rule);
-}
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-8) var(--s-16);
-  margin-top: var(--s-12);
-}
+/* the page element holds the floating objects; it adds no box of its own */
+.page { display: contents; color: var(--ink); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* ---------------------------------------------------------------- the inbox */
-.items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: var(--rule) solid var(--ink);
-}
-.item {
-  display: grid;
-  grid-template-columns: var(--s-16) minmax(0, 1fr);
-  column-gap: var(--s-12);
-  padding: var(--s-16) 0;
-  border-bottom: var(--hair) solid var(--rule-soft);
-}
-.dot {
-  width: var(--s-8);
-  height: var(--s-8);
-  margin-top: var(--s-8);
-  background: var(--ink);
-}
-.item[data-read] .dot {
-  background: transparent;
-  outline: var(--hair) solid var(--ink-2);
-  outline-offset: -1px;
-}
-.itemPort {
-  margin: 0 0 var(--s-4);
-  font-size: var(--type-small);
-  font-weight: 600;
-  line-height: var(--lh-snug);
-}
-.itemTitle {
-  margin: 0;
-  font: 600 var(--type-lead) / var(--lh-snug) var(--font-sans);
-  text-wrap: pretty;
-}
-.item[data-read] .itemTitle {
-  font-weight: 500;
-}
-.itemChange {
-  margin: var(--s-8) 0 0;
-  font-size: var(--type-body);
-  line-height: var(--lh-body);
-  color: var(--ink-2);
-  max-width: var(--measure);
-}
-.itemMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-4) var(--s-12);
-  margin: var(--s-8) 0 0;
-  font-size: var(--type-small);
-  line-height: var(--lh-body);
-  color: var(--ink-2);
-}
-.tag {
-  padding: 0 var(--s-4);
-  border: var(--hair) solid var(--ink-2);
-  color: var(--ink);
-}
-.itemBody {
-  margin: var(--s-8) 0 0;
-  font-size: var(--type-body);
-  line-height: var(--lh-body);
-  max-width: var(--measure);
-}
-.empty {
-  margin: 0;
-  padding: var(--s-16) 0;
-  border-top: var(--rule) solid var(--ink);
-  border-bottom: var(--hair) solid var(--rule-soft);
-  font-size: var(--type-body);
-  line-height: var(--lh-body);
-  max-width: var(--measure);
-}
+.link { color: var(--ultra); font-weight: var(--w6); text-decoration: underline dashed; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+.link:hover { color: var(--ultra-deep); text-decoration-style: solid; }
 
-/* ---------------------------------------------------------------- followed ports */
-.ports {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: var(--rule) solid var(--ink);
-}
-.port {
-  padding: var(--s-12) 0;
-  border-bottom: var(--hair) solid var(--rule-soft);
-}
-.portHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-8) var(--s-16);
-}
-.portName {
-  font: 500 var(--type-head) / var(--lh-snug) var(--font-serif);
-}
-.portNote {
-  margin: var(--s-4) 0 0;
-  font-size: var(--type-small);
-  line-height: var(--lh-body);
-  color: var(--ink-2);
-}
-.offer {
-  margin-bottom: var(--s-24);
-  padding: var(--s-16);
-  background: var(--wash);
-  border-left: 3px solid var(--ink);
-}
-.offer p {
-  margin: var(--s-8) 0 var(--s-12);
-  font-size: var(--type-body);
-  line-height: var(--lh-body);
-}
-.add {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--s-8) var(--s-12);
-  margin-top: var(--s-16);
-}
-.field {
-  display: grid;
-  gap: var(--s-4);
-  min-width: 0;
-  flex: 1 1 200px;
-}
-.label {
-  font-size: var(--type-small);
-  font-weight: 600;
-  line-height: var(--lh-snug);
-}
-.select {
-  width: 100%;
-  min-height: var(--target);
-  padding: 0 var(--s-12);
-  border: var(--rule) solid var(--ink);
-  border-radius: var(--r-1);
-  background: var(--paper);
-  color: var(--ink);
-  font: 500 var(--type-body) / 1.2 var(--font-sans);
-}
+/* ------------------------------------------------------------ the ticket */
+.ticket { color: var(--ink); }
+.kicker { display: flex; align-items: center; gap: var(--s-8); margin: 0; }
+.what { margin: var(--s-14) 0 var(--s-2); font-size: var(--fs-15); line-height: 1.35; font-weight: var(--w6); color: var(--ink-2); }
+.move { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-6) var(--s-10); margin: var(--s-4) 0 0 -2px; font-size: var(--fs-54); line-height: 1; font-weight: var(--w7); letter-spacing: -0.05em; white-space: nowrap; font-variant-numeric: lining-nums; }
+.was { color: var(--ink-2); font-weight: var(--w6); text-decoration: line-through; text-decoration-thickness: 2.5px; text-decoration-color: var(--ink-3); }
+.arr { width: 30px; height: 22px; align-self: center; flex: none; }
+.arr path { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.now { color: var(--coral-ink); }
+.tag { align-self: center; display: inline-flex; align-items: center; gap: var(--s-6); padding: var(--s-4) var(--s-6) var(--s-4) var(--s-4); border: 1.5px solid var(--ink-2); border-radius: var(--r-tag); line-height: 1; letter-spacing: 0; }
+.tag > span { font-weight: var(--w7); }
+.tag[data-tone="coral"] { border-color: var(--coral-ink); }
+.tag[data-tone="coral"] > span { color: var(--coral-ink); }
+.before { margin: var(--s-10) 0 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
 
-/* ---------------------------------------------------------------- rows: how alerts reach you, the inventory */
-.rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-top: var(--rule) solid var(--ink);
-}
-.row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s-16);
-  min-height: var(--target);
-  padding: var(--s-12) 0;
-  border-bottom: var(--hair) solid var(--rule-soft);
-  font-size: var(--type-body);
-  line-height: var(--lh-snug);
-}
-.rowLabel {
-  min-width: 0;
-}
-.rowValue {
-  flex: none;
-  max-width: 55%;
-  text-align: right;
-  font-weight: 600;
-}
-.row[data-off] .rowValue {
-  font-weight: 400;
-  color: var(--ink-2);
-}
-.group + .group {
-  margin-top: var(--s-24);
-}
+.line { margin: var(--s-12) 0 var(--s-4); }
 
-/* ---------------------------------------------------------------- preferences */
-.order {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: var(--rule) solid var(--ink);
-  counter-reset: fishery;
+.stamps { display: grid; gap: var(--s-4); margin-top: var(--s-6); }
+.stamp { display: flex; align-items: baseline; gap: var(--s-8); margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.stamp > i { transform: translateY(1px); }
+.flag { display: inline-block; margin-left: var(--s-8); padding: 0 var(--s-6); border-radius: var(--r-tag); background: var(--paper-2); font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink); }
+.noticed { margin: var(--s-2) 0 0 var(--s-18); font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.record { margin: var(--s-12) 0 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
+.record p { margin: 0 0 var(--s-6); }
+
+.offerHead { margin: var(--s-12) 0 0; font-size: var(--fs-25); line-height: 1.12; font-weight: var(--w7); letter-spacing: -0.02em; color: var(--ink); }
+.offerText { margin: var(--s-8) 0 0; font-size: var(--fs-15); line-height: 1.45; color: var(--ink); }
+.empty { margin: var(--s-10) 0 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
+
+.stub { color: var(--ink); }
+.acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-8) var(--s-14); }
+.small { margin: var(--s-8) 0 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
+.offerRow { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); margin-top: var(--s-14); padding-top: var(--s-12); border-top: var(--hair) solid var(--line); }
+.offerRow .small { margin-top: var(--s-2); }
+.rowHead { margin: var(--s-14) 0 0; font-size: var(--fs-15); line-height: 1.3; font-weight: var(--w7); color: var(--ink); }
+.offerRow .rowHead { margin: 0; }
+
+/* the alerts on this device, after the ticket's actions */
+.inbox { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-12); margin-top: var(--s-14); padding-top: var(--s-4); border-top: var(--hair) solid var(--line); }
+.inboxHead { margin: 0; line-height: 1; }
+.items { flex: 1 0 100%; order: 1; list-style: none; margin: 0; padding: 0; }
+.item { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: var(--s-10); padding: var(--s-8) 0; }
+.item + .item { border-top: var(--hair) solid var(--line); }
+.itemG { margin-top: var(--s-4); }
+.itemBody { min-width: 0; }
+.itemPort { margin: 0; font-size: var(--fs-11); font-weight: var(--w6); color: var(--ink-2); }
+.itemTitle { margin: var(--s-2) 0 0; font-size: var(--fs-15); line-height: 1.35; font-weight: var(--w6); }
+.itemPick { display: inline; min-height: 44px; padding: 0; text-align: left; color: var(--ink); font: inherit; text-decoration: underline dashed var(--ink-3); text-underline-offset: 4px; cursor: pointer; }
+.itemPick:hover { color: var(--ultra-deep); }
+.item[data-read] .itemPick { font-weight: var(--w5); }
+.itemMeta { margin: var(--s-2) 0 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.inboxActs { display: flex; flex-wrap: wrap; gap: var(--s-6); margin-left: auto; }
+
+/* ------------------------------------------------------------ the dock: how alerts reach you */
+.dock { padding-bottom: var(--s-8); }
+.delivery { margin: var(--s-8) 0 0; font-size: var(--fs-15); line-height: 1.45; }
+.notKept { margin: var(--s-8) 0 0; padding-left: var(--s-10); border-left: 2px solid var(--ink); font-size: var(--fs-13); line-height: 1.45; }
+.row2 { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--s-8); margin-top: var(--s-10); padding-top: var(--s-4); border-top: var(--hair) solid var(--line); }
+.last { font-size: var(--fs-13); color: var(--ink-2); }
+.dockActs { display: flex; gap: var(--s-2); margin-left: auto; }
+.said { margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink); }
+.said:empty { display: none; }
+/* "What alerts you": the ports followed and their switches, in the ticket's stub (it scrolls when the ticket is tall) */
+.panel { margin-top: var(--s-14); padding-top: var(--s-6); border-top: var(--hair) solid var(--line); }
+
+.ports { list-style: none; margin: 0; padding: 0; }
+.port { padding: var(--s-8) 0; }
+.port + .port { border-top: var(--hair) solid var(--line); }
+.portHead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-12); }
+.portName { font-size: var(--fs-15); font-weight: var(--w7); }
+.portNote { margin: var(--s-2) 0 0; font-size: var(--fs-13); color: var(--ink-2); }
+.portActs { display: flex; justify-content: flex-end; margin-top: var(--s-6); }
+
+.add { margin-top: var(--s-14); }
+.label { display: block; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); }
+.addRow { display: flex; gap: var(--s-8); margin-top: var(--s-4); }
+.select { flex: 1; min-width: 0; height: 46px; padding: 0 var(--s-12); border: 1.5px solid var(--ink-3); border-radius: var(--r-ctl); background: var(--paper); color: var(--ink); font: inherit; font-size: var(--fs-15); }
+.select:focus-visible { outline: 2px solid var(--ultra); outline-offset: 2px; }
+
+.channels { list-style: none; margin: var(--s-6) 0 0; padding: 0; }
+.channel { display: flex; justify-content: space-between; gap: var(--s-12); padding: var(--s-6) 0; font-size: var(--fs-13); font-weight: var(--w6); }
+.channel + .channel { border-top: var(--hair) solid var(--line); }
+.channelState { color: var(--ink); white-space: nowrap; }
+.channel[data-off] { color: var(--ink-2); font-weight: var(--w5); }
+.channel[data-off] .channelState { color: var(--ink-2); }
+
+/* ------------------------------------------------------------ phone: blocks in the sheet */
+@media (max-width: 640px) {
+  .move { font-size: var(--fs-40); gap: var(--s-6) var(--s-10); }
+  .arr { width: 26px; }
+  .dock { margin-top: var(--s-16); }
+  .row2 { gap: 0 var(--s-12); }
+  .dockActs { margin-left: -6px; }
+  .acts > a, .acts > button:first-child { flex: none; }
 }
-.orderItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-12);
-  min-height: var(--target);
-  padding: var(--s-4) 0;
-  border-bottom: var(--hair) solid var(--rule-soft);
-  font-size: var(--type-body);
-  counter-increment: fishery;
-}
-.orderName::before {
-  content: counter(fishery) ". ";
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-2);
-}
-.orderButtons {
-  flex: none;
-  display: flex;
-  gap: var(--s-4);
-}
-.pref {
-  display: grid;
-  gap: var(--s-8);
-  max-width: 480px;
-}
-.pref + .pref {
-  margin-top: var(--s-24);
-}
-.confirm {
-  font-size: var(--type-body);
-  line-height: var(--lh-body);
-}
-.confirm ul {
-  margin: var(--s-12) 0;
-  padding-left: var(--s-24);
+@media (max-width: 360px) {
+  .move { letter-spacing: -0.05em; gap: var(--s-6) var(--s-8); }
+  .offerRow { flex-direction: column; align-items: flex-start; }
 }
