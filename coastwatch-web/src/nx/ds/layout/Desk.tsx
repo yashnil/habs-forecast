@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentPropsWithou
 import { cx } from "../util";
 import { SCROLL_CONDENSE } from "../motion";
 import { usePageLayoutEffect, type PageMode, type PaneDetent } from "./pane";
+import { Sheet } from "../stage/Sheet";
 import s from "./Desk.module.css";
 
 type Data = { [key: `data-${string}`]: string | number | boolean | undefined };
@@ -19,15 +20,22 @@ export interface PageLayoutProps {
    * bar and on the collapsed rail as "Chart · …". Without it they say only "Chart": never a name the chart is not showing.
    */
   chartLabel?: string;
+  /** v14 stage pages: the share of a phone's screen the chart strip keeps over the resting sheet (ds Sheet `map`). */
+  phoneMap?: number;
 }
 
 /**
  * Declares the page's layout (as <ChartScene> declares its view). Renders only a hidden marker, which is what
  * the stylesheet reads, so the server's HTML is already laid out as a desk.
  */
-export function PageLayout({ mode, paneKey, defaultPane = "context", chartLabel }: PageLayoutProps) {
+export function PageLayout({ mode, paneKey, defaultPane = "context", chartLabel, phoneMap }: PageLayoutProps) {
   usePageLayoutEffect(mode, paneKey ?? null, defaultPane, chartLabel ?? null);
-  return <span hidden data-nx-layout={mode} />;
+  return (
+    <>
+      <span hidden data-nx-layout={mode} />
+      {phoneMap != null ? <Sheet map={phoneMap} /> : null}
+    </>
+  );
 }
 
 /** The desk: the page's work. Header, body (main and aside), foot. */

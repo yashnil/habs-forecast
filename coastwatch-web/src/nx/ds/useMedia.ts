@@ -14,8 +14,8 @@ export function useMedia(query: string): boolean {
   );
 }
 
-/** The phone layout (spec section 6): the margin becomes a sheet, the destinations a bottom bar. */
-export const PHONE_QUERY = "(max-width: 720px)";
+/** The phone layout (v14 README §2, the synthesis breakpoint): the chart is a strip, the page a bottom sheet, the sections a tab bar. */
+export const PHONE_QUERY = "(max-width: 640px)";
 export const usePhone = () => useMedia(PHONE_QUERY);
 
 /** An element's content width, kept current with a ResizeObserver. `fallback` until measured. */

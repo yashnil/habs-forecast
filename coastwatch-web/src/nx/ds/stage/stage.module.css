@@ -1,0 +1,98 @@
+/* The objects that float on the chart (v14 README §3): ticket, dock, pass. From the approved prototype's style.css
+   (.ticket, .tk-main, .tk-stub, .dock, .pass, .ps-main, .ps-stub, .caret). On a phone each is a block in the sheet. */
+
+/* ------------------------------------------------------------ ticket: a boarding pass beside its place */
+.ticket {
+  position: absolute; left: 0; top: 0; z-index: 2;
+  width: min(var(--ticket-w), calc(100vw - 2 * var(--gutter)));
+  max-height: calc(100% - var(--stage-top) - var(--gutter));
+  display: flex; flex-direction: column;
+  filter: var(--shadow-ticket);
+  will-change: transform;
+}
+.ticket > .main, .ticket > .stub { flex: none; }
+.ticket > .stub:last-child { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.main {
+  background: var(--paper);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  padding: var(--s-24) var(--pad-obj-x) var(--s-20);
+  -webkit-mask: var(--notch-main);
+  mask: var(--notch-main);
+}
+.main:only-child, .ticket > .main:last-child { border-radius: var(--r-card); -webkit-mask: none; mask: none; }
+.stub {
+  position: relative;
+  background: var(--paper);
+  border-radius: 0 0 var(--r-card) var(--r-card);
+  padding: var(--s-18) var(--pad-obj-x) var(--s-20);
+  -webkit-mask: var(--notch-stub);
+  mask: var(--notch-stub);
+}
+.stub::before { content: ""; position: absolute; left: var(--s-16); right: var(--s-16); top: -1px; border-top: 2px dashed var(--perf); }
+.leader { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
+.leader line { stroke: var(--ink); stroke-width: 1.5; visibility: hidden; }
+/* the camera's reservation: the ticket's width from the edge; the chart host adds a gutter's breath beside any side
+   cover, so the place (a stub's length west of the ticket) and its name stay in the free area */
+.reserve { position: absolute; top: 0; bottom: 0; right: 0; width: calc(min(var(--ticket-w), calc(100vw - 2 * var(--gutter))) + clamp(0px, calc(10vw - var(--gutter)), calc(144px - var(--gutter)))); pointer-events: none; visibility: hidden; }
+.reserve[data-side="west"] { right: auto; left: 0; }
+.reserve[data-edge="gutter"] { width: min(var(--ticket-w), calc(100vw - 2 * var(--gutter))); }
+
+/* ------------------------------------------------------------ dock: low, quiet, wide. Time lives here. */
+.dock {
+  position: absolute; bottom: var(--gutter); left: var(--gutter); z-index: 2;
+  width: min(var(--dock-w, 840px), calc(100% - 2 * var(--gutter)));
+  padding: var(--s-18) var(--s-24) var(--s-14);
+  background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow);
+}
+.dock[data-align="right"] { left: auto; right: var(--gutter); }
+.dock[data-align="full"] { right: var(--gutter); width: auto; }
+
+/* ------------------------------------------------------------ pass: the wide boarding pass along the bottom */
+.pass {
+  position: absolute; left: var(--gutter); right: var(--gutter); bottom: var(--gutter); z-index: 2;
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--stub-w, 320px);
+  filter: var(--shadow-pass);
+}
+.caret { position: absolute; top: -10px; width: 0; height: 0; margin-left: -11px; border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 11px solid var(--paper); z-index: 2; }
+.passMain {
+  background: var(--paper); border-radius: var(--r-card) 0 0 var(--r-card); min-width: 0; overflow: hidden;
+  -webkit-mask: var(--notch-pass-main);
+  mask: var(--notch-pass-main);
+}
+.passStub {
+  position: relative; background: var(--paper); border-radius: 0 var(--r-card) var(--r-card) 0;
+  padding: var(--s-24) var(--pad-obj-x) var(--s-24) var(--s-32); display: flex; flex-direction: column; min-width: 0;
+  -webkit-mask: var(--notch-pass-stub);
+  mask: var(--notch-pass-stub);
+}
+.passStub::before { content: ""; position: absolute; top: var(--s-16); bottom: var(--s-16); left: -1px; border-left: 2px dashed var(--perf); }
+
+@media (max-height: 800px) and (min-width: 641px) {
+  .main { padding-top: var(--s-20); padding-bottom: var(--s-16); }
+  .passStub { padding-top: var(--s-16); padding-bottom: var(--s-16); }
+}
+@media (max-width: 1240px) and (min-width: 641px) {
+  .pass { grid-template-columns: minmax(0, 1fr) min(var(--stub-w, 320px), 312px); }
+}
+
+/* inline (the catalog, a page's own column): the same object in the flow of its container */
+.ticket[data-inline], .dock[data-inline], .pass[data-inline] { position: relative; left: auto; top: auto; right: auto; bottom: auto; max-height: none; }
+.dock[data-inline] { width: 100%; }
+.ticket[data-inline] { width: min(var(--ticket-w), 100%); }
+.ticket[data-inline] .leader { display: none; }
+
+/* ------------------------------------------------------------ phone: a block in the sheet, in reading order */
+@media (max-width: 640px) {
+  .ticket, .dock, .pass {
+    position: static; width: auto; max-height: none; margin: 0; padding: 0; filter: none; box-shadow: none; border-radius: 0;
+    transform: none !important; left: auto !important; top: auto !important; display: block; will-change: auto;
+  }
+  .ticket > .stub:last-child { overflow: visible; }
+  .main, .stub, .passMain, .passStub { -webkit-mask: none; mask: none; border-radius: 0; padding: 0; overflow: visible; }
+  .stub { margin-top: var(--s-14); padding-top: var(--s-14); }
+  .stub::before { left: 0; right: 0; }
+  .leader, .reserve, .caret, .passStub::before { display: none; }
+  .dock { padding-top: var(--s-14); border-top: var(--hair) solid var(--line); margin-top: var(--s-4); }
+  .pass { display: flex; flex-direction: column; }
+  .passStub { order: -1; padding-bottom: var(--s-10); }
+}

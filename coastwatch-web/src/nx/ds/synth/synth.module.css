@@ -1,0 +1,110 @@
+/* v14 synthesis parts (v14 README §1, §3): the data-state grammar, micro-labels, stamps and slots, the Follow
+   button's sweep, the layer chips, tabs, the rolling figure. From the approved prototype's style.css. */
+
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ------------------------------------------------------------ the data-state grammar: one glyph set, used everywhere */
+.g { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; box-sizing: border-box; }
+.g-measured { background: var(--ink); }
+.g-unverified { border: 1.8px solid currentColor; }
+.g-unverified-coral { border: 1.8px solid var(--coral-ink); }
+.g-old { border: 1.6px solid var(--ink-2); background: var(--half-old); }
+.g-predicted { border: 1.6px dashed currentColor; }
+.g-hypothetical { border-radius: 3px; background: var(--hatch-ultra); }
+.g-illustrative { border-radius: 3px; background: var(--hatch-coral); }
+.g-none { border-radius: 3px; border: 1.6px dotted var(--ink-3); }
+.g-zero { width: 9px; height: 9px; border-radius: 1px; border: 1.6px solid var(--ink); }
+.g-unread { border-radius: 2.5px; background: var(--ultra); }
+.g-read { border-radius: 2.5px; border: 1.8px solid var(--ink-2); }
+
+/* ------------------------------------------------------------ micro type and provenance */
+.micro { display: inline-flex; align-items: center; font-size: var(--fs-11); line-height: 1.25; font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--ink-2); margin: 0; }
+.microG { margin-right: 7px; }
+.stamp { display: inline-flex; align-items: baseline; gap: 7px; margin: 0; font-size: var(--fs-13); line-height: 1.35; color: var(--ink-2); }
+.stamp .g { transform: translateY(1px); }
+.slot { display: inline-flex; align-items: center; gap: 7px; border: 1.6px dotted var(--ink-3); border-radius: var(--r-sm); padding: 3px 9px; color: var(--ink-2); font-weight: var(--w6); }
+.pennant { width: 22px; height: 18px; flex: none; }
+.pennantStaff { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; fill: none; }
+.pennantFlag { fill: var(--coral); }
+.wind { width: 14px; height: 14px; flex: none; }
+.wind path { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.lim { display: block; position: relative; height: 8px; width: 132px; margin: 6px 0 3px; border-radius: 2px; background: var(--track); }
+.lim i { display: block; height: 100%; border-radius: 2px 0 0 2px; background: var(--ink-2); }
+.lim::after { content: ""; position: absolute; right: -1px; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.lim::before { content: ""; position: absolute; right: -4px; top: -5px; width: 8px; height: 18px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+
+/* ------------------------------------------------------------ Follow: the sweep and the drawn tick */
+.sweep { position: absolute; inset: 0; background: var(--paper); transform-origin: 0 50%; transform: scaleX(0); border-radius: inherit; z-index: 0; pointer-events: none; }
+.ck { width: 16px; height: 12px; color: var(--ultra); }
+.ck path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+/* the quiet confirmed toggle beside a screen's real primary (design issue 1) */
+.followToggle { height: 46px; padding-left: var(--s-14); background: var(--paper); color: var(--ink-2); box-shadow: inset 0 0 0 1.6px var(--line); font-weight: var(--w6); }
+.followToggle[aria-pressed="true"] { color: var(--ink); box-shadow: inset 0 0 0 1.6px var(--ink-3); }
+.followToggle:hover { background: var(--paper-2); }
+.followToggle [data-g] { color: var(--ultra); }
+
+/* ------------------------------------------------------------ layer chips: the row is the legend and the control */
+.layers { display: flex; padding: 4px; background: var(--paper); border-radius: 13px; box-shadow: var(--shadow-sm); }
+.lyHead { display: none; }
+.lyList { display: flex; gap: 2px; }
+.ly { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 11px 0 7px; border-radius: var(--r-sm); white-space: nowrap; color: inherit; transition: background-color var(--dur-hover) linear; }
+.ly:hover { background: var(--paper-2); }
+.lyT { font-size: var(--fs-13); font-weight: var(--w7); color: var(--ink-2); transition: color var(--dur-hover) linear; }
+.ly[aria-pressed="true"] { background: var(--ultra-wash); }
+.ly[aria-pressed="true"] .lyT { color: var(--ultra-deep); }
+.lySw { width: 20px; height: 20px; border-radius: 6px; position: relative; opacity: 0.4; transition: opacity var(--dur-hover) linear; flex: none; }
+.ly[aria-pressed="true"] .lySw { opacity: 1; }
+.lyKey { position: absolute; left: 0; top: calc(100% + 8px); z-index: 5; width: 250px; padding: 9px 12px; border-radius: 10px; background: var(--ink); color: var(--paper); font-size: var(--fs-13); font-weight: var(--w5); line-height: 1.35; white-space: normal; text-align: left; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity var(--dur-hover) linear, transform var(--dur-hover) linear; }
+.lyKey b { display: block; font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; margin-bottom: 2px; }
+.ly:hover .lyKey, .ly:focus-visible .lyKey { opacity: 1; transform: none; }
+.sw-reg { background: var(--sw-reg); }
+.sw-reg::after { content: ""; position: absolute; left: 2px; right: 2px; top: 9px; height: 2px; background: var(--coral); }
+.sw-depth { background: var(--sw-depth); }
+.sw-sea::after { content: ""; position: absolute; left: 5px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--line); }
+.sw-tox::after { content: ""; position: absolute; left: 5px; top: 5px; width: 9px; height: 9px; transform: rotate(45deg); border: 2px solid var(--ink-2); background: var(--half-old-d); }
+.sw-data { background: var(--prob-4); }
+.lyHead svg { width: 18px; height: 18px; }
+.lyHead svg path { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+
+@media (max-width: 640px) {
+  .layers { flex-direction: column; align-items: flex-end; padding: 0; background: none; box-shadow: none; }
+  .lyHead { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 13px; border-radius: 13px; background: var(--paper); box-shadow: var(--shadow-sm); font-size: var(--fs-13); font-weight: var(--w7); color: var(--ink); }
+  .lyList { display: none; width: min(264px, calc(100vw - 24px)); margin-top: 6px; padding: 6px; background: var(--paper); border-radius: var(--r-bar); box-shadow: var(--shadow); }
+  .layersOpen .lyList { display: grid; }
+  .lyList .ly { display: grid; grid-template-columns: 20px 1fr; height: auto; min-height: 48px; padding: 6px 8px; white-space: normal; }
+  .lyKey { position: static; grid-column: 2; width: auto; padding: 0; background: none; color: var(--ink-2); font-size: var(--fs-11); opacity: 1; transform: none; display: none; }
+  .lyKey b { display: none; }
+  .ly[aria-pressed="true"] .lyKey { display: block; }
+}
+/* a narrow phone: the button is its icon (its name stays in aria-label), so the brand, Layers and the menu share the top */
+@media (max-width: 440px) {
+  .lyHead { width: 44px; padding: 0; justify-content: center; }
+  .lyHead span { display: none; }
+}
+
+/* ------------------------------------------------------------ tabs: the ticket's segmented tabs, Research's word tabs */
+.seg { display: flex; padding: 3px; background: var(--paper-2); border-radius: 11px; }
+.seg button { flex: 1; height: 34px; padding: 0 11px; border-radius: 8px; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; transition: background-color var(--dur-quick) linear, color var(--dur-quick) linear; }
+.seg button:hover:not([aria-selected="true"]) { color: var(--ink); }
+.seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-seg); }
+.n { color: var(--ink-2); margin-left: 4px; }
+.tabs { display: flex; gap: 2px; min-width: 0; }
+.tabs button { height: 36px; padding: 0 11px; border-radius: var(--r-sm); font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); white-space: nowrap; }
+.tabs button:hover { background: var(--paper-2); color: var(--ink); }
+.tabs button[aria-selected="true"], .tabs button[aria-checked="true"] { color: var(--ultra-deep); background: var(--ultra-wash); }
+.panel { outline: none; }
+.panel:focus-visible { outline: 2.5px solid var(--ultra); outline-offset: 4px; border-radius: 6px; }
+@media (max-width: 640px) {
+  .seg button { height: 44px; padding: 0 4px; min-width: 44px; }
+  .tabs { flex-wrap: wrap; }
+  .tabs button { height: 44px; }
+}
+
+/* ------------------------------------------------------------ the rolling figure */
+.roll { font-variant-numeric: normal; font-feature-settings: normal; white-space: nowrap; }
+.rolling { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.rd { display: inline-block; height: 1em; line-height: 1; overflow: hidden; vertical-align: top; clip-path: inset(0); }
+.rc { display: block; line-height: 1; }
+.rc > span { display: block; height: 1em; }
+.cents { font-size: 0.58em; letter-spacing: -0.02em; color: var(--ink-2); }
+.cents .rd { vertical-align: top; }

@@ -103,14 +103,20 @@ export function placeAll(items: PlaceItem[], area: Rect, obstacles: Rect[] = [],
           break;
         }
       }
-      // kept even without a free spot, but never written over a panel when its point lies under one
+      // kept even without a free spot, but never written over a panel when its point lies under one, and never over
+      // what a page asked lettering to keep clear of (a transect, a read cell, a locator: `obstacles`); other names
+      // may be crowded by it. With no such spot the name gives way (its point stays).
       if (!placed && it.keep && pointIn(it, area)) {
-        // kept with no free spot: its first anchor, slid back inside the free area so the name is never cut by the frame
-        const r0 = boxAt(it, tries[0]);
-        const dx = r0.x0 < area.x0 ? area.x0 - r0.x0 : r0.x1 > area.x1 ? area.x1 - r0.x1 : 0;
-        const r = { x0: r0.x0 + dx, y0: r0.y0, x1: r0.x1 + dx, y1: r0.y1 };
-        taken.push(r);
-        placed = { id: it.id, left: r.x0, top: r.y0, anchor: tries[0], visible: true };
+        for (const a of tries) {
+          const r0 = boxAt(it, a);
+          // slid back inside the free area so the name is never cut by the frame
+          const dx = r0.x0 < area.x0 ? area.x0 - r0.x0 : r0.x1 > area.x1 ? area.x1 - r0.x1 : 0;
+          const r = { x0: r0.x0 + dx, y0: r0.y0, x1: r0.x1 + dx, y1: r0.y1 };
+          if (r.y0 < area.y0 || r.y1 > area.y1 || obstacles.some((t) => overlaps(r, t, 2))) continue;
+          taken.push(r);
+          placed = { id: it.id, left: r.x0, top: r.y0, anchor: a, visible: true };
+          break;
+        }
       }
     }
     out.set(it.id, placed ?? { id: it.id, left: 0, top: 0, anchor: tries[0], visible: false });

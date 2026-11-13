@@ -31,7 +31,7 @@ import {
   Agenda,
   BigDate,
   Button,
-  Waterfall,
+  LedgerWaterfall as Waterfall,
   Legend,
   Mark,
   RampLegend,

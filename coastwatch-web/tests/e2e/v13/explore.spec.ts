@@ -194,11 +194,13 @@ test("the time rail runs along the foot of the chart at desktop, and reads in th
   await mapReady(page);
   const rail = page.getByTestId("nx-timerail");
   await expect(rail).toBeVisible();
-  const r = (await rail.boundingBox())!, m = (await page.getByTestId("nx-map").boundingBox())!, margin = (await page.getByTestId("nx-margin").boundingBox())!;
-  expect(r.x).toBeGreaterThanOrEqual(margin.x + margin.width - 1);
-  expect(r.y).toBeGreaterThanOrEqual(m.y + m.height - 1);
+  // v14: the rail is the dock along the chart's foot, from the layer group to the right gutter
+  const r = (await rail.boundingBox())!, panel = (await page.getByTestId("nx-explore-panel").boundingBox())!;
+  await expect(page.getByTestId("nx-time-dock")).toContainText("Time");
+  expect(r.x).toBeGreaterThanOrEqual(panel.x + panel.width - 1);
+  expect(r.y + r.height).toBeGreaterThan(900 - 40);
   expect(r.width).toBeGreaterThan(700);
-  expect(await page.getByTestId("nx-margin").getByTestId("nx-timerail").count()).toBe(0);
+  // a phone: the rail reads in the sheet, after the layers and the reading
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByTestId("nx-margin").getByTestId("nx-timerail")).toHaveCount(1);
 });
@@ -436,7 +438,7 @@ test("phone: with a reading open, the layer switch and Play are in reach at the 
       expect(fig.y, `${size.width}: the value below the sheet's top`).toBeGreaterThan(top);
     }
     // the controls lead the sheet: the switch, then what is on show and Play, all on screen without raising it
-    const sw = page.getByTestId("nx-layers");
+    const sw = page.getByTestId("nx-data-layers");
     await expect(sw).toBeInViewport({ ratio: 1 });
     const head = page.getByTestId("nx-margin").getByTestId("nx-time-head");
     await expect(head).toBeInViewport({ ratio: 1 });
@@ -466,7 +468,7 @@ test("phone: with a reading open, the layer switch and Play are in reach at the 
       seen.add(detent);
       await page.locator(".n12-margin-scroll").evaluate((el) => el.scrollTo(0, 0));
       await page.waitForTimeout(300);
-      for (const id of ["nx-layers", "nx-play"]) {
+      for (const id of ["nx-data-layers", "nx-play"]) {
         const b = (await page.getByTestId(id).first().boundingBox())!;
         expect(b.y + b.height, `${size.width} ${detent}: ${id} above the destinations`).toBeLessThanOrEqual(tabs.y + 0.5);
         expect(b.y, `${size.width} ${detent}: ${id} on screen`).toBeGreaterThanOrEqual(0);

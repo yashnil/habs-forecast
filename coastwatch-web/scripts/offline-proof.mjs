@@ -225,14 +225,16 @@ try {
       check(/Offline\. Showing what this device saved/.test(notice) && /wait for a connection|waits for a connection/.test(notice), `offline, ${size}: ${path} says it is a saved copy, from when, and what waits for a connection`);
     }
     if (size === "phone") {
-      // a tab tapped offline: the client navigation fails and the browser loads the saved page
-      step = "phone: tap Explore from Today";
+      // a link tapped offline: the client navigation fails and the browser loads the saved page (v14: Explore is
+      // reached from the Menu, no longer a destinations tab)
+      step = "phone: open Explore from the Menu on Today";
       await p.goto(`${BASE}/today?place=${PLACE}`, { waitUntil: "load" });
       await p.waitForTimeout(2500);
-      await p.getByTestId("nx-tabs").getByRole("link", { name: "Explore" }).click();
+      await p.getByTestId("nx-menu-button").click();
+      await p.getByRole("navigation", { name: "More" }).getByRole("link", { name: /Explore/ }).click();
       await p.waitForURL(/\/explore/, { timeout: 15_000 }).catch(() => null);
       await p.waitForTimeout(3500);
-      check((await p.getByTestId("nx-explore").count()) > 0, "offline, phone: a tab tapped on Today opens the saved Explore");
+      check((await p.getByTestId("nx-explore").count()) > 0, "offline, phone: Explore opened from the Menu on Today opens the saved Explore");
       // a page the pack never held
       step = "phone: an unsaved page";
       await p.goto(`${BASE}/sources`, { waitUntil: "load" }).catch(() => null);

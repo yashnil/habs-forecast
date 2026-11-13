@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { capability, noteContextLoss, type GraphicsTier } from "@/lib/capability";
-import { EASE_CHART, pan } from "@/nx/ds/motion";
+import { EASE_FLIGHT, flightSeconds, layerIn, layerOut, pan, zoomStep } from "@/nx/ds/motion";
 import { paneJustChanged } from "@/nx/ds/layout/pane";
 import { alignIn, coverCamera, fillZoom, fitAtZoom, fitBounds, keepInFrame, NO_INSETS, scaleBar, screenRect, slideWithin, unproject, type Bounds, type Camera, type Insets, type Viewport, latY, lngX, worldSize, xLng, yLat } from "./mercator";
 import { placeAll, type Anchor, type Rect } from "./placement";
@@ -12,11 +12,17 @@ import { getScene, subscribeScene, useScene, type ChartScene } from "./scene";
 import { keepChartPointInView, onChartCommand, refitChart, setChartMap, zoomChart, fitChartBounds, type ChartCommand } from "./control";
 import { drawnObstacles, measureCovers, onCoversChange } from "./cover";
 import { Icon } from "@/nx/ds/Icon";
-import { chartStyle, CHART_FRAME, modePaint, posterImages, posterLandEast, readPalette } from "./style";
-import { Neatline } from "./Neatline";
+import { chartStyle, CHART_FRAME, DEPTH_LAYER_IDS, modePaint, posterImages, posterLandEast, readPalette } from "./style";
+import { GraticuleLabels } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
-import { RegulationLayer } from "./RegulationLayer";
+import { RegulationLayer, regLineBox, regTextBox } from "./RegulationLayer";
+import { DepthLabels } from "./DepthLabels";
+import { DeepWater } from "./DeepWater";
 import { useChartHighlight } from "./highlight";
+import { anchorShift, getCameraAnchor, onCameraAnchor, type CameraAnchor } from "./anchor";
+import { flightDelay, noteFlight } from "./flight";
+import { getMapLayers, LAYERS_DRAWN_EVENT, subscribeMapLayers, useMapLayer } from "./mapLayers";
+import { useRegulation } from "./regulation";
 
 /** The place lit from outside the chart (highlight.ts): a ring at its point, redrawn with the camera. */
 function Highlight({ cam }: { cam: Camera | null }) {
@@ -42,13 +48,13 @@ function ChartControls() {
   return (
     <div className="n12-controls" role="group" aria-label="Chart view" data-testid="nx-chart-controls">
       <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(1)} aria-label="Zoom in" title="Zoom in" data-testid="nx-zoom-in">
-        <Icon name="plus" size={20} />
+        <Icon name="plus" size={18} />
       </button>
       <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(-1)} aria-label="Zoom out" title="Zoom out" data-testid="nx-zoom-out">
-        <Icon name="minus" size={20} />
+        <Icon name="minus" size={18} />
       </button>
       <button type="button" onClick={refitChart} aria-label={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} title={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} data-testid="nx-refit">
-        <Icon name="port" size={20} />
+        <Icon name="recentre" size={18} />
       </button>
       {fit ? (
         <button type="button" className="n12-controls-word" onClick={() => fitChartBounds(fit.bounds)} aria-label={fit.label} title={fit.label} data-testid="nx-fit-data">
@@ -60,11 +66,11 @@ function ChartControls() {
   );
 }
 
-type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView } };
+type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView; anchor?: CameraAnchor | null; target?: Camera } };
 
 const bezier = (t: number) => {
-  // cubic-bezier(EASE_CHART) solved for y at x = t
-  const [x1, y1, x2, y2] = EASE_CHART;
+  // cubic-bezier(EASE_FLIGHT) solved for y at x = t: the camera's curve between places (slow out, long glide in)
+  const [x1, y1, x2, y2] = EASE_FLIGHT;
   const bx = (u: number) => 3 * x1 * u * (1 - u) ** 2 + 3 * x2 * u * u * (1 - u) + u ** 3;
   const by = (u: number) => 3 * y1 * u * (1 - u) ** 2 + 3 * y2 * u * u * (1 - u) + u ** 3;
   let lo = 0, hi = 1;
@@ -107,7 +113,7 @@ function sceneInsets(vp: Viewport, cover: Insets): Insets {
   return { top: cover.top + pad, right: cover.right + pad, bottom: cover.bottom + pad, left: cover.left + pad };
 }
 
-export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets): Camera {
+export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets, anchor: CameraAnchor | null = null): Camera {
   if ("cover" in scene.view) {
     // the box covers the free part of the sheet (the phone's resting margin excluded), as the still's CSS does
     const free = { width: vp.width, height: Math.max(1, vp.height - cover.bottom) };
@@ -127,6 +133,14 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets): Camer
   if (inFrame.zoom > cam.zoom) cam = fitAtZoom(box, vp, ins, inFrame.zoom);
   if (scene.view.align) cam = alignIn(cam, box, vp, ins, scene.view.align);
   if (scene.view.within) cam = slideWithin(cam, vp, box, scene.view.within, cover);
+  // a ticket stands beside its place (ds Ticket): bring the place to the ticket's edge, a stub's length away
+  if (anchor) {
+    const ws = worldSize(cam.zoom);
+    const cx = lngX(cam.center[0]) * ws, cy = latY(cam.center[1]) * ws;
+    const p = { x: vp.width / 2 + (lngX(anchor.lon) * ws - cx), y: vp.height / 2 + (latY(anchor.lat) * ws - cy) };
+    const { dx, dy } = anchorShift(anchor, p, vp);
+    cam = { center: [xLng((cx + dx) / ws), yLat((cy + dy) / ws)], zoom: cam.zoom };
+  }
   return keepInFrame(cam, vp, frame);
 }
 
@@ -144,7 +158,39 @@ const covered = (frame: HTMLElement) => {
   if (c.insets.left) c.insets.left += PANE_GAP;
   return c;
 };
+/**
+ * How high the chart's own furniture (zoom, scale) stands: above a dock or pass that reaches the right-hand corner
+ * where it lives, else a gutter from the foot (the prototype's `--foot`).
+ */
+function writeFoot(frame: HTMLElement) {
+  const fr = frame.getBoundingClientRect();
+  // the furniture's column: the zoom buttons where they stand (the bottom-right corner by default)
+  const c = frame.querySelector<HTMLElement>(".n12-controls")?.getBoundingClientRect();
+  const x0 = c && c.width ? c.left - 6 : fr.right - 96, x1 = c && c.width ? c.right + 6 : fr.right;
+  let foot = 0;
+  document.querySelectorAll<HTMLElement>("[data-nx-dock], [data-nx-pass], .n12-dock-slot").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    // where it stands at rest: an arriving dock is still sliding up (a transform) when this runs
+    const tf = getComputedStyle(el).transform;
+    const m = /\((.+)\)/.exec(tf);
+    const ty = m ? parseFloat(m[1].split(",")[tf.startsWith("matrix3d") ? 13 : 5]) || 0 : 0;
+    const top = r.top - ty;
+    if (!r.width || !r.height || r.right < x0 || r.left > x1 || top >= fr.bottom) return;
+    foot = Math.max(foot, Math.round(fr.bottom - top + 16));
+  });
+  frame.style.setProperty("--nx-foot", foot ? `${foot}px` : "");
+}
 const sameInsets = (a: Insets, b: Insets) => a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left;
+
+/** True while the opening plays and the chart's lettering waits for its beat (chart.css hides the overlay then). */
+const openingHidesMarks = () => {
+  const h = document.documentElement;
+  const op = h.getAttribute("data-nx-opening");
+  return (op === "on" || op === "run") && !h.hasAttribute("data-nx-marks");
+};
+
+/** How long after the map's "load" it counts as ready when "idle" has not come (ms). */
+const READY_AFTER_LOAD_MS = 1500;
 
 /** The chart's own zoom limits; a scene may narrow them (ChartScene.zoomRange). */
 const CHART_ZOOM = [4, 13.5] as const;
@@ -169,7 +215,6 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const [mapReady, setMapReady] = useState(false);
   const [lost, setLost] = useState(false);
   const [mode, setMode] = useState("day");
-  const [neat, setNeat] = useState({ band: 4, label: 20 });
   const coverRef = useRef<Insets>(NO_INSETS);
   const coverObstacles = useRef<Rect[]>([]);
   const sceneId = useRef<string | null>(null);
@@ -180,10 +225,45 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const frameRefLatest = useRef<ChartFrame | null>(null);
   /** where the zoom buttons are heading while the camera travels */
   const zoomGoal = useRef<number | null>(null);
+  /** a flight waiting for the leaving ticket to finish shrinking */
+  const flightTimer = useRef(0);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const depthOn = useMapLayer("depth");
+  const regulationOn = useMapLayer("regulation");
+  const regulationSpec = useRegulation();
+
+  /**
+   * What the chart actually draws, for tests and QA (`data-layers` on the sheet): Depth from the map style's own layer
+   * visibility, Regulation when its layer has something to draw, Sea now and Toxin tests when marks of theirs are on
+   * the chart. Never copied from the chips.
+   */
+  const writeLayers = useCallback(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+    // not before the chart can say: on the live tier, once the map has drawn (the attribute appears then)
+    if (el.dataset.tier !== "static" && el.dataset.mapReady !== "1") return;
+    const m = mapRef.current;
+    const on: string[] = [];
+    if (m && m.getLayer("contours") && m.getLayoutProperty("contours", "visibility") !== "none" && getMapLayers().on.depth) on.push("depth");
+    if (el.querySelector(".n12-reg-wrap:not([data-leaving])")) on.push("regulation");
+    // a page's marks (buoys, tests, stations): a layer is drawn while its marks are on the chart (they mount with the
+    // chip and leave with it); a layer that has nothing to draw at this place counts as drawn while its chip is on
+    const layers = getMapLayers();
+    const registered = new Set(allMarks().map((e) => e.spec.layer).filter(Boolean) as string[]);
+    for (const id of Object.keys(layers.on)) {
+      if (id === "depth" || id === "regulation" || on.includes(id)) continue;
+      if (registered.has(id) || layers.on[id]) on.push(id);
+    }
+    const v = on.join(" ");
+    if (el.getAttribute("data-layers") !== v) el.setAttribute("data-layers", v);
+  }, []);
 
   // ---------------------------------------------------------------- placement of everything on the chart
   const placeNow = useCallback(() => {
     raf.current = 0;
+    // while the opening plays the lettering is hidden until its beat: nothing is placed (the page's first seconds on
+    // a slow machine belong to the opening); the attribute's change places everything at once
+    if (openingHidesMarks()) return;
     const f = frameRefLatest.current;
     const frameEl = frameRef.current;
     if (!f || !frameEl) return;
@@ -210,15 +290,16 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       if (b.width) obstacles.push({ x0: b.x, y0: b.y, x1: b.x + b.width, y1: b.y + b.height });
     }
     // a regulation line's or band's name holds its place (RegulationLayer.tsx draws a line only with its name)
-    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text[data-reg-hold]").forEach((t) => {
+    frameEl.querySelectorAll<SVGTextElement>(".n12-reg text[data-reg-hold]").forEach((t) => {
       if (t.getAttribute("visibility") === "hidden") return;
-      const b = t.getBBox();
+      const b = regTextBox(t);
       if (b.width) obstacles.push({ x0: b.x - 2, y0: b.y - 2, x1: b.x + b.width + 2, y1: b.y + b.height + 2 });
     });
     // a zone's boundary line (a parallel of latitude): a name is never set across it, struck through
-    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg path.n12-reg-line, .n12-reg path.n12-reg-limitline").forEach((ln) => {
-      const b = ln.getBBox();
-      if (b.width > 24 && b.height < 3) obstacles.push({ x0: b.x, y0: b.y - 7, x1: b.x + b.width, y1: b.y + b.height + 7 });
+    frameEl.querySelectorAll<SVGPathElement>(".n12-reg path.n12-reg-line, .n12-reg path.n12-reg-limitline").forEach((ln) => {
+      if (ln.getAttribute("visibility") === "hidden") return;
+      const b = regLineBox(ln);
+      if (b && b.width > 24 && b.height < 3) obstacles.push({ x0: b.x, y0: b.y - 7, x1: b.x + b.width, y1: b.y + b.height + 7 });
     });
     const z = f.camera.zoom;
     const entries = allMarks().filter((e) => (e.spec.minZoom ?? -1) <= z && z <= (e.spec.maxZoom ?? 99));
@@ -231,9 +312,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     // stations and ports (priority 20 and up), which matter more where they stand, and holds its place against the
     // names of water below them (a label that yielded keeps `data-reg-yield` so the layer's per-frame drawing does
     // not flash it back)
-    const reg = [...frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text:not([data-reg-hold])")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: t.getBBox() }));
+    const reg = [...frameEl.querySelectorAll<SVGTextElement>(".n12-reg text:not([data-reg-hold])")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: regTextBox(t) }));
     if (reg.length) {
-      const hits = (i: number, b: DOMRect) => b.x < placed[i].left + items[i].width && b.x + b.width > placed[i].left && b.y < placed[i].top + items[i].height && b.y + b.height > placed[i].top;
+      const hits = (i: number, b: { x: number; y: number; width: number; height: number }) => b.x < placed[i].left + items[i].width && b.x + b.width > placed[i].left && b.y < placed[i].top + items[i].height && b.y + b.height > placed[i].top;
       const live = reg.filter(({ t, b }) => {
         const yields = placed.some((pl, i) => pl.visible && items[i].priority >= 20 && hits(i, b));
         if (yields) t.setAttribute("data-reg-yield", "");
@@ -246,6 +327,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       });
     }
     const shown = new Set<string>();
+    const keptDots = new Set<string>();
     const leaders: string[] = [];
     placed.forEach((pl, i) => {
       const e = entries[i];
@@ -269,18 +351,22 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const pt = e.el.previousElementSibling as HTMLElement | null;
       if (pt?.dataset.nxPoint === e.spec.id) {
         pt.style.transform = `translate(${Math.round(it.x)}px, ${Math.round(it.y)}px)`;
-        pt.style.visibility = pl.visible ? "visible" : "hidden";
+        // the reader's port keeps its symbol where its name gave way (to a transect, a locator)
+        const keepDot = !!e.spec.keep && it.x >= area.x0 && it.x <= area.x1 && it.y >= area.y0 && it.y <= area.y1;
+        pt.style.visibility = pl.visible || keepDot ? "visible" : "hidden";
+        if (keepDot) keptDots.add(e.spec.id);
       }
     });
     const svg = frameEl.querySelector(".n12-leaders");
     if (svg) svg.innerHTML = leaders.join("");
+    writeLayers();
     for (const e of allMarks()) {
       if (shown.has(e.spec.id)) continue;
       e.el.style.visibility = "hidden";
       const pt = e.el.previousElementSibling as HTMLElement | null;
-      if (pt?.dataset.nxPoint === e.spec.id) pt.style.visibility = "hidden";
+      if (pt?.dataset.nxPoint === e.spec.id && !keptDots.has(e.spec.id)) pt.style.visibility = "hidden";
     }
-  }, []);
+  }, [writeLayers]);
 
   const schedule = useCallback(() => {
     if (!raf.current) raf.current = requestAnimationFrame(placeNow);
@@ -336,12 +422,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const c = covered(el);
       coverRef.current = c.insets;
       coverObstacles.current = c.obstacles;
-      const cs = getComputedStyle(el);
-      setNeat((o) => {
-        const band = parseFloat(cs.getPropertyValue("--neat-band")) || 4;
-        const label = parseFloat(cs.getPropertyValue("--neat-label")) || 20;
-        return o.band === band && o.label === label ? o : { band, label };
-      });
+      writeFoot(el);
       setVp((v) => (v && Math.abs(v.width - r.width) < 0.5 && Math.abs(v.height - r.height) < 0.5 ? v : { width: Math.round(r.width), height: Math.round(r.height) }));
     };
     measure();
@@ -367,10 +448,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const box = mapEl.current.getBoundingClientRect();
       const viewport = { width: box.width, height: box.height };
       const startCover = covered(frameRef.current!).insets;
-      const start = scene ? cameraFor(scene, viewport, startCover) : { center: [-120.5, 37] as [number, number], zoom: 5 };
+      const start = scene ? cameraFor(scene, viewport, startCover, getCameraAnchor()) : { center: [-120.5, 37] as [number, number], zoom: 5 };
       const map = new ml.Map({
         container: mapEl.current,
-        style: chartStyle(palette, location.origin, { hidden }),
+        // a software-rendered map (the reduced tier) draws the chart without its decorative lines and without
+        // multisampling: the same chart, a fraction of the fill and line work on a CPU
+        style: chartStyle(palette, location.origin, { hidden, depth: getMapLayers().on.depth !== false, lite: tier === "reduced" }),
         center: start.center,
         zoom: start.zoom,
         minZoom: CHART_ZOOM[0],
@@ -384,7 +467,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         trackResize: false,
         fadeDuration: 0,
         pixelRatio: Math.min(window.devicePixelRatio || 1, tier === "full" ? 2 : 1.5),
-        canvasContextAttributes: { antialias: true },
+        canvasContextAttributes: { antialias: tier !== "reduced" },
       });
       map.touchZoomRotate.disableRotation();
       map.keyboard.disableRotation();
@@ -400,11 +483,22 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         publish({ center: [c.lng, c.lat], zoom: map.getZoom() }, { width: cvs.clientWidth, height: cvs.clientHeight }, true);
       };
       map.on("move", onMove);
-      map.once("idle", () => {
-        if (cancelled) return;
+      // ready when the map is first idle (style, sources and tiles drawn), or, if it never settles that far (software
+      // GL on a slow machine, a page that keeps the camera or a layer moving), a moment after its style and first
+      // frame have loaded: the chart never waits on "idle" alone
+      let ready = false;
+      let fallback = 0;
+      const markReady = () => {
+        if (ready || cancelled) return;
+        ready = true;
+        window.clearTimeout(fallback);
         setMapReady(true);
         setChartMap(map, true);
         onMove();
+      };
+      map.once("idle", markReady);
+      map.once("load", () => {
+        fallback = window.setTimeout(markReady, READY_AFTER_LOAD_MS);
       });
       const canvas = map.getCanvas();
       canvas.setAttribute("aria-label", "Chart of the California coast");
@@ -426,6 +520,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       canvas.addEventListener("webglcontextlost", onLost);
       canvas.addEventListener("webglcontextrestored", onRestored);
       destroy = () => {
+        window.clearTimeout(fallback);
         canvas.removeEventListener("webglcontextlost", onLost);
         canvas.removeEventListener("webglcontextrestored", onRestored);
         map.remove();
@@ -466,10 +561,15 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const c = covered(el);
       coverRef.current = c.insets;
       coverObstacles.current = c.obstacles;
-      const target = cameraFor(scene, vp, coverRef.current);
+      const target = cameraFor(scene, vp, coverRef.current, getCameraAnchor());
       const m = mapRef.current;
       const w = window as Win;
-      if (w.__nxChart) w.__nxChart.scene = scene.id;
+      if (w.__nxChart) {
+        w.__nxChart.scene = scene.id;
+        // for tests: the anchor and the camera the scene asked for
+        w.__nxChart.anchor = getCameraAnchor();
+        w.__nxChart.target = target;
+      }
       document.documentElement.dataset.nxScene = scene.id;
       if (m) {
         // the view's own zoom limits (Explore keeps the coast in sight), else the chart's
@@ -493,13 +593,30 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         // the same view refined while its pan is still travelling (Today's soundings arrive a moment after the
         // page): the pan carries on to the refined camera instead of jumping there
         const left = panUntil.current - performance.now();
-        const glide = !animate && left > 60;
-        const still = (!animate && !glide) || reduced || opening === "on" || opening === "run";
-        if (still) m.jumpTo({ center: target.center, zoom: target.zoom });
-        else {
-          const duration = glide ? left : tier === "reduced" ? 300 : (pan.duration as number) * 1000;
-          if (!glide) panUntil.current = performance.now() + duration;
-          m.easeTo({ center: target.center, zoom: target.zoom, duration, easing: glide ? (t: number) => 1 - (1 - t) ** 2 : bezier, essential: false });
+        // a refinement that arrives while the flight is still waiting for a leaving ticket (the new ticket's anchor, a
+        // dock's cover) re-aims that flight, keeping its wait: the camera never starts before the old ticket has gone
+        const waiting = !animate && left > 60 && flightDelay() > 4;
+        const glide = !animate && left > 60 && !waiting;
+        const still = (!animate && !glide && !waiting) || reduced || opening === "on" || opening === "run";
+        window.clearTimeout(flightTimer.current);
+        if (still) {
+          noteFlight(0, 0);
+          m.jumpTo({ center: target.center, zoom: target.zoom });
+        } else if (glide) {
+          m.easeTo({ center: target.center, zoom: target.zoom, duration: left, easing: (t: number) => 1 - (1 - t) ** 2, essential: false });
+        } else {
+          // a flight between places (v14 README §5): 0.5 to 1.15 s by distance, on the flight curve, after the old
+          // ticket has shrunk back to its pin; tickets arriving wait for 62 % of it (chart/flight)
+          const from = m.getCenter();
+          const ws = worldSize(Math.min(m.getZoom(), target.zoom));
+          const dist = Math.hypot((lngX(target.center[0]) - lngX(from.lng)) * ws, (latY(target.center[1]) - latY(from.lat)) * ws) + Math.abs(target.zoom - m.getZoom()) * 160;
+          const duration = tier === "reduced" ? 300 : flightSeconds(dist) * 1000;
+          const delay = flightDelay();
+          noteFlight(delay, duration);
+          panUntil.current = performance.now() + delay + duration;
+          const go = () => (dist < 2 ? m.easeTo({ center: target.center, zoom: target.zoom, duration: Math.min(duration, 400), easing: bezier, essential: false }) : m.flyTo({ center: target.center, zoom: target.zoom, duration, curve: 1.25, easing: bezier, essential: false }));
+          if (delay > 4) flightTimer.current = window.setTimeout(go, delay);
+          else go();
         }
       } else publish(target, vp, false);
     },
@@ -528,6 +645,84 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   }, [vp?.width, vp?.height]);
 
   useEffect(() => onMarksChange(schedule), [schedule]);
+  // the opening ending (or reaching its marks' beat): place the lettering now
+  useEffect(() => {
+    const mo = new MutationObserver(() => !openingHidesMarks() && schedule());
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-nx-opening", "data-nx-marks"] });
+    return () => mo.disconnect();
+  }, [schedule]);
+  // what a page drew on the chart and asked lettering to keep clear of can change without the camera moving (a
+  // transect arriving after its reading): the names are placed again when those shapes change
+  useEffect(() => {
+    let last = "";
+    const t = window.setInterval(() => {
+      const f = frameRefLatest.current;
+      if (!f) return;
+      const sig = drawnObstacles(f.project)
+        .map((r) => `${Math.round(r.x0)},${Math.round(r.y0)},${Math.round(r.x1)},${Math.round(r.y1)}`)
+        .join(";");
+      if (sig !== last) {
+        last = sig;
+        schedule();
+      }
+    }, 250);
+    return () => window.clearInterval(t);
+  }, [schedule]);
+  // what the chart draws, kept current: a chip switched, regulation arriving or leaving (RegulationLayer's event)
+  useEffect(() => {
+    let r = 0;
+    const later = () => {
+      cancelAnimationFrame(r);
+      r = requestAnimationFrame(writeLayers);
+    };
+    const off = subscribeMapLayers(later);
+    window.addEventListener(LAYERS_DRAWN_EVENT, later);
+    return () => {
+      off();
+      window.removeEventListener(LAYERS_DRAWN_EVENT, later);
+      cancelAnimationFrame(r);
+    };
+  }, [writeLayers]);
+
+  // the chart's own buttons arrive with the map: the furniture's height is measured against them. What changed while
+  // the map was loading (a ticket's anchor, a dock's cover) is applied now, as a refinement of the same view.
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el || !mapReady) return;
+    requestAnimationFrame(() => {
+      writeFoot(el);
+      writeLayers();
+    });
+    applyScene(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady]);
+
+  // the page's ticket arrived or moved: the camera glides on to stand its place beside it
+  useEffect(() => onCameraAnchor(() => applyScene(false)), [applyScene]);
+
+  // ---------------------------------------------------------------- the Depth layer: contours fade in and out (320 / 220 ms)
+  useEffect(() => {
+    const m = mapRef.current;
+    if (!m || !mapReady) return;
+    const dur = reduced ? 0 : ((depthOn ? layerIn : layerOut) as { duration: number }).duration * 1000;
+    const full: Record<string, number> = { contours: 0.42, "contours-shelf": 0.62 };
+    for (const id of DEPTH_LAYER_IDS) {
+      if (!m.getLayer(id)) continue;
+      m.setPaintProperty(id, "line-opacity-transition", { duration: dur, delay: 0 });
+      if (depthOn) m.setLayoutProperty(id, "visibility", "visible");
+      m.setPaintProperty(id, "line-opacity", depthOn ? full[id] : 0);
+    }
+    const t = window.setTimeout(() => {
+      if (!getMapLayers().on.depth) for (const id of DEPTH_LAYER_IDS) if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", "none");
+      writeLayers();
+    }, depthOn ? 0 : dur + 20);
+    writeLayers();
+    return () => window.clearTimeout(t);
+  }, [depthOn, mapReady, reduced, writeLayers]);
+  useEffect(() => {
+    const r = requestAnimationFrame(writeLayers);
+    return () => cancelAnimationFrame(r);
+  }, [regulationOn, regulationSpec, writeLayers]);
 
   // ---------------------------------------------------------------- commands (control.ts): the chart's buttons and a page's requests
   useEffect(
@@ -558,7 +753,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
             if (Math.abs(m.getZoom() - z) < 0.01) zoomGoal.current = null;
           });
           const ctr = m.getCenter();
-          if (duration) m.easeTo({ center: [ctr.lng, ctr.lat], zoom: z, duration: Math.min(duration, 300), easing: bezier, essential: true });
+          if (duration) m.easeTo({ center: [ctr.lng, ctr.lat], zoom: z, duration: Math.min(duration, (zoomStep as { duration: number }).duration * 1000), easing: bezier, essential: true });
           else m.jumpTo({ center: [ctr.lng, ctr.lat], zoom: z });
           return;
         }
@@ -599,6 +794,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         if (!el) return;
         const c = covered(el);
         coverObstacles.current = c.obstacles;
+        writeFoot(el);
         if (sameInsets(c.insets, coverRef.current)) return schedule();
         applyScene(true);
       }),
@@ -608,10 +804,10 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const showPoster = tier === "static" || !mapReady || lost;
   // the bar is sized to the free part of the sheet, so beside a panel it is never cut by it
   const freeW = vp ? vp.width - coverRef.current.left - coverRef.current.right : 0;
-  const scale = cam && vp ? scaleBar(cam.center[1], cam.zoom, Math.min(240, freeW * 0.3)) : null;
+  const scale = cam && vp ? scaleBar(cam.center[1], cam.zoom, Math.min(120, Math.max(60, freeW * 0.12))) : null;
 
   return (
-    <div className="n12-sheet" data-testid="nx-sheet" data-tier={tier ?? "pending"} data-map-ready={mapReady ? "1" : "0"}>
+    <div className="n12-sheet" ref={sheetRef} data-testid="nx-sheet" data-tier={tier ?? "pending"} data-map-ready={mapReady ? "1" : "0"}>
       <div className="n12-frame" ref={frameRef}>
         {showPoster && cam && vp ? (
           <div className="n12-poster" data-testid="nx-poster" aria-hidden="true">
@@ -627,11 +823,13 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           </div>
         ) : null}
         <div className="n12-map" ref={mapEl} data-testid="nx-map" />
+        {tier && tier !== "static" && tier !== "reduced" && mapReady && !lost ? <DeepWater ready /> : null}
         {/* the static tier's data images (a page's baked frame) lie here, on the baked chart and under its names */}
         <div id="nx-chart-underlay" className="n12-underlay" aria-hidden="true" />
         {opening}
         <div className="n12-overlay" data-testid="nx-overlay">
           <RegulationLayer />
+          <DepthLabels />
           <CanyonName />
           <svg className="n12-leaders" aria-hidden="true" />
           <ChartLabels ports={ports} />
@@ -640,20 +838,16 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         </div>
         {scale ? (
           <div className="n12-scale" aria-label={`Scale bar ${scale.label}. Not for navigation.`}>
-            <span className="n12-scale-bar" style={{ width: scale.px }}>
-              <i />
-              <i />
-              <i />
-              <i />
-            </span>
-            <span className="n12-scale-text">{scale.label}. Not for navigation.</span>
+            <span className="n12-scale-bar" style={{ width: scale.px }} />
+            <span className="n12-scale-text">{scale.label}</span>
+            <span className="n12-scale-nfn">Not for navigation</span>
           </div>
         ) : null}
         {tier !== "static" && mapReady ? <ChartControls /> : null}
         <p className="n12-attrib">
           Depth NOAA ETOPO, CRM · Coast © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
         </p>
-        <Neatline camera={cam} viewport={vp} band={neat.band} label={neat.label} pane={{ left: coverRef.current.left, right: coverRef.current.right, bottom: coverRef.current.bottom }} />
+        <GraticuleLabels camera={cam} viewport={vp} insets={coverRef.current} />
       </div>
     </div>
   );

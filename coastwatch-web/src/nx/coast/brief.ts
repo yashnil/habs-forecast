@@ -67,6 +67,9 @@ export type TestGate = {
   stale: boolean;
   source: string;
   url: string;
+  /** where CDPH collected it, when CDPH names a known place; null otherwise (never guessed) */
+  lat: number | null;
+  lon: number | null;
 };
 
 export type CoastGates = {
@@ -84,7 +87,8 @@ export type CoastGates = {
 };
 
 export type SeaPeriod = { name: string; date: string | null; night: boolean; text: string; wind: string | null; seasLo: number | null; seasHi: number | null };
-export type CoastSea = { ok: true; now: string; sea: Omit<SeaView, "lanes"> & { lanes: SeaPeriod[] } };
+/** `windAt`: where the wind station stands (its published NDBC position), so its reading can be drawn there; null when unknown */
+export type CoastSea = { ok: true; now: string; sea: Omit<SeaView, "lanes"> & { lanes: SeaPeriod[] }; windAt?: { lat: number; lon: number } | null };
 export type CoastError = { ok: false; error: string };
 
 const TONE: Record<string, Tone> = { closed: "closure", delayed: "regulation", restricted: "regulation", watch: "regulation" };
@@ -157,6 +161,8 @@ export function gatesFrom(m: TodayModel, f: CoastFishery, opts: { now: string; f
           stale: t.stale,
           source: "CDPH",
           url: t.fact.source.url ?? "https://www.cdph.ca.gov/",
+          lat: t.site.lat ?? null,
+          lon: t.site.lon ?? null,
         }
       : null;
   return { ok: true, now: opts.now, fixture: opts.fixture, fishery: f.id, season, whale, test, statusError: m.statusError, testsError: m.testsError };

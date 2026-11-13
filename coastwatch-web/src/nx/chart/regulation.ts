@@ -68,10 +68,22 @@ export function noticeExtents(items: { id: string; agency: string; action: strin
 
 /** What a page asks the chart to draw in magenta. */
 export type ChartRegulationSpec = {
-  /** RAMP zone lines; `highlight` is the reader's zone (heavier, named first) */
-  zones?: { highlight: string | null } | null;
+  /**
+   * RAMP zone lines; `highlight` is the reader's zone (tinted, its limits heavier, named in a tag on the water);
+   * `caption` is the tag's second line, the zone's state in the record's words ("Season delayed · Fleet advisory"),
+   * drawn with the official-record ring (not verified)
+   */
+  zones?: { highlight: string | null; caption?: string | null } | null;
   /** official notice latitude bands */
   extents?: NoticeExtent[];
+  /**
+   * a health advisory's area as a latitude band (the rock crab "do not eat internal organs" advisory, CA/OR border to
+   * the Mendocino/Sonoma line): hatched water between the shore and the frame's west edge, lighter inside and heavier
+   * at its north and south limits, named with the record's words (`title`) and its provenance (`note`, which must say
+   * "not verified"). The record gives no offshore limit, so the band runs to the frame's edge. Illustrative-hatch
+   * coral: an area, not a measurement.
+   */
+  advisory?: { id: string; north: number; south: number; title: string; note: string } | null;
 };
 
 let current: { owner: number; spec: ChartRegulationSpec } | null = null;

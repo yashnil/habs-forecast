@@ -1,32 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { MotionConfig } from "motion/react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useEffect, useId, useMemo, useState } from "react";
+import { ChartRegulation, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
-import { Button, ButtonGroup, Disclosure, Hint, ToggleRow, VisuallyHidden, day, dayTime } from "@/nx/ds";
-import { Desk, DeskAside, DeskBody, DeskFoot, DeskHeader, DeskMain, PageLayout } from "@/nx/ds/layout";
-import { ChartToggle } from "@/nx/ds/layout/ChartToggle";
+import { Button, Dock, FollowButton, Glyph, MapLayers, Micro, PageLayout, Ticket, TicketMain, TicketStub, ToggleRow, Disclosure, VisuallyHidden, day, dayTime, panelIn } from "@/nx/ds";
 import { useOnline } from "@/nx/offline/useOffline";
 import { persistent } from "@/nx/personal/store";
-import { useCurrentPort, usePorts } from "@/nx/shell/port";
+import { useCurrentPort, usePorts, type ShellPort } from "@/nx/shell/port";
 import { portScene } from "@/nx/shell/views";
 import { TRIGGERS } from "@/pilot/alerts/diff";
+import { alertChange, shortTitle } from "./change";
+import { ChangeLine } from "./ChangeLine";
 import { runCheck } from "./check";
-import { MAX_FOLLOWS, follow, setTrigger, unfollow } from "./follow";
+import { MAX_FOLLOWS, follow, setTrigger, unfollow, type Follow } from "./follow";
 import type { InboxItem } from "./inbox";
 import { useFollows, useInbox, useLastCheck } from "./useInbox";
-import { CHANNELS, DELIVERY, LOCAL_ONLY, TRIGGER_WORDS, itemChange, itemTitle, lastCheckedWords, plainDates, reportWords } from "./words";
+import { useZoneCaption } from "./useZoneCaption";
+import { CHANNELS, DELIVERY, LOCAL_ONLY, TRIGGER_WORDS, itemChange, itemTitle, lastCheckedWords, recordWords, reportWords, asOfWord } from "./words";
 import s from "./alerts.module.css";
 
 /**
- * Alerts (PLAN decision 3; journeys.md Journey 2 "Alerts to subscribe"): the ports the reader follows, what
- * alerts them at each, and the alerts this device has made. A desk page: the list is the work, the chart shows
- * the port the reader came from.
+ * Alerts (v14 synthesis, SYSTEM.md "Alerts"; journeys.md Journey 2): the chart with Regulation on, and a ticket
+ * anchored to the port the alert is about. The ticket says the change: the record's words, the new date as the
+ * hero with the old one struck, the before → after on a date axis ("+14 days"), "Not verified" and its source, when
+ * this device noticed it; its one filled action opens the record. A dock along the foot says exactly how alerts
+ * arrive (DELIVERY, verbatim: on this device, when Neritic is opened, nothing sent) with the last check, "What alerts
+ * you" (the ports followed and their switches) and "Check now".
  *
- * It says exactly what happens: the ports are checked in this browser when Neritic is opened, nothing is
- * checked while it is closed, and nothing is sent to a phone or an inbox. The other ways an alert could arrive
- * are listed as not available, with nothing to fill in.
+ * Without an alert the ticket offers the port the reader came from ("Follow Bodega Bay"), or says the port is
+ * followed and nothing has changed. Follow state is the device's (follow.ts), so Today and the chart show the same.
  */
 export function AlertsPage() {
   const { port } = useCurrentPort();
@@ -39,11 +43,14 @@ export function AlertsPage() {
   const [busy, setBusy] = useState(false);
   const [kept, setKept] = useState(true);
   const [pick, setPick] = useState("");
+  const [picked, setPicked] = useState<string | null>(null);
+  const [opened, setOpened] = useState<string | null>(null);
+  const [kinds, setKinds] = useState<boolean | null>(null);
   const pickId = useId();
-  const name = useMemo(() => {
-    const m = new Map(ports.map((p) => [p.key, p.name]));
-    return (key: string) => m.get(key) ?? "A port no longer listed";
-  }, [ports]);
+  const panelId = useId();
+  const byKey = useMemo(() => new Map(ports.map((p) => [p.key, p])), [ports]);
+  const name = (key: string) => byKey.get(key)?.name ?? "A port no longer listed";
+  const sinceOf = (key: string) => follows?.find((f) => f.port === key)?.since ?? "";
 
   useEffect(() => setKept(persistent()), []);
 
@@ -52,6 +59,8 @@ export function AlertsPage() {
     const r = await runCheck({ force });
     setBusy(false);
     setSaid(reportWords(r, name));
+    // a new alert takes the ticket: the settings step aside for it
+    if (r.state === "checked" && r.added.length) setKinds(false);
   };
   // opening this page is opening Neritic: a check that is due runs now (the shell's watch asks the same check)
   useEffect(() => {
@@ -63,6 +72,12 @@ export function AlertsPage() {
   const offer = hydrated && port && !followed.has(port.key) ? port : null;
   const full = (follows?.length ?? 0) >= MAX_FOLLOWS;
   const others = ports.filter((p) => !followed.has(p.key));
+  const items = inbox?.items ?? [];
+  // the alert the ticket shows: the one the reader picked, else the newest unread, else the newest
+  const lead = items.find((i) => i.key === picked) ?? items.find((i) => !i.read_at) ?? items[0] ?? null;
+  const rest = lead ? items.filter((i) => i.key !== lead.key) : [];
+  // "What alerts you" never stands open at rest: the reader opens it, or following a port opens it to that port's switches
+  const kindsOpen = kinds ?? false;
 
   const start = (key: string) => {
     const r = follow(key);
@@ -71,229 +86,385 @@ export function AlertsPage() {
       return;
     }
     setPick("");
+    setKinds(true);
     void check(true);
   };
 
   const last = lastCheckedWords(stamp ?? null, (iso) => dayTime(iso), name);
+  const at: ShellPort | null = (lead ? byKey.get(lead.place_id) : null) ?? port;
+  const zone = at ? rampZoneAt(at.lat) : null;
+  const caption = useZoneCaption(at ? { key: at.key, name: at.name } : null);
+  const scene = portScene("alerts", at, 200);
 
   return (
     <MotionConfig reducedMotion="user">
-      <ChartScene scene={portScene("alerts", port, 30)} />
-      <PageLayout mode="desk" paneKey="alerts" defaultPane="rail" />
+      <PageLayout mode="stage" phoneMap={0.27} />
+      <MapLayers page="alerts" defaults={{ regulation: true }} />
+      <ChartScene scene={scene} />
+      <ChartRegulation spec={{ zones: { highlight: zone, caption } }} />
       <article className={s.page} data-testid="nx-alerts" data-ready={hydrated ? "1" : "0"}>
-        <Desk>
-          <DeskHeader context="Alerts" title="What changed at the ports you follow" titleProps={{ "data-testid": "alerts-title" }} status={<span data-testid="alerts-delivery">{DELIVERY}</span>} actions={<ChartToggle />} />
-          <DeskBody layout="main-aside" aside="end">
-            <DeskMain>
-              {!kept ? (
-                <Hint tone="caution">
-                  <span data-testid="alerts-not-kept">This browser is not keeping data (a private window, or site data is blocked). What you follow here lasts until you close this page.</span>
-                </Hint>
-              ) : null}
-              <section className={s.section} aria-labelledby="alerts-inbox">
-                <h2 id="alerts-inbox" className={s.h2}>
-                  Alerts{inbox && inbox.unread ? <span data-testid="alerts-unread">{` · ${inbox.unread} unread`}</span> : null}
-                </h2>
-                <Inbox items={inbox?.items} following={(follows?.length ?? 0) > 0} onRead={(k) => inbox?.markRead([k])} />
-                {inbox && inbox.items.length ? (
-                  <div className={s.actions}>
-                    <ButtonGroup>
-                      {inbox.unread ? (
-                        <Button variant="secondary" onClick={() => inbox.markRead("all")} data-testid="alerts-mark-read">
-                          Mark all read
-                        </Button>
-                      ) : null}
-                      <Button variant="secondary" onClick={inbox.clear} data-testid="alerts-clear">
-                        Clear the list
-                      </Button>
-                    </ButtonGroup>
-                  </div>
-                ) : null}
-              </section>
+        <h1 className={s.vh}>What changed at the ports you follow</h1>
+        <Ticket key={at?.key ?? "coast"} at={at} anchorY={176} width={472} labelledBy="alerts-title" className={s.ticket}>
+          {lead ? (
+            <LeadAlert item={lead} open={opened === lead.key} following={followed.has(lead.place_id)} since={sinceOf(lead.place_id)} />
+          ) : offer ? (
+            <TicketMain data-testid="alerts-offer" data-port={offer.key}>
+              <Micro>Alerts · {offer.name}</Micro>
+              <h2 id="alerts-title" className={s.offerHead}>
+                Follow {offer.name}
+              </h2>
+              <p className={s.offerText}>Its season status, official notices, toxin tests and whale measures are noted as they are now. A change is listed here the next time you open Neritic.</p>
+              <Empty following={false} />
+            </TicketMain>
+          ) : (
+            <TicketMain>
+              <Micro>{at && followed.has(at.key) ? `${at.name} · following${sinceOf(at.key) ? ` since ${day(sinceOf(at.key))}` : ""}` : "Alerts"}</Micro>
+              <h2 id="alerts-title" className={s.offerHead}>
+                {hydrated ? (follows?.length ? "Nothing has changed yet" : "Nothing followed yet") : " "}
+              </h2>
+              {hydrated ? <Empty following={(follows?.length ?? 0) > 0} /> : null}
+            </TicketMain>
+          )}
+          <TicketStub className={s.stub}>
+            {lead ? (
+              <div className={s.acts}>
+                <Button
+                  variant="primary"
+                  glyph={opened === lead.key ? "↑" : "↓"}
+                  aria-expanded={opened === lead.key}
+                  onClick={() => {
+                    setOpened(opened === lead.key ? null : lead.key);
+                    if (!lead.read_at) inbox?.markRead([lead.key]);
+                  }}
+                  data-testid="alerts-open"
+                >
+                  {opened === lead.key ? "Hide the record" : "Open the record"}
+                </Button>
+                <Button variant="quiet" href={`/today?place=${encodeURIComponent(lead.place_id)}`} glyph={null}>
+                  Today at {lead.place_label}
+                </Button>
+              </div>
+            ) : offer ? (
+              <div className={s.acts}>
+                <FollowButton name={offer.name} following={false} onChange={(on) => on && start(offer.key)} disabled={full} data-testid="alerts-follow" />
+              </div>
+            ) : at && followed.has(at.key) ? (
+              <div className={s.acts}>
+                <FollowButton variant="toggle" name={at.name} following onChange={(on) => !on && unfollow(at.key)} />
+                <Button variant="quiet" href={`/today?place=${encodeURIComponent(at.key)}`} glyph={null}>
+                  Today at {at.name}
+                </Button>
+              </div>
+            ) : (
+              <p className={s.small}>Choose a port under &ldquo;What alerts you&rdquo; to have it checked.</p>
+            )}
+          </TicketStub>
+        </Ticket>
 
-              <section className={s.section} aria-labelledby="alerts-when">
-                <h2 id="alerts-when" className={s.h2}>
-                  When your ports are checked
+        <Dock label="How alerts reach you" width={470} className={s.dock}>
+          <Micro as="h2">On this device only</Micro>
+          <p className={s.delivery} data-testid="alerts-delivery">
+            {DELIVERY}
+          </p>
+          {!kept ? (
+            <p className={s.notKept} data-testid="alerts-not-kept">
+              This browser is not keeping data (a private window, or site data is blocked). What you follow here lasts until you close this page.
+            </p>
+          ) : null}
+          <div className={s.row2}>
+            <span className={s.last} data-testid="alerts-last-checked">
+              {stamp === undefined ? "" : (last ?? "This device has not checked yet.")}
+            </span>
+            <span className={s.dockActs}>
+              <Button variant="quiet" onClick={() => setKinds(!kindsOpen)} aria-expanded={kindsOpen} aria-controls={panelId} data-testid="alerts-kinds">
+                What alerts you
+              </Button>
+              <Button variant="quiet" onClick={() => void check(true)} disabled={!online || !follows?.length} busy={busy} busyLabel="Checking" data-testid="alerts-check-now">
+                Check now
+              </Button>
+            </span>
+          </div>
+          <p className={s.said} role="status" data-testid="alerts-said">
+            {!online ? "You're offline: nothing can be checked. The alerts already on this device are above." : said}
+          </p>
+          {/* "What alerts you": the alerts on this device, the ports followed and their switches. Opened from here on demand;
+              on a wide screen it stands over the chart above the dock, on a phone it opens in place. */}
+          <motion.div id={panelId} className={s.panel} hidden={!kindsOpen} initial={false} animate={kindsOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }} transition={panelIn} data-testid="alerts-panel">
+            {items.length ? (
+              <section className={s.inbox} aria-labelledby="alerts-inbox">
+                <h2 id="alerts-inbox" className={s.inboxHead}>
+                  <Micro>
+                    {items.length === 1 ? "1 alert here" : `${items.length} alerts here`}
+                    {inbox && inbox.unread ? <span data-testid="alerts-unread">{` · ${inbox.unread} unread`}</span> : null}
+                  </Micro>
                 </h2>
-                <p className={s.lede}>
-                  Each time you open Neritic, this browser reads the published records for the ports you follow and compares them with what it saw last time. It does this at most once every 30 minutes. Neritic has no server watching
-                  your ports, so a change is listed the next time you open it, not the moment it happens.
-                </p>
-                <p className={s.status} data-testid="alerts-last-checked">
-                  {stamp === undefined ? "" : (last ?? "This device has not checked yet.")}
-                </p>
-                <div className={s.actions}>
-                  <Button variant="secondary" onClick={() => void check(true)} disabled={!online || !follows?.length} busy={busy} busyLabel="Checking" data-testid="alerts-check-now">
-                    Check now
+                {rest.length ? (
+                  <ul className={s.items} data-testid="alerts-items">
+                    {rest.map((i) => (
+                      <InboxRow key={i.key} item={i} onPick={() => setPicked(i.key)} />
+                    ))}
+                  </ul>
+                ) : null}
+                <div className={s.inboxActs}>
+                  {inbox && inbox.unread ? (
+                    <Button variant="quiet" onClick={() => inbox.markRead("all")} data-testid="alerts-mark-read">
+                      Mark all read
+                    </Button>
+                  ) : null}
+                  <Button variant="quiet" onClick={() => inbox?.clear()} data-testid="alerts-clear">
+                    Clear the list
                   </Button>
                 </div>
-                <p className={s.status} role="status" data-testid="alerts-said">
-                  {!online ? "You're offline: nothing can be checked. The alerts already on this device are above." : said}
-                </p>
               </section>
-
-              <section className={s.section} aria-labelledby="alerts-how">
-                <h2 id="alerts-how" className={s.h2}>
-                  How alerts reach you
-                </h2>
-                <ul className={s.rows} data-testid="alerts-channels">
+            ) : null}
+            {lead && offer ? (
+              <div className={s.offerRow} data-testid="alerts-offer" data-port={offer.key}>
+                <div>
+                  <h3 className={s.rowHead}>Follow {offer.name}</h3>
+                  <p className={s.small}>Its records are noted as they are now; a change is listed here.</p>
+                </div>
+                <FollowButton variant="toggle" name={offer.name} following={false} onChange={(on) => on && start(offer.key)} disabled={full} data-testid="alerts-follow" />
+              </div>
+            ) : null}
+                <Ports
+                  follows={follows}
+                  name={name}
+                  current={port?.key}
+                  empty={hydrated && !offer && !follows?.length}
+                />
+                {hydrated ? (
+                  <form
+                    className={s.add}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (pick) start(pick);
+                    }}
+                  >
+                    <label htmlFor={pickId} className={s.label}>
+                      Follow another port
+                    </label>
+                    <span className={s.addRow}>
+                      <select id={pickId} className={s.select} value={pick} onChange={(e) => setPick(e.target.value)} disabled={full} data-testid="alerts-add-port">
+                        <option value="">{full ? `${MAX_FOLLOWS} ports is the most` : "Choose a port"}</option>
+                        {others.map((p) => (
+                          <option key={p.key} value={p.key}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button variant="secondary" type="submit" disabled={!pick || full} data-testid="alerts-add">
+                        Follow
+                      </Button>
+                    </span>
+                  </form>
+                ) : null}
+                <h3 className={s.rowHead}>When your ports are checked</h3>
+                <p className={s.small}>
+                  Each time you open Neritic, this browser reads the published records for the ports you follow and compares them with what it saw last time, at most once every 30 minutes. Neritic has no server watching
+                  your ports, so a change is listed the next time you open it, not the moment it happens.
+                </p>
+                <h3 className={s.rowHead}>How alerts reach you</h3>
+                <ul className={s.channels} data-testid="alerts-channels">
                   {CHANNELS.map((c) => (
-                    <li key={c.id} className={s.row} data-off={c.available ? undefined : ""} data-channel={c.id}>
-                      <span className={s.rowLabel}>{c.label}</span>
-                      <span className={s.rowValue}>{c.state}</span>
+                    <li key={c.id} className={s.channel} data-off={c.available ? undefined : ""} data-channel={c.id}>
+                      <span>{c.label}</span>
+                      <span className={s.channelState}>{c.state}</span>
                     </li>
                   ))}
                 </ul>
                 <p className={s.small}>Neritic does not ask for a phone number or an email address, and has nowhere to send one.</p>
-              </section>
-            </DeskMain>
-
-            <DeskAside label="Ports you follow">
-              <h2 className={s.h2}>Ports you follow</h2>
-              {offer ? (
-                <div className={s.offer} data-testid="alerts-offer" data-port={offer.key}>
-                  <h3 className={s.h3}>Follow {offer.name}</h3>
-                  <p>Its season status, official notices, toxin tests and whale measures are noted as they are now. A change is listed here the next time you open Neritic.</p>
-                  <Button variant="primary" onClick={() => start(offer.key)} disabled={full} data-testid="alerts-follow">
-                    Follow {offer.name}
-                  </Button>
-                </div>
-              ) : null}
-              {follows && follows.length ? (
-                <ul className={s.ports} data-testid="alerts-follows">
-                  {follows.map((f) => (
-                    <li key={f.port} className={s.port} data-testid={`alerts-port-${f.port}`}>
-                      <div className={s.portHead}>
-                        <span className={s.portName}>{name(f.port)}</span>
-                        <Link href={`/today?place=${encodeURIComponent(f.port)}`} className={s.link}>
-                          Today<VisuallyHidden> at {name(f.port)}</VisuallyHidden>
-                        </Link>
-                      </div>
-                      <p className={s.portNote}>
-                        {f.triggers.length ? `${f.triggers.length} of ${TRIGGERS.length} kinds of change alert you` : "Followed, with every alert turned off"}
-                        {f.since ? ` · since ${day(f.since)}` : ""}
-                      </p>
-                      <Disclosure summary="What alerts you" defaultOpen={offerJustFollowed(f.port, port?.key)}>
-                        {TRIGGERS.map((t) => (
-                          <ToggleRow key={t} label={TRIGGER_WORDS[t].label} hint={TRIGGER_WORDS[t].hint} checked={f.triggers.includes(t)} onChange={(on) => setTrigger(f.port, t, on)} data-testid={`alerts-trigger-${f.port}-${t}`} />
-                        ))}
-                        <div className={s.actions}>
-                          <Button variant="secondary" onClick={() => unfollow(f.port)} data-testid={`alerts-unfollow-${f.port}`}>
-                            Stop following {name(f.port)}
-                          </Button>
-                        </div>
-                      </Disclosure>
-                    </li>
-                  ))}
-                </ul>
-              ) : hydrated && !offer ? (
-                <p className={s.empty} data-testid="alerts-no-follows">
-                  You follow no ports yet. Choose one below.
+                <p className={s.small} data-testid="alerts-local">
+                  {LOCAL_ONLY} The ports you follow and your alerts are not sent to Neritic or anyone else.{" "}
+                  <Link href="/account" className={s.link}>
+                    Your data and preferences
+                  </Link>{" "}
+                  shows what is kept and deletes it.
                 </p>
-              ) : null}
-              {hydrated ? (
-                <form
-                  className={s.add}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (pick) start(pick);
-                  }}
-                >
-                  <div className={s.field}>
-                    <label htmlFor={pickId} className={s.label}>
-                      Follow another port
-                    </label>
-                    <select id={pickId} className={s.select} value={pick} onChange={(e) => setPick(e.target.value)} disabled={full} data-testid="alerts-add-port">
-                      <option value="">{full ? `${MAX_FOLLOWS} ports is the most` : "Choose a port"}</option>
-                      {others.map((p) => (
-                        <option key={p.key} value={p.key}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button variant="secondary" type="submit" disabled={!pick || full} data-testid="alerts-add">
-                    Follow
-                  </Button>
-                </form>
-              ) : null}
-            </DeskAside>
-          </DeskBody>
-          <DeskFoot>
-            <p data-testid="alerts-local">
-              {LOCAL_ONLY} The ports you follow and your alerts are not sent to Neritic or anyone else.{" "}
-              <Link href="/account" className={s.link}>
-                Your data and preferences
-              </Link>{" "}
-              shows what is kept and deletes it.
-            </p>
-            <p>
-              An alert reports a change in a record. It is not advice, and official status always comes from CDFW and CDPH.{" "}
-              <Link href={port ? `/notices?place=${encodeURIComponent(port.key)}` : "/notices"} className={s.link} data-testid="alerts-notices">
-                Every current official notice
-              </Link>
-              .
-            </p>
-          </DeskFoot>
-        </Desk>
+                <p className={s.small}>
+                  An alert reports a change in a record. It is not advice, and official status always comes from CDFW and CDPH.{" "}
+                  <Link href={port ? `/notices?place=${encodeURIComponent(port.key)}` : "/notices"} className={s.link} data-testid="alerts-notices">
+                    Every current official notice
+                  </Link>
+                  .
+                </p>
+          </motion.div>
+        </Dock>
       </article>
     </MotionConfig>
   );
 }
 
-/** The port the reader came for opens with its choices showing. */
-const offerJustFollowed = (port: string, current: string | undefined) => port === current;
+/** The alert's kind on the ticket's micro line (the switch's full label is in the opened record and "What alerts you"). */
+const KIND: Record<InboxItem["trigger"], string> = {
+  status_change: "Season status",
+  new_toxin_result: "Toxin test",
+  ramp_action: "Whale measures",
+  bloom_risk_jump: "C-HARM model",
+  data_stale: "Record age",
+};
 
-function Inbox({ items, following, onRead }: { items: InboxItem[] | undefined; following: boolean; onRead: (key: string) => void }) {
-  if (items === undefined) return null;
-  if (!items.length)
-    return (
-      <p className={s.empty} data-testid="alerts-empty">
-        {following ? "No alerts yet. When something you follow changes, it is listed here the next time you open Neritic." : "Nothing is being followed, so there is nothing to list. Follow a port to start."}
-      </p>
-    );
+function Empty({ following }: { following: boolean }) {
   return (
-    <ul className={s.items} data-testid="alerts-items">
-      {items.map((i) => {
-        const change = itemChange(i);
-        return (
-          <li key={i.key} className={s.item} data-read={i.read_at ? "" : undefined} data-testid="alerts-item" data-trigger={i.trigger} data-port={i.place_id}>
-            <span className={s.dot} aria-hidden="true" />
-            <div>
-              <p className={s.itemPort}>
-                {i.read_at ? null : <VisuallyHidden>Unread. </VisuallyHidden>}
-                {i.place_label} · {TRIGGER_WORDS[i.trigger].label}
-              </p>
-              <h3 className={s.itemTitle}>{itemTitle(i)}</h3>
-              {change ? <p className={s.itemChange}>{change}</p> : null}
-              <p className={s.itemMeta}>
-                {i.source ? (
-                  i.source.url ? (
-                    <a href={i.source.url} className={s.link} target={i.source.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer">
-                      {i.source.name}
-                    </a>
-                  ) : (
-                    <span>{i.source.name}</span>
-                  )
-                ) : null}
-                {i.as_of ? <span>dated {day(i.as_of)}</span> : null}
-                <span>noticed {dayTime(i.created_at)}</span>
-                {i.basis === "official" && i.verified === false ? <span className={s.tag}>Not verified</span> : null}
-                {i.basis === "forecast" ? <span className={s.tag}>Model</span> : null}
-                {i.sample ? <span className={s.tag}>Sample data</span> : null}
-              </p>
-              <Disclosure summary="The record" onOpenChange={(open) => open && !i.read_at && onRead(i.key)}>
-                <p className={s.itemBody}>{plainDates(i.body)}</p>
-                <p className={s.small}>
-                  <Link href={`/today?place=${encodeURIComponent(i.place_id)}`} className={s.link}>
-                    Today at {i.place_label}
-                  </Link>
-                </p>
-              </Disclosure>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <p className={s.empty} data-testid="alerts-empty">
+      {following ? "No alerts yet. When something you follow changes, it is listed here the next time you open Neritic." : "Nothing is being followed, so there is nothing to list. Follow a port to start."}
+    </p>
   );
+}
+
+/** The ticket's alert: the record's words, the new date with the old struck, the dates on an axis, its provenance, the record. */
+function LeadAlert({ item: i, open, following, since }: { item: InboxItem; open: boolean; following: boolean; since: string }) {
+  const c = alertChange(i);
+  const change = itemChange(i);
+  const read = !!i.read_at;
+  const moved = c.now && c.was && c.days !== 0;
+  return (
+    <TicketMain className={s.alert} data-testid="alerts-item" data-read={read ? "" : undefined} data-trigger={i.trigger} data-port={i.place_id}>
+        <p className={s.kicker}>
+          <Glyph kind={read ? "read" : "unread"} />
+          <Micro>
+            {read ? "Read" : "Unread"} · {i.place_label} · {KIND[i.trigger]}
+          </Micro>
+        </p>
+        <h2 id="alerts-title" className={s.what}>
+          {shortTitle(i)}
+        </h2>
+        {/* a record that names no date: its own words are the statement */}
+        {c.now ? null : <p className={s.words}>{itemTitle(i)}</p>}
+        {c.now ? (
+          <p className={s.move} aria-hidden="true">
+            {moved ? (
+              <>
+                <span className={s.was}>{day(c.was!)}</span>
+                <svg className={s.arr} viewBox="0 0 34 22">
+                  <path d="M2 11h28M21 3l9 8-9 8" />
+                </svg>
+              </>
+            ) : null}
+            <span className={s.now}>{day(c.now)}</span>
+            {i.sample ? (
+              <span className={s.tag} data-tone="coral">
+                <Glyph kind="illustrative" />
+                <Micro>Sample</Micro>
+              </span>
+            ) : null}
+          </p>
+        ) : null}
+        {c.now && c.was ? <ChangeLine was={c.was} now={c.now} sample={i.sample} /> : null}
+        <div className={s.stamps}>
+          <p className={s.stamp}>
+            <Glyph kind={i.basis === "official" && i.verified === false ? "unverified" : i.basis === "forecast" ? "predicted" : "measured"} />
+            <span>
+              {i.source ? (
+                i.source.url ? (
+                  <a href={i.source.url} className={s.link} target={i.source.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer">
+                    {i.source.name}
+                  </a>
+                ) : (
+                  i.source.name
+                )
+              ) : (
+                "No source listed"
+              )}
+              {i.as_of ? ` · ${asOfWord(i)} ${day(i.as_of)}` : ""}
+              {i.basis === "official" && i.verified === false ? <span className={s.flag}>Not verified</span> : null}
+              {i.basis === "forecast" ? <span className={s.flag}>Model</span> : null}
+            </span>
+          </p>
+          <p className={s.noticed}>
+            Noticed on this device {dayTime(i.created_at)}
+            {following && since ? <span className={s.wideOnly}>{` · following since ${day(since)}`}</span> : null}
+          </p>
+          {i.sample ? (
+            <p className={s.stamp}>
+              <Glyph kind="illustrative" />
+              <span>Sample data, not a published change</span>
+            </p>
+          ) : null}
+        </div>
+        <AnimatePresence initial={false}>
+          {open ? (
+            <motion.div key="record" className={s.record} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={panelIn}>
+              <Micro as="p">
+                {i.place_label} · {TRIGGER_WORDS[i.trigger].label}
+              </Micro>
+              {c.now ? <p className={s.recordTitle}>{itemTitle(i)}</p> : null}
+              {change ? <p>{change}</p> : null}
+              <p>{recordWords(i.body)}</p>
+              {i.source?.url ? (
+                <p>
+                  <a href={i.source.url} className={s.link} target={i.source.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer">
+                    The record at {i.source.name}
+                    <span aria-hidden="true"> ↗</span>
+                  </a>
+                </p>
+              ) : null}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+    </TicketMain>
+  );
+}
+
+/** An earlier alert in the ticket's list: its state, port, kind and words; choosing it puts it in the ticket. */
+function InboxRow({ item: i, onPick }: { item: InboxItem; onPick: () => void }) {
+  const change = itemChange(i);
+  return (
+    <li className={s.item} data-read={i.read_at ? "" : undefined} data-testid="alerts-item" data-trigger={i.trigger} data-port={i.place_id}>
+      <Glyph kind={i.read_at ? "read" : "unread"} label={i.read_at ? "Read" : "Unread"} className={s.itemG} />
+      <div className={s.itemBody}>
+        <p className={s.itemPort}>
+          {i.place_label} · {TRIGGER_WORDS[i.trigger].label}
+        </p>
+        <h3 className={s.itemTitle}>
+          <button type="button" className={s.itemPick} onClick={onPick}>
+            {itemTitle(i)}
+          </button>
+        </h3>
+        {change ? <p className={s.itemMeta}>{change}</p> : null}
+        <p className={s.itemMeta}>
+          {i.source ? i.source.name : null}
+          {i.as_of ? ` · ${asOfWord(i)} ${day(i.as_of)}` : ""} · noticed {dayTime(i.created_at)}
+          {i.basis === "official" && i.verified === false ? <span className={s.flag}>Not verified</span> : null}
+          {i.basis === "forecast" ? <span className={s.flag}>Model</span> : null}
+          {i.sample ? <span className={s.flag}>Sample data</span> : null}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+/** The ports this device follows, each with what alerts the reader there (the port the address names opens). */
+function Ports({ follows, name, current, empty }: { follows: Follow[] | undefined; name: (k: string) => string; current: string | undefined; empty: boolean }) {
+  if (follows && follows.length)
+    return (
+      <ul className={s.ports} data-testid="alerts-follows">
+        {follows.map((f) => (
+          <li key={f.port} className={s.port} data-testid={`alerts-port-${f.port}`}>
+            <div className={s.portHead}>
+              <span className={s.portName}>{name(f.port)}</span>
+              <Link href={`/today?place=${encodeURIComponent(f.port)}`} className={s.link}>
+                Today<VisuallyHidden> at {name(f.port)}</VisuallyHidden>
+              </Link>
+            </div>
+            <p className={s.portNote}>
+              {f.triggers.length ? `${f.triggers.length} of ${TRIGGERS.length} kinds of change alert you` : "Followed, with every alert turned off"}
+              {f.since ? ` · since ${day(f.since)}` : ""}
+            </p>
+            <Disclosure summary="What alerts you" defaultOpen={f.port === current}>
+              {TRIGGERS.map((t) => (
+                <ToggleRow key={t} label={TRIGGER_WORDS[t].label} hint={TRIGGER_WORDS[t].hint} checked={f.triggers.includes(t)} onChange={(on) => setTrigger(f.port, t, on)} data-testid={`alerts-trigger-${f.port}-${t}`} />
+              ))}
+              <div className={s.portActs}>
+                <FollowButton variant="toggle" name={name(f.port)} following onChange={(on) => !on && unfollow(f.port)} data-testid={`alerts-unfollow-${f.port}`} />
+              </div>
+            </Disclosure>
+          </li>
+        ))}
+      </ul>
+    );
+  return empty ? (
+    <p className={s.small} data-testid="alerts-no-follows">
+      You follow no ports yet. Choose one below.
+    </p>
+  ) : null;
 }

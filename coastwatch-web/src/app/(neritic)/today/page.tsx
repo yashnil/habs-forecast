@@ -1,6 +1,7 @@
 import { isPortKey } from "@/lib/portRecord";
 import { loadToday } from "@/pilot/today/load";
 import { TodayPage } from "@/nx/today/TodayPage";
+import { noticeBands } from "@/nx/today/bands.server";
 
 export const metadata = { title: "Today at your port" };
 
@@ -14,6 +15,7 @@ export default async function Today({ searchParams }: { searchParams: SP }) {
   const raw = (await searchParams).place;
   const place = typeof raw === "string" && isPortKey(raw) ? raw : null;
   const l = place ? await loadToday(place).catch(() => null) : null;
-  const initial = place && l?.ok && l.inputs ? { key: place, inputs: l.inputs, fixture: l.fixture } : null;
+  const bands = l?.ok && l.inputs ? await noticeBands((l.inputs.notices ?? []).map((n) => n.id)) : {};
+  const initial = place && l?.ok && l.inputs ? { key: place, inputs: l.inputs, fixture: l.fixture, bands } : null;
   return <TodayPage initial={initial} />;
 }

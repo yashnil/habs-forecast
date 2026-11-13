@@ -5,9 +5,15 @@ import { NOW } from "./data";
 import { SectionsA } from "./SectionsA";
 import { SectionsB } from "./SectionsB";
 import { SectionsC } from "./SectionsC";
+import { SectionsD } from "./SectionsD";
 import s from "./catalog.module.css";
 
 export const INDEX: Array<[string, string]> = [
+  ["v14-grammar", "Data-state grammar (v14)"],
+  ["v14-buttons", "Buttons, chips, tabs (v14)"],
+  ["v14-ticket", "Ticket (v14)"],
+  ["v14-dock", "Dock, SeaBars (v14)"],
+  ["v14-pass", "Pass, Waterfall, Dumbbell (v14)"],
   ["foundations", "Foundations"],
   ["statement", "Statement"],
   ["bigdate", "BigDate"],
@@ -49,7 +55,7 @@ export function Catalog({ initialMode }: { initialMode: ChartMode }) {
         <header className={s.masthead}>
           <div className={s.mastLeft}>
             <p className={s.wordmark}>Neritic</p>
-            <p className={s.mastNote}>Chart design system · v12 and v13</p>
+            <p className={s.mastNote}>Design system · v14 synthesis, with the v12 and v13 parts</p>
           </div>
           <Segmented label="Chart mode" hideLabel options={CHART_MODES.map((m) => ({ value: m, label: CHART_MODE_LABEL[m] }))} value={mode} onChange={choose} />
         </header>
@@ -71,6 +77,7 @@ export function Catalog({ initialMode }: { initialMode: ChartMode }) {
               </p>
               <Legend kinds={["measured", "model", "official", "noview", "stale"]} title="The five marks, stated once for this page" />
             </div>
+            <SectionsD />
             <SectionsA mode={mode} />
             <SectionsB />
             <SectionsC />

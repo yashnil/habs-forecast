@@ -28,8 +28,8 @@ export function OpeningStill() {
 
 const html = () => document.documentElement;
 const state = () => html().getAttribute("data-nx-opening");
-const MINOR = 0.42;
-const INDEX = 0.78;
+const MINOR = 0.3;
+const INDEX = 0.62;
 
 function finalPaint(map: MapLibreMap) {
   for (const d of DEPTH_THRESHOLDS) {
@@ -133,8 +133,8 @@ export function OpeningController() {
         });
         at(T(OPENING.isobathsInk[1]), () => {
           // the live lines take over from the drawn ones
-          map.setPaintProperty("isobaths-minor", "line-opacity", MINOR);
-          map.setPaintProperty("isobaths-index", "line-opacity", INDEX);
+          if (map.getLayer("isobaths-minor")) map.setPaintProperty("isobaths-minor", "line-opacity", MINOR);
+          if (map.getLayer("isobaths-index")) map.setPaintProperty("isobaths-index", "line-opacity", INDEX);
           stops.push(animate(svg, { opacity: [1, 0] }, fadeOut));
         });
         at(T(OPENING.tintsFlood[0]), () => {
@@ -157,7 +157,7 @@ export function OpeningController() {
         html().setAttribute("data-nx-marks", "on");
         const overlay = document.querySelector<HTMLElement>(".n12-overlay");
         if (overlay) stops.push(animate(overlay, { opacity: [0, 1] }, register));
-        if (map) map.setPaintProperty("isobath-labels", "text-opacity", 1);
+        if (map?.getLayer("isobath-labels")) map.setPaintProperty("isobath-labels", "text-opacity", 1);
       });
       at(T(OPENING.total), finish);
     };

@@ -1,173 +1,157 @@
-/* Neritic v12 shell: the bar, the phone tab bar, the margin column / phone sheet, the port finder and the
-   one entry's pre-paint gating. Colours, type, space and motion only from src/nx/ds/tokens.css. */
+/* Neritic v14 shell (docs/coastwatch/v14/design-system/README.md §2): one full-bleed chart behind every page, a
+   floating top bar (brand + port, the nav pill), the layer chips, the page as a stage of floating objects; on a phone
+   a chart strip, one bottom sheet and a tab bar. Colours, type, space and motion only from src/nx/ds/tokens.css.
+   From the approved prototype's style.css (.bar, .brand, .nav, .layers, .sheet, phone rules). */
 
 .n12-app {
-  /* the phone sheet's resting height: the chart's free area and the opening's still both read it */
-  --n12-rest: min(44dvh, 340px);
-  --font-serif: var(--nx-literata), Georgia, serif;
-  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
   position: fixed;
   inset: 0;
   z-index: 1;
   overflow: hidden;
-  background: var(--paper);
+  background: var(--depth-8);
   color: var(--ink);
-  font-family: var(--font-sans);
-  font-size: var(--type-body);
-  line-height: 1.5;
-  font-feature-settings: normal;
+  font-family: var(--font);
+  font-weight: var(--w5);
+  font-size: var(--fs-15);
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
 }
 :where(.n12-app) a { color: inherit; }
-.n12-app :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-/* a native checkbox, drawn in the system's terms in every chart mode: an empty ruled box when unticked, an ink
-   box with a paper tick when ticked (the browser's own, on a dark scheme, drew the empty box solid) */
+:where(.n12-app) b, :where(.n12-app) strong { font-weight: var(--w7); }
+.n12-app :focus-visible { outline: 2.5px solid var(--focus, var(--ultra)); outline-offset: 2px; }
 :where(.n12-app) input[type="checkbox"] {
   appearance: none; -webkit-appearance: none; position: relative; flex: none; width: 20px; height: 20px; margin: 0;
-  border: var(--rule) solid var(--ink); border-radius: var(--r-1); background: var(--paper); cursor: pointer; vertical-align: middle;
+  border: 1.8px solid var(--ink-2); border-radius: 5px; background: var(--paper); cursor: pointer; vertical-align: middle;
 }
-:where(.n12-app) input[type="checkbox"]:checked { background: var(--ink); }
+:where(.n12-app) input[type="checkbox"]:checked { background: var(--ultra); border-color: var(--ultra); }
 :where(.n12-app) input[type="checkbox"]:checked::after {
   content: ""; position: absolute; inset: 2px; background: var(--paper);
   clip-path: polygon(14% 52%, 27% 39%, 42% 55%, 74% 20%, 88% 33%, 43% 82%);
 }
-:where(.n12-app) input[type="checkbox"]:disabled { border-style: dashed; border-color: var(--ink-2); cursor: not-allowed; }
-:where(.n12-app) input[type="checkbox"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-:where(.n12-app) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; border-radius: var(--r-0); }
+:where(.n12-app) input[type="checkbox"]:disabled { border-style: dashed; border-color: var(--ink-3); cursor: not-allowed; }
+:where(.n12-app) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 
-/* the chart is never part of a route's snapshot: only the margin is (React <ViewTransition name="nx-margin">) */
-:root:has(.n12-app) { view-transition-name: none; }
-/* `swap` (ds/motion): the old page out, then the new one in. In sequence, so two pages are never legible at once. */
-::view-transition-old(.nx-margin-swap) { animation-duration: var(--dur-swap-out); animation-timing-function: linear; animation-fill-mode: both; }
-::view-transition-new(.nx-margin-swap) { animation-duration: var(--dur-swap-in); animation-delay: var(--dur-swap-out); animation-timing-function: var(--ease-out); animation-fill-mode: both; }
-::view-transition-group(.nx-margin-swap) { animation-duration: var(--dur-swap-out); }
-::view-transition-image-pair(.nx-margin-swap) { isolation: auto; }
-::view-transition-old(.nx-margin-swap), ::view-transition-new(.nx-margin-swap) { mix-blend-mode: normal; }
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(.nx-margin-swap), ::view-transition-new(.nx-margin-swap), ::view-transition-group(.nx-margin-swap) { animation: none; }
-}
-
-.n12-skip { position: absolute; left: var(--s-8); top: -60px; z-index: 30; padding: var(--s-8) var(--s-12); background: var(--paper); border: var(--hair) solid var(--ink); }
+.n12-skip { position: absolute; left: var(--s-8); top: -60px; z-index: 60; padding: var(--s-8) var(--s-12); background: var(--paper); border-radius: var(--r-sm); box-shadow: var(--shadow-sm); }
 .n12-skip:focus { top: var(--s-8); }
 .n12-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* ------------------------------------------------------------------ the bar */
+/* ------------------------------------------------------------------ the top bar */
 .n12-bar {
-  position: absolute; top: 0; left: 0; right: 0; height: var(--bar-h); z-index: 10;
-  display: flex; align-items: center; gap: var(--s-24); padding: 0 var(--s-24);
-  background: var(--paper);
+  position: absolute; top: var(--bar-top); left: var(--gutter); right: var(--gutter); z-index: 30;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-12); pointer-events: none;
 }
-.n12-wordmark { display: inline-flex; align-items: center; min-height: 44px; font-family: var(--font-serif); font-size: var(--t-22); font-weight: 500; text-decoration: none; letter-spacing: -0.005em; font-variation-settings: "opsz" 24; }
-.n12-port-control { display: inline-flex; align-items: center; gap: var(--s-4); min-height: 44px; font-weight: 600; white-space: nowrap; }
-.n12-port-control-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
-.n12-chev { flex: none; }
-.n12-dest { display: flex; gap: var(--s-4); margin-left: auto; }
-.n12-dest-link, .n12-bar-link {
-  position: relative; display: inline-flex; align-items: center; min-height: var(--bar-h); padding: 0 var(--s-12);
-  text-decoration: none; white-space: nowrap; color: var(--ink-2); font-weight: 500;
-  border-bottom: 2px solid transparent; transition: color var(--dur-quick) linear, border-color var(--dur-quick) linear;
+.n12-bar > * { pointer-events: auto; }
+.nx-brand { position: relative; display: flex; align-items: center; min-width: 0; height: var(--bar-h); padding: 0 5px 0 13px; background: var(--paper); border-radius: var(--r-bar); box-shadow: var(--shadow-sm); }
+.nx-brand-home { display: flex; align-items: center; gap: 9px; height: var(--bar-h); padding-right: var(--s-12); color: var(--ink); text-decoration: none; flex: none; }
+.nx-brand-mark { width: 24px; height: 24px; color: var(--ultra); flex: none; }
+.nx-brand-mark path { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.nx-brand-name { font-weight: var(--w7); font-size: var(--fs-18); letter-spacing: -0.02em; }
+.nx-brand-port {
+  display: inline-flex; align-items: center; gap: var(--s-8); min-width: 0; height: 38px; padding: 0 11px 0 var(--s-12);
+  border-left: 1.5px solid var(--line); border-radius: 0 var(--r-pill) var(--r-pill) 0;
+  font-size: var(--fs-15); font-weight: var(--w6); color: var(--ink-2); white-space: nowrap;
+  transition: background-color var(--dur-hover) linear, color var(--dur-hover) linear;
 }
-.n12-dest-link:hover, .n12-bar-link:hover { color: var(--ink); background: var(--wash); }
-.n12-dest-link:active, .n12-bar-link:active, .n12-port-control:active { background: var(--sel); }
-.n12-port-control { padding: 0 var(--s-8); margin: 0 calc(-1 * var(--s-8)); transition: background-color var(--dur-quick) linear; }
-.n12-port-control:hover { background: var(--wash); }
-.n12-menu-links a:hover, .n12-mode-option:hover { background: var(--wash); }
-.n12-dest-link[aria-current="page"] { color: var(--ink); font-weight: 600; }
-.n12-dest-link[aria-current="page"]:not(:has(.n12-dest-on)) { border-bottom-color: var(--ink); }
-.n12-dest-on { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink); }
-/* the unread count beside Alerts: ink on paper, a figure and nothing else (no dot, no hue) */
-.n12-unread { margin-left: var(--s-4); min-width: 20px; padding: 0 var(--s-4); border: var(--hair) solid var(--ink); font-size: var(--type-small); font-weight: 700; line-height: 18px; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
-.n12-bar-end { display: flex; align-items: center; gap: var(--s-4); }
+.nx-brand-port:hover, .nx-brand-port[aria-expanded="true"] { background: var(--paper-2); color: var(--ink); }
+.n12-port-control-name { min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.nx-port-chev { width: 10px; height: 6px; flex: none; }
+.nx-port-chev path { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.nx-bar-end { display: flex; align-items: flex-start; gap: var(--s-8); flex: none; }
+.nx-nav { position: relative; display: flex; gap: 2px; height: var(--bar-h); padding: 5px; background: var(--paper); border-radius: var(--r-bar); box-shadow: var(--shadow-sm); }
+.n12-dest-link {
+  position: relative; display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 15px; border-radius: var(--r-pill);
+  font-size: var(--fs-15); font-weight: var(--w6); color: var(--ink-2); text-decoration: none; white-space: nowrap;
+  transition: background-color var(--dur-hover) linear, color var(--dur-hover) linear;
+}
+.n12-dest-link:hover { color: var(--ink); background: var(--paper-2); }
+.n12-dest-link[aria-current="page"] { color: var(--paper); }
+.n12-dest-link[aria-current="page"]:hover { background: transparent; }
+/* before hydration the current section is filled by the stylesheet; after, the sliding pill does it */
+.n12-dest-link[aria-current="page"]:not(:has(.n12-dest-on)) { background: var(--ink); }
+.n12-dest-on { position: absolute; inset: 0; border-radius: var(--r-pill); background: var(--ink); z-index: 0; }
+.nx-dest-word, .nx-count { position: relative; z-index: 1; }
+.nx-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; background: var(--ultra); color: var(--primary-fg); font-size: var(--fs-11); font-weight: var(--w7); font-variant-numeric: tabular-nums; }
 
 .n12-menu { position: relative; }
+.nx-menu-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-6); height: var(--bar-h); min-width: var(--bar-h); padding: 0 var(--s-12); background: var(--paper); border-radius: var(--r-bar); box-shadow: var(--shadow-sm); color: var(--ink); font-weight: var(--w6); }
+.nx-menu-btn:hover, .nx-menu-btn[aria-expanded="true"] { background: var(--paper-2); }
+.nx-menu-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .n12-menu-panel {
-  position: absolute; right: 0; top: calc(100% - 4px); z-index: 20; width: 304px; max-width: calc(100vw - var(--s-16));
-  max-height: calc(100dvh - var(--bar-h) - var(--s-16)); overflow: auto; overscroll-behavior: contain; padding: var(--s-16);
-  background: var(--paper); border: var(--hair) solid var(--ink);
+  position: absolute; right: 0; top: calc(var(--bar-h) + var(--s-8)); z-index: 40; width: 304px; max-width: calc(100vw - 2 * var(--gutter));
+  max-height: calc(100dvh - var(--bar-top) - var(--bar-h) - var(--s-24)); overflow: auto; overscroll-behavior: contain; padding: var(--s-8);
+  background: var(--paper); border-radius: var(--r-bar); box-shadow: var(--shadow);
 }
-.n12-mode { border: 0; margin: 0 0 var(--s-16); padding: 0; }
-.n12-mode legend { font-weight: 600; margin-bottom: var(--s-8); }
-.n12-mode-option { display: flex; align-items: center; gap: var(--s-12); min-height: var(--target); cursor: pointer; }
-.n12-mode-option input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; }
-.n12-mode-option small { display: block; font-size: var(--type-small); color: var(--ink-2); }
-.n12-menu-links { display: grid; border-top: var(--hair) solid var(--rule-soft); padding-top: var(--s-8); }
-.n12-menu-links a { min-height: 44px; display: flex; align-items: center; text-decoration: none; }
+.n12-menu-links { display: grid; padding-bottom: var(--s-8); border-bottom: var(--hair) solid var(--line); }
+.n12-menu-links a { display: flex; align-items: center; min-height: 40px; padding: 0 var(--s-10); border-radius: var(--r-sm); font-weight: var(--w6); text-decoration: none; }
+.n12-menu-links a:hover, .n12-mode-option:hover { background: var(--paper-2); }
+.n12-mode { border: 0; margin: var(--s-8) 0; padding: 0 var(--s-10); }
+.n12-mode legend { font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--ink-2); margin-bottom: var(--s-4); }
+.n12-mode-option { display: flex; align-items: center; gap: var(--s-12); min-height: var(--target); margin: 0 calc(-1 * var(--s-10)); padding: 0 var(--s-10); border-radius: var(--r-sm); cursor: pointer; }
+.n12-mode-option input { width: 18px; height: 18px; accent-color: var(--ultra); margin: 0; }
+.n12-mode-option small { font-size: var(--fs-13); color: var(--ink-2); }
+.n12-menu-note { margin: var(--s-8) var(--s-10) var(--s-4); font-size: var(--fs-11); color: var(--ink-2); }
 
-/* ------------------------------------------------------------------ the workspace (v13 README §1) */
-/* One grid under the bar: the page (a margin, or a desk), the divider, the chart pane. The page's mode is a
-   hidden marker in its own HTML (ds/layout PageLayout), so this lays out before any script runs. */
-.n12-work {
-  --pane-w: clamp(320px, 28vw, 440px);
-  position: absolute; top: var(--bar-h); left: 0; right: 0; bottom: 0; z-index: 1;
-  display: grid; grid-template-columns: var(--margin-w) 0 minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
-}
+/* the layer chips, under the brand, first in tab order after the nav */
+.nx-layers { position: absolute; left: var(--gutter); top: var(--chips-top); z-index: 25; }
+
+/* ------------------------------------------------------------------ the workspace */
+.n12-work { position: absolute; inset: 0; z-index: 1; }
+.n12-pane { position: absolute; inset: 0; z-index: 0; }
 .n12-margin-rest { position: absolute; left: 0; right: 0; bottom: var(--tabbar-h); pointer-events: none; visibility: hidden; display: none; }
-.n12-margin {
-  grid-column: 1; grid-row: 1; position: relative; z-index: 5; min-width: 0; min-height: 0;
-  display: flex; flex-direction: column; background: var(--paper);
-  outline: none;
-}
-.n12-margin-scroll { scroll-padding: var(--s-24) 0 var(--s-32); flex: 1; min-height: 0; overflow: auto; padding: var(--s-24) var(--s-24) var(--s-32) var(--s-24); overscroll-behavior: contain; }
-.n12-margin-page { min-height: 100%; }
 .n12-sheet-top { display: none; }
-.n12-divider { display: none; grid-column: 2; grid-row: 1; }
-.n12-pane { --frame-l: calc(var(--neat-label) + var(--neat-band) + 6px); --frame-r: calc(var(--neat-band) + var(--s-16)); grid-column: 3; grid-row: 1; position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--paper); }
-.n12-dock-slot { flex: none; min-width: 0; }
-.n12-pane-rail, .n12-pane-bar, .n12-pane-close { display: none; }
+.nx-ghosts { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.n12-pane-bar, .n12-pane-close, .n12-pane-rail { display: none; }
 
-/* ---- desk mode: the page's work takes the space, the chart is a pane the reader sizes */
+/* stage (v14 pages): the page is a transparent stage; its objects place themselves over the chart */
+.n12-margin { position: absolute; inset: 0; z-index: 3; outline: none; pointer-events: none; display: flex; flex-direction: column; }
+.n12-margin-scroll, .n12-margin-page { display: contents; }
+.n12-app:has([data-nx-layout="stage"]) .n12-margin { padding: var(--stage-top) var(--gutter) 0; align-items: flex-start; }
+.n12-margin-page > * { pointer-events: auto; }
+.n12-margin-page > [hidden] { display: none; }
+
+/* a v13 page's ChartDock (Explore's time): a dock along the chart's foot */
+.n12-dock-slot { position: absolute; left: var(--gutter); bottom: var(--gutter); right: calc(var(--ticket-w) + 2 * var(--gutter)); z-index: 2; background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow); overflow: hidden; }
+.n12-dock-slot:empty { display: none; }
+
+/* chart (a v13 page not yet moved): its column floats as a card on the right */
+.n12-app:not(:has([data-nx-layout])) .n12-margin,
+.n12-app:has([data-nx-layout="chart"]) .n12-margin {
+  inset: var(--stage-top) var(--gutter) var(--gutter) auto; width: var(--ticket-w); pointer-events: auto;
+  background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow); overflow: hidden;
+}
+.n12-app:not(:has([data-nx-layout])) .n12-margin-scroll,
+.n12-app:has([data-nx-layout="chart"]) .n12-margin-scroll,
+.n12-app:has([data-nx-layout="desk"]) .n12-margin-scroll { display: block; flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scroll-padding: var(--s-24) 0 var(--s-32); padding: var(--s-24) var(--pad-obj-x) var(--s-32); }
+.n12-app:not(:has([data-nx-layout])) .n12-margin-page,
+.n12-app:has([data-nx-layout="chart"]) .n12-margin-page,
+.n12-app:has([data-nx-layout="desk"]) .n12-margin-page { display: block; min-height: 100%; }
+
+/* desk (a v13 desk page not yet moved): a wide floating panel on the left */
+.n12-app:has([data-nx-layout="desk"]) .n12-margin {
+  inset: var(--stage-top) auto var(--gutter) var(--gutter); width: min(880px, calc(100% - 2 * var(--gutter) - 380px)); pointer-events: auto;
+  background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow); overflow: hidden;
+}
 .n12-app:has([data-nx-layout="desk"]) .n12-margin-scroll { padding: 0 var(--s-32); }
 .n12-app:has([data-nx-layout="desk"]) .n12-margin-page { display: flex; flex-direction: column; }
 .n12-app:has([data-nx-layout="desk"]) .n12-margin-page > [data-nx-desk] { flex: 1 1 auto; }
+.n12-app:has([data-nx-layout="desk"]) .n12-dock-slot { left: calc(min(880px, calc(100% - 2 * var(--gutter) - 380px)) + 2 * var(--gutter)); right: var(--gutter); }
 
-@media (min-width: 1100px) and (min-height: 520px) {
-  .n12-app:has([data-nx-layout="desk"]) .n12-work { grid-template-columns: minmax(0, 1fr) 16px var(--pane-w); }
-  .n12-work[data-pane="split"] { --pane-w: 50%; }
-  .n12-work[data-pane="chart"] { --pane-w: calc(100% - 436px); }
-  .n12-work[data-pane="rail"] { --pane-w: 48px; }
-  .n12-app:has([data-nx-layout="desk"]) .n12-divider {
-    display: block; position: relative; cursor: col-resize; touch-action: none; background: var(--paper);
-  }
-  /* the rule the hand takes: a hairline, heavier on hover, focus and while it is dragged */
-  .n12-divider::after { content: ""; position: absolute; top: var(--s-16); bottom: var(--s-16); left: 7px; width: var(--hair); background: var(--rule-soft); transition: background-color var(--dur-quick) linear; }
-  .n12-divider:hover::after, .n12-divider:focus-visible::after, .n12-work[data-pane-resizing] .n12-divider::after { left: 6px; width: 3px; background: var(--ink); }
-  .n12-divider:focus-visible { outline: none; }
-  .n12-app:has([data-nx-layout="desk"]) .n12-pane { overflow: hidden; }
-  /* while the divider is dragged the chart keeps its size and is only clipped: it resizes once, on release */
-  .n12-work[data-pane-resizing] .n12-sheet { width: var(--pane-hold); align-self: flex-end; }
-  .n12-work[data-pane-resizing] { user-select: none; }
-  /* collapsed to the rail: the chart keeps a size (and its one map instance) out of sight */
-  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane="rail"] .n12-sheet { width: 360px; align-self: flex-start; visibility: hidden; }
-  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane="rail"] .n12-dock-slot { display: none; }
-  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane="rail"] .n12-pane-rail {
-    display: flex; flex-direction: column; align-items: center; gap: var(--s-8); position: absolute; inset: 0; padding-top: var(--s-16);
-    border-left: var(--hair) solid var(--rule-soft); font-weight: 600; color: var(--ink);
-  }
-  .n12-pane-rail:hover { background: var(--wash); }
-  .n12-pane-rail span { white-space: nowrap; }
-  .n12-pane-rail span { writing-mode: vertical-rl; }
-}
-
-/* ---- narrow or short (a small laptop, a phone on its side): the desk has the width; the chart opens over it */
-@media (min-width: 721px) and (max-width: 1099px), (min-width: 721px) and (max-height: 519px) {
-  .n12-app:has([data-nx-layout="desk"]) .n12-work { grid-template-columns: minmax(0, 1fr) 0 0; }
-  .n12-app:has([data-nx-layout="desk"]) .n12-pane {
-    /* an absolutely placed grid item is placed against its grid area: the whole grid here */
-    grid-column: 1 / -1; position: absolute; top: 0; right: 0; bottom: 0; left: auto; width: min(60%, 560px); z-index: 8;
-    border-left: var(--rule) solid var(--ink); visibility: hidden;
-  }
-  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] .n12-pane { visibility: visible; }
+/* a narrow screen: the desk has the width; the chart opens from its header's Chart button, the panel steps aside */
+@media (min-width: 641px) and (max-width: 1099px) {
+  .n12-app:has([data-nx-layout="desk"]) .n12-margin { width: calc(100% - 2 * var(--gutter)); }
+  .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] .n12-margin { visibility: hidden; }
   .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] .n12-pane-close {
-    display: inline-flex; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; z-index: 3;
-    width: var(--target); height: var(--target); background: var(--paper); color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center; position: absolute; top: var(--stage-top); left: var(--gutter); z-index: 6;
+    width: var(--target); height: var(--target); background: var(--paper); color: var(--ink); border-radius: var(--r-ctl); box-shadow: var(--shadow-sm);
   }
 }
 
-.n12-kicker { margin: 0 0 var(--s-12); font-size: var(--type-body); font-weight: 600; color: var(--ink); }
-.n12-statement { margin: 0; font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.012em; color: var(--ink); text-wrap: balance; }
-.n12-statement-l { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
-.n12-statement-m { font-size: var(--t-36); line-height: 1.1; font-variation-settings: "opsz" 48; }
-.n12-skip-opening { display: none; min-height: var(--target); padding: 0 var(--s-16); border: var(--hair) solid var(--ink); font-weight: 600; }
+.n12-kicker { margin: 0 0 var(--s-12); font-size: var(--fs-15); font-weight: var(--w6); color: var(--ink); }
+.n12-statement { margin: 0; font-family: var(--font); font-weight: var(--w7); letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
+.n12-statement-l { font-size: var(--fs-40); line-height: 1.08; }
+.n12-statement-m { font-size: var(--fs-25); line-height: 1.12; }
+.n12-skip-opening { display: none; min-height: var(--target); padding: 0 var(--s-16); border-radius: var(--r-ctl); box-shadow: inset 0 0 0 1.6px var(--ink); font-weight: var(--w6); }
 html[data-nx-opening="on"] .n12-skip-opening, html[data-nx-opening="run"] .n12-skip-opening { display: inline-flex; align-items: center; }
 
 /* `/`: home or Today, chosen before the first paint (src/nx/shell/entry.ts) */
@@ -177,103 +161,129 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
 /* ------------------------------------------------------------------ the phone tab bar */
 .n12-tabs { display: none; }
 
-@media (max-width: 1100px) and (min-width: 721px) {
-  .n12-bar { gap: var(--s-12); padding: 0 var(--s-16); }
-  .n12-dest-link, .n12-bar-link { padding: 0 var(--s-8); }
+@media (max-width: 1100px) and (min-width: 641px) {
+  .n12-dest-link { padding: 0 var(--s-12); }
   .n12-port-control-name { max-width: 150px; }
 }
+@media (max-width: 860px) and (min-width: 641px) {
+  .n12-dest-link { padding: 0 var(--s-8); font-size: var(--fs-13); }
+  .nx-brand-name { display: none; }
+}
 
-@media (max-width: 720px) {
-  .n12-bar { gap: var(--s-8); padding: 0 var(--s-8) 0 var(--s-16); }
-  .n12-dest { display: none; }
-  .n12-bar-end { margin-left: auto; gap: 0; }
-  .n12-bar-link { padding: 0 var(--s-8); }
+/* ------------------------------------------------------------------ phone: a chart strip, one sheet, a tab bar */
+@media (max-width: 640px) {
+  .n12-bar { right: calc(var(--s-12) + 44px + var(--s-8) + 108px); left: var(--s-12); }
+  .nx-brand { padding: 0 3px 0 11px; border-radius: 13px; }
+  .nx-brand-home { padding-right: var(--s-10); }
+  /* every control in the bar is a 44 px target on a phone: the port control fills the pill's height */
+  .nx-brand-port { min-width: 44px; height: 44px; padding: 0 9px 0 var(--s-10); }
   .n12-port-control-name { max-width: 128px; }
+  .nx-bar-end { position: fixed; top: var(--bar-top); right: var(--s-12); }
+  .nx-nav { display: none; }
+  .nx-menu-btn { height: 44px; min-width: 44px; padding: 0; border-radius: 13px; }
+  .nx-layers { left: auto; top: var(--bar-top); right: calc(var(--s-12) + 44px + var(--s-8)); }
   .n12-tabs {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 10;
-    padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--paper); border-top: var(--hair) solid var(--rule-soft);
+    display: flex; gap: 2px; position: absolute; left: 0; right: 0; bottom: 0; z-index: 40;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); padding: 6px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--paper); border-top: var(--hair) solid var(--line);
   }
-  .n12-tab { position: relative; display: flex; align-items: center; justify-content: center; min-height: var(--target); text-decoration: none; color: var(--ink-2); font-weight: 500; border-top: 2px solid transparent; white-space: nowrap; }
-  .n12-tab[aria-current="page"] { color: var(--ink); font-weight: 600; }
-  .n12-tab[aria-current="page"]:not(:has(.n12-tab-on)) { border-top-color: var(--ink); }
-  .n12-tab-on { position: absolute; left: 0; right: 0; top: -2px; height: 2px; background: var(--ink); }
+  .n12-tabs .n12-dest-link { flex: 1; height: 48px; justify-content: center; padding: 0 2px; font-size: var(--fs-13); gap: 5px; }
 
-  /* chart mode: the chart fills the work area and the margin is a sheet over its lower part: it rests showing
-     the statement and is dragged or stepped up to read on. The same element at every width: before hydration
-     it stands at the resting height; after, Motion gives it its reading height and slides it down to a detent. */
-  .n12-work { display: block; }
-  .n12-pane { --frame-l: calc(var(--neat-label) + var(--neat-band) + 4px); --frame-r: calc(var(--neat-band) + var(--s-8)); position: absolute; top: 0; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+  /* the page reads in one bottom sheet over the chart's lower part: it rests leaving the strip useful and is dragged
+     or stepped up to read on. The same element at every width: before hydration it stands at its resting height;
+     after, Motion gives it its reading height and slides it down to a detent. */
+  .n12-pane { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
   .n12-margin-rest { display: block; }
-  /* fixed, as a sheet is: the part of it below the screen at a low detent must not become scrollable overflow */
-  .n12-margin {
-    position: fixed; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); z-index: 6;
-    height: var(--n12-rest); border-top: var(--rule) solid var(--ink);
+  .n12-margin,
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin,
+  .n12-app:not(:has([data-nx-layout])) .n12-margin,
+  .n12-app:has([data-nx-layout="chart"]) .n12-margin {
+    position: fixed; inset: auto 0 calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)) 0; width: auto; z-index: 6;
+    height: 62dvh; padding: 0; display: flex; flex-direction: column; align-items: stretch; pointer-events: auto;
+    background: var(--paper); border-radius: var(--r-sheet) var(--r-sheet) 0 0; box-shadow: var(--shadow-sheet); overflow: hidden;
   }
-  .n12-sheet-top { position: relative; flex: none; display: flex; align-items: center; justify-content: center; min-height: var(--s-32); touch-action: none; cursor: grab; }
-  .n12-sheet-handle { display: block; width: var(--s-48); height: var(--s-4); background: var(--ink-2); }
-  /* the hand has more than the row to take hold of: the grab area reaches 12 px above the sheet's edge */
+  .n12-margin-scroll,
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin-scroll,
+  .n12-app:not(:has([data-nx-layout])) .n12-margin-scroll,
+  .n12-app:has([data-nx-layout="chart"]) .n12-margin-scroll {
+    display: block; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    padding: 0 var(--gutter) var(--s-20); margin-bottom: var(--sheet-hidden, 0px);
+  }
+  .n12-margin-page { display: block; min-height: 0; }
+  .n12-sheet-top { position: relative; flex: none; display: flex; align-items: center; justify-content: center; height: 23px; touch-action: none; cursor: grab; }
+  .n12-sheet-handle { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--grab); }
   .n12-sheet-top::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 12px; }
   .n12-sheet-top:active { cursor: grabbing; }
-  .n12-sheet-top:active .n12-sheet-handle { background: var(--ink); }
-  .n12-tab:active { background: var(--sel); }
-  .n12-sheet-more {
-    position: absolute; right: var(--s-8); top: calc((var(--s-32) - var(--target)) / 2);
-    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-4);
-    min-width: var(--target); min-height: var(--target); padding: 0 var(--s-4); font-weight: 600; line-height: 1;
-  }
-  /* the sheet is as tall as its reading height and slid down to its detent: the scroller ends where the visible
-     sheet ends (above the destinations bar), so the last control is always reached by scrolling at any detent */
-  .n12-margin-scroll { padding: 0 var(--s-16) var(--s-24); margin-bottom: var(--sheet-hidden, 0px); }
-  .n12-margin-page { min-height: 0; }
+  .n12-sheet-more { position: absolute; right: var(--s-4); top: -10px; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: var(--ink-3); }
+  .n12-sheet-more:hover { color: var(--ink); }
+  .n12-dock-slot { position: static; border-radius: 0; box-shadow: none; }
 
-  /* desk mode: the page is the page. The chart is a strip at its top that scrolls away to a bar; no sheet. */
+  /* a v13 desk page: the page is the page. The chart is a strip at its top that scrolls away to a bar; no sheet. */
   .n12-app:has([data-nx-layout="desk"]) .n12-work {
     --strip-h: 32svh; --strip-bar: 48px; --desk-sticky-top: var(--strip-bar);
     display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain;
-    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); background: var(--paper);
   }
   .n12-app:has([data-nx-layout="desk"]) .n12-work[data-pane-open] { --strip-h: 62svh; }
-  /* the pane follows the page in the document, so on a long page the page can be painted before the pane has
-     been parsed: until it is there, the page starts where it will start, under the strip's place (no shift) */
   .n12-app:has([data-nx-layout="desk"]) .n12-work:not(:has(> .n12-pane)) .n12-margin { margin-top: var(--strip-h); }
-  .n12-app:has([data-nx-layout="desk"]) .n12-pane {
-    position: sticky; top: calc(var(--strip-bar) - var(--strip-h)); bottom: auto; order: -1; flex: none; z-index: 7;
-    height: var(--strip-h); border-bottom: var(--rule) solid var(--ink);
-  }
-  /* a locator until the reader enlarges it: touches on it scroll the page */
+  .n12-app:has([data-nx-layout="desk"]) .n12-pane { position: sticky; top: calc(var(--strip-bar) - var(--strip-h)); bottom: auto; order: -1; flex: none; z-index: 7; height: var(--strip-h); }
   .n12-app:has([data-nx-layout="desk"]) .n12-work:not([data-pane-open]) .n12-map { pointer-events: none; }
   .n12-app:has([data-nx-layout="desk"]) .n12-work:not([data-pane-open]) .n12-controls { display: none; }
   .n12-app:has([data-nx-layout="desk"]) .n12-pane-bar {
-    flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-8);
-    height: var(--strip-bar); padding: 0 var(--s-8) 0 var(--s-16); background: var(--paper); border-top: var(--hair) solid var(--rule-soft);
+    position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--s-8);
+    height: var(--strip-bar); padding: 0 var(--s-8) 0 var(--s-16); background: var(--paper); border-top: var(--hair) solid var(--line); z-index: 4;
   }
-  .n12-pane-bar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-  .n12-pane-bar-btn { flex: none; display: inline-flex; align-items: center; gap: var(--s-4); min-height: var(--target); padding: 0 var(--s-8); font-weight: 600; }
+  .n12-pane-bar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--w6); }
+  .n12-pane-bar-btn { flex: none; display: inline-flex; align-items: center; gap: var(--s-4); min-height: var(--target); padding: 0 var(--s-8); font-weight: var(--w6); }
   .n12-app:has([data-nx-layout="desk"]) .n12-margin-rest { display: none; }
   .n12-app:has([data-nx-layout="desk"]) .n12-margin {
-    position: relative; bottom: auto; height: auto; flex: none; border-top: 0; z-index: 1;
+    position: relative; inset: auto; width: auto; height: auto; flex: none; z-index: 1; display: block; pointer-events: auto;
+    border-radius: 0; box-shadow: none; overflow: visible; background: var(--paper);
   }
   .n12-app:has([data-nx-layout="desk"]) .n12-sheet-top { display: none; }
   .n12-app:has([data-nx-layout="desk"]) .n12-margin-scroll { overflow: visible; padding: 0 var(--s-16); margin-bottom: 0; }
+  .n12-app:has([data-nx-layout="desk"]) .n12-dock-slot { display: none; }
   .n12-kicker { margin-bottom: var(--s-8); }
-  .n12-statement-l { font-size: var(--t-28); }
-  .n12-statement-m { font-size: var(--t-28); }
-      }
-@media (max-width: 380px) {
-  .n12-bar-end .n12-bar-link:not(.n12-menu .n12-bar-link) { display: none; }
+  .n12-statement-l { font-size: var(--fs-25); }
 }
-@media (max-width: 360px) {
-  .n12-port-control-name { max-width: 96px; }
-  .n12-wordmark { font-size: var(--type-lead); }
-  .n12-statement-l, .n12-statement-m { font-size: var(--t-22); line-height: 1.15; }
-  .n12-tab { font-size: var(--type-small); }
+@media (max-width: 440px) {
+  .n12-bar { right: calc(var(--s-12) + 44px + var(--s-8) + 44px + var(--s-8)); }
 }
-@media (max-height: 480px) and (min-width: 721px) {
-  .n12-margin-scroll { padding: var(--s-16); }
-  .n12-statement-l, .n12-statement-m { font-size: var(--t-28); }
-  }
+@media (max-width: 359px) {
+  .nx-brand-name { display: none; }
+  .n12-tabs .n12-dest-link { letter-spacing: -0.01em; }
+  .n12-margin-scroll { padding: 0 var(--s-14) var(--s-16) !important; }
+}
 
 .n12-menu-narrow { display: none !important; }
-.n12-menu-note { margin: var(--s-12) 0 0; font-size: var(--type-small); color: var(--ink-2); }
-@media (max-width: 380px) { .n12-menu-narrow { display: flex !important; } }
+
+/* a v13 page's card stands where the chart's foot furniture lives: zoom and scale step to the card's left */
+@media (min-width: 641px) {
+  .n12-app:not(:has([data-nx-layout])) .n12-controls,
+  .n12-app:has([data-nx-layout="chart"]) .n12-controls { right: calc(var(--ticket-w) + 2 * var(--gutter)); }
+  .n12-app:not(:has([data-nx-layout])) .n12-scale,
+  .n12-app:has([data-nx-layout="chart"]) .n12-scale { right: calc(var(--ticket-w) + 2 * var(--gutter) + 54px); }
+}
+
+/* a dock along the foot gives way to a ticket standing at the right (a narrower screen): never under it */
+@media (min-width: 641px) {
+  .n12-margin:has([data-nx-ticket][data-side="east"]:not([data-inline])) [data-nx-dock][data-align="left"]:not([data-inline]) { max-width: calc(100% - 3 * var(--gutter) - var(--ticket-w)); }
+  .n12-margin:has([data-nx-ticket][data-side="west"]:not([data-inline])) [data-nx-dock][data-align="right"]:not([data-inline]) { max-width: calc(100% - 3 * var(--gutter) - var(--ticket-w)); }
+}
+
+/* the offline / saved-copy notice on a stage page: a paper card of its own, clear of the layer chips. Between the brand
+   and the nav pill where there is room; otherwise under the chips, standing above the page's objects. */
+@media (min-width: 641px) {
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin-page > [data-testid="nx-offline-notice"] {
+    position: absolute; z-index: 5; left: var(--gutter); top: calc(var(--chips-top) + 44px + var(--s-12));
+    width: min(440px, calc(100% - 2 * var(--gutter))); max-height: 40vh; overflow: auto; margin: 0;
+    padding: var(--s-12) var(--s-16); background: var(--paper); border-radius: var(--r-ctl); box-shadow: var(--shadow-sm);
+  }
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin-page > [data-testid="nx-offline-notice"] > section { border-top: 0; padding-top: 0; }
+}
+/* (it stops short of an east ticket standing level with the nav: the ticket's margin and width from the right) */
+@media (min-width: 1420px) {
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin-page > [data-testid="nx-offline-notice"] {
+    top: var(--bar-top); left: calc(var(--gutter) + 466px); width: auto; right: calc(min(144px, 10vw) + var(--ticket-w) + var(--s-12)); max-height: 124px;
+  }
+}

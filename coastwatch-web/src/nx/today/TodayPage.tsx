@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { ChartRegulation } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
 import { Button } from "@/nx/ds/Button";
+import { PageLayout } from "@/nx/ds/layout";
+import { Ticket, TicketMain } from "@/nx/ds/stage/Ticket";
 import { openPortFinder } from "@/nx/shell/finder";
 import { savePort, useCurrentPort, usePorts } from "@/nx/shell/port";
 import { COAST_VIEW } from "@/nx/shell/views";
@@ -29,15 +31,22 @@ export function TodayPage({ initial }: { initial: Initial }) {
   if (pending) return <section className={s.today} data-testid="nx-today" />;
   return (
     <section className={s.today} data-testid="nx-today">
+      <PageLayout mode="stage" phoneMap={0.27} />
       <ChartScene scene={{ id: "today:coast", view: COAST_VIEW }} />
       <ChartRegulation spec={{ zones: { highlight: null } }} />
-      <h1 className={s.chooserTitle}>Today at your port</h1>
-      <p className={s.chooserLead}>Choose your port to see its season status, the latest tests and the next decision date.</p>
-      <p className={s.emptyAction}>
-        <Button variant="primary" onClick={openPortFinder}>
-          Find your port
-        </Button>
-      </p>
+      <Ticket at={null} width={404} labelledBy="nx-today-choose">
+        <TicketMain>
+          <h1 id="nx-today-choose" className={s.chooserTitle}>
+            Today at your port
+          </h1>
+          <p className={s.chooserLead}>Choose your port to see its season status, the latest tests and the next decision date.</p>
+          <p className={s.emptyAction}>
+            <Button variant="primary" onClick={openPortFinder}>
+              Find your port
+            </Button>
+          </p>
+        </TicketMain>
+      </Ticket>
     </section>
   );
 }

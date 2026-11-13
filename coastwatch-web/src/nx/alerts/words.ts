@@ -52,6 +52,19 @@ export function plainDates(text: string, now?: string): string {
   });
 }
 
+/**
+ * What an alert's date is: a toxin result's date is its sample date; every other record's is when Neritic last read
+ * it (the pipeline's check), not the agency's decision date, so it is never called "dated".
+ */
+export function asOfWord(i: { trigger: AlertTrigger }): "sampled" | "checked" {
+  return i.trigger === "new_toxin_result" ? "sampled" : "checked";
+}
+
+/** The record's sentence for the page: ISO days in the reader's terms, and a quotation that ends a sentence ends it once (“….”. → “….”). */
+export function recordWords(text: string, now?: string): string {
+  return plainDates(text, now).replace(/([.!?])([”"’'])\./g, "$1$2");
+}
+
 /** What a check just did, in words for the page's status line. */
 export function reportWords(r: CheckReport, name: (port: string) => string): string {
   switch (r.state) {

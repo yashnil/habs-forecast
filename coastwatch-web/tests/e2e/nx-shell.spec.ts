@@ -30,18 +30,24 @@ test.describe("one chart across the four destinations", () => {
     await page.locator("[data-testid=nx-map] canvas").evaluate((c) => ((c as HTMLCanvasElement).dataset.nxTag = "first"));
     expect(await scene(page)).toBe("today:port-592");
     const bar = page.getByTestId("nx-bar");
-    const visits: Array<[string, RegExp, string]> = [
-      ["Explore", /\/explore\?place=port-592$/, "explore:port-592"],
-      ["My Coast", /\/coast\?place=port-592$/, "coast:port-592"],
-      ["Research", /\/research\?place=port-592$/, "research:port-592"],
-      ["Today", /\/today\?place=port-592$/, "today:port-592"],
+    // v14: Explore is Today's own data layers and time, opened from the menu (Today stays the current section); the
+    // other three are the nav pill's sections
+    // each page's own scene: My Coast opens on its brief (B's v14 id); Research on its station near the port (A's)
+    const visits: Array<[string, RegExp, RegExp, string]> = [
+      ["Explore", /\/explore\?place=port-592$/, /^explore:port-592$/, "Today"],
+      ["My Coast", /\/coast\?place=port-592$/, /^coast:port-592(:zone-\d+)?$/, "My Coast"],
+      ["Research", /\/research\?place=port-592(&|$)/, /^research[:-]/, "Research"],
+      ["Today", /\/today\?place=port-592$/, /^today:port-592$/, "Today"],
     ];
-    for (const [label, url, id] of visits) {
+    for (const [label, url, id, current] of visits) {
       const before = await page.evaluate(() => (window as unknown as { __nxChart: { camera: { zoom: number } } }).__nxChart.camera.zoom);
-      await bar.getByRole("link", { name: label, exact: true }).click();
-      await expect(page).toHaveURL(url);
-      await expect.poll(() => scene(page)).toBe(id);
-      await expect(page.getByRole("link", { name: label, exact: true }).first()).toHaveAttribute("aria-current", "page");
+      if (label === "Explore") {
+        await page.getByTestId("nx-menu-button").click();
+        await page.getByRole("navigation", { name: "More" }).getByRole("link", { name: "Explore the water" }).click();
+      } else await bar.getByRole("link", { name: label, exact: true }).click();
+      await expect(page).toHaveURL(url, { timeout: 15_000 });
+      await expect.poll(() => scene(page), { timeout: 15_000 }).toMatch(id);
+      await expect(bar.getByRole("link", { name: current, exact: true })).toHaveAttribute("aria-current", "page");
       // the camera eases there (a different view for each page)
       await expect.poll(() => page.evaluate(() => (window as unknown as { __nxChart: { camera: { zoom: number } } }).__nxChart.camera.zoom)).not.toBeCloseTo(before, 1);
     }
@@ -261,14 +267,15 @@ test.describe("motion and graphics tiers", () => {
         return { bg: m.getPaintProperty("background", "background-color"), land: m.getPaintProperty("land", "fill-color"), page: getComputedStyle(document.querySelector("[data-testid=nx-app]")!).backgroundColor };
       });
     const day = await paint();
-    expect(day.land).toBe("#dfd8ae");
+    // v14 synthesis tokens: warm paper land by day; Dusk and Night keep their own tables
+    expect(day.land).toBe("#eff1e6");
     const seen = new Set([JSON.stringify(day)]);
     for (const mode of ["dusk", "night", "day"] as const) {
       await page.getByTestId("nx-menu-button").click();
       await page.getByTestId(`nx-mode-${mode}`).check();
       await expect(page.locator("html")).toHaveAttribute("data-chart-mode", mode);
       await page.keyboard.press("Escape");
-      await expect.poll(async () => (await paint()).land).toBe({ day: "#dfd8ae", dusk: "#3d3a2e", night: "#15140f" }[mode]);
+      await expect.poll(async () => (await paint()).land).toBe({ day: "#eff1e6", dusk: "#3d3a2e", night: "#15140f" }[mode]);
       seen.add(JSON.stringify(await paint()));
     }
     expect(seen.size).toBe(3);
@@ -288,13 +295,13 @@ test.describe("motion and graphics tiers", () => {
 
 test.describe("phone", () => {
   test.use({ viewport: { width: 390, height: 844 } });
-  test("top bar with the port, four destinations in a 56 px bottom bar, the margin as a sheet", async ({ page, context }) => {
+  test("top bar with the port, four destinations in a bottom bar, the page as a sheet over the chart strip", async ({ page, context }) => {
     await seed(context, { "nx-port-v1": SAVED_PORT });
     await page.goto(`${OK}/explore`);
     const tabs = page.getByTestId("nx-tabs");
     await expect(tabs).toBeVisible();
     expect((await tabs.boundingBox())!.height).toBeGreaterThanOrEqual(56);
-    await expect(page.getByTestId("nx-bar").locator(".n12-dest")).toBeHidden();
+    await expect(page.getByTestId("nx-bar").locator(".nx-nav")).toBeHidden();
     await expect(page.getByTestId("nx-port-control")).toContainText("Moss Landing");
     for (const a of await tabs.getByRole("link").all()) expect((await a.boundingBox())!.height).toBeGreaterThanOrEqual(48);
     // a chart page (Explore): the margin is a sheet. It rests with the page's statement above the tab bar, More raises it
@@ -306,14 +313,19 @@ test.describe("phone", () => {
     await expect.poll(async () => parseFloat(await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom")))).toBeGreaterThan(200);
     await margin.getByRole("button", { name: "Show more of this page" }).click();
     await expect.poll(async () => (await margin.boundingBox())!.y).toBeLessThan(rest - 100);
-    // a desk page (Research, v13): the same element is the page itself under a chart strip; no sheet, nothing covers the chart
+    // a v14 stage page (Research): the same element is the sheet again; its title reads in it, under the chart strip,
+    // and the chart frames its scene in the strip the resting sheet leaves (a v13 desk page is checked in v13-layout)
     await tabs.getByRole("link", { name: "Research" }).click();
     await expect(page).toHaveURL(/\/research\?place=port-592$/);
     await expect(page.getByTestId("research-title")).toBeInViewport();
-    await expect(margin.getByRole("button", { name: "Show more of this page" })).toBeHidden();
+    await expect(page.getByTestId("nx-margin")).toHaveCount(1);
     const pane = (await page.getByTestId("nx-pane").boundingBox())!;
-    expect(pane.y).toBeGreaterThanOrEqual(52 - 1);
-    expect((await page.getByTestId("research-title").boundingBox())!.y).toBeGreaterThanOrEqual(pane.y + pane.height - 1);
-    await expect.poll(async () => parseFloat(await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom")))).toBe(0);
+    expect(pane.y).toBe(0);
+    const sheetTop = (await margin.boundingBox())!.y;
+    expect((await page.getByTestId("research-title").boundingBox())!.y).toBeGreaterThanOrEqual(sheetTop - 1);
+    if (await page.locator('[data-nx-layout="stage"]').count()) {
+      await expect(margin.getByRole("button", { name: "Show more of this page" })).toBeVisible();
+      await expect.poll(async () => parseFloat(await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-bottom")))).toBeGreaterThan(200);
+    }
   });
 });

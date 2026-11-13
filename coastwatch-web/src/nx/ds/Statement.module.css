@@ -80,3 +80,17 @@
     font-size: var(--type-body);
   }
 }
+
+/* v14 poster: the date is the hero (synthesis .statement .lede / .hero-date) */
+.poster .scope { font: var(--w6) var(--fs-11) / 1.25 var(--font-sans); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--ink-2); margin: 0; }
+.posterTitle { margin: var(--s-10) 0 var(--s-12); font-weight: var(--w7); }
+.lede { display: block; font-size: var(--fs-25); line-height: 1.12; font-weight: var(--w6); letter-spacing: -0.02em; color: var(--ink); }
+.hero { display: block; font-size: var(--type-display); line-height: 0.98; letter-spacing: -0.045em; color: var(--ink); margin: var(--s-4) 0 0 -3px; white-space: nowrap; font-variant-numeric: lining-nums; }
+[data-tone="regulation"] .hero { color: var(--coral-ink); }
+[data-tone="closure"] .hero { color: var(--closure); }
+@media (max-width: 640px) {
+  .lede { font-size: var(--fs-18); }
+}
+@media (max-height: 800px) and (min-width: 641px) {
+  .posterTitle { margin: var(--s-6) 0 var(--s-8); }
+}
