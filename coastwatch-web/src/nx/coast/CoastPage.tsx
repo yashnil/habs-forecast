@@ -1,7 +1,7 @@
 "use client";
 
 import { MotionConfig } from "motion/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { setChartHighlight } from "@/nx/chart/highlight";
 import { Button, Dock, Drawer, Glyph, Micro, PageLayout, Ticket, TicketMain, TicketStub } from "@/nx/ds";
@@ -13,11 +13,15 @@ import { carriedWords, readCarried } from "./context";
 import { audienceOf, COAST_FISHERIES, RECREATIONAL_FISHERIES, tripFishery, type CoastFishery } from "./fisheries";
 import { Gates } from "./Gates";
 import { seasonWarning } from "./pass";
-import { capacity } from "./scenarios";
+import { planReady, saveTripFromPlanner, usePlan } from "./plan";
+import { PlanFields } from "./PlanFields";
+import { capacity, loadWorking } from "./scenarios";
 import { SeaWindow } from "./SeaWindow";
 import { TripWorkspace } from "./TripWorkspace";
 import { useCoastView, useFishery, useGates, useSea } from "./useCoast";
-import { useTripData } from "./useTripStore";
+import { tripStore, useTripData } from "./useTripStore";
+import { evaluateWorkspace, hasEntry, money, type Workspace } from "./workspace";
+import { notifyTrips, tripsStore } from "@/nx/trips/useTripsData";
 import s from "./coast.module.css";
 import t from "./trip.module.css";
 
@@ -49,6 +53,28 @@ export function CoastPage() {
   const now = useMemo(() => (served ? new Date(served) : deviceNow), [served, deviceNow]);
   const selectId = useId();
   const onFishery = useCallback((id: string) => tripFishery(id) && setFishery(id as FisheryId), [setFishery]);
+
+  // v15: the planner's date, limits and area, and Save Trip: a trip with its planning snapshot taken from what this
+  // page already loaded (no second fetch), then the trip's own workspace
+  const [plan, setPlan] = usePlan();
+  const router = useRouter();
+  const [saveWords, setSaveWords] = useState<string | null>(null);
+  const reading = gates.state === "loading" || sea.state === "loading";
+  const saveTrip = useCallback(
+    (ws: Workspace | null) => {
+      if (!port || !fishery) return;
+      const r = saveTripFromPlanner({ plan, placeKey: port.key, portName: port.name, fishery, ws, gates, sea, now: new Date(), store: tripsStore() });
+      if (!r.ok) {
+        setSaveWords(r.words);
+        return;
+      }
+      notifyTrips();
+      // the next trip starts from a blank date; the reader's own limits stay theirs
+      setPlan({ date: "", time: "", area: "" });
+      router.push(`/coast/trips?id=${encodeURIComponent(r.trip.id)}`);
+    },
+    [port, fishery, plan, gates, sea, router, setPlan],
+  );
 
   // what the reader brought from Explore: said on the page, ringed on the chart, never used by the worksheet
   const carried = useMemo(() => readCarried(sp), [sp]);
@@ -127,6 +153,10 @@ export function CoastPage() {
           ·
         </span>
         {select(t.select, false)}
+        <span className={t.dot} aria-hidden="true">
+          ·
+        </span>
+        <PlanFields plan={plan} set={setPlan} look="date" />
       </div>
       {chip ? (
         <Button variant="quiet" className={t.warn} data-tone={warning ? "regulation" : chip.tone} onClick={() => setGatesOpen(true)} aria-haspopup="dialog" title={chip.src ? `${chip.words} ${chip.src}` : undefined} data-testid="coast-status">
@@ -146,7 +176,16 @@ export function CoastPage() {
       <PageLayout mode="stage" paneKey="coast" chartLabel={port?.name} phoneMap={trip ? 0.42 : 0.4} />
       <article className={s.page} data-testid="nx-coast" data-view={view}>
         {trip ? (
-          <TripWorkspace fishery={fishery} placeKey={port?.key ?? ""} at={port ? { lon: port.lon, lat: port.lat } : null} onFishery={onFishery} now={now} strip={strip} toBrief={() => setView("brief")} />
+          <TripWorkspace
+            fishery={fishery}
+            placeKey={port?.key ?? ""}
+            at={port ? { lon: port.lon, lat: port.lat } : null}
+            onFishery={onFishery}
+            now={now}
+            strip={strip}
+            toBrief={() => setView("brief")}
+            planSave={port && fishery && planReady(plan) ? { run: saveTrip, busy: reading, words: saveWords } : null}
+          />
         ) : (
           <CoastBrief
             port={port}
@@ -159,6 +198,11 @@ export function CoastPage() {
             gates={gates}
             sea={sea}
             saved={saved}
+            plan={<PlanFields plan={plan} set={setPlan} />}
+            dated={planReady(plan)}
+            onSave={() => saveTrip(port && fishery ? loadWorking(tripStore().load(), port.key, fishery).ws : null)}
+            saving={reading}
+            saveWords={saveWords}
             onGates={() => setGatesOpen(true)}
             onTrip={() => {
               // one surface carries the page's header per view: the brief's ticket leaves (its copy shrinking to the pin)
@@ -194,6 +238,11 @@ function CoastBrief({
   gates,
   sea,
   saved,
+  plan,
+  dated,
+  onSave,
+  saving,
+  saveWords,
   onGates,
   onTrip,
 }: {
@@ -207,10 +256,25 @@ function CoastBrief({
   gates: ReturnType<typeof useGates>;
   sea: ReturnType<typeof useSea>;
   saved: number;
+  plan: React.ReactNode;
+  dated: boolean;
+  onSave: () => void;
+  saving: boolean;
+  saveWords: string | null;
   onGates: () => void;
   onTrip: () => void;
 }) {
   const rec = fishery && audienceOf(fishery) === "recreational";
+  // the worksheet kept for this port and fishery, said in one line when it adds up (Save trip takes it along)
+  const data = useTripData();
+  const worksheet = useMemo(() => {
+    if (!data || !port || !fishery) return null;
+    const w = loadWorking(data, port.key, fishery).ws;
+    if (!hasEntry(w)) return null;
+    const r = evaluateWorkspace(w, fishery);
+    const v = rec ? r.out.operating : r.out.net;
+    return v.status === "value" ? `From your worksheet: ${rec ? "trip cost" : "net to boat"} ${money(v.value)}, hypothetical.` : "Your worksheet is started; Save trip takes it along.";
+  }, [data, port, fishery, rec]);
   return (
     <>
       <Ticket key={port?.key ?? "none"} at={port ? { lon: port.lon, lat: port.lat } : null} anchorY={120} width={404} labelledBy="coast-title" className={s.ticket} data-coast-brief="">
@@ -256,19 +320,29 @@ function CoastBrief({
           </section>
         </TicketMain>
         <TicketStub className={s.ticketStub}>
-          <section aria-labelledby="coast-money">
-            <h2 id="coast-money" className={s.h2}>
-              The money
+          <section aria-labelledby="coast-plan" data-testid="coast-plan">
+            <h2 id="coast-plan" className={s.h2}>
+              Your trip
             </h2>
-            <p className={s.sub}>
-              {rec ? "What the trip would cost, split between the people aboard, from your own numbers." : "Gross, costs, crew pay, net to boat and the catch and price that break even, from your own numbers."} Hypothetical: nothing is filled in or forecast.
+            {plan}
+            <h3 className={s.moneyHead}>The money</h3>
+            <p className={s.moneyLine} data-testid="coast-money-line">
+              {worksheet ? worksheet : rec ? "Optional: what the trip would cost, from your own numbers." : "Optional: gross, costs, crew and net to boat, from your own numbers."}
             </p>
-            <Button variant="primary" full onClick={onTrip} data-testid="coast-to-trip">
-              Work out the money
+            <Button variant="quiet" className={s.toTrip} onClick={onTrip} data-testid="coast-to-trip">
+              {worksheet ? "Open the worksheet" : "Add expenses"}
             </Button>
             <Button variant="quiet" className={s.toTrip} onClick={onTrip} data-testid="coast-to-trip-2">
-              {saved ? `Open the trip workspace (${saved} saved)` : "Open the trip workspace"}
+              {saved ? `Saved worksheets (${saved})` : "Open the trip workspace"}
             </Button>
+            <div className={s.saveRow}>
+              <Button variant="primary" full glyph="↓" onClick={onSave} disabled={!port || !fishery} busy={saving} busyLabel="Reading the sources first" data-testid="coast-save-trip">
+                Save trip
+              </Button>
+              <p className={s.saveNote} aria-live="polite" data-testid="coast-save-note">
+                {saveWords ?? (dated ? "Kept on this device, with what Neritic shows now." : "No date yet: kept as a draft.")}
+              </p>
+            </div>
           </section>
         </TicketStub>
       </Ticket>
