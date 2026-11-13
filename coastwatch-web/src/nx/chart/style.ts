@@ -101,11 +101,14 @@ export function graticule(): GeoJSON.FeatureCollection<GeoJSON.LineString, { ste
 /** The graticule's step by zoom, as the prototype's (1° far out, ½° at a coast's scale, ¼° close in). */
 const GRATICULE_FILTER = ["any", ["==", ["get", "step"], 1], ["all", [">=", ["zoom"], 7.2], ["==", ["get", "step"], 0.5]], [">=", ["zoom"], 8.6]] as unknown;
 
-export function chartStyle(p: ChartPalette, origin: string, { hidden = false, depth = true }: { hidden?: boolean; depth?: boolean } = {}): StyleSpecification {
+/** The decorative layers a software-rendered map leaves out (the reduced tier): the chart reads the same without them. */
+export const LITE_OMITS = new Set(["band-edges", "isobaths-minor", "graticule", "graticule-land", "shore-surf", "relief-land", "relief-land-monterey"]);
+
+export function chartStyle(p: ChartPalette, origin: string, { hidden = false, depth = true, lite = false }: { hidden?: boolean; depth?: boolean; lite?: boolean } = {}): StyleSpecification {
   // the opening starts with the water unfilled and the lines undrawn; it raises these
   const water = hidden ? 0 : 1;
   const fade = { duration: 320, delay: 0 };
-  return {
+  const style = {
     version: 8,
     glyphs: `${origin}/fonts/{fontstack}/{range}.pbf`,
     sources: {
@@ -181,6 +184,11 @@ export function chartStyle(p: ChartPalette, origin: string, { hidden = false, de
       },
     ],
   } as StyleSpecification;
+  if (lite) {
+    style.layers = style.layers.filter((l) => !LITE_OMITS.has(l.id));
+    for (const src of ["relief-land", "relief-land-monterey", "graticule"]) delete (style.sources as Record<string, unknown>)[src];
+  }
+  return style;
 }
 
 /** The baked chart images of the static tier, per mode: statewide, then the Monterey inset over it. */
