@@ -451,7 +451,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const start = scene ? cameraFor(scene, viewport, startCover, getCameraAnchor()) : { center: [-120.5, 37] as [number, number], zoom: 5 };
       const map = new ml.Map({
         container: mapEl.current,
-        style: chartStyle(palette, location.origin, { hidden, depth: getMapLayers().on.depth !== false }),
+        // a software-rendered map (the reduced tier) draws the chart without its decorative lines and without
+        // multisampling: the same chart, a fraction of the fill and line work on a CPU
+        style: chartStyle(palette, location.origin, { hidden, depth: getMapLayers().on.depth !== false, lite: tier === "reduced" }),
         center: start.center,
         zoom: start.zoom,
         minZoom: CHART_ZOOM[0],
@@ -465,7 +467,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         trackResize: false,
         fadeDuration: 0,
         pixelRatio: Math.min(window.devicePixelRatio || 1, tier === "full" ? 2 : 1.5),
-        canvasContextAttributes: { antialias: true },
+        canvasContextAttributes: { antialias: tier !== "reduced" },
       });
       map.touchZoomRotate.disableRotation();
       map.keyboard.disableRotation();
