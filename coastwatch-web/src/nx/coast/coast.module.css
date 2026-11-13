@@ -590,3 +590,7 @@
 .tagGauge::after { content: ""; position: absolute; right: 0; top: -4px; bottom: -4px; border-left: var(--rule) solid var(--ink); }
 .tagGauge i { display: block; height: 100%; border-radius: var(--r-1); background: var(--ink-2); }
 .testPoint { display: block; width: 12px; height: 12px; border: var(--rule) solid var(--ink); background: var(--paper); transform: rotate(45deg); }
+.tagWind.tagWind { display: inline-block; width: 16px; height: 16px; margin-right: var(--s-4); vertical-align: -2px; stroke: var(--ink); stroke-width: 1.8; fill: none; }
+.plate { display: grid; gap: var(--s-2); padding: var(--s-8) var(--s-12); border-radius: var(--r-ctl); background: var(--chip-glass); box-shadow: var(--shadow-chip); }
+.plateAdv { display: flex; align-items: center; gap: var(--s-6); margin: 0; font: var(--w7) var(--fs-13) / 1.3 var(--font); color: var(--coral-ink); white-space: nowrap; }
+.plateNone { margin: 0; font: var(--w5) var(--fs-13) / 1.3 var(--font); color: var(--ink-2); }

@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
 import { ChartMarks, type ChartMark } from "@/nx/chart/Labels";
 import type { Bounds } from "@/nx/chart/mercator";
 import { ChartRegulation, RAMP_ZONES, rampZoneAt, shoreLon } from "@/nx/chart/regulation";
 import { ChartScene, type ChartScene as Scene } from "@/nx/chart/scene";
-import { MapLayers, Micro, usePhone } from "@/nx/ds";
+import { MapLayers, Micro, Pennant, useMedia, usePhone, WindArrow } from "@/nx/ds";
 import { day, time } from "@/nx/ds/format";
 import type { ShellPort } from "@/nx/shell/port";
 import { portScene } from "@/nx/shell/views";
@@ -16,6 +15,8 @@ import type { Loadable } from "./useCoast";
 import s from "./coast.module.css";
 
 type LngLat = [number, number];
+/** NDBC's compass words for where the wind comes from, in degrees */
+const COMPASS: Record<string, number> = Object.fromEntries(["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"].map((d, i) => [d, i * 22.5]));
 
 /**
  * My Coast on the chart (v14 synthesis, trip frames): what is true about this trip, drawn where it is true. The port,
@@ -29,6 +30,10 @@ type LngLat = [number, number];
  */
 export function CoastMap({ port, fishery, gates, sea }: { port: ShellPort | null; fishery: CoastFishery | null; gates: Loadable<CoastGates>; sea: Loadable<CoastSea> }) {
   const phone = usePhone();
+  // a short wide screen (1280 × 720) leaves the chart a low band above the pass: the zone limit is then pulled in so the
+  // bay stays in reach, the plate is not fitted for, and the buoys' tags are one line
+  const short = useMedia("(max-height: 859px)");
+  const compact = phone || short;
   const g = gates.state === "ok" ? gates.data : null;
   const v = sea.state === "ok" && sea.data.sea.state === "ok" ? sea.data.sea : null;
   const buoy = v?.buoy?.lat != null && v.buoy.lon != null ? v.buoy : null;
@@ -36,7 +41,12 @@ export function CoastMap({ port, fishery, gates, sea }: { port: ShellPort | null
   const ramp = !!fishery?.ramp && !!port;
   const zone = ramp && port ? rampZoneAt(port.lat) : null;
 
-  const scene = useMemo((): Scene => tripScene(port, zone, [buoy ? [buoy.lon!, buoy.lat!] : null, test ? [test.lon!, test.lat!] : null]), [port, zone, buoy, test]);
+  const wind = v?.windBuoy && sea.state === "ok" && sea.data.windAt ? { ...v.windBuoy, ...sea.data.windAt } : null;
+  // the NWS zone's plate, set on the water west of the port (a tag for the zone, like a water name; not a position)
+  const plateAt: LngLat | null = port && v?.zone ? [(shoreLon(port.lat) ?? port.lon) - 0.42, port.lat - 0.12] : null;
+  // ChartScene writes only when the scene's JSON changes, so this is worked out each render
+  const scene: Scene = tripScene(port, zone, [buoy ? [buoy.lon!, buoy.lat!] : null, test ? [test.lon!, test.lat!] : null, wind ? [wind.lon, wind.lat] : null, phone || short ? null : plateAt], short && !phone ? 0.26 : 0.75);
+
 
   const caption = ramp ? zoneCaption(g?.season ?? null, g?.whale ?? null) : null;
   const marks: ChartMark[] = [];
@@ -51,17 +61,69 @@ export function CoastMap({ port, fishery, gates, sea }: { port: ShellPort | null
       priority: 70,
       leader: true,
       offset: phone ? 14 : 22,
-      anchors: ["bottom-left", "left", "top-left", "bottom", "bottom-right", "right"],
+      anchors: ["bottom-right", "right", "bottom", "bottom-left", "left", "top-left", "top-right"],
       label: `Buoy ${buoy.id}, measured ${day(buoy.at)} ${time(buoy.at)}: ${waves ? `waves ${buoy.waveFt!.toFixed(1)} ft${buoy.periodS != null ? ` at ${Math.round(buoy.periodS)} s` : ""}` : `wind ${Math.round(buoy.windKt!)} kt`}${water != null ? `, water ${water} °F` : ""}`,
       content: (
-        <div className={s.tag} data-compact={phone || undefined}>
+        <div className={s.tag} data-compact={compact || undefined}>
           <Micro glyph="measured">
             Buoy {buoy.id} · {time(buoy.at)}
           </Micro>
           <p className={s.tagFig}>
             {waves ? buoy.waveFt!.toFixed(1) : Math.round(buoy.windKt!)} <small>{waves ? `ft${buoy.periodS != null ? ` at ${Math.round(buoy.periodS)} s` : ""}` : `kt${buoy.windDir ? ` ${buoy.windDir}` : ""}`}</small>
           </p>
-          {water != null && !phone ? <p className={s.tagSub}>Water {water} °F</p> : null}
+          {water != null && !compact ? <p className={s.tagSub}>Water {water} °F</p> : null}
+        </div>
+      ),
+    });
+  }
+  if (wind && !phone) {
+    marks.push({
+      id: `coast-wind-${wind.id}`,
+      lon: wind.lon,
+      lat: wind.lat,
+      layer: "sea",
+      priority: 65,
+      leader: true,
+      offset: 22,
+      anchors: ["left", "bottom-left", "top-left", "bottom", "top"],
+      label: `Buoy ${wind.id}, measured ${day(wind.at)} ${time(wind.at)}: wind ${wind.windDir ? `${wind.windDir} ` : ""}${Math.round(wind.windKt)} kt`,
+      content: (
+        <div className={s.tag} data-compact={compact || undefined}>
+          <Micro glyph="measured">
+            Buoy {wind.id} · {time(wind.at)}
+          </Micro>
+          <p className={s.tagFig}>
+            {wind.windDir && COMPASS[wind.windDir] != null ? <WindArrow fromDeg={COMPASS[wind.windDir]} className={s.tagWind} /> : null}
+            {wind.windDir ? `${wind.windDir} ` : ""}
+            {Math.round(wind.windKt)} <small>kt</small>
+          </p>
+        </div>
+      ),
+    });
+  }
+  if (plateAt && v?.zone && !phone) {
+    marks.push({
+      id: `coast-nws-${v.zone}`,
+      lon: plateAt[0],
+      lat: plateAt[1],
+      layer: "sea",
+      priority: 40,
+      offset: 0,
+      anchors: ["center", "bottom", "top"],
+      label: `NWS ${v.zone}: ${v.alerts.length ? v.alerts.map((a) => a.event).join(", ") : "no advisory in effect"}`,
+      content: (
+        <div className={s.plate}>
+          <Micro>NWS {v.zone}</Micro>
+          {v.alerts.length ? (
+            v.alerts.map((a) => (
+              <p key={a.event} className={s.plateAdv}>
+                <Pennant n={/gale|storm|hurricane/i.test(a.event) ? 2 : 1} />
+                {a.event}
+              </p>
+            ))
+          ) : (
+            <p className={s.plateNone}>No advisory in effect</p>
+          )}
         </div>
       ),
     });
@@ -78,7 +140,7 @@ export function CoastMap({ port, fishery, gates, sea }: { port: ShellPort | null
       leader: true,
       insist: true,
       offset: phone ? 14 : 22,
-      anchors: ["top", "top-left", "top-right", "left", "bottom"],
+      anchors: ["top-left", "top", "left", "top-right", "bottom-left"],
       point: <i className={s.testPoint} />,
       label: `CDPH test, ${test.site}, ${day(test.date)}: ${test.species}, highest ${test.max ?? "not detected"}${test.action != null ? ` of ${test.action} ppm` : " ppm"}, ${n} samples${old ? ", more than 30 days ago" : ""}`,
       content: (
@@ -121,16 +183,20 @@ export function CoastMap({ port, fishery, gates, sea }: { port: ShellPort | null
  * The trip's view: the port, the nearer limit of its RAMP zone where it meets the shore (when within about 80 km),
  * the buoy and the test site, with sea west of them. Without a port, the whole coast.
  */
-export function tripScene(port: ShellPort | null, zone: string | null, extra: Array<LngLat | null>): Scene {
+export function tripScene(port: ShellPort | null, zone: string | null, extra: Array<LngLat | null>, pull = 0.75): Scene {
   // the same destination for the brief and the trip (v13 ids: "coast:<port>", "coast:<port>:zone-<n>"): the camera stays put between them
   const base = portScene("coast", port, 30);
   if (!port) return base;
-  const pts: LngLat[] = [[port.lon, port.lat]];
+  // the port, and the water south of it (its bay's far side), so the port stands mid-frame above the pass, not on it
+  const pts: LngLat[] = [[port.lon, port.lat], [port.lon, port.lat - 0.16]];
   for (const p of extra) if (p && Math.abs(p[1] - port.lat) < 0.8 && Math.abs(p[0] - port.lon) < 1) pts.push(p);
   const z = RAMP_ZONES.find((x) => x.zone === zone);
   if (z) {
     const lat = port.lat - z.south < z.north - port.lat ? z.south : z.north;
-    if (Math.abs(lat - port.lat) < 0.75) pts.push([shoreLon(lat) ?? port.lon, lat]);
+    // on a short screen fitted to within `pull` of the port: a limit further off still shows, in the band the chart keeps
+    // above the fitted box (under the bar and the chips), without zooming the bay out of reach
+    const d = Math.abs(lat - port.lat);
+    if (d < 0.75) pts.push([shoreLon(lat) ?? port.lon, port.lat + Math.sign(lat - port.lat) * Math.min(d, pull)]);
   }
   let w = Math.min(...pts.map((p) => p[0])), e = Math.max(...pts.map((p) => p[0]));
   let sth = Math.min(...pts.map((p) => p[1])), nth = Math.max(...pts.map((p) => p[1]));

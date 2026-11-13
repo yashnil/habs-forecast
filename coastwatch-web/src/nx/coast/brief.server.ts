@@ -1,4 +1,5 @@
 import { loadConditions } from "@/lib/conditionsServer";
+import { BUOYS } from "@/lib/noaaStations";
 import { buildTodayModel } from "@/pilot/facts";
 import { conditionsPoint, TODAY_PERIODS } from "@/pilot/today/portToday";
 import { loadToday } from "@/pilot/today/load";
@@ -27,5 +28,8 @@ export async function coastSea(placeKey: string): Promise<CoastSea | CoastError 
   const p = conditionsPoint(load.inputs.place.lat, load.inputs.place.lon);
   const conditions = await loadConditions(p.lat, p.lon, TODAY_PERIODS).catch(() => "error" as const);
   const m = buildTodayModel({ ...load.inputs, selected: [], conditions });
-  return seaFrom(m, load.inputs.now);
+  const out = seaFrom(m, load.inputs.now);
+  // the wind station's own published position (NDBC's station list), never a guess
+  const st = out.sea.windBuoy ? BUOYS.find((b) => b.id === out.sea.windBuoy!.id) : null;
+  return { ...out, windAt: st ? { lat: st.lat, lon: st.lon } : null };
 }
