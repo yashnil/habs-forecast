@@ -1,0 +1,89 @@
+/* The synthesis chart kit (v14 README §3): Waterfall, Dumbbell, DatesLine, SeaBars. From the approved prototype's
+   charts.js. Figtree 11 / 13 / 15 / 18; weights 500 / 650 / 750; tabular figures. */
+
+.chart { position: relative; width: 100%; min-width: 0; }
+.chart svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.chart svg text { font-family: var(--font); font-variant-numeric: tabular-nums; }
+.cap { font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; fill: var(--ink-2); }
+.capCoral { fill: var(--coral-ink); }
+.base { stroke: var(--ink); stroke-width: 1; }
+.grid { stroke: var(--line); stroke-width: 1; }
+.tick { stroke: var(--ink-3); stroke-width: 1.2; }
+.tickText { font-size: var(--fs-11); font-weight: var(--w6); fill: var(--ink-2); }
+.axis, .axisLine { stroke: var(--ink-3); stroke-width: 1.2; }
+
+/* ------------------------------------------------------------ Waterfall */
+.gross { fill: var(--gross); }
+.cost { fill: var(--cost); }
+.share { fill: var(--crew); }
+.netSolid { fill: var(--ultra); }
+.hatchGround { fill: var(--ultra-hatch); }
+.hatchStripe { fill: var(--ultra); }
+.hatchGroundCoral { fill: var(--coral-hatch); }
+.hatchStripeCoral { fill: var(--coral); }
+.zero { stroke: var(--ink-2); stroke-width: 2; }
+.conn { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 2; }
+.blank { fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 2 5; }
+.blankWord { font-size: var(--fs-13); font-weight: var(--w6); fill: var(--ink-2); }
+.colVal { font-size: var(--fs-13); font-weight: var(--w7); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+.colValNet { fill: var(--ultra-deep); }
+.colValLoss { fill: var(--coral-ink); }
+.colName { font-size: var(--fs-13); font-weight: var(--w6); fill: var(--ink); }
+.colNameNet { fill: var(--ultra-deep); }
+.colBasis { font-size: var(--fs-11); font-weight: var(--w5); fill: var(--ink-2); }
+.caliper { fill: none; stroke: var(--ink); stroke-width: 1.8; }
+.caliperHalo { fill: none; stroke: var(--paper); stroke-width: 5; }
+.beText { font-size: var(--fs-13); font-weight: var(--w5); fill: var(--ink-2); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+.beText b, .beText tspan[data-strong] { font-weight: var(--w7); fill: var(--ink); }
+
+/* ------------------------------------------------------------ Dumbbell */
+.dumbbell .ends { position: absolute; inset: 0; pointer-events: none; }
+.bar { stroke: var(--net-hatch); stroke-width: 5; stroke-linecap: round; }
+.barCoral { stroke: var(--coral); stroke-width: 3; }
+.dot { fill: var(--ultra); stroke: var(--paper); stroke-width: 2; }
+.dotCoral { fill: var(--coral); }
+.dotInk { fill: var(--ink); }
+.dotHollow { fill: var(--paper); stroke: var(--ink-2); stroke-width: 2; }
+.dotHatched { fill: var(--coral-hatch); stroke: var(--coral-ink); stroke-width: 2.2; }
+.rowLabel { font-size: var(--fs-13); font-weight: var(--w6); fill: var(--ink); }
+.deltaBig { font-size: var(--fs-18); font-weight: var(--w7); fill: var(--ink); }
+.end { position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; pointer-events: none; }
+.endBtn { pointer-events: auto; cursor: pointer; transition: background-color var(--dur-hover) linear; }
+.endBtn:hover { background: color-mix(in srgb, var(--ultra) 12%, transparent); }
+.endBtn:focus-visible { outline: 2.5px solid var(--ultra); outline-offset: 0; }
+.endLabel, .endText { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
+.endLabel { bottom: calc(50% + 9px); font-size: var(--fs-11); font-weight: var(--w6); color: var(--ink-2); }
+.endText { top: calc(50% + 9px); font-size: var(--fs-13); font-weight: var(--w7); color: var(--ink); font-variant-numeric: tabular-nums; }
+.endTextCoral { color: var(--coral-ink); }
+.sideL .endLabel, .sideL .endText { transform: translateX(calc(-100% + 8px)); }
+.sideR .endLabel, .sideR .endText { transform: translateX(-8px); }
+
+/* ------------------------------------------------------------ DatesLine */
+.delay { fill: var(--paper); stroke: var(--coral); stroke-width: 2.2; }
+.delayOpen { stroke: var(--coral); stroke-width: 2.2; stroke-dasharray: 1.5 5; stroke-linecap: round; }
+.delayEnd { stroke: var(--coral-ink); stroke-width: 2.2; }
+.delayWord { font-size: var(--fs-11); font-weight: var(--w6); fill: var(--coral-ink); }
+.window { fill: var(--paper); stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 3 2.4; }
+.today { stroke: var(--ink); stroke-width: 2; }
+.todayDot { fill: var(--ink); }
+.todayWord { font-size: var(--fs-13); font-weight: var(--w7); fill: var(--ink); }
+
+/* ------------------------------------------------------------ SeaBars */
+.night { fill: var(--paper-2); }
+.sea { fill: var(--depth-1); }
+.seaRange { fill: var(--depth-3); }
+.seaEdge { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.85; }
+.seaVal { font-size: var(--fs-13); font-weight: var(--w6); fill: var(--ink); }
+.seaValMax { font-weight: var(--w7); }
+.seaValSmall { font-size: var(--fs-11); }
+.seaUnit { font-size: var(--fs-11); font-weight: var(--w6); fill: var(--ink-2); }
+.adv { fill: var(--coral); opacity: 0.45; }
+.advStrong { opacity: 1; }
+.hit { fill: transparent; cursor: help; outline: none; }
+.hitOn, .hit:focus-visible { fill: color-mix(in srgb, var(--ultra) 7%, transparent); }
+.buoyMark { outline: none; cursor: pointer; }
+.buoyStem { stroke: var(--ink); stroke-width: 1.4; }
+.buoyDot { fill: var(--ink); stroke: var(--paper); stroke-width: 2; }
+.buoyWord { font-size: var(--fs-11); font-weight: var(--w6); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+.tip { position: absolute; top: -8px; z-index: 3; width: 260px; transform: translateY(-100%); padding: 9px 12px; border-radius: 10px; background: var(--ink); color: var(--paper); font-size: var(--fs-13); line-height: 1.4; pointer-events: none; }
+.tip b { display: block; font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; opacity: 0.8; margin-bottom: 2px; }

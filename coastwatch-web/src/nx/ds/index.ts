@@ -44,7 +44,8 @@ export { SeriesChart, type SeriesChartProps } from "./series/SeriesChart";
 export { SmallMultiples, type Strip, type SmallMultiplesProps } from "./series/SmallMultiples";
 export { Brush, clampWindow, frameEdges, MIN_FRAME, type BrushProps, type BrushHandle } from "./series/Brush";
 export { Field, Stepper, Segmented, Toggle, type FieldProps, type StepperProps, type SegmentedProps, type ToggleProps } from "./worksheet/Inputs";
-export { Waterfall, SensitivityTable, type WaterfallProps, type SensitivityTableProps } from "./worksheet/Waterfall";
+/** v12's ledger waterfall, renamed in v14 (the synthesis Waterfall below takes the name) */
+export { Waterfall as LedgerWaterfall, SensitivityTable, type WaterfallProps as LedgerWaterfallProps, type SensitivityTableProps } from "./worksheet/Waterfall";
 export { layoutWaterfall, type WaterfallStep, type WaterfallLayout, type Bar, type StepKind } from "./worksheet/waterfallLayout";
 
 /* ---------------------------------------------------------------- v14 synthesis (docs/coastwatch/v14/design-system/README.md) */
@@ -57,3 +58,4 @@ export { Chip, LayerChips, type ChipProps } from "./synth/Chips";
 export { Tabs, TabPanel, tabIds, type TabsProps, type TabItem } from "./synth/Tabs";
 export { RollingNumber, type RollingNumberProps } from "./synth/RollingNumber";
 export { MapLayers, useMapLayers, useMapLayer, setMapLayer, toggleMapLayer, MAP_LAYERS, type MapLayerId, type MapLayerDef } from "@/nx/chart/mapLayers";
+export { Waterfall, Dumbbell, DatesLine, SeaBars, type WaterfallProps, type CascadeStep, type CascadeStepKind, type DumbbellProps, type DumbbellRow, type DumbbellEnd, type DatesLineProps, type SeaBarsProps, type SeaPeriod } from "./synth/charts";
