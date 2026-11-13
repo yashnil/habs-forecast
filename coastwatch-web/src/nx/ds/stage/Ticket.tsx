@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { useEffect, useId, useLayoutEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
-import { clearCameraAnchor, setCameraAnchor } from "@/nx/chart/anchor";
+import { clearCameraAnchor, setCameraAnchor, ticketMargin } from "@/nx/chart/anchor";
 import { useChartCover } from "@/nx/chart/cover";
 import { getFrame, onFrame, type ChartFrame } from "@/nx/chart/runtime";
 import { TICKET_FROM, ticketIn, ticketOpacity } from "../motion";
@@ -31,6 +31,12 @@ export interface TicketProps extends Data {
   lead?: boolean;
   /** Stand in the flow of its container instead of floating on the chart (the catalog, a page's own column). */
   inline?: boolean;
+  /**
+   * px from the screen's top where the ticket prefers to stand (the camera brings its place level with `anchorY` from
+   * there). Default: just under the bar (94 px at the prototype's size), or under the layer chips when the ticket
+   * reaches across them.
+   */
+  top?: number;
   className?: string;
   children: ReactNode;
 }
@@ -49,7 +55,18 @@ const read = (el: Element, v: string, fb: number) => parseFloat(getComputedStyle
  *
  * Compose it from `TicketMain` and `TicketStub` (the perforated part under the main, with its notches).
  */
-export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead: asked = true, inline = false, className, children, ...data }: TicketProps) {
+/** The highest a ticket whose left edge is at `left` may stand: under the bar, or under the layer chips if it reaches them. */
+function topLimit(el: HTMLElement, left: number, width: number): number {
+  const stageTop = read(el, "--stage-top", 136);
+  const bar = document.querySelector(".n12-bar")?.getBoundingClientRect();
+  const chips = document.querySelector(".nx-layers")?.getBoundingClientRect();
+  if (!bar || !bar.height) return stageTop;
+  const underBar = Math.round(bar.bottom + 26);
+  if (chips && chips.width && left < chips.right + 12 && left + width > chips.left - 12) return Math.max(underBar, stageTop);
+  return underBar;
+}
+
+export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead: asked = true, inline = false, top: preferTop, className, children, ...data }: TicketProps) {
   const lead = asked && !inline;
   const ref = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGLineElement>(null);
@@ -72,14 +89,15 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         return;
       }
       const g = read(el, "--gutter", 24);
-      const top0 = read(el, "--stage-top", 136);
       const W = f?.viewport.width ?? window.innerWidth, H = f?.viewport.height ?? window.innerHeight;
       const w = el.offsetWidth;
+      const m = ticketMargin(W, g);
       // the chart's own buttons stand in the bottom-right corner: a ticket over that column stops above them (its stub
       // scrolls when the screen is short), so neither covers the other
       const ctrl = document.querySelector<HTMLElement>(".n12-controls")?.getBoundingClientRect();
       const colX = ctrl && ctrl.width ? [ctrl.left - 8, ctrl.right + 8] : null;
-      const sideLeft = side === "east" ? W - g - w : g;
+      const sideLeft = side === "east" ? W - m - w : m;
+      const top0 = Math.max(topLimit(el, sideLeft, w), preferTop ?? 0);
       const overCtrl = (l: number) => !!colX && l < colX[1] && l + w > colX[0];
       const bottomOf = (l: number) => (overCtrl(l) && ctrl ? ctrl.top - 8 : H - g);
       el.style.maxHeight = overCtrl(sideLeft) ? `${Math.max(240, bottomOf(sideLeft) - top0)}px` : "";
@@ -89,7 +107,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       if (f && lon != null && lat != null) {
         const p = f.project(lon, lat);
         left = Math.round(Math.max(g, Math.min(W - g - w, side === "east" ? p.x + STUB_GAP : p.x - STUB_GAP - w)));
-        top = Math.round(Math.max(top0, Math.min(bottomOf(left) - h, p.y - anchorY)));
+        top = Math.round(Math.max(Math.max(topLimit(el, left, w), preferTop ?? 0), Math.min(bottomOf(left) - h, p.y - anchorY)));
         el.style.transformOrigin = `${Math.round(p.x - left)}px ${Math.round(p.y - top)}px`;
         const py = p.y - top;
         const gap = side === "east" ? left - p.x : p.x - (left + w);
@@ -104,7 +122,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
           line.style.visibility = show ? "visible" : "hidden";
         }
       } else {
-        left = side === "east" ? W - g - w : g;
+        left = sideLeft;
         top = top0;
         if (line) line.style.visibility = "hidden";
       }
@@ -126,14 +144,17 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       window.removeEventListener("resize", go);
       cancelAnimationFrame(raf);
     };
-  }, [lon, lat, side, anchorY, phone, inline]);
+  }, [lon, lat, side, anchorY, phone, inline, preferTop]);
 
   // the camera anchor: where the place should stand so the ticket sits beside it
   useEffect(() => {
     const el = ref.current;
     if (!el || phone || !lead || lon == null || lat == null) return;
-    const write = () =>
-      setCameraAnchor({ id, lon, lat, side, width: el.offsetWidth, height: el.offsetHeight, anchorY, stub: STUB_GAP, gutter: read(el, "--gutter", 24), top: read(el, "--stage-top", 136) });
+    const write = () => {
+      const g = read(el, "--gutter", 24), w = el.offsetWidth, W = window.innerWidth;
+      const left = side === "east" ? W - ticketMargin(W, g) - w : ticketMargin(W, g);
+      setCameraAnchor({ id, lon, lat, side, width: w, height: el.offsetHeight, anchorY, stub: STUB_GAP, gutter: g, top: Math.max(topLimit(el, left, w), preferTop ?? 0) });
+    };
     write();
     const ro = new ResizeObserver(write);
     ro.observe(el);
@@ -141,7 +162,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       ro.disconnect();
       clearCameraAnchor(id);
     };
-  }, [id, lon, lat, side, anchorY, phone, lead]);
+  }, [id, lon, lat, side, anchorY, phone, lead, preferTop]);
 
   const style = width ? ({ "--ticket-w": `${width}px` } as React.CSSProperties) : undefined;
   return (
