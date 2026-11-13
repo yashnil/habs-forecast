@@ -67,3 +67,27 @@ export function daysWords(days: number): { figure: string; note: string } {
   return days > 0 ? { figure: `+${n} ${unit}`, note: "later" } : { figure: `−${n} ${unit}`, note: "earlier" };
 }
 
+
+/**
+ * The ticket's short headline (the synthesis "Commercial Dungeness delay moved"): the record's subject and what
+ * changed, from the record's words and the dates in them. The record's full sentence stays one tap away (the opened
+ * record).
+ */
+export function shortTitle(i: Pick<InboxItem, "title" | "place_label" | "trigger" | "change" | "was" | "created_at" | "as_of">): string {
+  const lead = `${i.place_label}: `;
+  const words = (i.title.startsWith(lead) ? i.title.slice(lead.length) : i.title).replace(/^no longer listed — /, "");
+  const cut = words.indexOf(": ");
+  const raw = cut > 0 ? words.slice(0, cut) : null;
+  const m = raw?.match(/^(.+?) crab \((commercial|recreational)\)$/i);
+  const subject = m ? `${m[2][0].toUpperCase()}${m[2].slice(1).toLowerCase()} ${m[1]}` : raw;
+  const say = (what: string) => (subject ? `${subject} ${what}` : `${what[0].toUpperCase()}${what.slice(1)}`);
+  if (i.change === "gone") return say("record no longer listed");
+  if (i.trigger === "new_toxin_result") return say(i.change === "changed" ? "toxin test updated" : "new toxin test");
+  if (i.trigger === "bloom_risk_jump") return say("C-HARM model probability rose");
+  if (i.trigger === "data_stale") return say("records getting old");
+  if (i.change === "new") return say("newly listed");
+  const said = cut > 0 ? words.slice(cut + 2) : words;
+  const noun = /delay/i.test(said) ? "delay" : /clos/i.test(said) ? "closure" : /open/i.test(said) ? "opening" : /restrict|limit/i.test(said) ? "restriction" : i.trigger === "ramp_action" ? "whale measures" : "status";
+  const c = alertChange(i);
+  return say(c.days ? `${noun} moved` : i.trigger === "ramp_action" ? "whale measures changed" : "status changed");
+}

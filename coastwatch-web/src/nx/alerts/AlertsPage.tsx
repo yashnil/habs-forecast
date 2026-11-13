@@ -11,12 +11,13 @@ import { persistent } from "@/nx/personal/store";
 import { useCurrentPort, usePorts, type ShellPort } from "@/nx/shell/port";
 import { portScene } from "@/nx/shell/views";
 import { TRIGGERS } from "@/pilot/alerts/diff";
-import { alertChange } from "./change";
+import { alertChange, shortTitle } from "./change";
 import { ChangeLine } from "./ChangeLine";
 import { runCheck } from "./check";
 import { MAX_FOLLOWS, follow, setTrigger, unfollow, type Follow } from "./follow";
 import type { InboxItem } from "./inbox";
 import { useFollows, useInbox, useLastCheck } from "./useInbox";
+import { useZoneCaption } from "./useZoneCaption";
 import { CHANNELS, DELIVERY, LOCAL_ONLY, TRIGGER_WORDS, itemChange, itemTitle, lastCheckedWords, plainDates, reportWords } from "./words";
 import s from "./alerts.module.css";
 
@@ -58,6 +59,8 @@ export function AlertsPage() {
     const r = await runCheck({ force });
     setBusy(false);
     setSaid(reportWords(r, name));
+    // a new alert takes the ticket: the settings step aside for it
+    if (r.state === "checked" && r.added.length) setKinds(false);
   };
   // opening this page is opening Neritic: a check that is due runs now (the shell's watch asks the same check)
   useEffect(() => {
@@ -73,8 +76,8 @@ export function AlertsPage() {
   // the alert the ticket shows: the one the reader picked, else the newest unread, else the newest
   const lead = items.find((i) => i.key === picked) ?? items.find((i) => !i.read_at) ?? items[0] ?? null;
   const rest = lead ? items.filter((i) => i.key !== lead.key) : [];
-  // "What alerts you" opens by itself when there is no alert to read (the ports and their switches are the page then)
-  const kindsOpen = kinds ?? (hydrated && !lead);
+  // "What alerts you" never stands open at rest: the reader opens it, or following a port opens it to that port's switches
+  const kindsOpen = kinds ?? false;
 
   const start = (key: string) => {
     const r = follow(key);
@@ -90,6 +93,7 @@ export function AlertsPage() {
   const last = lastCheckedWords(stamp ?? null, (iso) => dayTime(iso), name);
   const at: ShellPort | null = (lead ? byKey.get(lead.place_id) : null) ?? port;
   const zone = at ? rampZoneAt(at.lat) : null;
+  const caption = useZoneCaption(at ? { key: at.key, name: at.name } : null);
   const scene = portScene("alerts", at, 200);
 
   return (
@@ -97,7 +101,7 @@ export function AlertsPage() {
       <PageLayout mode="stage" phoneMap={0.27} />
       <MapLayers page="alerts" defaults={{ regulation: true }} />
       <ChartScene scene={scene} />
-      <ChartRegulation spec={{ zones: { highlight: zone } }} />
+      <ChartRegulation spec={{ zones: { highlight: zone, caption } }} />
       <article className={s.page} data-testid="nx-alerts" data-ready={hydrated ? "1" : "0"}>
         <h1 className={s.vh}>What changed at the ports you follow</h1>
         <Ticket key={at?.key ?? "coast"} at={at} anchorY={176} width={472} labelledBy="alerts-title" className={s.ticket}>
@@ -154,15 +158,38 @@ export function AlertsPage() {
             ) : (
               <p className={s.small}>Choose a port under &ldquo;What alerts you&rdquo; to have it checked.</p>
             )}
-            {lead && offer ? (
-              <div className={s.offerRow} data-testid="alerts-offer" data-port={offer.key}>
-                <div>
-                  <h3 className={s.rowHead}>Follow {offer.name}</h3>
-                  <p className={s.small}>Its records are noted as they are now; a change is listed here.</p>
-                </div>
-                <FollowButton variant="toggle" name={offer.name} following={false} onChange={(on) => on && start(offer.key)} disabled={full} data-testid="alerts-follow" />
-              </div>
-            ) : null}
+          </TicketStub>
+        </Ticket>
+
+        <Dock label="How alerts reach you" width={470} className={s.dock}>
+          <Micro as="h2">On this device only</Micro>
+          <p className={s.delivery} data-testid="alerts-delivery">
+            {DELIVERY}
+          </p>
+          {!kept ? (
+            <p className={s.notKept} data-testid="alerts-not-kept">
+              This browser is not keeping data (a private window, or site data is blocked). What you follow here lasts until you close this page.
+            </p>
+          ) : null}
+          <div className={s.row2}>
+            <span className={s.last} data-testid="alerts-last-checked">
+              {stamp === undefined ? "" : (last ?? "This device has not checked yet.")}
+            </span>
+            <span className={s.dockActs}>
+              <Button variant="quiet" onClick={() => setKinds(!kindsOpen)} aria-expanded={kindsOpen} aria-controls={panelId} data-testid="alerts-kinds">
+                What alerts you
+              </Button>
+              <Button variant="quiet" onClick={() => void check(true)} disabled={!online || !follows?.length} busy={busy} busyLabel="Checking" data-testid="alerts-check-now">
+                Check now
+              </Button>
+            </span>
+          </div>
+          <p className={s.said} role="status" data-testid="alerts-said">
+            {!online ? "You're offline: nothing can be checked. The alerts already on this device are above." : said}
+          </p>
+          {/* "What alerts you": the alerts on this device, the ports followed and their switches. Opened from here on demand;
+              on a wide screen it stands over the chart above the dock, on a phone it opens in place. */}
+          <motion.div id={panelId} className={s.panel} hidden={!kindsOpen} initial={false} animate={kindsOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: 6 }} transition={panelIn} data-testid="alerts-panel">
             {items.length ? (
               <section className={s.inbox} aria-labelledby="alerts-inbox">
                 <h2 id="alerts-inbox" className={s.inboxHead}>
@@ -190,9 +217,15 @@ export function AlertsPage() {
                 </div>
               </section>
             ) : null}
-          <AnimatePresence initial={false}>
-            {kindsOpen ? (
-              <motion.div key="kinds" id={panelId} className={s.panel} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={panelIn}>
+            {lead && offer ? (
+              <div className={s.offerRow} data-testid="alerts-offer" data-port={offer.key}>
+                <div>
+                  <h3 className={s.rowHead}>Follow {offer.name}</h3>
+                  <p className={s.small}>Its records are noted as they are now; a change is listed here.</p>
+                </div>
+                <FollowButton variant="toggle" name={offer.name} following={false} onChange={(on) => on && start(offer.key)} disabled={full} data-testid="alerts-follow" />
+              </div>
+            ) : null}
                 <Ports
                   follows={follows}
                   name={name}
@@ -254,43 +287,21 @@ export function AlertsPage() {
                   </Link>
                   .
                 </p>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-          </TicketStub>
-        </Ticket>
-
-        <Dock label="How alerts reach you" width={470} className={s.dock}>
-          <Micro as="h2">On this device only</Micro>
-          <p className={s.delivery} data-testid="alerts-delivery">
-            {DELIVERY}
-          </p>
-          {!kept ? (
-            <p className={s.notKept} data-testid="alerts-not-kept">
-              This browser is not keeping data (a private window, or site data is blocked). What you follow here lasts until you close this page.
-            </p>
-          ) : null}
-          <div className={s.row2}>
-            <span className={s.last} data-testid="alerts-last-checked">
-              {stamp === undefined ? "" : (last ?? "This device has not checked yet.")}
-            </span>
-            <span className={s.dockActs}>
-              <Button variant="quiet" onClick={() => setKinds(!kindsOpen)} aria-expanded={kindsOpen} aria-controls={panelId} data-testid="alerts-kinds">
-                What alerts you
-              </Button>
-              <Button variant="quiet" onClick={() => void check(true)} disabled={!online || !follows?.length} busy={busy} busyLabel="Checking" data-testid="alerts-check-now">
-                Check now
-              </Button>
-            </span>
-          </div>
-          <p className={s.said} role="status" data-testid="alerts-said">
-            {!online ? "You're offline: nothing can be checked. The alerts already on this device are above." : said}
-          </p>
+          </motion.div>
         </Dock>
       </article>
     </MotionConfig>
   );
 }
+
+/** The alert's kind on the ticket's micro line (the switch's full label is in the opened record and "What alerts you"). */
+const KIND: Record<InboxItem["trigger"], string> = {
+  status_change: "Season status",
+  new_toxin_result: "Toxin test",
+  ramp_action: "Whale measures",
+  bloom_risk_jump: "C-HARM model",
+  data_stale: "Record age",
+};
 
 function Empty({ following }: { following: boolean }) {
   return (
@@ -311,12 +322,14 @@ function LeadAlert({ item: i, open, following, since }: { item: InboxItem; open:
         <p className={s.kicker}>
           <Glyph kind={read ? "read" : "unread"} />
           <Micro>
-            {read ? "Read" : "Unread"} · {i.place_label} · {TRIGGER_WORDS[i.trigger].label}
+            {read ? "Read" : "Unread"} · {i.place_label} · {KIND[i.trigger]}
           </Micro>
         </p>
         <h2 id="alerts-title" className={s.what}>
-          {itemTitle(i)}
+          {shortTitle(i)}
         </h2>
+        {/* a record that names no date: its own words are the statement */}
+        {c.now ? null : <p className={s.words}>{itemTitle(i)}</p>}
         {c.now ? (
           <p className={s.move} aria-hidden="true">
             {moved ? (
@@ -336,7 +349,6 @@ function LeadAlert({ item: i, open, following, since }: { item: InboxItem; open:
             ) : null}
           </p>
         ) : null}
-        {change ? <p className={s.before}>{change}</p> : null}
         {c.now && c.was ? <ChangeLine was={c.was} now={c.now} sample={i.sample} /> : null}
         <div className={s.stamps}>
           <p className={s.stamp}>
@@ -360,18 +372,23 @@ function LeadAlert({ item: i, open, following, since }: { item: InboxItem; open:
           </p>
           <p className={s.noticed}>
             Noticed on this device {dayTime(i.created_at)}
-            {following && since ? ` · following since ${day(since)}` : ""}
+            {following && since ? <span className={s.wideOnly}>{` · following since ${day(since)}`}</span> : null}
           </p>
           {i.sample ? (
             <p className={s.stamp}>
               <Glyph kind="illustrative" />
-              <span>Sample data from Neritic&rsquo;s test records, not a published change</span>
+              <span>Sample data, not a published change</span>
             </p>
           ) : null}
         </div>
         <AnimatePresence initial={false}>
           {open ? (
             <motion.div key="record" className={s.record} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={panelIn}>
+              <Micro as="p">
+                {i.place_label} · {TRIGGER_WORDS[i.trigger].label}
+              </Micro>
+              {c.now ? <p className={s.recordTitle}>{itemTitle(i)}</p> : null}
+              {change ? <p>{change}</p> : null}
               <p>{plainDates(i.body)}</p>
               {i.source?.url ? (
                 <p>
