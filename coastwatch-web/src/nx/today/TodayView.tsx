@@ -39,7 +39,7 @@ import { buildToday, ppmWords, scopeWords, type TodayInputs, type TodayView as V
 import { advisoryParts, SeaDock } from "./SeaDock";
 import { TodaySoundings } from "./Soundings";
 import { chooseFishery, useFisheries, useTourState } from "./store";
-import { compassDeg, datesLine, glyphFor, pennantsFor, posterParts, seaBars, zoneCaption } from "./ticket";
+import { compassDeg, datesLine, glyphFor, noticesDiffer, pennantsFor, posterParts, seaBars, zoneCaption } from "./ticket";
 import { DatesLine } from "@/nx/ds/synth/charts";
 import { Tour, TourLink } from "./Tour";
 import s from "./today.module.css";
@@ -397,7 +397,7 @@ function Assembled({ port, inputs, fishery, bands }: { port: NonNullable<TodayPr
             ) : null}
           </TabPanel>
           <TabPanel idBase={tabsId} id="notices" active={tab === "notices"} className={s.panel}>
-            <NoticesPanel notices={inputs.notices === null ? null : notices} portKey={port.key} portName={port.name} v={v} />
+            <NoticesPanel notices={inputs.notices === null ? null : notices} differ={noticesDiffer(notices, v.model.status.map((r) => r.conflict))} portKey={port.key} portName={port.name} v={v} />
           </TabPanel>
           <div className={s.acts}>
             {following ? (
@@ -541,8 +541,9 @@ function RecordPanel({ v, portName, savedAt }: { v: View; portName: string; save
 }
 
 /** Notices: the official notices the registry ties to this port (not verified), then the models, quietly: not toxin tests. */
-function NoticesPanel({ notices, portKey, portName, v }: { notices: TodayInputs["notices"]; portKey: string; portName: string; v: View }) {
+function NoticesPanel({ notices, differ, portKey, portName, v }: { notices: TodayInputs["notices"]; differ: Map<string, string>; portKey: string; portName: string; v: View }) {
   const m = v.models;
+  const nDiffer = notices ? notices.filter((n) => differ.has(n.id)).length : 0;
   return (
     <>
       {notices === null ? (
@@ -550,17 +551,22 @@ function NoticesPanel({ notices, portKey, portName, v }: { notices: TodayInputs[
       ) : (
         <>
           <Micro as="p" className={s.panelHead}>
-            {notices.length ? `${notices.length} official notice${notices.length === 1 ? "" : "s"} · not verified` : "Official notices"}
+            {notices.length ? `${notices.length} official notice${notices.length === 1 ? "" : "s"} · not verified${nDiffer ? ` · ${nDiffer} where sources differ` : ""}` : "Official notices"}
           </Micro>
           <ul className={s.nl} data-testid="nx-notices-row">
-            {notices.map((n) => (
-              <li key={n.id}>
-                <Glyph kind="unverified" />
-                <span>
-                  <strong>{n.agency}</strong>: {n.title}
-                </span>
-              </li>
-            ))}
+            {notices.map((n) => {
+              // a notice the season record contradicts, or an agency release appears to lift: never shown as in effect
+              const d = differ.get(n.id);
+              return (
+                <li key={n.id} data-today-notice={n.id} data-differ={d ? "1" : undefined}>
+                  <Glyph kind={d ? "unverified-coral" : "unverified"} />
+                  <span>
+                    <strong>{n.agency}</strong>: {n.title}
+                    {d ? <small className={s.differ}>{d}</small> : null}
+                  </span>
+                </li>
+              );
+            })}
             {!notices.length ? (
               <li>
                 <Glyph kind="none" />

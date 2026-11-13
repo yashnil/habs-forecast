@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datesLine, pacificMs, pennantsFor, posterParts, seaBars, spanWords, zoneCaption, compassDeg, glyphFor } from "@/nx/today/ticket";
+import { noticesDiffer, datesLine, pacificMs, pennantsFor, posterParts, seaBars, spanWords, zoneCaption, compassDeg, glyphFor } from "@/nx/today/ticket";
 import type { LanePeriod } from "@/pilot/today/marine";
 
 const lane = (date: string, night: boolean, lo: number | null, hi: number | null, name = "Tuesday"): LanePeriod =>
@@ -59,5 +59,20 @@ describe("v14 Today ticket arrangements", () => {
     expect(glyphFor({ kind: "official" })).toBe("unverified");
     expect(glyphFor({ kind: "measured", stale: true })).toBe("old");
     expect(glyphFor(null)).toBe("none");
+  });
+
+  it("a notice the season record contradicts is 'sources differ', never in effect", () => {
+    const notices = [
+      { id: "mussels", agency: "CDPH", title: "Annual quarantine of sport-harvested mussels" },
+      { id: "bivalves", agency: "CDPH", title: "Do not eat sport-harvested bivalve shellfish from Monterey County" },
+      { id: "anchovy", agency: "CDPH", title: "Do not eat northern anchovies from Pigeon Point to Point Lobos" },
+    ];
+    const conflicts = [null, { notice: { agency: "CDPH", title: "Annual quarantine of sport-harvested mussels" }, record: { headline: "CDPH announced the 2026 mussel quarantine ended Oct 31.", source: "CDPH" } }];
+    const m = noticesDiffer(notices, conflicts);
+    expect(m.get("mussels")).toBe("Sources differ: CDPH's season record says “CDPH announced the 2026 mussel quarantine ended Oct 31”. Awaiting a person's review.");
+    expect(m.has("bivalves")).toBe(false);
+    expect(m.has("anchovy")).toBe(false);
+    // never worded as lifted or in effect
+    for (const w of m.values()) expect(w).not.toMatch(/\b(is|was|has been) (lifted|in effect)\b/i);
   });
 });
