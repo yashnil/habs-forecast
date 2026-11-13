@@ -52,6 +52,7 @@ import { SampleCard, SampleRecordPanel } from "./SampleCard";
 import { Overview } from "./Overview";
 import { INSET, ModelPanel, ScrubPlot } from "./ScrubPlot";
 import { StationMarks } from "./StationMarks";
+import { TestMark } from "./TestMark";
 import { VariableRail, type RailRow } from "./VariableRail";
 import { CHARM_ASSESSMENT, CHARM_SHORE, MODEL_WORDS, modelPlace } from "./words";
 import s from "./research.module.css";
@@ -1161,6 +1162,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
           station's area as the prototype does ("Near Santa Cruz") */}
       <PortLabel text={!place && !port && st.nearest_port_name ? `Near ${st.nearest_port_name}` : null} />
       <ChartScene scene={scene} />
+      {"bounds" in scene.view && st.nearest_port_code != null ? <TestMark place={`port-${st.nearest_port_code}`} within={scene.view.bounds} /> : null}
       <StationMarks
         stations={stations.map((y) => ({
           id: y.station_id,

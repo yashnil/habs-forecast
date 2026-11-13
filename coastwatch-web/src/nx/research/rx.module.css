@@ -229,6 +229,19 @@
 .stationPin { display: block; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; }
 .stationPin:focus-visible { outline: 2.5px solid var(--ultra); outline-offset: -10px; }
 
+/* the CDPH crab test on the chart (Toxin tests): a diamond where CDPH collected it, a reading beside it */
+.tag {
+  display: grid; gap: var(--s-2); max-width: 280px; padding: var(--s-10) var(--s-14); border-radius: var(--r-ctl);
+  background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-variant-numeric: tabular-nums;
+}
+.tagFig { margin: 0; font-weight: var(--w7); font-size: var(--fs-18); line-height: 1.2; white-space: nowrap; }
+.tagFig small { font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); }
+.tagSub { margin: 0; font-size: var(--fs-13); line-height: 1.3; color: var(--ink-2); }
+.tagGauge { position: relative; display: block; height: 6px; margin: var(--s-4) 0 var(--s-2); border-radius: var(--r-1); background: var(--track); }
+.tagGauge::after { content: ""; position: absolute; right: 0; top: -4px; bottom: -4px; border-left: var(--rule) solid var(--ink); }
+.tagGauge i { display: block; height: 100%; border-radius: var(--r-1); background: var(--ink-2); }
+.testPoint { display: block; width: 12px; height: 12px; border: var(--rule) solid var(--ink); background: var(--paper); transform: rotate(45deg); }
+
 /* ------------------------------------------------------------ phone: the record reads down the sheet */
 @media (max-width: 640px) {
   .pass { height: auto; }
