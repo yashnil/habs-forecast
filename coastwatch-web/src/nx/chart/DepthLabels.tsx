@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { getMapLayers, subscribeMapLayers } from "./mapLayers";
 import { getFrame, onFrame, type ChartFrame } from "./runtime";
+import { unproject } from "./mercator";
 
 /**
  * Depth labels set along their line, as on a chart (v14 README §4, after the approved prototype's map.js): fathoms
@@ -18,7 +19,7 @@ import { getFrame, onFrame, type ChartFrame } from "./runtime";
 const FM = (m: number) => Math.round(m / 1.8288);
 const CONTOURS = [20, 50, 100, 200];
 const INDEX = [1000, 2000];
-type Line = { d: number; pts: [number, number][] };
+type Line = { d: number; pts: [number, number][]; box: [number, number, number, number] };
 type Placed = { d: number; at: [number, number]; a: [number, number]; b: [number, number]; index: boolean };
 
 let cache: Promise<Line[]> | null = null;
@@ -30,8 +31,18 @@ function lines(): Promise<Line[]> {
     .then(([c, i]) => {
       type F = { properties: { d: number; i?: number }; geometry: { coordinates: [number, number][] } };
       const out: Line[] = [];
-      for (const f of c.features as F[]) if (CONTOURS.includes(f.properties.d) && f.geometry.coordinates.length > 20) out.push({ d: f.properties.d, pts: f.geometry.coordinates });
-      for (const f of i.features as F[]) if (f.properties.i === 1 && INDEX.includes(f.properties.d) && f.geometry.coordinates.length > 20) out.push({ d: f.properties.d, pts: f.geometry.coordinates });
+      const box = (pts: [number, number][]): Line["box"] => {
+        let w = 180, s0 = 90, e = -180, n = -90;
+        for (const [x, y] of pts) {
+          if (x < w) w = x;
+          if (x > e) e = x;
+          if (y < s0) s0 = y;
+          if (y > n) n = y;
+        }
+        return [w, s0, e, n];
+      };
+      for (const f of c.features as F[]) if (CONTOURS.includes(f.properties.d) && f.geometry.coordinates.length > 20) out.push({ d: f.properties.d, pts: f.geometry.coordinates, box: box(f.geometry.coordinates) });
+      for (const f of i.features as F[]) if (f.properties.i === 1 && INDEX.includes(f.properties.d) && f.geometry.coordinates.length > 20) out.push({ d: f.properties.d, pts: f.geometry.coordinates, box: box(f.geometry.coordinates) });
       return out;
     })
     .catch(() => []));
@@ -91,11 +102,15 @@ export function DepthLabels() {
       const bottom = H - Math.max(30, f.insets.bottom);
       const blocked = (x: number, y: number) => keep.some((r) => x > r.left - 10 && x < r.right + 10 && y > r.top - 12 && y < r.bottom + 12);
       const used: [number, number][] = [];
+      // only the lines whose box reaches the view are walked (the whole coast's lines are thousands of points)
+      const [vw, vn] = unproject(f.camera, f.viewport, 0, 0);
+      const [ve, vs] = unproject(f.camera, f.viewport, W, H);
+      const inView = data.filter((l) => l.box[2] >= vw && l.box[0] <= ve && l.box[3] >= vs && l.box[1] <= vn);
       const target0: [number, number] = [W * 0.26, H * 0.34];
       const pick = (ds: number[], n: number, at: [number, number]) => {
         let best: { i: number; line: Line; p: [number, number] } | null = null;
         let bd = 1e12;
-        for (const line of data) {
+        for (const line of inView) {
           if (!ds.includes(line.d)) continue;
           const pts = line.pts;
           for (let i = 6; i < pts.length - 8; i += 3) {
@@ -151,15 +166,23 @@ export function DepthLabels() {
       if (f) place(f);
     });
     const off = onFrame(onF);
+    // a chip switched (or a page's defaults): fade at once, place again a moment later, off the page change's frames
+    let relayout = 0;
     const offL = subscribeMapLayers(() => {
       const f = getFrame();
-      if (f) place(f);
+      if (f) write(f);
+      window.clearTimeout(relayout);
+      relayout = window.setTimeout(() => {
+        const g = getFrame();
+        if (alive && g) place(g);
+      }, 420);
     });
     return () => {
       alive = false;
       off();
       offL();
       window.clearTimeout(settle);
+      window.clearTimeout(relayout);
     };
   }, []);
   return <svg ref={svgRef} className="n12-depths" aria-hidden="true" data-testid="nx-depth-labels" />;
