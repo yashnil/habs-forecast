@@ -130,7 +130,11 @@ test("Monterey Wharf opens on its last pDA sample (Aug 31, 2022), over the whole
 
 test("1440 × 900, on load: the pass keeps to the chart's foot (at most 45 % of the height) with the plot, tabs and card whole; so is the empty range with its actions", async ({ page }) => {
   await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
-  const pass = (await page.getByTestId("research-record").boundingBox())!;
+  // the pass springs in from its pin (a brief 1.006 overshoot): measure it once it has come to rest
+  const rec = page.getByTestId("research-record");
+  let prev = "";
+  await expect.poll(async () => { const b = await rec.boundingBox(); const k = b ? `${b.y.toFixed(1)}:${b.height.toFixed(1)}` : ""; const still = k !== "" && k === prev; prev = k; return still; }, { intervals: [150], timeout: 5000 }).toBe(true);
+  const pass = (await rec.boundingBox())!;
   expect(pass.height).toBeLessThanOrEqual(900 * 0.45 + 1);
   expect(pass.y + pass.height).toBeLessThanOrEqual(900);
   const plot = (await page.getByTestId("research-plot").boundingBox())!;
