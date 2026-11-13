@@ -7,7 +7,10 @@ import { OK } from "../ports";
 import { choosePayers, exact, field, fillOwner, inView, MOSS, openTrip, savedCount, seed, type } from "./trip";
 
 /**
- * The v13 trip workspace on My Coast (`/coast?view=trip`): the acceptance tests of the v13 audit (audit B, §5).
+ * The trip workspace on My Coast (`/coast?view=trip`): the acceptance tests of the v13 audit (audit B, §5), held in the
+ * v14 synthesis layout (the trip is one pass along the chart's foot: strip, equation, terms, waterfall and what-if in
+ * its main part, under its fold the rest of the inputs and the worked figures; the result and the one button in its
+ * stub. On a phone the pass is a block in the sheet, with the result and the button in a bar at its foot).
  * The model's arithmetic is held by tests/unit/nx/coast/*; here it is the page: the owner's case to the cent, the
  * context that never scrolls away, a result that stays in view, saved trips without accidental copies, and work
  * that survives leaving, reloading, restarting and losing the network.
@@ -28,17 +31,29 @@ const page = async (browser: import("@playwright/test").Browser, w = 1440, h = 9
 
 const said = (p: Page) => p.getByTestId("trip-said");
 
-/** At the top of the page on a 1440 × 900 screen: the result and the whole waterfall are in the first screen. */
+/**
+ * The pass's front on a wide screen: the result, the whole waterfall and the what-if in view, and the pass leaves the
+ * chart at least 45 % of the screen's height (v14 design issue 2).
+ */
 async function firstScreen(p: Page, when: string) {
-  await p.locator(".n12-margin-scroll").evaluate((el) => (el.scrollTop = 0));
+  await p.getByTestId("trip-pass").locator("[data-testid=trip-inputs]").evaluate((el) => el.closest("[class*=scroll]")?.scrollTo(0, 0));
   await p.waitForTimeout(250);
   const fall = (await p.getByTestId("trip-waterfall").boundingBox())!;
-  expect(fall.width, when).toBeGreaterThanOrEqual(520);
-  expect(fall.height, when).toBeGreaterThanOrEqual(260);
-  expect(fall.y + fall.height, `the waterfall's foot is above the fold ${when}`).toBeLessThanOrEqual(900);
+  const vh = p.viewportSize()!.height;
+  expect(fall.width, when).toBeGreaterThanOrEqual(400);
+  expect(fall.height, when).toBeGreaterThanOrEqual(120);
+  expect(await inView(p, p.getByTestId("trip-waterfall")), `the waterfall is whole ${when}`).toBe(true);
+  expect(await inView(p, p.getByTestId("trip-whatif")), `the what-if is whole ${when}`).toBe(true);
   expect(await inView(p, p.getByTestId("trip-net")), `the result is in view ${when}`).toBe(true);
+  expect((await p.getByTestId("trip-pass").boundingBox())!.y, `the chart keeps 45 % of the height ${when}`).toBeGreaterThanOrEqual(vh * 0.45);
 }
-const result = (p: Page) => (p.viewportSize()!.width <= 720 ? p.getByTestId("trip-netbar-value") : p.getByTestId("trip-net"));
+const phoneSize = (p: Page) => p.viewportSize()!.width <= 640;
+const result = (p: Page) => (phoneSize(p) ? p.getByTestId("trip-netbar-value") : p.getByTestId("trip-net"));
+/** The result is in reach: the stub's figure in view, or on a phone the bar at the sheet's foot saying it. */
+async function resultInReach(p: Page): Promise<boolean> {
+  if (await inView(p, p.getByTestId("trip-net"))) return true;
+  return phoneSize(p) && (await inView(p, p.getByTestId("trip-netbar"))) && (await p.getByTestId("trip-netbar").locator("[data-quiet]").count()) === 0;
+}
 
 test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the season status in view at every step", async ({ browser }) => {
   const { ctx, p } = await page(browser);
@@ -48,7 +63,7 @@ test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the 
       ["port", p.getByTestId("coast-title")],
       ["fishery", p.getByTestId("coast-fishery")],
       ["status", p.getByTestId("coast-status")],
-      ["hypothetical", p.locator("[data-nx-desk-header]").getByText("Hypothetical trip · Commercial")],
+      ["hypothetical", p.locator("[data-nx-desk-header]").getByText("Hypothetical trip", { exact: true })],
       ["result", p.getByTestId("trip-net")],
     ] as const)
       expect(await inView(p, l), `${what} in view after ${step}`).toBe(true);
@@ -102,7 +117,7 @@ test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the 
   await expect(exact(p, "trip-crew")).toHaveText("$650.56");
   await expect(exact(p, "trip-be-catch")).toHaveText("39 lb");
   await expect(exact(p, "trip-be-price")).toHaveText("$0.87/lb");
-  await expect(p.getByTestId("trip-note")).toContainText("Not profit or take-home pay.");
+  await expect(p.getByTestId("trip-note")).toContainText("Not profit or take-home.");
   // every control reads on one line, with what it means said under it
   await expect(p.getByTestId("trip-crew-words")).toHaveText("A share of what is left after fees and the shared costs.");
   await expect(p.getByTestId("trip-payer-words")).toContainText("Shared: taken off the top, before the crew's share is worked out.");
@@ -110,32 +125,34 @@ test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the 
   // this trip clears at any fuel price the worksheet takes ($116.67/gal breaks even): no figure is made of that
   await expect(p.getByTestId("trip-be-fuel")).toHaveCount(0);
 
-  // one screen at 1440 × 900: the result and the whole waterfall, with the first inputs beside them
+  // one screen at 1440 × 900: the result, the whole waterfall and the what-if, with the equation above them
   await firstScreen(p, "with the owner's case entered");
-  // the page has one scroll: the inputs column does not scroll inside itself
-  expect(await p.getByRole("region", { name: "Trip inputs" }).evaluate((el) => getComputedStyle(el).overflowY)).toBe("visible");
+  // the inputs are in view and whole
+  expect(await inView(p, p.getByRole("region", { name: "Trip inputs" }))).toBe(true);
 
-  // F-02: saving does not grow the header or push the waterfall off the first screen, and the name stays on one line
-  const headBefore = (await p.locator("[data-nx-desk-header]").boundingBox())!.height;
+  // F-02: saving does not grow the pass or push the waterfall off the first screen, and the name stays on one line
+  const passBefore = (await p.getByTestId("trip-pass").boundingBox())!;
   await p.getByTestId("trip-save-new").click();
   await expect(said(p)).toContainText("Saved as “Dungeness crab, 400 lb at $9, 1 crew 20 % after costs,");
   await firstScreen(p, "after Save as new");
-  const headAfter = (await p.locator("[data-nx-desk-header]").boundingBox())!.height;
-  expect(headAfter, "the header is no taller after saving").toBeLessThanOrEqual(headBefore + 1);
+  const passAfter = (await p.getByTestId("trip-pass").boundingBox())!;
+  expect(passAfter.height, "the pass is no taller after saving").toBeLessThanOrEqual(passBefore.height + 1);
   expect((await p.getByTestId("trip-name").boundingBox())!.height, "the saved name is on one line (its rename control is 44 px)").toBeLessThanOrEqual(48);
-  const buttons = await Promise.all(["trip-update", "trip-save-new", "trip-saved-open"].map(async (id) => (await p.getByTestId(id).boundingBox())!.y));
-  expect(new Set(buttons.map((y) => Math.round(y))).size, "the buttons are one row").toBe(1);
-  // and inside the header: the last one ends at or before the header's own right edge
-  const headBox = (await p.locator("[data-nx-desk-header]").boundingBox())!;
-  const lastBox = (await p.getByTestId("trip-saved-open").boundingBox())!;
-  expect(lastBox.x + lastBox.width).toBeLessThanOrEqual(headBox.x + headBox.width + 0.5);
+  // the saving controls are in the stub, in view: the confirmed state on the one button, Save as new and Saved beside it
+  await expect(p.getByTestId("trip-update")).toContainText("Saved on this device");
+  const hero = (await p.getByTestId("trip-hero").boundingBox())!;
+  for (const id of ["trip-update", "trip-save-new", "trip-saved-open"]) {
+    const b = (await p.getByTestId(id).boundingBox())!;
+    expect(b.x, `${id} is in the stub`).toBeGreaterThanOrEqual(hero.x - 0.5);
+    expect(await inView(p, p.getByTestId(id)), `${id} in view`).toBe(true);
+  }
   // the confirmation is longer than its line: it is cut with an ellipsis (its whole text in the title), not clipped
   const cut = await said(p).evaluate((el) => ({ cs: getComputedStyle(el), over: el.scrollWidth > el.clientWidth, title: el.getAttribute("title") ?? "" }));
   expect([cut.cs.textOverflow, cut.cs.whiteSpace, cut.cs.overflowX, cut.cs.display]).toEqual(["ellipsis", "nowrap", "hidden", "block"]);
   expect(cut.title).toContain("Saved as “Dungeness crab, 400 lb at $9, 1 crew 20 % after costs,");
   // the confirmation is said and then goes; the line it had stays, so nothing moves
   await expect(said(p)).toHaveText("", { timeout: 9000 });
-  expect((await p.locator("[data-nx-desk-header]").boundingBox())!.height).toBe(headAfter);
+  expect((await p.getByTestId("trip-pass").boundingBox())!.height).toBe(passAfter.height);
   await firstScreen(p, "once the confirmation has gone");
   await field(p, "Catch").scrollIntoViewIfNeeded();
   await expect(p.getByTestId("trip-share-note")).toHaveText("20 % to your 1 crew.");
@@ -151,11 +168,11 @@ test("the owner's test, to the cent, with port, fishery, 'hypothetical' and the 
   await ctx.close();
 });
 
-test("the season is delayed per an unverified record: the result says the trip is hypothetical and cannot be made now", async ({ browser }) => {
+test("the season is delayed per an unverified record: the pass says the trip is hypothetical and cannot be made now", async ({ browser }) => {
   const { ctx, p } = await page(browser);
   await openTrip(p);
-  await expect(p.getByTestId("trip-flag")).toHaveText("Dungeness crab season delayed per CDFW's unverified record: not a trip you can make now.");
-  expect(await inView(p, p.getByTestId("trip-flag"))).toBe(true);
+  await expect(p.getByTestId("coast-status")).toContainText("Season delayed to at least Jan 1, 2027: a plan, not a trip you can make now");
+  expect(await inView(p, p.getByTestId("coast-status"))).toBe(true);
   await expect(p.getByTestId("coast-status")).toContainText("CDFW · not verified");
   // the status in the header opens the gates, with their sources
   await p.getByTestId("coast-status").click();
@@ -419,7 +436,7 @@ for (const mode of ["day", "dusk", "night"]) {
   });
 }
 
-test("the fishery's whole name is shown in the trip header at 320 px, and the condensed header stays short (R-4)", async ({ browser }) => {
+test("the fishery's whole name is shown in the trip's strip at 320 px, the strip stays in view while the equation is worked, and the way back is reached (R-4)", async ({ browser }) => {
   const { ctx, p } = await page(browser, 320, 640);
   await openTrip(p);
   const select = p.getByTestId("coast-fishery");
@@ -432,42 +449,24 @@ test("the fishery's whole name is shown in the trip header at 320 px, and the co
       const words = c.measureText(el.selectedOptions[0].text).width;
       return { words, room: el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) };
     });
-    expect(fits.words, `${when}: "Dungeness crab" fits its select`).toBeLessThanOrEqual(fits.room);
+    expect(fits.words, `${when}: "Dungeness crab, commercial" fits its select`).toBeLessThanOrEqual(fits.room + 0.5);
   };
   await whole("on opening");
   await type(p, "Catch", "400");
   await field(p, "Fuel").scrollIntoViewIfNeeded();
-  const header = p.locator("[data-nx-desk-header]");
-  await expect(header).toHaveAttribute("data-condensed", /^$/);
-  await whole("condensed");
-  expect((await header.boundingBox())!.height, "the condensed header").toBeLessThanOrEqual(140);
-  // the way back to the gates is still in it, and whole
-  expect(await inView(p, p.getByTestId("coast-to-brief"))).toBe(true);
-  expect(await inView(p, p.getByTestId("coast-status"))).toBe(true);
-
-  // The height does not hang on the font. Another system's faces are wider (Linux measured one line more here):
-  // with every glyph spread well past that, each line of the condensed header is still one line, the header is
-  // exactly as tall, the way back is whole and the fishery's name still fits.
-  const lines = async () => {
-    const box = async (id: string) => Math.round((await p.getByTestId(id).boundingBox())!.height);
-    return { header: Math.round((await header.boundingBox())!.height), title: await box("coast-title"), link: await box("coast-to-brief"), status: await box("coast-status"), fishery: await box("coast-fishery") };
-  };
-  const before = await lines();
+  // the strip (port, fishery, hypothetical, season line) is pinned at the top of the sheet while the equation is worked
+  for (const id of ["coast-title", "coast-fishery", "coast-status"]) expect(await inView(p, p.getByTestId(id)), `${id} in view`).toBe(true);
+  await whole("pinned");
+  // with much wider text the fishery's name still fits and the season line is still whole
   await p.addStyleTag({ content: "[data-nx-desk-header], [data-nx-desk-header] * { letter-spacing: 0.08em !important; word-spacing: 0.2em !important; }" });
   await p.waitForTimeout(300);
-  expect(await lines(), "with much wider text").toEqual(before);
-  const link = p.getByTestId("coast-to-brief");
-  expect(await inView(p, link)).toBe(true);
-  // not cut by the line it stands on: its box ends inside that line's own box
-  expect(
-    await link.evaluate((el) => {
-      const line = el.closest("p")!.getBoundingClientRect();
-      const r = el.getBoundingClientRect();
-      return r.left >= line.left - 0.5 && r.right <= line.right + 0.5 && r.width > 40;
-    }),
-    "the way back is not cut",
-  ).toBe(true);
   await whole("with much wider text");
+  const st = (await p.getByTestId("coast-status").boundingBox())!;
+  expect(st.x + st.width, "the season line is not cut").toBeLessThanOrEqual(320.5);
+  // the way back to the gates and the sea is under the fold, reached by scrolling
+  const back = p.getByTestId("coast-to-brief");
+  await back.scrollIntoViewIfNeeded();
+  expect(await inView(p, back)).toBe(true);
   await ctx.close();
 });
 
@@ -562,7 +561,7 @@ test("a recreational trip is cost only: no price, gross, crew or net anywhere", 
   const { ctx, p } = await page(browser, 1440, 900, { fishery: "dungeness_recreational" });
   await p.goto(`${OK}/coast?place=${MOSS}&view=trip`);
   await expect(p.getByTestId("trip-inputs")).toBeVisible();
-  await expect(p.locator("[data-nx-desk-header]")).toContainText("Hypothetical trip · Recreational, cost only");
+  await expect(p.locator("[data-nx-desk-header]")).toContainText("Hypothetical trip · cost only");
   for (const label of ["Catch", "Price", "Fees", "Crew", "Crew share"]) await expect(field(p, label)).toHaveCount(0);
   await expect(p.getByRole("radiogroup", { name: "How crew is paid" })).toHaveCount(0);
   await type(p, "Fuel", "30");
@@ -626,17 +625,18 @@ for (const [w, h] of SIZES) {
     await openTrip(p);
     // on opening, before anything is scrolled: the first input is there to type in, and so is the result
     // (a 320 × 640 screen is too short for the chart strip, the header and an input at once: there it is one swipe away)
-    if (h >= 800) expect(await inView(p, field(p, "Catch")), "the first input is in view on opening").toBe(true);
-    expect(await inView(p, w <= 720 ? p.getByTestId("trip-netbar") : p.getByTestId("trip-net")), "the result is in view on opening").toBe(true);
+    if (w >= 1100) expect(await inView(p, field(p, "Catch")), "the first input is in view on opening").toBe(true);
+    expect(await inView(p, p.getByTestId("trip-net")), "the result is in view on opening").toBe(true);
     await fillOwner(p);
     await expect(result(p)).toContainText("$2,602.24");
     const vw = p.viewportSize()!.width;
     if (w >= 1100) {
-      // the desk has at least 60 % of the width; the chart is context beside it
-      const desk = (await p.locator("[data-nx-desk]").boundingBox())!;
-      expect(desk.width / vw).toBeGreaterThanOrEqual(0.6);
-      // the one result is far larger than a line of the ledger
-      const big = await exact(p, "trip-net").evaluate((el) => parseFloat(getComputedStyle(el.parentElement!).fontSize));
+      // the pass runs the width between the gutters; the chart keeps at least 45 % of the height above it
+      const pass = (await p.getByTestId("trip-pass").boundingBox())!;
+      expect(pass.width / vw).toBeGreaterThanOrEqual(0.9);
+      expect(pass.y / h).toBeGreaterThanOrEqual(0.45);
+      // the one result is far larger than a field of the equation
+      const big = await p.getByTestId("trip-net-figure").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
       const body = await field(p, "Catch").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
       expect(big / body).toBeGreaterThanOrEqual(2.5);
     } else {
@@ -653,7 +653,7 @@ for (const [w, h] of SIZES) {
       ["Fees", "2"],
     ] as const) {
       await type(p, label, v);
-      expect(await inView(p, result(p)), `result in view after ${label}`).toBe(true);
+      expect(await resultInReach(p), `result in reach after ${label}`).toBe(true);
       expect(await inView(p, p.getByTestId("coast-status")), `status in view after ${label}`).toBe(true);
     }
     await type(p, "Catch", "400");
@@ -662,11 +662,11 @@ for (const [w, h] of SIZES) {
     // a grid scenario is seen where it is chosen: beside the grid on a wide screen, in the bar on a phone
     const cell = p.getByTestId("sens-0-2");
     await cell.scrollIntoViewIfNeeded();
-    if (w <= 720) await cell.tap();
+    if (w <= 640) await cell.tap();
     else await cell.hover();
     await expect(result(p)).toContainText("$4,215.04");
-    expect(await inView(p, result(p))).toBe(true);
-    if (w <= 720) {
+    expect(await resultInReach(p)).toBe(true);
+    if (w <= 640) {
       await expect(p.getByTestId("trip-netbar")).toContainText("With catch +30 %, price +20 %");
       await cell.tap();
       await expect(result(p)).toContainText("$2,602.24");
@@ -692,6 +692,6 @@ test("reduced motion: figures cut to their values", async ({ browser }) => {
   await fillOwner(p);
   await p.getByTestId("sens-0-2").hover();
   // no spring: the visible digits are the new value at once
-  await expect(p.getByTestId("trip-net").locator("[aria-hidden=true]")).toContainText("$4,215.04", { timeout: 400 });
+  await expect(p.getByTestId("trip-net-figure")).toContainText("$4,215.04", { timeout: 400 });
   await ctx.close();
 });
