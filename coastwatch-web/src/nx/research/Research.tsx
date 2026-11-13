@@ -10,7 +10,7 @@ import type { ObservationDataset } from "@/generated/observations";
 import type { OfficialDataset } from "@/generated/official";
 import { resolvePlace } from "@/lib/coast";
 import type { ObsVariableId } from "@/lib/observations";
-import { Button, ButtonGroup, Disclosure, Glyph, MapLayers, Micro, PageLayout, Pass, PlotSync, PlotTable, Stamp, Unavailable, brushEase, useMedia, usePhone, windowAround, type PlotSyncValue, type Provenance } from "@/nx/ds";
+import { Button, ButtonGroup, Disclosure, Glyph, MapLayers, Micro, PageLayout, Pass, PortLabel, PlotSync, PlotTable, Stamp, Unavailable, brushEase, useMedia, usePhone, windowAround, type PlotSyncValue, type Provenance } from "@/nx/ds";
 import { age, day, dayTime, latLon, range } from "@/nx/ds/format";
 import { ChartScene, type ChartScene as Scene } from "@/nx/chart/scene";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
@@ -1157,6 +1157,8 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     <section ref={pageRef} className={x.page} data-testid="nx-research" data-station={st.station_id} data-var={focus} data-layout="stage">
       <PageLayout mode="stage" phoneMap={0.42} chartLabel={st.name} />
       <MapLayers page="research" defaults={{ toxin: true }} />
+      {/* the port pill names the station's area, as the prototype ("Near Santa Cruz") */}
+      <PortLabel text={st.nearest_port_name ? `Near ${st.nearest_port_name}` : null} />
       <ChartScene scene={scene} />
       <StationMarks
         stations={stations.map((y) => ({
