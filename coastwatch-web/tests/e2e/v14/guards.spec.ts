@@ -26,6 +26,9 @@ import { FRAMES, MOSS, PHONES, SIZES, context, fillRegressionTrip, isPhone, side
  *                data-layer="<id>"; on a phone a button named "Layers" opens it. The chart host carries
  *                data-layers="<ids drawn, space-separated>", set from what the map actually draws (the style's layer
  *                visibility after the change), never copied from the chip's own state.
+ *   Today        the gate detail links sit in the ticket's Record tab (role=tab, name "Record"), mounted when chosen.
+ *   G6 note      the CDPH test reading draws only with the Toxin tests chip on (off by default on Today): any test of
+ *                that reading must turn the chip on first. G6 itself toggles every chip both ways from its default.
  */
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -189,16 +192,26 @@ test.describe("G3: hand-offs arrive", () => {
     await page.goto(`${OK}/today?place=${MOSS}`);
     await expect(page.getByTestId("nx-today")).toBeVisible();
     await page.waitForTimeout(2500);
-    const hrefs = await page
-      .getByTestId("nx-today")
-      .locator("a[href]")
-      .evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute("href")!).filter((h) => /^\/(research|explore|coast|alerts|notices)\b/.test(h)))]);
+    const onward = () =>
+      page
+        .getByTestId("nx-today")
+        .locator("a[href]")
+        .evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute("href")!).filter((h) => /^\/(research|explore|coast|alerts|notices)\b/.test(h)))]);
+    // at load: the ticket's own links (samples nearby, plan a trip) already keep the port
+    const atLoad = await onward();
+    // the gate detail links (alerts for this port, Explore, notices) live in the ticket's Record tab, mounted when chosen
+    const record = () => page.getByTestId("nx-today").getByRole("tab", { name: "Record" });
+    await record().click();
+    await expect(record()).toHaveAttribute("aria-selected", "true");
+    const hrefs = [...new Set([...atLoad, ...(await onward())])];
     // every onward link names the port it came from
     for (const h of hrefs) expect(new URL(h, OK).searchParams.get("place"), `${h} keeps the port`).toBe(MOSS);
     // and the three hand-offs the page promises are there
     for (const want of [/^\/research\?/, /^\/coast\?.*view=trip/, /^\/alerts\?/]) expect(hrefs.some((h) => want.test(h)), `a Today link matching ${want}: ${hrefs.join(" ")}`).toBe(true);
     for (const h of hrefs) {
       await page.goto(`${OK}/today?place=${MOSS}`);
+      await expect(page.getByTestId("nx-today")).toBeVisible();
+      if (!atLoad.includes(h)) await record().click();
       const a = page.getByTestId("nx-today").locator(`a[href="${h}"]`).first();
       await a.scrollIntoViewIfNeeded();
       await a.click();
