@@ -23,24 +23,7 @@
 .tag[data-tone="coral"] > span { color: var(--coral-ink); }
 .before { margin: var(--s-10) 0 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
 
-.line { position: relative; margin: var(--s-12) 0 var(--s-4); min-height: 76px; }
-.line svg { display: block; overflow: visible; }
-.lineGap { margin: var(--s-4) 0 0; font-size: var(--fs-13); color: var(--ink-2); }
-.lineGap b { font-size: var(--fs-18); font-weight: var(--w7); color: var(--ink); }
-.lnAxis, .lnTick { stroke: var(--ink-3); stroke-width: 1.4; }
-.lnTick { stroke-width: 1.2; }
-.lnArrow { fill: none; stroke: var(--coral); stroke-width: 3; }
-.lnHead { fill: none; stroke: var(--coral); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
-.lnWas { fill: var(--paper); stroke: var(--ink-2); stroke-width: 2; }
-.lnNow { fill: var(--coral); stroke: var(--coral-ink); stroke-width: 2.2; }
-.lnHatchBg { fill: var(--coral-hatch); }
-.lnHatch { stroke: var(--coral); stroke-width: 1.6; }
-/* design-lint-allow caps: the axis's month names are SVG text, which cannot be a ds Micro; the same 11 px micro style */
-.lnMonth { font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; fill: var(--ink-2); }
-.lnWasT { font-size: var(--fs-13); font-weight: var(--w6); fill: var(--ink-2); }
-.lnNowT { font-size: var(--fs-13); font-weight: var(--w7); fill: var(--coral-ink); }
-.lnSub { font-size: var(--fs-11); font-weight: var(--w5); fill: var(--ink-2); }
-.lnGap { font-size: var(--fs-18); font-weight: var(--w7); fill: var(--ink); }
+.line { margin: var(--s-12) 0 var(--s-4); }
 
 .stamps { display: grid; gap: var(--s-4); margin-top: var(--s-6); }
 .stamp { display: flex; align-items: baseline; gap: var(--s-8); margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
