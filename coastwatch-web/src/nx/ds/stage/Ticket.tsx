@@ -37,6 +37,11 @@ export interface TicketProps extends Data {
    * reaches across them.
    */
   top?: number;
+  /**
+   * The ticket's distance from its side of the screen: `margin` (default), the prototype's tenth of the width; `gutter`,
+   * flush with the gutter (a panel with no place, such as Explore's layers, that stands at the screen's edge).
+   */
+  edge?: "margin" | "gutter";
   className?: string;
   children: ReactNode;
 }
@@ -66,7 +71,7 @@ function topLimit(el: HTMLElement, left: number, width: number): number {
   return underBar;
 }
 
-export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead: asked = true, inline = false, top: preferTop, className, children, ...data }: TicketProps) {
+export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead: asked = true, inline = false, top: preferTop, edge = "margin", className, children, ...data }: TicketProps) {
   const lead = asked && !inline;
   const ref = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGLineElement>(null);
@@ -91,7 +96,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       const g = read(el, "--gutter", 24);
       const W = f?.viewport.width ?? window.innerWidth, H = f?.viewport.height ?? window.innerHeight;
       const w = el.offsetWidth;
-      const m = ticketMargin(W, g);
+      const m = edge === "gutter" ? g : ticketMargin(W, g);
       // the chart's own buttons stand in the bottom-right corner: a ticket over that column stops above them (its stub
       // scrolls when the screen is short), so neither covers the other
       const ctrl = document.querySelector<HTMLElement>(".n12-controls")?.getBoundingClientRect();
@@ -144,7 +149,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       window.removeEventListener("resize", go);
       cancelAnimationFrame(raf);
     };
-  }, [lon, lat, side, anchorY, phone, inline, preferTop]);
+  }, [lon, lat, side, anchorY, phone, inline, preferTop, edge]);
 
   // the camera anchor: where the place should stand so the ticket sits beside it
   useEffect(() => {
@@ -152,8 +157,9 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
     if (!el || phone || !lead || lon == null || lat == null) return;
     const write = () => {
       const g = read(el, "--gutter", 24), w = el.offsetWidth, W = window.innerWidth;
-      const left = side === "east" ? W - ticketMargin(W, g) - w : ticketMargin(W, g);
-      setCameraAnchor({ id, lon, lat, side, width: w, height: el.offsetHeight, anchorY, stub: STUB_GAP, gutter: g, top: Math.max(topLimit(el, left, w), preferTop ?? 0) });
+      const mm = edge === "gutter" ? g : ticketMargin(W, g);
+      const left = side === "east" ? W - mm - w : mm;
+      setCameraAnchor({ id, lon, lat, side, width: w, height: el.offsetHeight, anchorY, stub: STUB_GAP, gutter: g, top: Math.max(topLimit(el, left, w), preferTop ?? 0), atGutter: edge === "gutter" || undefined });
     };
     write();
     const ro = new ResizeObserver(write);
@@ -162,7 +168,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       ro.disconnect();
       clearCameraAnchor(id);
     };
-  }, [id, lon, lat, side, anchorY, phone, lead, preferTop]);
+  }, [id, lon, lat, side, anchorY, phone, lead, preferTop, edge]);
 
   const style = width ? ({ "--ticket-w": `${width}px` } as React.CSSProperties) : undefined;
   return (
@@ -171,6 +177,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         ref={ref}
         className={cx(s.ticket, className)}
         data-side={side}
+        data-edge={edge}
         data-inline={inline || undefined}
         style={style}
         aria-label={label}
@@ -186,7 +193,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         </svg>
         {children}
       </motion.section>
-      {lead ? <div ref={reserveRef} className={s.reserve} data-side={side} style={style} aria-hidden="true" /> : null}
+      {lead ? <div ref={reserveRef} className={s.reserve} data-side={side} data-edge={edge} style={style} aria-hidden="true" /> : null}
     </>
   );
 }

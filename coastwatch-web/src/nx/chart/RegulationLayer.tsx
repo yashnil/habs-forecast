@@ -220,7 +220,9 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
         // the port's zone named on the water in its tag; its neighbours' numbers quiet by the shore
         const pin = pinRef.current;
         let pinShown = false;
-        if (pin && hlZone) {
+        // on a phone the strip is too small for the zone's name: the line and the tint say it (as the prototype)
+        if (pin && hlZone && phone) pin.style.visibility = "hidden";
+        if (pin && hlZone && !phone) {
           const [, nTop] = unproject(f.camera, f.viewport, W / 2, yTop + 90);
           const [, sBot] = unproject(f.camera, f.viewport, W / 2, yBot - 60);
           const n = Math.min(hlZone.north, nTop), s = Math.max(hlZone.south, sBot);
@@ -262,7 +264,7 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
         const corner = q("[data-reg-corner]");
         let cornerBox: Box | null = null;
         // the port's zone named in its tag already says which zone the view lies in
-        if (!drawn.size && !pinShown) {
+        if (!drawn.size && !pinShown && !phone) {
           const top = rampZoneAt(unproject(f.camera, f.viewport, W / 2, yTop + 120)[1]);
           const bottom = rampZoneAt(unproject(f.camera, f.viewport, W / 2, yBot)[1]);
           if (top && top === bottom) cornerBox = tryText(corner, `Whole view: Whale zone ${top}`, phone ? 12 : 292, phone ? 80 : 160);

@@ -314,6 +314,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       });
     }
     const shown = new Set<string>();
+    const keptDots = new Set<string>();
     const leaders: string[] = [];
     placed.forEach((pl, i) => {
       const e = entries[i];
@@ -337,7 +338,10 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const pt = e.el.previousElementSibling as HTMLElement | null;
       if (pt?.dataset.nxPoint === e.spec.id) {
         pt.style.transform = `translate(${Math.round(it.x)}px, ${Math.round(it.y)}px)`;
-        pt.style.visibility = pl.visible ? "visible" : "hidden";
+        // the reader's port keeps its symbol where its name gave way (to a transect, a locator)
+        const keepDot = !!e.spec.keep && it.x >= area.x0 && it.x <= area.x1 && it.y >= area.y0 && it.y <= area.y1;
+        pt.style.visibility = pl.visible || keepDot ? "visible" : "hidden";
+        if (keepDot) keptDots.add(e.spec.id);
       }
     });
     const svg = frameEl.querySelector(".n12-leaders");
@@ -347,7 +351,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       if (shown.has(e.spec.id)) continue;
       e.el.style.visibility = "hidden";
       const pt = e.el.previousElementSibling as HTMLElement | null;
-      if (pt?.dataset.nxPoint === e.spec.id) pt.style.visibility = "hidden";
+      if (pt?.dataset.nxPoint === e.spec.id && !keptDots.has(e.spec.id)) pt.style.visibility = "hidden";
     }
   }, [writeLayers]);
 

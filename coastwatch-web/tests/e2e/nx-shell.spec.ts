@@ -34,7 +34,8 @@ test.describe("one chart across the four destinations", () => {
     // other three are the nav pill's sections
     const visits: Array<[string, RegExp, string, string]> = [
       ["Explore", /\/explore\?place=port-592$/, "explore:port-592", "Today"],
-      ["My Coast", /\/coast\?place=port-592$/, "coast:port-592", "My Coast"],
+      // My Coast opens on its brief (B's v14 scene id)
+      ["My Coast", /\/coast\?place=port-592$/, "coast-brief:port-592:port", "My Coast"],
       ["Research", /\/research\?place=port-592$/, "research:port-592", "Research"],
       ["Today", /\/today\?place=port-592$/, "today:port-592", "Today"],
     ];

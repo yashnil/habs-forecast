@@ -175,7 +175,8 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
   .n12-bar { right: calc(var(--s-12) + 44px + var(--s-8) + 108px); left: var(--s-12); }
   .nx-brand { padding: 0 3px 0 11px; border-radius: 13px; }
   .nx-brand-home { padding-right: var(--s-10); }
-  .nx-brand-port { min-width: 44px; padding: 0 9px 0 var(--s-10); }
+  /* every control in the bar is a 44 px target on a phone: the port control fills the pill's height */
+  .nx-brand-port { min-width: 44px; height: 44px; padding: 0 9px 0 var(--s-10); }
   .n12-port-control-name { max-width: 128px; }
   .nx-bar-end { position: fixed; top: var(--bar-top); right: var(--s-12); }
   .nx-nav { display: none; }
@@ -268,4 +269,21 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
 @media (min-width: 641px) {
   .n12-margin:has([data-nx-ticket][data-side="east"]:not([data-inline])) [data-nx-dock][data-align="left"]:not([data-inline]) { max-width: calc(100% - 3 * var(--gutter) - var(--ticket-w)); }
   .n12-margin:has([data-nx-ticket][data-side="west"]:not([data-inline])) [data-nx-dock][data-align="right"]:not([data-inline]) { max-width: calc(100% - 3 * var(--gutter) - var(--ticket-w)); }
+}
+
+/* the offline / saved-copy notice on a stage page: a paper card of its own, clear of the layer chips. Between the brand
+   and the nav pill where there is room; otherwise under the chips, standing above the page's objects. */
+@media (min-width: 641px) {
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin-page > [data-testid="nx-offline-notice"] {
+    position: absolute; z-index: 5; left: var(--gutter); top: calc(var(--chips-top) + 44px + var(--s-12));
+    width: min(440px, calc(100% - 2 * var(--gutter))); max-height: 40vh; overflow: auto; margin: 0;
+    padding: var(--s-12) var(--s-16); background: var(--paper); border-radius: var(--r-ctl); box-shadow: var(--shadow-sm);
+  }
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin-page > [data-testid="nx-offline-notice"] > section { border-top: 0; padding-top: 0; }
+}
+/* (it stops short of an east ticket standing level with the nav: the ticket's margin and width from the right) */
+@media (min-width: 1420px) {
+  .n12-app:has([data-nx-layout="stage"]) .n12-margin-page > [data-testid="nx-offline-notice"] {
+    top: var(--bar-top); left: calc(var(--gutter) + 466px); width: auto; right: calc(min(144px, 10vw) + var(--ticket-w) + var(--s-12)); max-height: 124px;
+  }
 }

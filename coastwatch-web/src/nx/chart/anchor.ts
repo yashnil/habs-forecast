@@ -25,6 +25,8 @@ export type CameraAnchor = {
   gutter: number;
   /** where the ticket's top stands (under the bar; under the layer chips when it reaches them) */
   top: number;
+  /** the ticket stands at the gutter rather than the prototype's tenth of the width (Ticket `edge="gutter"`) */
+  atGutter?: boolean;
 };
 
 /** The prototype's margin between a ticket and its side of the screen: a tenth of the width, 144 px at most, never under the gutter. */
@@ -68,7 +70,7 @@ export function onCameraAnchor(l: () => void) {
 
 /** Where the place should stand on screen for this anchor, px. */
 export function anchorTarget(a: CameraAnchor, vp: { width: number; height: number }): { x: number; y: number } {
-  const m = ticketMargin(vp.width, a.gutter);
+  const m = a.atGutter ? a.gutter : ticketMargin(vp.width, a.gutter);
   const x = a.side === "east" ? vp.width - m - a.width - a.stub : m + a.width + a.stub;
   // the ticket at its top when it fits; lower only as far as needed for it to fit above the foot
   const maxTop = Math.max(a.top, vp.height - a.gutter - a.height);
