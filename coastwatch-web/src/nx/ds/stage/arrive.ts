@@ -37,34 +37,49 @@ export function useArrival(extraDelay = 0): boolean {
  * phone the sheet's content simply changes.
  */
 export function useLeaveGhost<T extends HTMLElement>(ref: React.RefObject<T | null>, scaleTo = 0.94) {
-  const last = useRef<{ node: HTMLElement; rect: DOMRect; origin: string } | null>(null);
-  // keep a fresh copy's source: measured at each commit while mounted
+  // the source's box in the stage, measured at each commit while it is laid out as a stage object (offsets ignore the
+  // arrival's transforms). By the time it leaves, the old page's layout marker may already be gone and the stage
+  // laid out otherwise, so the leaving copy never trusts a measurement taken then.
+  const last = useRef<{ node: HTMLElement; left: number; top: number; width: number; height: number } | null>(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    last.current = { node: el, rect: el.getBoundingClientRect(), origin: el.style.transformOrigin };
+    if (!el || isPhoneNow()) return;
+    last.current = { node: el, left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
   });
   useLayoutEffect(
     () => () => {
-      const src = last.current?.node;
+      const box = last.current;
+      const src = box?.node;
       const layer = document.getElementById(GHOST_LAYER_ID);
-      if (!src || !layer || isPhoneNow() || !src.isConnected) return;
-      const r = src.getBoundingClientRect();
-      if (!r.width || !r.height) return;
+      if (!box || !src || !layer || isPhoneNow() || !box.width || !box.height) return;
+      // a ticket follows its place with inline left/top (the camera may have moved since the last commit)
+      const left = src.style.left ? parseFloat(src.style.left) : box.left;
+      const top = src.style.top ? parseFloat(src.style.top) : box.top;
       const ghost = src.cloneNode(true) as HTMLElement;
-      ghost.removeAttribute("id");
-      ghost.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
+      // a leaving copy is decoration: it answers for nothing on the page (no ids, test ids or the desk header's hook)
+      for (const n of [ghost, ...ghost.querySelectorAll<HTMLElement>("[id], [data-testid], [data-nx-desk-header]")]) {
+        n.removeAttribute("id");
+        n.removeAttribute("data-testid");
+        n.removeAttribute("data-nx-desk-header");
+      }
       ghost.setAttribute("aria-hidden", "true");
       ghost.setAttribute("inert", "");
-      ghost.removeAttribute("data-testid");
-      ghost.querySelectorAll("[data-testid]").forEach((n) => n.removeAttribute("data-testid"));
-      // a leaving copy is decoration: it must not answer for the page's header or its ids
-      ghost.removeAttribute("data-nx-desk-header");
-      ghost.querySelectorAll("[data-nx-desk-header], [id]").forEach((n) => { n.removeAttribute("data-nx-desk-header"); n.removeAttribute("id"); });
-      ghost.setAttribute("aria-hidden", "true");
-      ghost.setAttribute("inert", "");
-      const lr = layer.getBoundingClientRect();
-      Object.assign(ghost.style, { position: "absolute", left: `${r.left - lr.left}px`, top: `${r.top - lr.top}px`, right: "auto", bottom: "auto", width: `${r.width}px`, height: `${r.height}px`, margin: "0", transform: "none", opacity: "1", pointerEvents: "none" });
+      // exactly the source's box, whatever its class would compute in the ghost layer
+      Object.assign(ghost.style, {
+        position: "absolute",
+        inset: "auto",
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${box.width}px`,
+        height: `${box.height}px`,
+        minWidth: "0",
+        maxWidth: "none",
+        maxHeight: "none",
+        margin: "0",
+        transform: "none",
+        opacity: "1",
+        pointerEvents: "none",
+      });
       ghost.style.transformOrigin = src.style.transformOrigin || "50% 50%";
       layer.appendChild(ghost);
       noteTicketLeaving();
