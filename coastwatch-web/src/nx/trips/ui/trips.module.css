@@ -55,7 +55,9 @@
 .said { margin: 0; font-size: var(--fs-13); color: var(--coral-ink); }
 
 /* ---------------------------------------------------------------- the departure dock */
-.dock.dock { width: min(760px, calc(100% - var(--ticket-w, 440px) - 3 * var(--gutter))); max-height: min(54%, calc(100% - var(--stage-top) - var(--gutter))); overflow-y: auto; scroll-padding-bottom: var(--s-16); overscroll-behavior: contain; }
+/* the workspace ticket is 440px wide (Workspace.tsx; --ticket-w here inherits another value) and stands a margin (ds/stage .reserve: up to 10vw, at most 144px) in from the right: the dock
+   stops a gutter before it at every desk width */
+.dock.dock { width: min(760px, calc(100% - 440px - clamp(var(--gutter), 10vw, 144px) - 2 * var(--gutter))); max-height: min(54%, calc(100% - var(--stage-top) - var(--gutter))); overflow-y: auto; scroll-padding-bottom: var(--s-16); overscroll-behavior: contain; }
 .departures { display: grid; gap: var(--s-8); border-radius: var(--r-sm); outline: 2px solid transparent; outline-offset: 6px; transition: outline-color 180ms ease; }
 .departures[data-invite] { outline-color: var(--ultra); }
 .depHead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4) var(--s-12); }
