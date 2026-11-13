@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { OK } from "../ports";
 
 /**
- * Journey 3 (docs/coastwatch/v12/design-system/journeys.md), on the v13 desk: a researcher arrives from Explore
+ * Journey 3 (docs/coastwatch/v12/design-system/journeys.md), on the v14 synthesis pass: a researcher arrives from Explore
  * with a station, a window and a variable in the address, reads the plot, moves the window, reads the table of
  * exactly that window's samples and exports exactly the window. Recorded as video on request (NX_MEDIA=1).
  */
@@ -21,6 +21,12 @@ async function open(page: Page, q: string) {
   await expect(page.getByTestId("research-record")).toBeVisible();
 }
 
+/** The record's tools (table, exports, sources, pickers): a panel over the pass on a wide screen. */
+async function tools(page: Page) {
+  if ((await page.getByTestId("research-tools-open").getAttribute("aria-expanded")) !== "true") await page.getByTestId("research-tools-open").click();
+  await expect(page.getByTestId("research-tools")).toBeVisible();
+}
+
 test("arrive from Explore, move the window, read the table, export exactly the window", async ({ browser }) => {
   mkdirSync(MEDIA, { recursive: true });
   const dir = path.join(test.info().outputDir, "video");
@@ -34,9 +40,11 @@ test("arrive from Explore, move the window, read the table, export exactly the w
   await expect(page.getByTestId("research-variable")).toContainText("Pseudo-nitzschia, seriata group");
   await expect(page.getByTestId("research-window")).toContainText("Jan 1, 2024");
   expect(params(page)).toMatchObject({ station: "HABs-MontereyWharf", var: "pn_seriata", from: "2024-01-01", to: "2025-12-31" });
-  // every variable the station has measured is a row of the rail; the model is its own panel, named as a model
+  // every variable the station has measured is a tab; the model is its own panel behind its switch, named as a model
   for (const id of ["pDA", "pn_seriata", "pn_delicatissima", "chl_extracted", "temp"]) await expect(page.getByTestId(`rail-${id}`)).toBeVisible();
+  await page.getByTestId("research-model-switch").click();
   await expect(page.getByTestId("strip-model")).toContainText("Model");
+  await page.getByTestId("research-model-switch").click();
 
   // the crosshair reads a sample under the pointer
   const plot = page.getByTestId("research-plot");
@@ -63,6 +71,7 @@ test("arrive from Explore, move the window, read the table, export exactly the w
   expect(hi - lo).toBeGreaterThanOrEqual(30 * DAY);
 
   // the table holds exactly the window's samples of the selected variable, exactly as published
+  await tools(page);
   await page.getByTestId("disc-samples").getByRole("button").first().click();
   const table = page.getByTestId("plot-table");
   await expect(table).toBeVisible();
@@ -135,6 +144,7 @@ test("a station picked on the chart, in the picker or in the list opens its reco
   await expect.poll(scene).not.toBe(before);
   // the window and the variable travel with the reader to the new station
   expect(params(page)).toMatchObject({ station: "HABs-MontereyWharf", var: "pDA", from: "2024-01-01", to: "2026-01-01" });
+  await tools(page);
   await page.getByTestId("research-station-select").selectOption("HABs-StearnsWharf");
   await expect(page.getByTestId("research-title")).toHaveText("Stearns Wharf (Santa Barbara)");
   await page.getByTestId("disc-station").getByRole("button").first().click();
@@ -146,7 +156,7 @@ test("a station picked on the chart, in the picker or in the list opens its reco
   await expect(page.getByTestId("strip-model")).toHaveCount(0);
 });
 
-test("on a phone the page is the page under the chart strip, and the plot is in the first screen", async ({ browser }) => {
+test("on a phone the record reads in the sheet under the chart strip, and the strip frames the station with its neighbours", async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
   const page = await ctx.newPage();
   await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
@@ -155,40 +165,31 @@ test("on a phone the page is the page under the chart strip, and the plot is in 
   await margin.evaluate((el) => ((el as HTMLElement & { __kept?: boolean }).__kept = true));
   await page.waitForTimeout(1500);
   expect(await margin.evaluate((el) => (el as HTMLElement & { __kept?: boolean }).__kept === true)).toBe(true);
+  await expect(page.getByTestId("nx-research")).toHaveAttribute("data-layout", "stage");
+  // the resting sheet leaves at least 40 % of the screen to the chart (design issue 2); the title starts the sheet
   await expect(async () => {
-    const plot = await page.getByTestId("research-plot").boundingBox();
-    const tabs = await page.getByTestId("nx-tabs").boundingBox();
-    expect(plot).not.toBeNull();
-    // the one large plot: the page's width, at least 240 px tall, whole in the first screen above the destinations
-    expect(plot!.width).toBeGreaterThanOrEqual(358);
-    expect(plot!.height).toBeGreaterThanOrEqual(240);
-    expect(plot!.y + plot!.height).toBeLessThanOrEqual(tabs ? tabs.y : 844 - 56);
-    // a compact selector over it; the window's brush and the full list of variables under it
-    const pick = await page.getByTestId("research-variable-select").boundingBox();
-    const brush = await page.getByTestId("research-brush").boundingBox();
-    const rail = await page.getByTestId("research-rail").boundingBox();
-    expect(pick!.y).toBeLessThan(plot!.y);
-    expect(brush!.y).toBeGreaterThan(plot!.y);
-    expect(rail!.y).toBeGreaterThan(brush!.y);
+    const sheet = (await margin.boundingBox())!;
+    expect(sheet.y).toBeGreaterThanOrEqual(844 * 0.4 - 2);
+    const title = (await page.getByTestId("research-title").boundingBox())!;
+    expect(title.y).toBeGreaterThanOrEqual(sheet.y);
+    expect(title.y + title.height).toBeLessThanOrEqual(844 - 62);
+    const station = (await page.getByTestId("chart-station-HABs-SantaCruzWharf").boundingBox())!;
+    expect(station.y + station.height).toBeLessThanOrEqual(sheet.y);
   }).toPass({ timeout: 10_000 });
-  // the compact selector changes the variable
+  // in reading order: the tabs, the sample, the plot, the overview of the record, the sample's details, the tools
+  const y = async (id: string) => (await page.getByTestId(id).boundingBox())!.y;
+  const order = ["rail-pDA", "inspector-position", "research-plot", "research-brush", "inspector-ratio", "research-tools"];
+  const ys = [];
+  for (const id of order) ys.push(await y(id));
+  expect([...ys].sort((a, b) => a - b)).toEqual(ys);
+  const plot = (await page.getByTestId("research-plot").boundingBox())!;
+  expect(plot.width).toBeGreaterThanOrEqual(340);
+  expect(plot.height).toBeGreaterThanOrEqual(240);
+  // the compact selector (in the sheet's tools) changes the variable
   await page.getByTestId("research-variable-select").selectOption("temp");
   await expect.poll(() => params(page).var).toBe("temp");
   await page.getByTestId("research-variable-select").selectOption("pDA");
   await expect.poll(() => params(page).var).toBe("pDA");
-  await expect(page.getByTestId("nx-research")).toHaveAttribute("data-layout", "desk");
-  await expect(page.getByRole("button", { name: "Show more of this page" })).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  // the chart is a strip above the page, and the page starts under it
-  await page.getByTestId("nx-work").evaluate((el) => el.scrollTo(0, 0));
-  const pane = (await page.getByTestId("nx-pane").boundingBox())!;
-  expect(pane.height).toBeGreaterThan(200);
-  expect(pane.height).toBeLessThan(844 * 0.45);
-  expect((await page.getByTestId("research-title").boundingBox())!.y).toBeGreaterThanOrEqual(pane.y + pane.height - 1);
-  // scrolled, the strip leaves a bar with the chart's control and the record takes the screen
-  await page.getByTestId("research-plot").scrollIntoViewIfNeeded();
-  await page.getByTestId("nx-work").evaluate((el) => el.scrollBy(0, 400));
-  await expect(page.getByTestId("nx-pane-toggle")).toBeInViewport();
-  expect((await page.getByTestId("nx-pane").boundingBox())!.y).toBeLessThan(0);
   await ctx.close();
 });

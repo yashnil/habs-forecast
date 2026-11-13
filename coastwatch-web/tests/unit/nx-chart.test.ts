@@ -146,7 +146,9 @@ describe("the shell", () => {
   it("marks Today active at / only for a reader with a saved port", () => {
     expect(activeDestination("/", "port-592")).toBe("/today");
     expect(activeDestination("/", null)).toBeNull();
-    expect(activeDestination("/explore", null)).toBe("/explore");
+    // v14: Explore is Today's data layers and time; Today stays the current section
+    expect(activeDestination("/explore", null)).toBe("/today");
+    expect(activeDestination("/alerts", null)).toBe("/alerts");
     expect(activeDestination("/about", "port-592")).toBeNull();
   });
   it("carries the port on every tab and on a port change", () => {

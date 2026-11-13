@@ -78,7 +78,8 @@ describe("v13 layout", () => {
 
 describe("v13 controls", () => {
   it("buttons: three kinds (text is quiet's old name), two sizes, an end icon", () => {
-    expect(html(h(Button, { variant: "primary", size: "l" }, "Save"))).toMatch(/class="btn primary large"/);
+    // v14: a primary is a small ticket with a stub (its glyph says what happens)
+    expect(html(h(Button, { variant: "primary", size: "l" }, "Save"))).toMatch(/class="btn primary large stubbed"/);
     expect(html(h(Button, { variant: "text" }, "More"))).toMatch(/class="btn quiet"/);
     expect(html(h(Button, { variant: "quiet", iconEnd: "chevron" }, "More"))).toContain("<svg");
     expect(html(h(ButtonGroup, { align: "end" }, h(Button, null, "A")))).toContain('role="group"');

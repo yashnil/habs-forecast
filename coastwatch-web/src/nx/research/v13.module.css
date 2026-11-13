@@ -142,7 +142,8 @@
 .railRow:hover {
   background: var(--wash);
 }
-.railRow[aria-checked="true"] {
+.railRow[aria-checked="true"],
+.railRow[aria-current="true"] {
   border-left-color: var(--ink);
   background: var(--sel);
 }

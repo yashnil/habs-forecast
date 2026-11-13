@@ -3,13 +3,14 @@
 import { useLayoutEffect, useSyncExternalStore } from "react";
 
 /**
- * The page's layout (docs/coastwatch/v13/design-system/README.md §1, "Desk and Chart"). A route declares its
- * mode with <PageLayout>: `chart` (the chart is the work: a margin beside the sheet) or `desk` (the page's work
- * takes the space and the chart is a contextual pane). The pane's size is the reader's, kept per route on this
+ * The page's layout. v14 (docs/coastwatch/v14/design-system/README.md §2): `stage`, the synthesis composition: the
+ * chart is full-bleed behind every page and the page's objects (ds Ticket, Dock, Pass) float on it. The v13 modes
+ * are kept for pages not yet moved: `chart` (the page's column floats as a card beside the chart) and `desk` (a wide
+ * floating panel; v13's chart strip on a phone). The pane's size is the reader's, kept per route on this
  * device. The mode itself is also written in the DOM (a hidden marker), so the stylesheet lays the page out
  * before any script runs.
  */
-export type PageMode = "chart" | "desk";
+export type PageMode = "chart" | "desk" | "stage";
 /** rail: a 48 px rail; context: about 28 % of the width (default); split: half; chart: the desk shrinks to a column. */
 export type PaneDetent = "rail" | "context" | "split" | "chart";
 export const PANE_DETENTS: PaneDetent[] = ["rail", "context", "split", "chart"];
@@ -86,7 +87,7 @@ export const usePageLayout = (): LayoutState => useSyncExternalStore(subscribe, 
 /** Where the chart pane is laid out: beside the desk, as an overlay (narrow or short screens), or the phone's strip. */
 export type PanePlacement = "beside" | "overlay" | "strip";
 export const BESIDE_QUERY = "(min-width: 1100px) and (min-height: 520px)";
-export const STRIP_QUERY = "(max-width: 720px)";
+export const STRIP_QUERY = "(max-width: 640px)";
 export function panePlacement(): PanePlacement {
   if (typeof window === "undefined") return "beside";
   if (window.matchMedia(STRIP_QUERY).matches) return "strip";

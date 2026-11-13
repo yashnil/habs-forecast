@@ -68,8 +68,12 @@ export function noticeExtents(items: { id: string; agency: string; action: strin
 
 /** What a page asks the chart to draw in magenta. */
 export type ChartRegulationSpec = {
-  /** RAMP zone lines; `highlight` is the reader's zone (heavier, named first) */
-  zones?: { highlight: string | null } | null;
+  /**
+   * RAMP zone lines; `highlight` is the reader's zone (tinted, its limits heavier, named in a tag on the water);
+   * `caption` is the tag's second line, the zone's state in the record's words ("Season delayed · Fleet advisory"),
+   * drawn with the official-record ring (not verified)
+   */
+  zones?: { highlight: string | null; caption?: string | null } | null;
   /** official notice latitude bands */
   extents?: NoticeExtent[];
 };

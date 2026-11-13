@@ -2,6 +2,11 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "motion/react";
+import { layerIn, layerOut, portRing } from "@/nx/ds/motion";
+import { useFollows } from "@/nx/alerts/useInbox";
+import { useHomePortKey } from "@/nx/shell/port";
+import { useMapLayerState } from "./mapLayers";
 import { onFrame, registerMark, updateMark, type MarkSpec } from "./runtime";
 import { useScene } from "./scene";
 import { CANYON_AXIS, CANYON_NAME, WATER_NAMES } from "./features";
@@ -21,7 +26,7 @@ export type ChartPort = { key: string; name: string; lon: number; lat: number; p
  */
 export type ChartMark = MarkSpec & { content: ReactNode; point?: ReactNode; label?: string };
 
-function Mark({ mark }: { mark: ChartMark }) {
+export function Mark({ mark }: { mark: ChartMark }) {
   const ref = useRef<HTMLDivElement>(null);
   const { content, point, label, ...spec } = mark;
   const key = JSON.stringify(spec);
@@ -42,32 +47,48 @@ function Mark({ mark }: { mark: ChartMark }) {
         </div>
       ) : null}
       <div ref={ref} className="n12-mark" aria-label={label}>
-        {content}
+        {mark.layer ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: layerIn }} exit={{ opacity: 0, transition: layerOut }}>
+            {content}
+          </motion.div>
+        ) : (
+          content
+        )}
       </div>
     </>
   );
 }
 
-/** Marks rendered into the chart's overlay from anywhere in the page (a portal; client only). */
+/**
+ * Marks rendered into the chart's overlay from anywhere in the page (a portal; client only). A mark with a `layer`
+ * ("sea", "toxin") is drawn only while that layer is on, and fades in and out with it (320 / 220 ms).
+ */
 export function ChartMarks({ marks }: { marks: ChartMark[] }) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
+  const layers = useMapLayerState();
   useEffect(() => setTarget(document.getElementById("nx-chart-marks")), []);
   if (!target) return null;
   return createPortal(
-    <>
-      {marks.map((m) => (
-        <Mark key={m.id} mark={m} />
-      ))}
-    </>,
+    <AnimatePresence>
+      {marks
+        .filter((m) => !m.layer || layers.on[m.layer])
+        .map((m) => (
+          <Mark key={m.id} mark={m} />
+        ))}
+    </AnimatePresence>,
     target,
   );
 }
 
-const PortSymbol = ({ focus }: { focus: boolean }) => (
-  <svg width={focus ? 22 : 12} height={focus ? 22 : 12} viewBox="-12 -12 24 24" className={focus ? "n12-port-sym n12-port-sym-focus" : "n12-port-sym"}>
-    {focus ? <circle r="9.5" className="n12-port-ring" /> : null}
-    <circle r={focus ? 3.6 : 4.2} className="n12-port-dot" />
-  </svg>
+/**
+ * A port on the chart (v14 README §4): a ringed dot. The current port is larger with a paper halo and a ring that
+ * expands once on arrival; a followed port is drawn in ultramarine.
+ */
+const PortSymbol = ({ focus, followed }: { focus: boolean; followed: boolean }) => (
+  <span className={["n12-port-sym", focus ? "n12-port-sym-focus" : "", followed ? "n12-port-sym-follow" : ""].join(" ")}>
+    <i />
+    {focus ? <motion.s className="n12-port-ringonce" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1.35, opacity: [0, 0.55, 0.22] }} transition={portRing} aria-hidden="true" /> : null}
+  </span>
 );
 
 /** The chart's own names: water features (Literata italic) and ports (upright sans, circled dot). */
@@ -85,6 +106,9 @@ function useHydrated() {
 export function ChartLabels({ ports }: { ports: ChartPort[] }) {
   const scene = useScene();
   const focus = scene?.focus?.key ?? null;
+  const home = useHomePortKey() ?? null;
+  const follows = useFollows();
+  const followed = new Set((follows ?? []).map((f) => f.port));
   const hydrated = useHydrated();
   const named = scene?.named ?? [];
   // a port the page already names (a station "Monterey Wharf" 1 km from Monterey) is left off, unless it is the reader's
@@ -99,7 +123,7 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
       maxZoom: w.maxZoom,
       anchors: ["center" as const],
       content: (
-        <span className="n12-water-name" style={{ fontSize: w.size, letterSpacing: `${w.spacing ?? 0.04}em` }}>
+        <span className={w.id.startsWith("pacific") ? "n12-water-name" : "n12-water-name n12-water-name-sm"} style={{ fontSize: w.size, letterSpacing: `${w.spacing ?? 0.12}em` }}>
           {w.name}
         </span>
       ),
@@ -113,11 +137,17 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
         priority: isFocus ? 100 : p.pilot ? 30 : 20,
         minZoom: isFocus ? 0 : p.pilot ? 6.4 : 8.6,
         keep: isFocus,
-        pointRadius: isFocus ? 11 : 6,
-        offset: isFocus ? 16 : 10,
-        anchors: ["right" as const, "left" as const, "top-right" as const, "bottom-right" as const, "top-left" as const, "bottom-left" as const],
-        point: <PortSymbol focus={isFocus} />,
-        content: <span className={isFocus ? "n12-port-name n12-port-name-focus" : "n12-port-name"}>{p.name}</span>,
+        pointRadius: isFocus ? 14 : 6,
+        offset: isFocus ? 10 : 6,
+        // the current port is named on the water side (its ticket stands to the east); the others on the land side
+        anchors: isFocus ? (["left", "top-left", "bottom-left", "right", "top-right", "bottom-right"] as const).slice() : (["right", "left", "top-right", "bottom-right", "top-left", "bottom-left"] as const).slice(),
+        point: <PortSymbol focus={isFocus} followed={followed.has(p.key)} />,
+        content: (
+          <span className={isFocus ? "n12-port-name n12-port-name-focus" : "n12-port-name"}>
+            {p.name}
+            {p.key === home ? <span className="n12-port-tag">Home port</span> : followed.has(p.key) && !isFocus ? <span className="n12-port-tag">Following</span> : null}
+          </span>
+        ),
         label: p.name,
       };
     }),

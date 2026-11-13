@@ -19,7 +19,7 @@ import {
   Toggle,
   Tooltip,
   Unavailable,
-  Waterfall,
+  LedgerWaterfall as Waterfall,
   day,
   usd,
   type PortEntry,

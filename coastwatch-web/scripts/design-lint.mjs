@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
  * npm run lint:design — the anti-vibe-coding rules of the Neritic design system, enforced mechanically
- * (docs/coastwatch/v12/design-system/README.md section 3). Scans src/nx/**, src/app/**\/(neritic)/** and the
+ * (docs/coastwatch/v12/design-system/README.md section 3, as amended for the v14 synthesis in
+ * docs/coastwatch/v14/design-system/README.md section 8: Figtree at 11 px and up, objects float with the token
+ * shadows and radii, the map voice's spaced capitals live in the design system and the chart). Scans src/nx/**, src/app/**\/(neritic)/** and the
  * /system catalog. CSS is read declaration by declaration; TS/TSX through the TypeScript AST, so only real
  * string literals, template text and JSX text count (comments never do).
  *
@@ -16,17 +18,17 @@ import ts from "typescript";
 
 export const RULES = {
   "colour-literal": "Colour literal outside the token files; use a token from src/nx/ds/tokens.css",
-  "font-size": "Text under 14 px; the floor is --t-14 (body 16)",
-  decoration: "Shadows, backdrop filters and gradients are not part of the system; layer with rules, halos and paper",
-  radius: "Radius must be 0, var(--r-0) or var(--r-1) (2 px, inputs only); no pills",
-  caps: "No uppercase transforms, small caps or letter-spaced labels; sentence case everywhere",
+  "font-size": "Text under 11 px; the synthesis scale is 11 / 13 / 15 / 18 / 25 / 40 / 54 / 68 (--fs-*)",
+  decoration: "Backdrop filters and raw gradients are not part of the system; shadows and hatches come from tokens (--shadow*, --hatch-*)",
+  radius: "Radius must be a token (--r-card 20, --r-ctl 12, --r-sm 9, --r-bar, --r-pill, --r-tag, --r-sheet, --r-0, --r-1), 0 or 50%",
+  caps: "Capitals and spaced labels are the design system's (ds Micro, the chart's map voice); a page writes sentence case",
   emoji: "No emoji",
   "forbidden-word": "Forbidden word (truth rule T36); Neritic never gives a verdict",
   "iso-date": "Hard-coded ISO date in a component; dates come from data and are formatted by ds/format",
   motion: "Motion goes through src/nx/ds/motion presets: no raw transition over 200 ms, no keyframes outside ds/",
   "motion-preset": "Inline Motion timing; use a preset from src/nx/ds/motion.ts (ink, pan, settle, register, sheet, press, cut)",
-  "font-family": "Type must use --font-serif or --font-sans; no monospace, no other families",
-  "space-scale": "Spacing must come from the scale 4, 8, 12, 16, 24, 32, 48, 64 (--s-*)",
+  "font-family": "Type must use --font (Figtree; --font-sans and --font-serif are its aliases); no monospace, no other families",
+  "space-scale": "Spacing must be on the 2 px grid up to 64 px, or a --s-* token",
   "allow-reason": "design-lint-allow needs a rule and a reason",
   // v13 (docs/coastwatch/v13/design-system/README.md section 10)
   "fixed-position": "position: fixed belongs to the shell and the design system; a page lays out in its Desk, margin or a ChartDock",
@@ -76,7 +78,9 @@ const NAMED_COLOUR_RE = /(^|[\s:,(])(white|black|red|green|blue|gray|grey|yellow
 const GRADIENT_RE = /\b(?:repeating-)?(?:linear|radial|conic)-gradient\(/i;
 const EMOJI_RE = /\p{Emoji_Presentation}|\p{Extended_Pictographic}️/u;
 const ISO_RE = /\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b/;
-const SCALE = new Set([0, 4, 8, 12, 16, 24, 32, 48, 64]);
+const onGrid = (v) => Math.abs(v) <= 64 && Math.abs(v) % 2 === 0;
+const FONT_VAR = /var\(--font(-serif|-sans)?\)/;
+const RADIUS_OK = (v) => v === "0" || v === "50%" || /^var\(--r-[a-z0-9-]+\)$/.test(v) || /^calc\(.*var\(--r-/.test(v);
 
 const lineOf = (text, offset) => text.slice(0, offset).split("\n").length;
 
@@ -155,27 +159,29 @@ function lintCss(file, text, tokenFile, inDs) {
       if (!tokenFile && (HEX_RE.test(` ${value}`) || FN_COLOUR_RE.test(value) || (/(color|background|fill|stroke|border|outline|caret|shadow)/.test(prop) && NAMED_COLOUR_RE.test(` ${value}`)))) add("colour-literal", `${prop}: ${value}`);
       if (prop === "font-size") {
         const px = pxValue(value);
-        if (px !== null && px < 14) add("font-size", value);
+        if (px !== null && px < 11) add("font-size", value);
       }
       if (prop === "font") {
         const m = /(\d*\.?\d+)(px|rem)\b/.exec(value);
         if (m) {
           const px = m[2] === "rem" ? parseFloat(m[1]) * 16 : parseFloat(m[1]);
-          if (px < 14) add("font-size", value);
+          if (px < 11) add("font-size", value);
         }
-        if (!/var\(--font-(serif|sans)\)/.test(value) && value !== "inherit") add("font-family", value);
+        if (!FONT_VAR.test(value) && value !== "inherit") add("font-family", value);
       }
-      if (prop === "font-family" && !/^var\(--font-(serif|sans)\)$/.test(value) && value !== "inherit") add("font-family", value);
+      if (prop === "font-family" && !new RegExp(`^${FONT_VAR.source}$`).test(value) && value !== "inherit") add("font-family", value);
       if (/monospace/i.test(value)) add("font-family", value);
-      if ((prop === "box-shadow" && value !== "none") || prop.endsWith("backdrop-filter")) add("decoration", prop);
+      if (prop.endsWith("backdrop-filter")) add("decoration", prop);
       if (GRADIENT_RE.test(value)) add("decoration", "gradient");
-      if (/^border(-[a-z]+)*-radius$/.test(prop)) {
-        const ok = value.split(/\s+/).every((v) => v === "0" || v === "var(--r-0)" || v === "var(--r-1)");
+      // the design system and the chart draw their own small shapes (a glyph's 3 px corners, a chip's 13 px);
+      // a page uses the radius tokens
+      if (/^border(-[a-z]+)*-radius$/.test(prop) && !system) {
+        const ok = value.split(/\s+/).every(RADIUS_OK);
         if (!ok) add("radius", value);
       }
-      if (prop === "text-transform" && /uppercase/.test(value)) add("caps", value);
+      if (!system && prop === "text-transform" && /uppercase/.test(value)) add("caps", value);
       if (/^font-variant(-caps)?$/.test(prop) && /small-caps|all-small-caps|petite-caps|unicase|titling-caps/.test(value)) add("caps", value);
-      if (prop === "letter-spacing") {
+      if (prop === "letter-spacing" && !system) {
         const m = /^(-?\d*\.?\d+)(em|px)$/.exec(value);
         if (m && ((m[2] === "em" && parseFloat(m[1]) > 0.04) || (m[2] === "px" && parseFloat(m[1]) > 0.6))) add("caps", `letter-spacing ${value}`);
       }
@@ -185,8 +191,8 @@ function lintCss(file, text, tokenFile, inDs) {
       if (!system && prop === "position" && /^fixed\b/.test(value)) add("fixed-position");
       if (!system && /var\(--margin-w\b/.test(value)) add("margin-width", prop);
       if (!system && /var\(--(t-14|type-small)\)/.test(value) && /^font(-size)?$/.test(prop)) small.push(line);
-      if (/^(margin|padding|gap|row-gap|column-gap)(-(top|right|bottom|left|inline|block)(-start|-end)?)?$/.test(prop)) {
-        const bad = value.split(/\s+/).map(pxValue).filter((v) => v !== null && !SCALE.has(Math.abs(v)));
+      if (!system && /^(margin|padding|gap|row-gap|column-gap)(-(top|right|bottom|left|inline|block)(-start|-end)?)?$/.test(prop)) {
+        const bad = value.split(/\s+/).map(pxValue).filter((v) => v !== null && !onGrid(v));
         if (bad.length) add("space-scale", value);
       }
     }
@@ -247,13 +253,13 @@ function lintTs(file, text, tokenFile, inDs) {
       const lit = init && (ts.isNumericLiteral(init) ? Number(init.text) : ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init) ? init.text : null);
       if (name === "fontSize" || name === "font-size") {
         const px = typeof lit === "number" ? lit : typeof lit === "string" ? (pxValue(lit) ?? (/^\d+(\.\d+)?$/.test(lit) ? Number(lit) : null)) : null;
-        if (px !== null && px < 14) add(node, "font-size", String(lit));
+        if (px !== null && px < 11) add(node, "font-size", String(lit));
       }
-      if (name === "boxShadow" || name === "backdropFilter") add(node, "decoration", name);
-      if (name === "borderRadius" && lit !== null && lit !== 0 && lit !== "0" && lit !== "var(--r-0)" && lit !== "var(--r-1)") add(node, "radius", String(lit));
-      if (name === "textTransform" && lit === "uppercase") add(node, "caps", "uppercase");
+      if (name === "backdropFilter") add(node, "decoration", name);
+      if (!system && name === "borderRadius" && lit !== null && lit !== 0 && !(typeof lit === "string" && RADIUS_OK(lit))) add(node, "radius", String(lit));
+      if (!system && name === "textTransform" && lit === "uppercase") add(node, "caps", "uppercase");
       if (name === "fontVariant" && typeof lit === "string" && /small-caps/.test(lit)) add(node, "caps", lit);
-      if (name === "fontFamily" && typeof lit === "string" && !/^var\(--font-(serif|sans)\)$/.test(lit)) add(node, "font-family", lit);
+      if (name === "fontFamily" && typeof lit === "string" && !new RegExp(`^${FONT_VAR.source}$`).test(lit)) add(node, "font-family", lit);
       if (name === "transition" && typeof lit === "string" && durationsMs(lit).some((x) => x > 200)) add(node, "motion", lit);
       if (!motionHome && ts.isPropertyAssignment(node) && ts.isObjectLiteralExpression(node.parent)) {
         if ((name === "stiffness" || name === "damping" || name === "bounce") && typeof lit === "number") add(node, "motion-preset", name);
@@ -329,7 +335,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   for (const x of found) console.log(`${x.file}:${x.line}  ${x.rule}  ${x.message}`);
   if (process.argv.includes("--warnings")) for (const x of warned) console.log(`${x.file}:${x.line}  warning  ${x.rule}  ${x.message}`);
   if (found.length) {
-    console.error(`\nlint:design: ${found.length} problem${found.length === 1 ? "" : "s"} in ${new Set(found.map((x) => x.file)).size} file(s) of ${files.length}. Rules: docs/coastwatch/v12/design-system/README.md section 3 and v13 section 10.`);
+    console.error(`\nlint:design: ${found.length} problem${found.length === 1 ? "" : "s"} in ${new Set(found.map((x) => x.file)).size} file(s) of ${files.length}. Rules: docs/coastwatch/v12/design-system/README.md section 3, v13 section 10, v14 section 8.`);
     process.exit(1);
   }
   const byRule = [...new Set(warned.map((x) => x.rule))].map((r) => `${r} ${warned.filter((x) => x.rule === r).length}`).join(", ");

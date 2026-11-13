@@ -7,7 +7,13 @@ export type StatementTone = "ink" | "regulation" | "closure";
 
 export interface StatementProps {
   /** The statement itself: one sentence a stranger can read from across the room. */
-  title: ReactNode;
+  title?: ReactNode;
+  /**
+   * v14 poster form (the date is the hero, after the approved synthesis): the lead words ("Season delayed to at least")
+   * over the hero ("Jan 1, 2027"), 25 px over 68 px (54 on a phone or a short screen). With `hero`, `title` is unused.
+   */
+  lede?: ReactNode;
+  hero?: ReactNode;
   size?: StatementSize;
   /** Regulation (magenta) is only for official delay and closure statements; closure is rust, official closures only. */
   tone?: StatementTone;
@@ -40,14 +46,20 @@ export function RegulationRule({ className }: { className?: string }) {
   );
 }
 
-/** Page title plus status sentence, in Literata (spec section 9). */
-export function Statement({ title, size = "xl", tone = "ink", as: As = "h1", scope, why, rule, children, className, id }: StatementProps) {
+/** Page title plus status sentence (v12), or the v14 poster: lead words over the hero date. */
+export function Statement({ title, lede, hero, size = "xl", tone = "ink", as: As = "h1", scope, why, rule, children, className, id }: StatementProps) {
   return (
-    <div className={cx(s.statement, s[size], className)} data-tone={tone}>
+    <div className={cx(s.statement, s[size], hero != null && s.poster, className)} data-tone={tone}>
       {scope ? <p className={s.scope}>{scope}</p> : null}
-      <As className={s.title} id={id}>
-        {title}
-      </As>
+      {hero != null ? (
+        <As className={s.posterTitle} id={id}>
+          {lede ? <span className={s.lede}>{lede}</span> : null} <span className={s.hero}>{hero}</span>
+        </As>
+      ) : (
+        <As className={s.title} id={id}>
+          {title}
+        </As>
+      )}
       {why ? <p className={s.why}>{why}</p> : null}
       {rule && tone === "regulation" ? <RegulationRule /> : null}
       {children ? <div className={s.body}>{children}</div> : null}

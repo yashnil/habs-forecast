@@ -2,6 +2,8 @@
 import { scaleLinear, scaleLog } from "d3-scale";
 import { line as d3line } from "d3-shape";
 import { Children, createContext, isValidElement, useContext, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { motion } from "motion/react";
+import { crosshairGlide } from "../motion";
 import { day, monthYear, year } from "../format";
 import { DATA_STATE_WORDS, type DataStateKind } from "../dataStates";
 import { useElementWidth, usePhone } from "../useMedia";
@@ -588,7 +590,10 @@ export interface CrosshairProps {
   /** A horizontal rule at the sample's value too (off by default). */
   horizontal?: boolean;
 }
-/** The rule at the sample under the pointer or the keyboard, and a ring on the sample. It follows at once: no easing. */
+/**
+ * The rule at the sample under the pointer or the keyboard, and a ring on the sample. v14: it glides from one sample
+ * to the next on a spring (crosshairGlide, 620 / 44); it appears where it lands, without travelling in from nowhere.
+ */
 export function Crosshair({ horizontal }: CrosshairProps) {
   const g = usePlot();
   const p = g.focus;
@@ -596,10 +601,18 @@ export function Crosshair({ horizontal }: CrosshairProps) {
   const x = g.x(p.t);
   const y = onAxis(p) ? g.y(p.v as number) : g.bottom;
   return (
-    <g data-crosshair="" pointerEvents="none">
-      <line x1={x} x2={x} y1={g.top} y2={g.bottom} className={s.cross} />
-      {horizontal && onAxis(p) ? <line x1={g.left} x2={g.right} y1={y} y2={y} className={s.cross} /> : null}
-      <circle cx={x} cy={y} r={7} className={s.focusRing} />
+    <g data-crosshair="" data-x={x.toFixed(1)} pointerEvents="none">
+      <motion.g initial={false} animate={{ x }} transition={crosshairGlide}>
+        <line x1={0} x2={0} y1={g.top} y2={g.bottom} className={s.cross} />
+      </motion.g>
+      {horizontal && onAxis(p) ? (
+        <motion.g initial={false} animate={{ y }} transition={crosshairGlide}>
+          <line x1={g.left} x2={g.right} y1={0} y2={0} className={s.cross} />
+        </motion.g>
+      ) : null}
+      <motion.g initial={false} animate={{ x, y }} transition={crosshairGlide}>
+        <circle cx={0} cy={0} r={6} className={s.focusRing} />
+      </motion.g>
     </g>
   );
 }
@@ -614,7 +627,8 @@ export function Selection() {
   return (
     <g data-selection="" pointerEvents="none">
       <line x1={x} x2={x} y1={g.top} y2={g.bottom} className={s.pinRule} />
-      <rect x={x - 9} y={y - 9} width={18} height={18} className={s.pinRing} />
+      <circle cx={x} cy={y} r={8.5} className={s.pinRing} />
+      <circle cx={x} cy={y} r={3.2} className={s.pinDot} />
     </g>
   );
 }

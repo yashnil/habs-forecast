@@ -155,11 +155,15 @@ test.describe("Research", () => {
     await page.goto(`${OK}/research?station=HABs-SantaCruzWharf`);
     const rec = page.getByTestId("research-record");
     await expect(rec).toContainText("Reported 0");
-    await expect(rec).toContainText("mg/m³, algae, not toxin");
     await expect(rec).toContainText("ng/mL in seawater");
-    await expect(rec).toContainText("%, median of model cells within 15 km");
-    await expect(rec).toContainText(/No model history kept before /);
-    // T10: the model strip's words are visible beside it, with nothing expanded
+    await page.getByTestId("rail-chl_extracted").click();
+    await expect(rec).toContainText("mg/m³, algae, not toxin");
+    await page.getByTestId("rail-pDA").click();
+    // v14: the model is behind "Show the model"; shown, it is the median of cells within 15 km with its gap said, and
+    // its words are visible beside it with nothing else expanded
+    await page.getByTestId("research-model-switch").click();
+    await expect(rec).toContainText("median of model cells within 15 km");
+    await expect(rec).toContainText(/No model runs kept before /);
     await expect(page.getByTestId("research-model-words")).toBeVisible();
     await expect(page.getByTestId("research-model-words")).toHaveText("C-HARM: probability of conditions in the water, not toxin in seafood. No demonstrated skill at the shore; a high reading here is near-constant background, not an alarm.");
   });

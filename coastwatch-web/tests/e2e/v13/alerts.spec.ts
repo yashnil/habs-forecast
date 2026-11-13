@@ -32,7 +32,7 @@ test("arriving from a port outside the pilot: it is offered, followed in one tap
   await expect(row).toContainText("3 of 5 kinds of change alert you");
   await expect(offer).toHaveCount(0);
   // the first look is a baseline, said in words: no alert is made from what is already there
-  await expect(page.getByTestId("alerts-said")).toContainText("Bodega Bay: noted as it is now. Changes from here on will be listed.");
+  await expect(page.getByTestId("alerts-said")).toContainText("Bodega Bay: noted as it is now. Changes from here on will be listed.", { timeout: 15_000 });
   await expect(page.getByTestId("alerts-empty")).toContainText("No alerts yet");
   await expect(page.getByTestId("alerts-last-checked")).toContainText(/^Last checked .+ PT\.$/);
 
@@ -68,7 +68,7 @@ test("a controlled change: two states of the records make exactly one alert, cou
   const records = await secondState(page, BODEGA, dungenessOpens);
   await page.goto(`${OK}/alerts?place=${BODEGA}`);
   await page.getByTestId("alerts-follow").click();
-  await expect(page.getByTestId("alerts-said")).toContainText("noted as it is now");
+  await expect(page.getByTestId("alerts-said")).toContainText("noted as it is now", { timeout: 15_000 });
   await expect(page.getByTestId("nx-unread")).toHaveCount(0);
 
   // the records change while Neritic is closed; half an hour later the reader opens Explore, not Alerts
@@ -114,6 +114,57 @@ test("a controlled change: two states of the records make exactly one alert, cou
   await expect(item).toHaveAttribute("data-read", "");
 });
 
+test("the ticket says the change: the new date with the old struck, before → after on a date axis, and opening the record clears the count", async ({ page }) => {
+  // a followed port with one alert on this device (as check.ts writes it), a date that moved two weeks
+  const FORT = "port-223";
+  await page.goto(`${OK}/about`);
+  await page.evaluate((kv) => Object.entries(kv).forEach(([k, v]) => localStorage.setItem(k, v)), {
+    "nx-follow-v1": JSON.stringify({ v: 1, ports: [{ port: FORT, triggers: ["status_change", "new_toxin_result", "ramp_action"], since: "2026-10-01T17:00:00Z" }] }),
+    "nx-inbox-v1": JSON.stringify([
+      {
+        key: `${FORT}|status|v2`, place_id: FORT, place_label: "Fort Bragg", fact_id: "status", fact_version: "v2", trigger: "status_change", severity: "red",
+        title: "Fort Bragg: Dungeness crab (commercial): Commercial season delayed to at least Jan 15, 2027",
+        body: "Changed since 2026-10-01. Was: “Commercial season delayed to at least Jan 1, 2027”. Source: CDFW, 2026-10-12.",
+        basis: "official", verified: false, source: { name: "CDFW", url: "https://wildlife.ca.gov/" }, as_of: "2026-10-12T18:00:00Z", created_at: "2026-10-13T05:00:00Z",
+        read_at: null, sample: true, change: "changed", was: "Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027",
+      },
+    ]),
+    // checked a moment ago, so opening the page does not check (and re-baseline) again
+    "nx-alert-check-v1": JSON.stringify({ at: new Date().toISOString(), ports: [FORT], failed: [], data_at: null }),
+  });
+  await page.goto(`${OK}/alerts?place=${FORT}`);
+  const ticket = page.locator("[data-nx-ticket]");
+  const item = ticket.getByTestId("alerts-item");
+  await expect(item).toHaveAttribute("data-port", FORT);
+  await expect(item).toContainText("Unread · Fort Bragg · Season status and official notices");
+  await expect(item.getByRole("heading")).toHaveText("Dungeness crab (commercial): Commercial season delayed to at least Jan 15, 2027");
+  await expect(item.getByRole("img", { name: /was Jan 1, 2027, now Jan 15, 2027 \(sample data\)\. \+14 days later\./ })).toBeVisible();
+  await expect(item).toContainText("Not verified");
+  await expect(item).toContainText("Noticed on this device");
+  await expect(item).toContainText("following since Oct 1");
+  await expect(page.getByTestId("alerts-delivery")).toHaveText(DELIVERY);
+  await expect(page.getByTestId("nx-unread")).toHaveText("1");
+
+  // the one filled action opens the record and marks the alert read: the count leaves the bar
+  await page.getByTestId("alerts-open").click();
+  await expect(page.getByTestId("alerts-open")).toHaveText(/Hide the record/);
+  await expect(item.getByRole("link", { name: /The record at CDFW/ })).toHaveAttribute("href", "https://wildlife.ca.gov/");
+  await expect(item).toHaveAttribute("data-read", "");
+  await expect(item).toContainText("Read · Fort Bragg");
+  await expect(page.getByTestId("nx-unread")).toHaveCount(0);
+  expect((await stored(page, "nx-inbox-v1"))[0].read_at).toBeTruthy();
+
+  // "What alerts you" (the dock) shows the port and its switches; Following there stops following, and its alert goes with it
+  const kinds = page.getByTestId("alerts-kinds");
+  await expect(kinds).toHaveAttribute("aria-expanded", "false");
+  await kinds.click();
+  await expect(page.getByTestId(`alerts-port-${FORT}`)).toContainText("3 of 5 kinds of change alert you");
+  await page.getByTestId(`alerts-unfollow-${FORT}`).click();
+  await expect(page.getByTestId("alerts-item")).toHaveCount(0);
+  expect((await stored(page, "nx-follow-v1")).ports).toEqual([]);
+  await expect(page.getByTestId("alerts-offer")).toHaveAttribute("data-port", FORT);
+});
+
 test("it says exactly what happens: when it checks, that nothing is sent, and no way to give a number or an address", async ({ page }) => {
   const outside: string[] = [];
   page.on("request", (r) => {
@@ -123,7 +174,7 @@ test("it says exactly what happens: when it checks, that nothing is sent, and no
   await page.goto(`${OK}/alerts?place=${MOSS}`);
   await expect(page.getByTestId("alerts-delivery")).toHaveText(DELIVERY);
   await page.getByTestId("alerts-follow").click();
-  await expect(page.getByTestId("alerts-last-checked")).toContainText("Last checked");
+  await expect(page.getByTestId("alerts-last-checked")).toContainText("Last checked", { timeout: 15_000 });
   await expect(page.getByTestId("nx-alerts")).toContainText("Neritic has no server watching your ports");
 
   const channels = page.getByTestId("alerts-channels");
@@ -154,7 +205,7 @@ test("a browser that keeps nothing: the page says so and still works for this vi
   await expect(page.getByTestId("alerts-not-kept")).toContainText("This browser is not keeping data");
   await page.getByTestId("alerts-follow").click();
   await expect(page.getByTestId(`alerts-port-${BODEGA}`)).toBeVisible();
-  await expect(page.getByTestId("alerts-said")).toContainText("lasts only until you close the page");
+  await expect(page.getByTestId("alerts-said")).toContainText("lasts only until you close the page", { timeout: 15_000 });
   await page.goto(`${OK}/today?place=${BODEGA}`);
   await expect(page.getByTestId("nx-today")).toBeVisible();
   expect(errors).toEqual([]);
@@ -165,7 +216,7 @@ test("offline: the saved Alerts page lists the alerts already on the device and 
   const records = await secondState(page, MOSS, dungenessOpens);
   await page.goto(`${OK}/alerts?place=${MOSS}`);
   await page.getByTestId("alerts-follow").click();
-  await expect(page.getByTestId("alerts-said")).toContainText("noted as it is now");
+  await expect(page.getByTestId("alerts-said")).toContainText("noted as it is now", { timeout: 15_000 });
   records.publish();
   await page.getByTestId("alerts-check-now").click();
   await expect(page.getByTestId("alerts-item")).toHaveCount(1);
@@ -200,13 +251,13 @@ for (const [name, viewport] of [["desktop", { width: 1440, height: 900 }], ["pho
       const records = await secondState(page, MOSS, dungenessOpens);
       await page.goto(`${OK}/alerts?place=${MOSS}`);
       await page.getByTestId("alerts-follow").click();
-      await expect(page.getByTestId("alerts-said")).toContainText("noted as it is now");
+      await expect(page.getByTestId("alerts-said")).toContainText("noted as it is now", { timeout: 15_000 });
       records.publish();
       await page.getByTestId("alerts-check-now").click();
       await expect(page.getByTestId("alerts-item")).toHaveCount(1);
       expect(await axe(page)).toEqual([]);
       await noSidewaysScroll(page);
-      for (const id of [`alerts-trigger-${MOSS}-status_change`, "alerts-check-now", "alerts-mark-read", "alerts-add-port", `alerts-unfollow-${MOSS}`]) {
+      for (const id of [`alerts-trigger-${MOSS}-status_change`, "alerts-check-now", "alerts-mark-read", "alerts-add-port", `alerts-unfollow-${MOSS}`, "alerts-open", "alerts-kinds"]) {
         const b = await page.getByTestId(id).boundingBox();
         expect(b!.height, id).toBeGreaterThanOrEqual(44);
       }

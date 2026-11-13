@@ -155,13 +155,15 @@
   fill: var(--ink-2);
 }
 .brushShade {
-  fill: var(--paper);
-  opacity: 0.72;
+  fill: var(--paper-2);
+  opacity: 0.6;
 }
+/* v14: the brush window is ultramarine (you drag it), a wash with rounded ends */
 .brushWindow {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 3;
+  fill: color-mix(in srgb, var(--ultra) 10%, transparent);
+  stroke: var(--ultra);
+  stroke-width: 1.8;
+  rx: 6px;
 }
 .brushHandle {
   position: absolute;
@@ -179,7 +181,8 @@
   left: var(--tick, 50%);
   top: 25%;
   bottom: 25%;
-  border-left: 3px solid var(--ink);
+  border-left: 2px solid var(--ultra);
+  border-radius: 1px;
   transform: translateX(-50%);
 }
 /* outward-facing (a narrow frame): a short foot from the tick shows which way the handle reaches */
