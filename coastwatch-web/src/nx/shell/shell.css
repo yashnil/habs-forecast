@@ -263,3 +263,9 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
   .n12-app:not(:has([data-nx-layout])) .n12-scale,
   .n12-app:has([data-nx-layout="chart"]) .n12-scale { right: calc(var(--ticket-w) + 2 * var(--gutter) + 54px); }
 }
+
+/* a dock along the foot gives way to a ticket standing at the right (a narrower screen): never under it */
+@media (min-width: 641px) {
+  .n12-margin:has([data-nx-ticket][data-side="east"]:not([data-inline])) [data-nx-dock][data-align="left"]:not([data-inline]) { max-width: calc(100% - 3 * var(--gutter) - var(--ticket-w)); }
+  .n12-margin:has([data-nx-ticket][data-side="west"]:not([data-inline])) [data-nx-dock][data-align="right"]:not([data-inline]) { max-width: calc(100% - 3 * var(--gutter) - var(--ticket-w)); }
+}

@@ -74,13 +74,22 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       const g = read(el, "--gutter", 24);
       const top0 = read(el, "--stage-top", 136);
       const W = f?.viewport.width ?? window.innerWidth, H = f?.viewport.height ?? window.innerHeight;
-      const w = el.offsetWidth, h = el.offsetHeight;
+      const w = el.offsetWidth;
+      // the chart's own buttons stand in the bottom-right corner: a ticket over that column stops above them (its stub
+      // scrolls when the screen is short), so neither covers the other
+      const ctrl = document.querySelector<HTMLElement>(".n12-controls")?.getBoundingClientRect();
+      const colX = ctrl && ctrl.width ? [ctrl.left - 8, ctrl.right + 8] : null;
+      const sideLeft = side === "east" ? W - g - w : g;
+      const overCtrl = (l: number) => !!colX && l < colX[1] && l + w > colX[0];
+      const bottomOf = (l: number) => (overCtrl(l) && ctrl ? ctrl.top - 8 : H - g);
+      el.style.maxHeight = overCtrl(sideLeft) ? `${Math.max(240, bottomOf(sideLeft) - top0)}px` : "";
+      const h = el.offsetHeight;
       let left: number, top: number;
       const line = lineRef.current;
       if (f && lon != null && lat != null) {
         const p = f.project(lon, lat);
         left = Math.round(Math.max(g, Math.min(W - g - w, side === "east" ? p.x + STUB_GAP : p.x - STUB_GAP - w)));
-        top = Math.round(Math.max(top0, Math.min(H - g - h, p.y - anchorY)));
+        top = Math.round(Math.max(top0, Math.min(bottomOf(left) - h, p.y - anchorY)));
         el.style.transformOrigin = `${Math.round(p.x - left)}px ${Math.round(p.y - top)}px`;
         const py = p.y - top;
         const gap = side === "east" ? left - p.x : p.x - (left + w);

@@ -422,7 +422,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const box = mapEl.current.getBoundingClientRect();
       const viewport = { width: box.width, height: box.height };
       const startCover = covered(frameRef.current!).insets;
-      const start = scene ? cameraFor(scene, viewport, startCover) : { center: [-120.5, 37] as [number, number], zoom: 5 };
+      const start = scene ? cameraFor(scene, viewport, startCover, getCameraAnchor()) : { center: [-120.5, 37] as [number, number], zoom: 5 };
       const map = new ml.Map({
         container: mapEl.current,
         style: chartStyle(palette, location.origin, { hidden, depth: getMapLayers().on.depth !== false }),
@@ -598,10 +598,14 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
 
   useEffect(() => onMarksChange(schedule), [schedule]);
 
-  // the chart's own buttons arrive with the map: the furniture's height is measured against them
+  // the chart's own buttons arrive with the map: the furniture's height is measured against them. What changed while
+  // the map was loading (a ticket's anchor, a dock's cover) is applied now, as a refinement of the same view.
   useEffect(() => {
     const el = frameRef.current;
-    if (el && mapReady) requestAnimationFrame(() => writeFoot(el));
+    if (!el || !mapReady) return;
+    requestAnimationFrame(() => writeFoot(el));
+    applyScene(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady]);
 
   // the page's ticket arrived or moved: the camera glides on to stand its place beside it
