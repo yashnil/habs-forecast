@@ -43,6 +43,7 @@ export const KEYS: KeyEntry[] = [
   local("nx-coast-v1", "personal", "The fishery you last planned for on My Coast"),
   // ---------------------------------------------------------------- trips and vessel economics (My Coast)
   local("nx-trip-v1:", "personal", "Your saved trips, vessels and their costs and prices (My Coast's worksheet)"),
+  local("nx-trips-v1:", "personal", "Your trips: plans, dates, limits, economics, what Neritic showed when you planned and rechecked, and what happened"),
   local("cw-trip-checks-v1:", "personal", "Trip checklist ticks from an earlier version", { legacy: true }),
   local("cw-sea-limits-v1", "personal", "Your own wind and sea limits from an earlier version", { legacy: true }),
   // ---------------------------------------------------------------- alerts on this device
