@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent } from "react";
-import { ChartMarks, type ChartMark } from "@/nx/chart/Labels";
 import { Icon, MarginRow, MarginRows, Skeleton, Stamp, Unavailable, type Provenance } from "@/nx/ds";
 import { hatchSegments } from "@/nx/ds/Mark";
 import { sig } from "@/nx/ds/format";
@@ -17,7 +16,8 @@ const HATCH = hatchSegments(0, 0, 200, 20, 4);
 /**
  * The sea window: what the buoys measure now, then NWS's periods by day for the reader to choose from, and
  * for the chosen day the wind as NWS stated it (its exact sentence a tap away) and the predicted tide.
- * Nothing here judges a day (T36); a regulated bar gets the rule, its radio channels and the rising tide.
+ * Nothing here judges a day (T36); a regulated bar gets the rule, its radio channels and the rising tide. The buoy
+ * itself is drawn on the chart by ./CoastMap (the Sea now layer), with its reading where it was measured.
  */
 export function SeaWindow({ sea, placeKey }: { sea: Loadable<CoastSea>; placeKey: string }) {
   const [chosen, setChosen] = useState<string | null>(null);
@@ -46,13 +46,8 @@ export function SeaWindow({ sea, placeKey }: { sea: Loadable<CoastSea>; placeKey
   const tide: Provenance | null = v.tideStation && pick
     ? { kind: "prediction", title: `Tide, ${v.tideStation.name}`, source: `NOAA CO-OPS ${v.tideStation.id}`, sourceLong: `NOAA CO-OPS tide predictions, station ${v.tideStation.id} ${v.tideStation.name}, feet above MLLW`, sourceUrl: v.tideStation.url, date: pick.date, dateRole: "predicted", caveats: ["Astronomical prediction: wind and swell move the real water."] }
     : null;
-  const marks: ChartMark[] =
-    v.buoy?.lat != null && v.buoy.lon != null
-      ? [{ id: `coast-buoy-${v.buoy.id}`, lon: v.buoy.lon, lat: v.buoy.lat, priority: 40, offset: 10, pointRadius: 8, point: <Icon name="buoy" size={20} />, content: <span className={`n12-port-name ${s.chartName}`}>Buoy {v.buoy.id}</span>, label: `Buoy ${v.buoy.id}` }]
-      : [];
   return (
     <>
-      <ChartMarks marks={marks} />
       <MarginRows label="Sea window" className={s.rows}>
         {v.alerts.map((a) => (
           <MarginRow

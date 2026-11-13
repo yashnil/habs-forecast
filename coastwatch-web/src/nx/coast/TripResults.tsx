@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { AxisX, AxisY, BreakEvenMarker, Button, Crosshair, Figure, GridY, Line, NowRule, Plot, Points, PlotState, Segmented, SensitivityGrid, Tip, WaterfallChart, type PlotPoint } from "@/nx/ds";
-import { HYPOTHETICAL, type TripFlag } from "./context";
+import { useMemo, useState } from "react";
+import { AxisX, AxisY, BreakEvenMarker, Button, Crosshair, Figure, GridY, Line, NowRule, Plot, Points, PlotState, Segmented, SensitivityGrid, Tip, type PlotPoint } from "@/nx/ds";
+import { HYPOTHETICAL } from "./context";
 import type { CoastFishery } from "./fisheries";
 import {
   assumptions,
@@ -14,7 +14,6 @@ import {
   GRID_COLS,
   GRID_ROWS,
   money,
-  moneyExtent,
   sweep,
   waitingWords,
   type Result,
@@ -58,148 +57,62 @@ const VIEWS: Array<{ value: "grid" | "sweep"; label: string }> = [
 ];
 
 /**
- * The trip's results: the one figure the view exists for (net to boat, or a recreational trip's cost), what it
- * is made of, the waterfall from gross down to it, and what happens to it when the catch, the price or fuel
- * move. Every figure is the reader's own numbers through `evaluateTrip`; a figure that cannot be worked out
- * says which fields it waits for, never 0. A previewed grid cell moves the hero, the figures and the waterfall
- * together, so the scenario is read where the result is.
+ * The trip's working, under the pass's fold (v14): every figure the stub and the waterfall are made of, each with what
+ * it still waits for, the engine's own warnings, what happens to net to boat when the catch, the price or fuel move
+ * (the grid and one-at-a-time; a previewed cell moves the stub's figure and the waterfall together, so the scenario is
+ * read where the result is), and what the numbers leave out. Every figure is the reader's own numbers through
+ * `evaluateTrip`; a figure that cannot be worked out says which fields it waits for, never 0.
  */
-export function TripResults({
-  ws,
-  result,
-  look,
-  fishery,
-  flag,
-  saving,
-  more,
-}: {
-  ws: Workspace;
-  result: TripResult;
-  look: TripPreview;
-  fishery: CoastFishery | null;
-  flag: TripFlag | null;
-  /** the saving controls, when the page has no room for them in its header (a phone): set under the figures */
-  saving?: ReactNode;
-  /** the quieter trip actions and the saved trips, set under the waterfall */
-  more?: ReactNode;
-}) {
+export function TripWorked({ ws, result, look, fishery }: { ws: Workspace; result: TripResult; look: TripPreview; fishery: CoastFishery | null }) {
   const unit = fishery?.unit ?? "lb";
   const rec = result.audience === "recreational";
-  const { shown, moved, pinned, setHover, setPinned } = look;
+  const { shown, pinned, setHover, setPinned } = look;
   const [view, setView] = useState<"grid" | "sweep">("grid");
   const [variable, setVariable] = useState<SweepVariable>("catch");
-  // one money axis for the reader's numbers and the scenario beside them, held only while a scenario is shown:
-  // on their own the bars take the whole height
-  const domain = useMemo(() => (moved ? moneyExtent(ws, fishery) : undefined), [moved, ws, fishery]);
 
   const fig = (r: Result) => ({ value: r.status === "value" ? r.value : null, waiting: r.status === "waiting" ? (waitingWords(r, ws, fishery) ?? undefined) : r.status === "none" ? r.reason : "does not apply" });
-  const main = rec ? shown.out.operating : shown.out.net;
   const share = shown.share;
   const perCrew = shown.out.perCrew;
-  // A bar that cannot be drawn yet says one word in its place; what it waits for is in its callout, and once
-  // for the whole chart in a sentence under it. (Six sentences side by side in a plot overprint each other.)
-  const bars = (r: TripResult) => r.steps.map((st) => (st.amount === null ? { ...st, waiting: "waiting", formula: st.waiting ? `${st.waiting.charAt(0).toUpperCase()}${st.waiting.slice(1)}` : undefined } : st));
-  const missingBars = result.steps.filter((st) => st.amount === null);
-  const stillWaiting =
-    missingBars.length && missingBars.length < result.steps.length && result.waiting.length
-      ? `${missingBars.length === 1 ? `${missingBars[0].label} is` : `${missingBars.length} bars are`} not drawn yet: still ${waitingWords({ status: "waiting", fields: result.waiting }, ws, fishery)}.`
-      : null;
   // a fuel break-even is a figure only where fuel could plausibly get there
   const beFuel = shown.out.breakEvenFuel;
   const fuelLimit = beFuel.status === "value" && beFuel.value <= FUEL_BREAK_EVEN_SHOWN_TO ? beFuel.value : null;
   const crewNote = perCrew.status === "value" && share && share.crew > 1 ? `${money(perCrew.value)} each of ${share.crew}` : perCrew.status === "value" && !share ? `${money(perCrew.value)} each` : perCrew.status === "na" ? "Nobody else is paid" : undefined;
 
   return (
-    <div className={s.results} data-testid="trip-results">
-      <section className={s.hero} aria-label={rec ? "Trip cost, hypothetical, from your numbers" : "Net to boat, hypothetical, from your numbers"} data-testid="trip-hero">
-        <div className={s.heroRow} data-ready={main.status === "value" || undefined}>
-          <Figure
-            size="xl"
-            label={
-              <>
-                {rec ? "Trip cost" : "Net to boat"} <span className={s.hypo}>{HYPOTHETICAL}</span>{" "}
-                <span className={`${s.hypo} ${s.showing}`} aria-live="polite" data-testid="trip-showing">
-                  {look.words}
-                </span>
-              </>
-            }
-            format="money"
-            cents
-            {...fig(main)}
-            data-testid="trip-net"
-          />
+    <div className={s.worked} data-testid="trip-results">
+      <section aria-labelledby="trip-worked" className={s.workedFigs}>
+        <h3 id="trip-worked" className={s.h3}>
+          Worked out
+        </h3>
+        <p className={s.small}>
+          {HYPOTHETICAL}
+          {rec ? "" : " Break-evens are rounded up."}
+        </p>
+        <div className={s.figures} data-testid="trip-figures">
           {rec ? (
-            <Figure size="l" label="Each person" format="money" cents {...fig(shown.out.perPerson)} data-testid="trip-per-person" />
+            <>
+              <Figure size="m" label="Fuel" format="money" cents {...fig(shown.out.fuel)} data-testid="trip-fuel" />
+              <Figure size="m" label="Other costs" format="money" cents {...fig(shown.out.otherCosts)} data-testid="trip-other" />
+              <Figure size="m" label="Each person" format="money" cents {...fig(shown.out.perPerson)} data-testid="trip-per-person" />
+            </>
           ) : (
-            <div className={s.heroSide}>
-              <Figure size="m" layout="inline" label="Break-even catch" format={(v) => breakEvenCatchText(v, unit)} {...fig(shown.out.breakEvenCatch)} data-testid="trip-be-catch" />
-              <Figure size="m" layout="inline" label="Break-even price" format={(v) => breakEvenPriceText(v, unit)} {...fig(shown.out.breakEvenPrice)} data-testid="trip-be-price" />
-              <span className={s.heroSideNote}>Break-evens are rounded up.</span>
-            </div>
+            <>
+              <Figure size="m" label="Gross" format="money" cents {...fig(shown.out.gross)} data-testid="trip-gross" />
+              {shown.out.fees.status === "value" && shown.out.fees.value > 0 ? <Figure size="m" label="Fees" format="money" cents {...fig(shown.out.fees)} data-testid="trip-fees" /> : null}
+              <Figure size="m" label="Operating costs" format="money" cents {...fig(shown.out.operating)} data-testid="trip-operating" />
+              <Figure size="m" label="Crew pay" format="money" cents {...fig(shown.out.crewPay)} note={crewNote} data-testid="trip-crew" />
+              <Figure size="m" label="Break-even catch" format={(v) => breakEvenCatchText(v, unit)} {...fig(shown.out.breakEvenCatch)} data-testid="trip-be-catch" />
+              <Figure size="m" label="Break-even price" format={(v) => breakEvenPriceText(v, unit)} {...fig(shown.out.breakEvenPrice)} data-testid="trip-be-price" />
+              {fuelLimit !== null ? <Figure size="m" label="Break-even fuel price" format={breakEvenFuelText} value={fuelLimit} data-testid="trip-be-fuel" /> : null}
+            </>
           )}
         </div>
-        {pinned && moved ? (
-          <Button variant="quiet" className={s.compact} onClick={() => setPinned(null)}>
-            Back to your numbers
-          </Button>
-        ) : null}
-        <p className={s.heroNote} data-testid="trip-note">
-          {rec ? "What the trip costs. A recreational catch is not sold: there is no price, gross or net." : "Before insurance, permits, upkeep, loans and your own pay. Not profit or take-home pay."}
-        </p>
-        {flag ? (
-          <p className={s.flag} role="note" data-testid="trip-flag">
-            {flag.words}
-          </p>
-        ) : null}
         {result.warnings.map((w) => (
           <p key={w} className={s.flag} role="note" data-testid="trip-warning">
             {w}
           </p>
         ))}
       </section>
-
-      <div className={s.figures} data-testid="trip-figures">
-        {rec ? (
-          <>
-            <Figure size="m" label="Fuel" format="money" cents {...fig(shown.out.fuel)} data-testid="trip-fuel" />
-            <Figure size="m" label="Other costs" format="money" cents {...fig(shown.out.otherCosts)} data-testid="trip-other" />
-          </>
-        ) : (
-          <>
-            <Figure size="m" label="Gross" format="money" cents {...fig(shown.out.gross)} data-testid="trip-gross" />
-            {shown.out.fees.status === "value" && shown.out.fees.value > 0 ? <Figure size="m" label="Fees" format="money" cents {...fig(shown.out.fees)} data-testid="trip-fees" /> : null}
-            <Figure size="m" label="Operating costs" format="money" cents {...fig(shown.out.operating)} data-testid="trip-operating" />
-            <Figure size="m" label="Crew pay" format="money" cents {...fig(shown.out.crewPay)} note={crewNote} data-testid="trip-crew" />
-            {fuelLimit !== null ? <Figure size="m" label="Break-even fuel price" format={breakEvenFuelText} value={fuelLimit} data-testid="trip-be-fuel" /> : null}
-          </>
-        )}
-      </div>
-
-      {saving}
-
-      <section aria-label={rec ? "What the trip costs" : "From gross to net to boat"} className={s.fall}>
-        {result.steps.every((st) => st.amount === null) ? (
-          <PlotState kind="missing" what={rec ? "The trip's costs" : "Gross to net to boat"} reason="Drawn as your numbers come in: each bar appears once its own fields are filled." height={220} />
-        ) : (
-        <WaterfallChart
-          steps={bars(result)}
-          preview={moved ? bars(shown) : null}
-          domain={domain}
-          cents
-          height={{ desktop: 260, phone: 240 }}
-          label={rec ? "Fuel and costs up to the trip cost, hypothetical, from your numbers" : "Gross to net to boat, hypothetical, from your numbers"}
-          data-testid="trip-waterfall"
-        />
-        )}
-        {stillWaiting ? (
-          <p className={s.fallWaiting} data-testid="trip-waterfall-waiting">
-            {stillWaiting}
-          </p>
-        ) : null}
-        <p className={s.small}>Point at a bar, or use the arrow keys, to see how it was worked out.</p>
-      </section>
-
-      {more}
 
       {rec ? (
         result.fuelSwing ? (
@@ -215,11 +128,16 @@ export function TripResults({
             </h3>
             <Segmented label="What moves" hideLabel options={VIEWS} value={view} onChange={setView} />
           </div>
+          {pinned && look.moved ? (
+            <Button variant="quiet" className={s.compact} onClick={() => setPinned(null)}>
+              Back to your numbers
+            </Button>
+          ) : null}
           {!result.grid ? (
-            <PlotState kind="missing" what="Net to boat" reason={result.out.net.status === "waiting" ? `Still ${waitingWords(result.out.net, ws, fishery)}.` : "Net to boat has no value for these numbers."} height={160} />
+            <PlotState kind="missing" what="Net to boat" reason={result.out.net.status === "waiting" ? `Still ${waitingWords(result.out.net, ws, fishery)}.` : "Net to boat has no value for these numbers."} height={120} />
           ) : view === "grid" ? (
             <SensitivityGrid
-              caption={`Net to boat, price across and catch down. Trip costs${ws.crewKind === "dayRate" ? " and day pay" : ""} stay as entered; fees and shares move with gross. Point at a figure to see it above; press it to hold it there.`}
+              caption={`Net to boat, price across and catch down. Trip costs${ws.crewKind === "dayRate" ? " and day pay" : ""} stay as entered; fees and shares move with gross. Point at a figure to see it in the stub; press it to hold it there.`}
               rows={ROWS}
               cols={COLS}
               rowAxis="Catch"
@@ -241,8 +159,10 @@ export function TripResults({
         </section>
       )}
 
-      <section aria-label="What these numbers leave out">
-        <h3 className={s.h3}>Read it with</h3>
+      <section aria-labelledby="trip-read" className={s.readWith}>
+        <h3 id="trip-read" className={s.h3}>
+          Read it with
+        </h3>
         <ul className={s.assume}>
           {assumptions(ws, fishery).map((a) => (
             <li key={a}>{a}</li>

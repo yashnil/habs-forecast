@@ -67,6 +67,9 @@ export type TestGate = {
   stale: boolean;
   source: string;
   url: string;
+  /** where CDPH collected it, when CDPH names a known place; null otherwise (never guessed) */
+  lat: number | null;
+  lon: number | null;
 };
 
 export type CoastGates = {
@@ -157,6 +160,8 @@ export function gatesFrom(m: TodayModel, f: CoastFishery, opts: { now: string; f
           stale: t.stale,
           source: "CDPH",
           url: t.fact.source.url ?? "https://www.cdph.ca.gov/",
+          lat: t.site.lat ?? null,
+          lon: t.site.lon ?? null,
         }
       : null;
   return { ok: true, now: opts.now, fixture: opts.fixture, fishery: f.id, season, whale, test, statusError: m.statusError, testsError: m.testsError };
