@@ -275,10 +275,17 @@ export function Dumbbell({ label, rows, caliper, heading, delta, slide, domain, 
   useEffect(() => {
     if (p >= 1) lastX.current = now;
   });
-  const markCls = (e: DumbbellEnd) => cx(s.dot, e.mark === "hollow" && s.dotHollow, e.mark === "hatched" && s.dotHatched, e.tone === "coral" && s.dotCoral, e.tone === "ink" && s.dotInk);
+  const hid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const markCls = (e: DumbbellEnd) => cx(s.dot, e.mark === "hollow" && s.dotHollow, e.mark === "hatched" && s.dotHatched, e.tone === "coral" && e.mark !== "hatched" && s.dotCoral, e.tone === "ink" && s.dotInk);
   return (
     <div ref={ref} className={cx(s.chart, s.dumbbell, className)} style={{ height: H }}>
       <svg viewBox={`0 0 ${w} ${H}`} role="img" aria-label={label}>
+        <defs>
+          <pattern id={`h${hid}`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="7" height="7" className={s.hatchGroundCoral} />
+            <rect width="2.4" height="7" className={s.hatchStripeCoral} />
+          </pattern>
+        </defs>
         {heading ? (
           <text x={0} y={11} className={s.cap}>
             {heading}
@@ -306,9 +313,19 @@ export function Dumbbell({ label, rows, caliper, heading, delta, slide, domain, 
                 </text>
               ) : null}
               {ticks ? <line x1={L - 4} x2={w - R} y1={yy} y2={yy} className={s.axis} /> : null}
-              <line x1={xl} x2={xh} y1={yy} y2={yy} className={cx(s.bar, r.hi.tone === "coral" && s.barCoral)} />
+              {r.hi.tone === "coral" ? (
+                // a change: a coral arrow from was to now
+                xh - xl > 20 ? (
+                  <>
+                    <path d={`M${xl + 9},${yy}H${xh - 14}`} className={s.barCoral} />
+                    <path d={`M${xh - 21},${yy - 6}L${xh - 12},${yy}L${xh - 21},${yy + 6}`} className={s.arrowHead} />
+                  </>
+                ) : null
+              ) : (
+                <line x1={xl} x2={xh} y1={yy} y2={yy} className={s.bar} />
+              )}
               <circle cx={xl} cy={yy} r={6.5} className={markCls(r.lo)} />
-              <circle cx={xh} cy={yy} r={r.hi.mark === "hatched" ? 8.5 : 6.5} className={markCls(r.hi)} />
+              <circle cx={xh} cy={yy} r={r.hi.mark === "hatched" ? 8.5 : 6.5} className={markCls(r.hi)} style={r.hi.mark === "hatched" ? { fill: `url(#h${hid})` } : undefined} />
             </g>
           );
         })}
