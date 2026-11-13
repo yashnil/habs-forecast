@@ -17,6 +17,7 @@ import { GraticuleLabels } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
 import { RegulationLayer } from "./RegulationLayer";
 import { DepthLabels } from "./DepthLabels";
+import { DeepWater } from "./DeepWater";
 import { useChartHighlight } from "./highlight";
 import { anchorShift, getCameraAnchor, onCameraAnchor, type CameraAnchor } from "./anchor";
 import { flightDelay, noteFlight } from "./flight";
@@ -163,6 +164,9 @@ const covered = (frame: HTMLElement) => {
  */
 function writeFoot(frame: HTMLElement) {
   const fr = frame.getBoundingClientRect();
+  // the furniture's column: the zoom buttons where they stand (the bottom-right corner by default)
+  const c = frame.querySelector<HTMLElement>(".n12-controls")?.getBoundingClientRect();
+  const x0 = c && c.width ? c.left - 6 : fr.right - 96, x1 = c && c.width ? c.right + 6 : fr.right;
   let foot = 0;
   document.querySelectorAll<HTMLElement>("[data-nx-dock], [data-nx-pass], .n12-dock-slot").forEach((el) => {
     const r = el.getBoundingClientRect();
@@ -171,7 +175,7 @@ function writeFoot(frame: HTMLElement) {
     const m = /\((.+)\)/.exec(tf);
     const ty = m ? parseFloat(m[1].split(",")[tf.startsWith("matrix3d") ? 13 : 5]) || 0 : 0;
     const top = r.top - ty;
-    if (!r.width || !r.height || r.right < fr.right - 96 || top >= fr.bottom) return;
+    if (!r.width || !r.height || r.right < x0 || r.left > x1 || top >= fr.bottom) return;
     foot = Math.max(foot, Math.round(fr.bottom - top + 16));
   });
   frame.style.setProperty("--nx-foot", foot ? `${foot}px` : "");
@@ -594,6 +598,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
 
   useEffect(() => onMarksChange(schedule), [schedule]);
 
+  // the chart's own buttons arrive with the map: the furniture's height is measured against them
+  useEffect(() => {
+    const el = frameRef.current;
+    if (el && mapReady) requestAnimationFrame(() => writeFoot(el));
+  }, [mapReady]);
+
   // the page's ticket arrived or moved: the camera glides on to stand its place beside it
   useEffect(() => onCameraAnchor(() => applyScene(false)), [applyScene]);
 
@@ -720,6 +730,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           </div>
         ) : null}
         <div className="n12-map" ref={mapEl} data-testid="nx-map" />
+        {tier && tier !== "static" && tier !== "reduced" && mapReady && !lost ? <DeepWater ready /> : null}
         {/* the static tier's data images (a page's baked frame) lie here, on the baked chart and under its names */}
         <div id="nx-chart-underlay" className="n12-underlay" aria-hidden="true" />
         {opening}

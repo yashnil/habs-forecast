@@ -104,6 +104,8 @@
   --sw-reg: rgba(240, 80, 42, 0.12);
   --deep-blend: soft-light;
   --deep-opacity: 0.42;
+  --deep-back: rgba(0, 0, 0, 0);
+  --deep-highlight: #ffffff;
   color-scheme: light;
 }
 
@@ -188,6 +190,8 @@
   --sw-reg: rgba(255, 125, 90, 0.16);
   --deep-blend: screen;
   --deep-opacity: 0.14;
+  --deep-back: rgba(0, 0, 0, 0);
+  --deep-highlight: #d4e6f1;
   color-scheme: dark;
 }
 
@@ -311,7 +315,7 @@
   --ease-chart: cubic-bezier(0.45, 0, 0.15, 1);
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-toggle: cubic-bezier(0.3, 1.5, 0.5, 1);
-  --dur-quick: 120ms; --dur-hover: 140ms;
+  --dur-quick: 120ms; --dur-hover: 140ms; --dur-deep: 500ms;
   --dur-swap-out: 90ms; --dur-swap-in: 180ms;
   --halo-w: 3px;
   /* a ticket's perforation notches: masks (colour-free; the mask's alpha is all that counts) */

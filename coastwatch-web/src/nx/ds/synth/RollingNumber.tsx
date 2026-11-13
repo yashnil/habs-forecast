@@ -36,7 +36,8 @@ export function RollingNumber({ value, format, empty = "—", srSuffix, cents, p
   useLayoutEffect(() => {
     const from = prev.current;
     prev.current = text;
-    if (from == null || from === text || reduce || value == null) return;
+    // only a figure of the same shape rolls ($2,602.24 → $2,739.74); a new shape is written as it is
+    if (from == null || from === text || reduce || value == null || from.replace(/\d/g, "d") !== text.replace(/\d/g, "d")) return;
     setRolling({ from, to: text });
   }, [text, reduce, value]);
   useEffect(() => {

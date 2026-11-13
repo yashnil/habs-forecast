@@ -72,6 +72,12 @@
   .pass { grid-template-columns: minmax(0, 1fr) min(var(--stub-w, 320px), 312px); }
 }
 
+/* inline (the catalog, a page's own column): the same object in the flow of its container */
+.ticket[data-inline], .dock[data-inline], .pass[data-inline] { position: relative; left: auto; top: auto; right: auto; bottom: auto; max-height: none; }
+.dock[data-inline] { width: 100%; }
+.ticket[data-inline] { width: min(var(--ticket-w), 100%); }
+.ticket[data-inline] .leader { display: none; }
+
 /* ------------------------------------------------------------ phone: a block in the sheet, in reading order */
 @media (max-width: 640px) {
   .ticket, .dock, .pass {

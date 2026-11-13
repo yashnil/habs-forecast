@@ -255,3 +255,11 @@ html:not([data-nx-entry="today"]) [data-nx-root-today] { display: none; }
 }
 
 .n12-menu-narrow { display: none !important; }
+
+/* a v13 page's card stands where the chart's foot furniture lives: zoom and scale step to the card's left */
+@media (min-width: 641px) {
+  .n12-app:not(:has([data-nx-layout])) .n12-controls,
+  .n12-app:has([data-nx-layout="chart"]) .n12-controls { right: calc(var(--ticket-w) + 2 * var(--gutter)); }
+  .n12-app:not(:has([data-nx-layout])) .n12-scale,
+  .n12-app:has([data-nx-layout="chart"]) .n12-scale { right: calc(var(--ticket-w) + 2 * var(--gutter) + 54px); }
+}
