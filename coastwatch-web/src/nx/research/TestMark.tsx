@@ -4,7 +4,9 @@ import { ChartMarks, type ChartMark } from "@/nx/chart/Labels";
 import type { Bounds } from "@/nx/chart/mercator";
 import { Micro, usePhone } from "@/nx/ds";
 import { day } from "@/nx/ds/format";
+import { useEffect, useState } from "react";
 import { useGates } from "@/nx/coast/useCoast";
+import { useOnline, useSavedMark } from "@/nx/offline/useOffline";
 import s from "./rx.module.css";
 
 /**
@@ -12,10 +14,17 @@ import s from "./rx.module.css";
  * Dungeness test that informs the station's nearest port, read through My Coast's own gate (`/coast/data`, the same
  * record the trip draws), drawn where CDPH collected it when that is inside the framed area. Seafood tissue, ppm, against
  * CDPH's action level; never mixed with the shore station's water samples. Wide screens only, as in the prototype.
+ * Asked only online and never from a saved copy (the field pack does not hold `/coast/data`): offline the chart simply
+ * has no test mark, and the page makes no request that would fail.
  */
 export function TestMark({ place, within }: { place: string | null; within: Bounds }) {
   const phone = usePhone();
-  const gates = useGates(phone ? null : place, "dungeness_commercial");
+  const online = useOnline();
+  const saved = useSavedMark();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const ask = mounted && online && !saved && typeof navigator !== "undefined" && navigator.onLine !== false && !phone;
+  const gates = useGates(ask ? place : null, "dungeness_commercial");
   const test = gates.state === "ok" ? gates.data.test : null;
   if (!test || test.lat == null || test.lon == null || phone) return null;
   const [[w, sth], [e, nth]] = within;

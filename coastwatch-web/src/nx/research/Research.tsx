@@ -671,11 +671,15 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const laneAxis = (focusStrip?.scale === "log" ? 24 : 0) + 22 + 26;
   // the phone's plot: the prototype's 300 px chart (232 px under 360 px wide), the overview and axis included
   const tiny = useMedia("(max-width: 359px)");
-  const plotH = phone ? (tiny ? 120 : 180) : Math.max(48, chartH - modelRoom - cmpRoom - laneAxis);
+  // the measured plot takes what its own box keeps once the comparison and the model (with its words, however many
+  // lines they wrap to) have their room: measured, never estimated, so nothing below is overprinted
+  const [measuredRef, measuredH] = useBoxHeight<HTMLDivElement>();
+  const plotH = phone ? (tiny ? 120 : 180) : Math.max(48, (measuredH || chartH - modelRoom - cmpRoom) - laneAxis);
   // The overview of the whole record stands under the plot where the pass leaves the chart 226 px or more (the
   // prototype's rule); on a short screen the range control alone moves the window, so the plot keeps its room.
   const [brushRef, brushH] = useBoxHeight<HTMLDivElement>();
-  const overview = phone || chartH + brushH + 20 >= 226;
+  // (as the prototype, the model's panel and a comparison take their room from it first)
+  const overview = phone || chartH + brushH + 20 - (showModel ? 92 : 0) - (cmpStrip ? 90 : 0) >= 226;
 
   const arrived =
     choice.arrival || askedMissing || query.askedVar || query.back ? (
@@ -1177,7 +1181,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
         onPick={(id) => chooseStationId(id)}
       />
 
-      <Pass label={`${st.name}: shore station record`} at={{ lon: st.lon, lat: st.lat }} stub={stub} stubWidth={340} className={x.pass} stubClassName={x.stub} data-testid="research-record">
+      <Pass label={`${st.name}: shore station record`} at={{ lon: st.lon, lat: st.lat }} stub={stub} stubWidth={340} className={x.pass} stubClassName={x.stub} data-testid="research-record" data-model={showModel || cmpStrip ? "" : undefined}>
         <div className={x.main} data-testid="research-chart" data-panel={panel ?? undefined}>
           {!phone ? (
             <button type="button" className={x.toolsLink} onClick={() => setPanel((p) => (p === "tools" ? null : "tools"))} aria-expanded={panel === "tools"} data-testid="research-tools-open">
@@ -1245,7 +1249,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
               </Micro>
               <div ref={chartRef} className={x.chart}>
                 <PlotSync value={sync} onChange={onSync}>
-                  <div className={x.measured} data-testid="research-main" data-empty={empty ? "" : undefined}>
+                  <div ref={measuredRef} className={x.measured} data-testid="research-main" data-empty={empty ? "" : undefined}>
                     {empty ? (
                       <div className={x.empty}>
                         <Micro glyph="none">Not collected in this range</Micro>
