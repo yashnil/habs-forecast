@@ -107,8 +107,10 @@ export function TodaySoundings({ items, sceneId, onOpen, extra }: { items: Sound
         // the reading the reader switched on is not dropped for another place's dot
         insist: d.id === "test" || phone,
         leader: true,
-        offset: phone ? 18 : 26,
-        anchors: phone ? ["left", "top-left", "bottom-left", "top", "bottom"] : d.id === "buoy" ? ["left", "bottom-left", "top-left", "bottom", "right"] : ["top-left", "left", "top-right", "right", "bottom-left"],
+        // the test stands on the bay beside the buoy, the port's name and the shelf-edge label: a longer leader takes it
+        // clear of them, out over the open water south-west of its point
+        offset: phone ? 18 : d.id === "test" ? 34 : 26,
+        anchors: phone ? ["left", "top-left", "bottom-left", "top", "bottom"] : d.id === "buoy" ? ["left", "bottom-left", "top-left", "bottom", "right"] : ["bottom-left", "left", "top-left", "bottom", "top", "bottom-right", "right", "top-right"],
         content: <Card d={d} small={phone} extra={d.id === "buoy" ? extra : undefined} tour={d.id === (shown.some((x) => x.id === "buoy") ? "buoy" : "test")} onOpen={() => onOpen(d.id)} />,
       }))}
     />
