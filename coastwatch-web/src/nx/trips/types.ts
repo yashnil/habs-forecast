@@ -189,14 +189,20 @@ export type Change = {
   evidenceKey: string | null;
 };
 
-/** A recheck against the planning snapshot. `complete` only when every relevant source was read. */
+/**
+ * A recheck against the planning snapshot. `complete` only when it was live and every *required* source answered
+ * (snapshot.ts REQUIRED_SOURCES: the official records, the CDPH test, NWS's forecast and advisories). An optional
+ * source that failed (the buoy's reading, the tide predictions) is still listed, marked optional, and never hidden.
+ */
 export type Recheck = {
   at: string;
   mode: Snapshot["mode"];
   complete: boolean;
   changed: Change[];
   same: { key: string; title: string }[];
-  unchecked: { source: SourceKey; why: string }[];
+  unchecked: { source: SourceKey; why: string; required: boolean }[];
+  /** records that answered but are old (a CDPH test from weeks ago, a season record not re-read lately): said, not hidden */
+  stale: { key: string; title: string; asOf: string | null }[];
   verify: { label: string; url: string }[];
   baseId: string;
   snapshotId: string;

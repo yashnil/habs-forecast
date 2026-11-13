@@ -83,3 +83,30 @@ test("G: deleting one trip from the history removes the trip and every snapshot 
   expect(keys).toEqual(expect.arrayContaining([`${NS}trip:g-two`, `${NS}snap:g-two-plan`]));
   await ctx.close();
 });
+
+test("G: a trip id that is not on this device shows a clean not-found state, never another device's or a server's trip", async ({ browser }) => {
+  // another context has a trip with this id; this one does not: the id alone opens nothing
+  const seeded = await seedTrip({ id: "g-elsewhere", edit: (t) => ({ ...t, notes: NOTE }) });
+  const owner = await newContext(browser, undefined, seeded.storage);
+  await owner.page.goto(`${OK}/coast/trips?id=g-elsewhere`);
+  await expect(owner.page.getByTestId("trip-workspace")).toBeVisible({ timeout: 20_000 });
+
+  const { ctx, page, errors } = await newContext(browser);
+  const trips: string[] = [];
+  page.on("request", (r) => {
+    const u = new URL(r.url());
+    if (u.origin === new URL(OK).origin && !u.pathname.startsWith("/_next/") && u.pathname !== "/coast/trips" && /trip/i.test(u.pathname + u.search)) trips.push(r.url());
+  });
+  for (const id of ["g-elsewhere", "not-a-trip", "%3Cscript%3E"]) {
+    await page.goto(`${OK}/coast/trips?id=${id}`);
+    await expect(page.getByRole("heading", { name: "This trip is not on this device." })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("trip-workspace")).toHaveCount(0);
+    await expect(page.locator("body")).not.toContainText(NOTE);
+    await expect(page.getByRole("link", { name: "All trips on this device" })).toBeVisible();
+  }
+  expect(trips, "nothing asks a server for a trip").toEqual([]);
+  expect(await tripKeys(page)).toEqual(expect.not.arrayContaining([`${NS}trip:g-elsewhere`]));
+  expect(errors).toEqual([]);
+  await ctx.close();
+  await owner.ctx.close();
+});

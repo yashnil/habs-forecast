@@ -23,6 +23,42 @@ async function planned(store = memStore()) {
   return { store, trip: r.trip, plan: r.snapshot };
 }
 
+describe("v15 recheck: required, optional, stale, failed, unchanged", () => {
+  it("only the optional buoy and tides failing: complete, with both named as optional", async () => {
+    const { store, trip: t } = await planned();
+    const s = sea();
+    s.sea.buoy = null;
+    s.sea.windBuoy = null;
+    s.sea.buoyReason = "NDBC did not answer.";
+    s.sea.tides = [];
+    s.sea.tideStation = null;
+    s.sea.tideReason = "CO-OPS did not answer.";
+    const r = await recheck(t, { store, fetchJson: answers(gates(), s), now: () => new Date(LATER), online: true });
+    expect(r.complete).toBe(true);
+    expect(r.unchecked.length).toBeGreaterThan(0);
+    expect(r.unchecked.every((u) => !u.required)).toBe(true);
+    expect(r.unchecked.map((u) => u.source).sort()).toEqual(["buoy", "tides"]);
+  });
+
+  it("a required source failing: incomplete, named as required", async () => {
+    const { store, trip: t } = await planned();
+    const r = await recheck(t, { store, fetchJson: answers({ ...gates(), testsError: true }, sea()), now: () => new Date(LATER), online: true });
+    expect(r.complete).toBe(false);
+    expect(r.unchecked.find((u) => u.source === "cdphTest")?.required).toBe(true);
+  });
+
+  it("an old CDPH test that answered is stale, not unchanged and not failed", async () => {
+    const { store, trip: t } = await planned();
+    const g = gates();
+    g.test = { ...g.test!, stale: true };
+    const r = await recheck(t, { store, fetchJson: answers(g, sea()), now: () => new Date(LATER), online: true });
+    const key = r.snapshot.evidence.find((e) => e.kind === "cdphTest")!.key;
+    expect(r.stale.map((x) => x.key)).toContain(key);
+    expect(r.same.map((x) => x.key)).not.toContain(key);
+    expect(r.unchecked.map((u) => u.source)).not.toContain("cdphTest");
+  });
+});
+
 describe("v15 recheck", () => {
   it("identical answers: no changes, complete, everything the same", async () => {
     const { store, trip: t } = await planned();
@@ -31,7 +67,11 @@ describe("v15 recheck", () => {
     expect(r.complete).toBe(true);
     expect(r.mode).toBe("live");
     expect(r.unchecked).toEqual([]);
-    expect(r.same.length).toBe(5);
+    // unchanged official records and advisories (the buoy's reading is context, never "same"); an old record that
+    // answered is "stale", told apart from unchanged
+    expect(r.same.map((x) => x.key).every((k) => !k.startsWith("obs:"))).toBe(true);
+    expect(r.same.length + r.stale.length).toBe(r.snapshot.evidence.filter((e) => e.kind !== "observation").length);
+    expect(r.same.some((x) => r.stale.some((y) => y.key === x.key))).toBe(false);
     expect(r.verify.map((v) => v.url)).toContain("https://forecast.weather.gov/shmrn.php?mz=pzz535");
     expect(r.trip.snapshots.rechecks).toEqual([r.snapshot.id]);
     expect(store.snaps.get(r.trip.snapshots.planning!)?.kind).toBe("planning");

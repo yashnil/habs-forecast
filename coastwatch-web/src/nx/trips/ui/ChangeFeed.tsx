@@ -2,10 +2,13 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
-import { Button, day, dayTime, Micro, reveal, swapIn, VisuallyHidden } from "@/nx/ds";
+import { Button, day, dayTime, Micro, VisuallyHidden } from "@/nx/ds";
 import { FEED_SHOWN, feedView, groupUnchecked, readableDetail, stopPosition, type TimelineStop } from "../feed";
 import type { Change, Recheck, Snapshot } from "../types";
 import s from "./evidence.module.css";
+
+/** A changed line settles in at once: readable from its first frame (motion is a finish, never a wait). */
+const SETTLE = { duration: 0.16, ease: [0.2, 0, 0, 1] } as const;
 
 /**
  * "Since you planned this trip" (v15 §8): the workspace's one dominant section. A short prioritized feed (five shown,
@@ -44,11 +47,11 @@ export function ChangeFeed({ planning, result, checking, now, timeline = [], sel
     <section className={s.feed} data-state={v.state} aria-labelledby={hid} aria-busy={checking || undefined} data-testid="trip-change-feed">
       <div className={s.feedHead}>
         <Micro>Since you planned this trip</Micro>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.h2 key={v.headline} id={hid} className={s.headline} initial={reduce ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={reduce ? { duration: 0 } : swapIn}>
-            {v.headline}
-          </motion.h2>
-        </AnimatePresence>
+        {/* the new headline is readable the moment it exists: no exit to wait for, no fade from nothing; it only settles
+            into place (a 3 px rise), and not at all with reduced motion */}
+        <motion.h2 key={v.headline} id={hid} className={s.headline} initial={reduce ? false : { y: 3 }} animate={{ y: 0 }} transition={reduce ? { duration: 0 } : SETTLE}>
+          {v.headline}
+        </motion.h2>
         {v.sub ? <p className={s.sub}>{v.sub}</p> : null}
         <VisuallyHidden role="status" aria-live="polite">
           {checking ? "Checking the sources again." : v.state === "none" || v.state === "unchecked" ? "" : v.headline}
@@ -65,7 +68,7 @@ export function ChangeFeed({ planning, result, checking, now, timeline = [], sel
         <ul className={s.list} data-testid="trip-changes">
           <AnimatePresence initial={false}>
             {shown.map((c) => (
-              <motion.li key={c.id} className={s.item} data-p={c.priority} data-kind={c.kind} data-category={c.category} layout={!reduce} initial={reduce ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={reduce ? { duration: 0 } : reveal}>
+              <motion.li key={c.id} className={s.item} data-p={c.priority} data-kind={c.kind} data-category={c.category} layout={!reduce} initial={reduce ? false : { opacity: 0.6, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={reduce ? { duration: 0 } : SETTLE}>
                 <span className={s.mark} aria-hidden="true" />
                 <p className={s.title}>{c.title}</p>
                 <ChangeMeta c={c} now={now} onEvidence={onEvidence} />
@@ -82,7 +85,17 @@ export function ChangeFeed({ planning, result, checking, now, timeline = [], sel
         </div>
       ) : null}
 
-      {v.state === "incomplete" || (v.state === "saved" && v.unchecked.length) ? (
+      {v.stale.length ? (
+        <ul className={s.unchecked} aria-label="Answered, but old" data-testid="trip-stale">
+          {v.stale.map((x) => (
+            <li key={x.key}>
+              <b>{x.title}</b> · answered, but {x.asOf ? `last dated ${day(x.asOf, { ref: now })}` : "undated"}; it says nothing about today.
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {v.unchecked.length ? (
         <ul className={s.unchecked} aria-label="Could not be checked" data-testid="trip-unchecked">
           {groupUnchecked(v.unchecked).map((g) => (
             <li key={g.sources.join()}>

@@ -3,7 +3,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/nx/ds";
-import { swap } from "@/nx/ds/motion";
 import type { NextAction as Next } from "../lifecycle";
 import s from "./trips.module.css";
 
@@ -36,9 +35,9 @@ export function NextAction({ next, onAct, busy, pinned }: { next: Next | null; o
   }, [pinned]);
   return (
     <div ref={ref} className={s.next} data-pinned={pinned || undefined} data-testid="trip-next-action" data-action={next?.id ?? "none"}>
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false}>
         {next ? (
-          <motion.div key={next.id} className={s.nextInner} initial={reduce ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -6 }} transition={swap.in}>
+          <motion.div key={next.id} className={s.nextInner} initial={reduce ? false : { y: 3 }} animate={{ y: 0 }} transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}>
             <Button variant="primary" full onClick={() => onAct(next)} busy={busy} busyLabel="Rechecking the sources" data-testid="trip-next">
               {next.label}
             </Button>

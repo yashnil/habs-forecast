@@ -1,6 +1,6 @@
 import { age, day, dayTime, time } from "@/nx/ds/format";
 import { diffSnapshots } from "./diff";
-import { readOk, SOURCE_KEYS, SOURCE_LABEL } from "./snapshot";
+import { readOk, REQUIRED_SOURCES, SOURCE_KEYS, SOURCE_LABEL } from "./snapshot";
 import type { Change, Recheck, Snapshot, SourceKey } from "./types";
 
 /**
@@ -17,7 +17,9 @@ export type FeedView = {
   /** one short line under the headline, or null */
   sub: string | null;
   changes: Change[];
-  unchecked: { source: SourceKey; label: string; why: string }[];
+  unchecked: { source: SourceKey; label: string; why: string; required: boolean }[];
+  /** official records or tests that answered but are old */
+  stale: { key: string; title: string; asOf: string | null }[];
 };
 
 export const FEED_SHOWN = 5;
@@ -26,9 +28,10 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 export function feedView(o: { planning: Snapshot | null; result: Recheck | null; checking: boolean; now: string }): FeedView {
   const { planning, result, checking, now } = o;
   const unchecked = (result?.unchecked ?? []).map((u) => ({ ...u, label: SOURCE_LABEL[u.source] }));
-  if (!planning) return { state: "none", headline: "No planning snapshot yet", sub: "Saving the trip keeps a dated copy of what Neritic shows now, to compare against later.", changes: [], unchecked: [] };
-  if (checking) return { state: "checking", headline: "Checking the sources again", sub: "CDFW, CDPH, NWS, NDBC and CO-OPS, through Neritic", changes: result?.changed ?? [], unchecked: [] };
-  if (!result) return { state: "unchecked", headline: "Not rechecked since you planned", sub: `Planned with the sources as read ${dayTime(planning.takenAt, { ref: now })}.`, changes: [], unchecked: [] };
+  const stale = result?.stale ?? [];
+  if (!planning) return { state: "none", headline: "No planning snapshot yet", sub: "Saving the trip keeps a dated copy of what Neritic shows now, to compare against later.", changes: [], unchecked: [], stale: [] };
+  if (checking) return { state: "checking", headline: "Checking the sources again", sub: "CDFW, CDPH, NWS, NDBC and CO-OPS, through Neritic", changes: result?.changed ?? [], unchecked: [], stale: [] };
+  if (!result) return { state: "unchecked", headline: "Not rechecked since you planned", sub: `Planned with the sources as read ${dayTime(planning.takenAt, { ref: now })}.`, changes: [], unchecked: [], stale: [] };
   const n = result.changed.length;
   if (result.mode === "saved") {
     const { oldest, newest, missing } = savedCopies(result);
@@ -45,24 +48,30 @@ export function feedView(o: { planning: Snapshot | null; result: Recheck | null;
         : `Not a live check. Compared against copies saved on this device${oldest && newest && oldest !== newest ? `, the oldest read ${ago(oldest)} and the newest ${ago(newest)}` : oldest ? ` ${ago(oldest)}` : ""}.`,
       changes: result.changed,
       unchecked,
+      stale: [],
     };
   }
+  const optional = unchecked.filter((u) => !u.required);
+  const optionalWords = optional.length ? ` ${optional.map((u) => u.label).join(" and ")} could not be read (optional context, listed below).` : "";
+  const staleWords = stale.length ? ` ${plural(stale.length, "record")} answered but ${stale.length === 1 ? "is" : "are"} old.` : "";
   if (result.complete) {
     return {
       state: "complete",
       headline: n ? `${plural(n, "change")} since you planned` : `No changes found in the sources checked at ${time(result.at)}`,
-      sub: n ? `Every source answered at ${time(result.at)}.` : `Every source answered; compared with what you planned with on ${day(planning.takenAt, { ref: now })}.`,
+      sub: (n ? `Every required source answered at ${time(result.at)}.` : `Every required source answered; compared with what you planned with on ${day(planning.takenAt, { ref: now })}.`) + optionalWords + staleWords,
       changes: result.changed,
-      unchecked: [],
+      unchecked: optional,
+      stale,
     };
   }
-  const k = unchecked.length;
+  const k = unchecked.filter((u) => u.required).length;
   return {
     state: "incomplete",
-    headline: n ? `${plural(n, "change")} found; ${plural(k, "source")} could not be checked` : `Incomplete: ${plural(k, "source")} could not be checked`,
-    sub: `Checked ${time(result.at)}. What could not be checked is listed below; nothing about it is known from this check.`,
+    headline: n ? `${plural(n, "change")} found; ${plural(k, "required source")} could not be checked` : `Incomplete: ${plural(k, "required source")} could not be checked`,
+    sub: `Checked ${time(result.at)}. What could not be checked is listed below; nothing about it is known from this check.${staleWords}`,
     changes: result.changed,
     unchecked,
+    stale,
   };
 }
 
@@ -88,7 +97,7 @@ export type TimelineStop = {
   changes: number;
 };
 
-export const snapshotComplete = (s: Snapshot) => s.mode === "live" && SOURCE_KEYS.every((k) => readOk(s.sources[k]));
+export const snapshotComplete = (s: Snapshot) => s.mode === "live" && REQUIRED_SOURCES.every((k) => readOk(s.sources[k]));
 
 /** Planning → rechecks along time; superseded planning snapshots stay on the line, quieter. */
 export function timelineOf(planning: Snapshot | null, rechecks: Snapshot[], superseded: Snapshot[], now: string): TimelineStop[] {
@@ -109,10 +118,19 @@ export function stopPosition(at: string, first: string, now: string): number {
 }
 
 /** Sources that could not be checked for the same reason, said once: "CDFW season record, NDBC buoy · <why>". */
-export function groupUnchecked(u: { source: SourceKey; why: string }[]): { sources: SourceKey[]; labels: string; why: string }[] {
-  const by = new Map<string, SourceKey[]>();
-  for (const x of u) by.set(x.why, [...(by.get(x.why) ?? []), x.source]);
-  return [...by].map(([why, sources]) => ({ sources, labels: sources.length === SOURCE_KEYS.length ? "Every source" : sources.map((k) => SOURCE_LABEL[k]).join(", "), why }));
+/** Sources that failed for the same reason, said once; required and optional never share a line (optional is marked). */
+export function groupUnchecked(u: { source: SourceKey; why: string; required?: boolean }[]): { sources: SourceKey[]; labels: string; why: string; required: boolean }[] {
+  const by = new Map<string, { sources: SourceKey[]; why: string; required: boolean }>();
+  for (const x of u) {
+    const required = x.required !== false;
+    const k = `${required}|${x.why}`;
+    const g = by.get(k) ?? { sources: [], why: x.why, required };
+    g.sources.push(x.source);
+    by.set(k, g);
+  }
+  return [...by.values()]
+    .sort((a, b) => Number(b.required) - Number(a.required))
+    .map((g) => ({ ...g, labels: (g.sources.length === SOURCE_KEYS.length ? "Every source" : g.sources.map((k) => SOURCE_LABEL[k]).join(", ")) + (g.required ? "" : " (optional)") }));
 }
 
 /** A change's detail when it is words for a reader (not a list of period keys). */

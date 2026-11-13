@@ -270,11 +270,11 @@ function Basis({ m, now, print }: { m: Model; now: string | null; print?: boolea
         {now ? ` · ${age(saved && b.savedFrom ? b.savedFrom : b.takenAt, now)}` : ""}
         {saved && b.savedFrom ? ` · copy from ${dayTime(b.savedFrom)}; no agency was contacted` : ""}
         {" · "}
-        <strong>{b.complete ? "Every source answered" : "Incomplete"}</strong>
+        <strong>{b.complete ? "Every required source answered" : "Incomplete"}</strong>
       </p>
       {b.unchecked.length ? (
         <p className={s.prov} data-testid={tid("briefing-unchecked")}>
-          Could not check: {b.unchecked.map((u) => u.label).join(", ")}.
+          Could not check: {b.unchecked.map((u) => (u.required ? u.label : `${u.label} (optional)`)).join(", ")}.
         </p>
       ) : null}
     </div>

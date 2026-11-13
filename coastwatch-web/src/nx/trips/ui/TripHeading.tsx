@@ -3,7 +3,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Micro } from "@/nx/ds";
-import { swap } from "@/nx/ds/motion";
 import { audienceOf, tripFishery } from "@/nx/coast/fisheries";
 import { daysUntil, shortDate, STATE_WORDS } from "../lifecycle";
 import type { Trip } from "../types";
@@ -52,8 +51,8 @@ export function TripHeading({ trip, port, now, onRename, id }: { trip: Trip; por
   return (
     <header className={s.heading} data-nx-desk-header="" data-testid="trip-heading">
       <Micro className={s.stamp} data-state={trip.state}>
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span key={trip.state} className={s.stampState} initial={reduce ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -4 }} transition={swap.in} data-testid="trip-lifecycle">
+        <AnimatePresence initial={false}>
+          <motion.span key={trip.state} className={s.stampState} initial={reduce ? false : { y: 3 }} animate={{ y: 0 }} transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }} data-testid="trip-lifecycle">
             {STATE_WORDS[trip.state]}
           </motion.span>
         </AnimatePresence>

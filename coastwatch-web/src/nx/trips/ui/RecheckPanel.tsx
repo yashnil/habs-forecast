@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Button, dayTime, Glyph, Micro, swapIn } from "@/nx/ds";
+import { Button, dayTime, Glyph, Micro } from "@/nx/ds";
 import { groupUnchecked } from "../feed";
 import type { Recheck } from "../types";
 import s from "./evidence.module.css";
@@ -45,9 +45,9 @@ export function RecheckPanel({ recheck: r, checking, onRecheck, now, actionVaria
           </Button>
         ) : null}
       </div>
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false}>
         {r ? (
-          <motion.div key={r.snapshotId} className={s.parts} initial={reduce ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={reduce ? { duration: 0 } : swapIn}>
+          <motion.div key={r.snapshotId} className={s.parts} initial={reduce ? false : { y: 4 }} animate={{ y: 0 }} transition={reduce ? { duration: 0 } : { duration: 0.16, ease: [0.2, 0, 0, 1] }}>
             <Part id="changed" label="Changed" n={r.changed.length}>
               {r.changed.length ? (
                 <ul className={s.partList}>
@@ -82,6 +82,20 @@ export function RecheckPanel({ recheck: r, checking, onRecheck, now, actionVaria
                 </ul>
               ) : (
                 <p className={s.empty}>Every source answered.</p>
+              )}
+            </Part>
+            <Part id="stale" label="Answered, but old" n={r.stale.length}>
+              {r.stale.length ? (
+                <ul className={s.partList}>
+                  {r.stale.map((x) => (
+                    <li key={x.key}>
+                      {x.title}
+                      <small>{x.asOf ? `Dated ${dayTime(x.asOf, { ref: now })}; it says nothing about today.` : "Undated."}</small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={s.empty}>No old records among those that answered.</p>
               )}
             </Part>
             <Part id="verify" label="Verify yourself" n={r.verify.length}>

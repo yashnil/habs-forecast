@@ -1,6 +1,7 @@
 import { evaluateWorkspace, fromDraft, money, breakEvenCatchText } from "@/nx/coast/workspace";
 import { audienceOf, tripFishery } from "@/nx/coast/fisheries";
 import { knownView } from "../known";
+import { isRequired } from "../snapshot";
 import { crossings } from "../windows";
 import type { Change, EvidenceItem, ForecastPeriod, Snapshot, SourceKey, Trip } from "../types";
 
@@ -29,7 +30,7 @@ export type Basis = {
   savedFrom: string | null;
   /** every source read (ok or absent) */
   complete: boolean;
-  unchecked: { source: SourceKey; label: string; why: string }[];
+  unchecked: { source: SourceKey; label: string; why: string; required: boolean }[];
 };
 
 export type PeriodCell = { state: "within" | "over" | "unstated" | "noLimit"; text: string };
@@ -91,8 +92,9 @@ const OFFICIAL_KINDS = new Set<EvidenceItem["kind"]>(["season", "whale", "cdphTe
 export function basisOf(s: Snapshot): Basis {
   const unchecked = (Object.keys(s.sources) as SourceKey[])
     .filter((k) => s.sources[k].state === "failed" || s.sources[k].state === "notChecked")
-    .map((k) => ({ source: k, label: SOURCE_WORDS[k] ?? k, why: s.sources[k].detail ?? (s.sources[k].state === "failed" ? "did not answer" : "not checked") }));
-  return { kind: s.kind, snapshotId: s.id, takenAt: s.takenAt, mode: s.mode, savedFrom: s.savedFrom, complete: unchecked.length === 0 && s.mode === "live", unchecked };
+    .map((k) => ({ source: k, label: SOURCE_WORDS[k] ?? k, required: isRequired(k), why: s.sources[k].detail ?? (s.sources[k].state === "failed" ? "did not answer" : "not checked") }));
+  // complete: live, and every required source answered (an optional one that failed is still named)
+  return { kind: s.kind, snapshotId: s.id, takenAt: s.takenAt, mode: s.mode, savedFrom: s.savedFrom, complete: s.mode === "live" && !unchecked.some((u) => u.required), unchecked };
 }
 
 const range = (lo: number | null, hi: number | null, unit: string) => (lo == null && hi == null ? null : lo != null && hi != null && lo !== hi ? `${lo}–${hi} ${unit}` : `${hi ?? lo} ${unit}`);
