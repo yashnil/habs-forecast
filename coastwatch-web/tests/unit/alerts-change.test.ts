@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertChange, daysWords, firstDate } from "@/nx/alerts/change";
+import { alertChange, daysWords, firstDate, shortTitle } from "@/nx/alerts/change";
 
 /** The Alerts ticket's before → after (src/nx/alerts/change.ts): dates read from the record's own words, never made up. */
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
@@ -48,5 +48,15 @@ describe("daysWords", () => {
     expect(daysWords(1)).toEqual({ figure: "+1 day", note: "later" });
     expect(daysWords(-3)).toEqual({ figure: "−3 days", note: "earlier" });
     expect(daysWords(0).figure).toBe("Same date");
+  });
+});
+
+describe("shortTitle", () => {
+  const base = { place_label: "Fort Bragg", created_at: "2026-12-19T14:42:00Z", as_of: null, trigger: "status_change" as const };
+  it("the record's subject and what changed", () => {
+    expect(shortTitle({ ...base, change: "changed", title: "Fort Bragg: Dungeness crab (commercial): Commercial season delayed to at least Jan 15, 2027", was: "Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027" })).toBe("Commercial Dungeness delay moved");
+    expect(shortTitle({ ...base, change: "changed", title: "Fort Bragg: Dungeness crab (commercial): Commercial season opens Jan 1, 2027", was: "Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027" })).toBe("Commercial Dungeness status changed");
+    expect(shortTitle({ ...base, change: "gone", title: "Fort Bragg: no longer listed — Rock crab: Advisory", was: null })).toBe("Rock crab record no longer listed");
+    expect(shortTitle({ ...base, trigger: "new_toxin_result", change: "new", title: "Fort Bragg: Dungeness crab test 9.8 ppm", was: null })).toBe("New toxin test");
   });
 });
