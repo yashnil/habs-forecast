@@ -58,6 +58,11 @@ export function useLeaveGhost<T extends HTMLElement>(ref: React.RefObject<T | nu
       ghost.setAttribute("inert", "");
       ghost.removeAttribute("data-testid");
       ghost.querySelectorAll("[data-testid]").forEach((n) => n.removeAttribute("data-testid"));
+      // a leaving copy is decoration: it must not answer for the page's header or its ids
+      ghost.removeAttribute("data-nx-desk-header");
+      ghost.querySelectorAll("[data-nx-desk-header], [id]").forEach((n) => { n.removeAttribute("data-nx-desk-header"); n.removeAttribute("id"); });
+      ghost.setAttribute("aria-hidden", "true");
+      ghost.setAttribute("inert", "");
       const lr = layer.getBoundingClientRect();
       Object.assign(ghost.style, { position: "absolute", left: `${r.left - lr.left}px`, top: `${r.top - lr.top}px`, right: "auto", bottom: "auto", width: `${r.width}px`, height: `${r.height}px`, margin: "0", transform: "none", opacity: "1", pointerEvents: "none" });
       ghost.style.transformOrigin = src.style.transformOrigin || "50% 50%";
