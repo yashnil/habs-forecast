@@ -27,7 +27,7 @@ type LngLat = [number, number];
  * test site, leaning seaward. On a phone that is the whole strip above the resting sheet (design issue 2); on a wide
  * screen the pass covers the foot of the chart and the camera fits the same features above it.
  */
-export function CoastMap({ port, fishery, gates, sea, view }: { port: ShellPort | null; fishery: CoastFishery | null; gates: Loadable<CoastGates>; sea: Loadable<CoastSea>; view: "brief" | "trip" }) {
+export function CoastMap({ port, fishery, gates, sea }: { port: ShellPort | null; fishery: CoastFishery | null; gates: Loadable<CoastGates>; sea: Loadable<CoastSea> }) {
   const phone = usePhone();
   const g = gates.state === "ok" ? gates.data : null;
   const v = sea.state === "ok" && sea.data.sea.state === "ok" ? sea.data.sea : null;
@@ -36,7 +36,7 @@ export function CoastMap({ port, fishery, gates, sea, view }: { port: ShellPort 
   const ramp = !!fishery?.ramp && !!port;
   const zone = ramp && port ? rampZoneAt(port.lat) : null;
 
-  const scene = useMemo((): Scene => tripScene(port, view, zone, [buoy ? [buoy.lon!, buoy.lat!] : null, test ? [test.lon!, test.lat!] : null]), [port, view, zone, buoy, test]);
+  const scene = useMemo((): Scene => tripScene(port, zone, [buoy ? [buoy.lon!, buoy.lat!] : null, test ? [test.lon!, test.lat!] : null]), [port, zone, buoy, test]);
 
   const caption = ramp ? zoneCaption(g?.season ?? null, g?.whale ?? null) : null;
   const marks: ChartMark[] = [];
@@ -121,8 +121,9 @@ export function CoastMap({ port, fishery, gates, sea, view }: { port: ShellPort 
  * The trip's view: the port, the nearer limit of its RAMP zone where it meets the shore (when within about 80 km),
  * the buoy and the test site, with sea west of them. Without a port, the whole coast.
  */
-export function tripScene(port: ShellPort | null, view: string, zone: string | null, extra: Array<LngLat | null>): Scene {
-  const base = portScene(`coast-${view}`, port, 30);
+export function tripScene(port: ShellPort | null, zone: string | null, extra: Array<LngLat | null>): Scene {
+  // the same destination for the brief and the trip (v13 ids: "coast:<port>", "coast:<port>:zone-<n>"): the camera stays put between them
+  const base = portScene("coast", port, 30);
   if (!port) return base;
   const pts: LngLat[] = [[port.lon, port.lat]];
   for (const p of extra) if (p && Math.abs(p[1] - port.lat) < 0.8 && Math.abs(p[0] - port.lon) < 1) pts.push(p);
@@ -147,5 +148,5 @@ export function tripScene(port: ShellPort | null, view: string, zone: string | n
     [w, sth - padLat],
     [e, nth + padLat],
   ];
-  return { ...base, id: `coast-${view}:${port.key}:${zone ?? "port"}`, view: { bounds, maxZoom: 11 } };
+  return { ...base, id: `coast:${port.key}${z ? `:zone-${z.zone}` : ""}`, view: { bounds, maxZoom: 11 } };
 }

@@ -212,7 +212,9 @@ test.describe("My Coast", () => {
     // v13: the worksheet is the trip workspace, My Coast's second state (?view=trip)
     await page.goto(`${OK}/coast?place=port-592&view=trip`);
     const ws = page.getByTestId("nx-coast");
-    await expect(page.getByText("Nothing is filled in. A blank is a gap, never 0.")).toBeVisible();
+    // v14: the empty trip's stub says what the trip still needs, and that a blank is a gap
+    await expect(page.getByTestId("trip-note")).toContainText("A blank is a gap, never 0.");
+    await expect(page.getByTestId("trip-note")).toBeVisible();
     const values = await page.getByTestId("trip-inputs").locator("input[type=text], input:not([type])").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
     expect(values.length).toBeGreaterThan(4);
     expect(values.every((v) => v === "")).toBe(true);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent } from "react";
-import { Icon, MarginRow, MarginRows, Skeleton, Stamp, Unavailable, type Provenance } from "@/nx/ds";
+import { MarginRow, MarginRows, Skeleton, Stamp, Unavailable, type Provenance } from "@/nx/ds";
 import { hatchSegments } from "@/nx/ds/Mark";
 import { sig } from "@/nx/ds/format";
 import { cx } from "@/nx/ds/util";
