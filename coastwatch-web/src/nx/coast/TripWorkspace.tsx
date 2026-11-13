@@ -11,7 +11,7 @@ import { TripEquation, TripMore, TripTerms } from "./TripInputs";
 import { TripWorked, useTripPreview } from "./TripResults";
 import { useTripScenarios } from "./TripScenarios";
 import { useTripWorkspace } from "./useTripWorkspace";
-import { breakEvenCatchText, money, read, setCatch, waitingWords, type FieldId, type Step } from "./workspace";
+import { breakEvenCatchText, money, read, setCatch, waitingWords, type FieldId, type Step, type Workspace } from "./workspace";
 import s from "./trip.module.css";
 
 const num = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -27,7 +27,9 @@ const num = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2 
  * the result and the one button kept in a bar at the sheet's foot. All of it is the headless model in
  * ./useTripWorkspace; this file only lays it out.
  */
-export function TripWorkspace({ fishery, placeKey, at, onFishery, now, strip, toBrief }: { fishery: CoastFishery | null; placeKey: string; at: Place | null; onFishery: (id: string) => void; now: Date | null; strip: ReactNode; toBrief: () => void }) {
+export type PlanSave = { run: (ws: Workspace) => void; busy: boolean; words: string | null };
+
+export function TripWorkspace({ fishery, placeKey, at, onFishery, now, strip, toBrief, planSave = null }: { fishery: CoastFishery | null; placeKey: string; at: Place | null; onFishery: (id: string) => void; now: Date | null; strip: ReactNode; toBrief: () => void; planSave?: PlanSave | null }) {
   const trip = useTripWorkspace({ placeKey, fishery, onFishery });
   const look = useTripPreview(trip.result, trip.preview);
   const phone = usePhone();
@@ -67,7 +69,7 @@ export function TripWorkspace({ fishery, placeKey, at, onFishery, now, strip, to
   const nextId = waiting[0] ?? null;
   const next = nextId ? { words: nextWords(nextId, ws, fishery), go: () => go(nextId) } : null;
   const toMore = useCallback(() => document.getElementById("trip-more")?.scrollIntoView({ block: "start", behavior: "smooth" }), []);
-  const saving = useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMore });
+  const saving = useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMore, planSave });
 
   // a what-if end sets that input, and the field it set pops once
   const [pops, setPops] = useState<Record<string, number>>({});

@@ -359,6 +359,8 @@ export type SeaView = {
   marineUrl: string | null;
   marineReason: string | null;
   alerts: { event: string; headline: string; url: string; ends: string | null }[];
+  /** why NWS's active alerts did not load (absent: they loaded, or these waters have no zone); an empty `alerts` is then not "none" */
+  alertsReason?: string | null;
   buoy: { name: string; id: string; km: number; url: string; windKt: number | null; windDir: string | null; gustKt: number | null; waveFt: number | null; periodS: number | null; waterC: number | null; at: string | null; lat: number | null; lon: number | null } | null;
   buoyReason: string | null;
   /** the nearest station that measures wind, when the nearest buoy does not (a wave buoy): its own id, distance and time */
@@ -1056,6 +1058,7 @@ function seaView(c: Conditions | null | "error", now: string): SeaView {
   }
   // NWS headlines arrive in capitals and are sentence-cased upstream; a day's name keeps its capital
   if (c.alerts.status === "ok") v.alerts = c.alerts.data.filter((a) => !a.ends || Date.parse(a.ends) > Date.parse(now)).map((a) => ({ event: a.event, headline: a.headline.replace(/\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/g, (d) => d.charAt(0).toUpperCase() + d.slice(1)), url: a.url, ends: a.ends }));
+  else if (c.alerts.status === "unavailable") v.alertsReason = c.alerts.reason;
   if (c.buoy.status === "ok") {
     const b = c.buoy.data;
     const times = [b.windKt, b.waveFt, b.waterC].map((o) => o?.at).filter((x): x is string => !!x).sort();

@@ -6,7 +6,7 @@ import { packWords } from "./pack";
 import { useFieldRecord, useOnline, useSavedMark } from "./useOffline";
 import s from "./offline.module.css";
 
-const pageOf = (path: string) => (path.startsWith("/alerts") ? "alerts" : path.startsWith("/notices") ? "notices" : path.startsWith("/today") ? "today" : path.startsWith("/coast") ? "coast" : path.startsWith("/explore") ? "explore" : path.startsWith("/research") ? "research" : "home");
+const pageOf = (path: string) => (path.startsWith("/alerts") ? "alerts" : path.startsWith("/notices") ? "notices" : path.startsWith("/today") ? "today" : path.startsWith("/coast/trips") ? "trips" : path.startsWith("/coast") ? "coast" : path.startsWith("/explore") ? "explore" : path.startsWith("/research") ? "research" : "home");
 
 /**
  * The offline notice, at the head of every page's margin (README §9 States: Offline): shown when the browser is

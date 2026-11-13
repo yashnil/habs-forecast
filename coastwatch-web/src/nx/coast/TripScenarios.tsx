@@ -6,6 +6,7 @@ import { usePorts } from "@/nx/shell/port";
 import type { CoastFishery } from "./fisheries";
 import { compareTrips, exportTrips, failureWords, listTrips, shareLink, type SaveOutcome } from "./scenarios";
 import { tripStore } from "./useTripStore";
+import type { PlanSave } from "./TripWorkspace";
 import type { TripWorkspace } from "./useTripWorkspace";
 import { hasEntry } from "./workspace";
 import s from "./trip.module.css";
@@ -23,7 +24,7 @@ type Said = { words: string; twin?: { id: string; name: string } } | null;
  * reader insists. The saved list is every port's, because the device's limit counts them all; two of them can
  * be set side by side.
  */
-export function useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMore }: { trip: TripWorkspace; fishery: CoastFishery | null; placeKey: string; next: { words: string; go: () => void } | null; toBrief: () => void; toMore: () => void }): { primary: ReactNode; bar: ReactNode; more: ReactNode } {
+export function useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMore, planSave = null }: { trip: TripWorkspace; fishery: CoastFishery | null; placeKey: string; next: { words: string; go: () => void } | null; toBrief: () => void; toMore: () => void; planSave?: PlanSave | null }): { primary: ReactNode; bar: ReactNode; more: ReactNode } {
   const ports = usePorts();
   const portName = useMemo(() => {
     const m = new Map(ports.map((p) => [p.key, p.name]));
@@ -81,8 +82,17 @@ export function useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMor
 
   // The one filled button: it walks the blanks while the trip does not add up ("Add fuel" → … ), then keeps the trip
   // ("Save trip"), then updates the open trip once it has changed; a saved trip with nothing changed is said on it.
+  // v15: with a date set (the planner's own path), the one button saves a Trip and opens its workspace; the worksheet's
+  // own saved list (Save as new, Update) stays one quiet step away. Without a date it is the v13 worksheet save.
+  const planning = !!planSave && !next;
   let primary: ReactNode;
-  if (next)
+  if (planning)
+    primary = (
+      <Button variant="primary" glyph="↓" full onClick={() => planSave!.run(trip.ws)} busy={planSave!.busy} busyLabel="Reading the sources first" data-testid="trip-plan-save">
+        Save trip
+      </Button>
+    );
+  else if (next)
     primary = (
       <Button variant="primary" glyph="→" full onClick={next.go} data-testid="trip-next">
         {next.words}
@@ -105,12 +115,12 @@ export function useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMor
         Save trip
       </Button>
     );
-  const quietUpdate = isOpen && next ? (
+  const quietUpdate = isOpen && (next || planning) ? (
     <Button variant="quiet" className={s.inlineButton} disabled={st.kind !== "changed"} onClick={() => tell(trip.update(), (n) => `Updated “${n}”. Kept on this device only.`)} data-testid="trip-update">
       Update
     </Button>
   ) : null;
-  const quietSave = isOpen || next ? (
+  const quietSave = isOpen || next || planning ? (
     <Button variant="quiet" className={s.inlineButton} disabled={!entry} onClick={() => tell(trip.saveAsNew(), (n) => `Saved as “${n}”. Kept on this device only.`)} data-testid="trip-save-new">
       Save as new
     </Button>
@@ -163,7 +173,7 @@ export function useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMor
             </Button>
           </>
         ) : (
-          (said?.words ?? "")
+          (said?.words ?? planSave?.words ?? "")
         )}
       </p>
     </section>

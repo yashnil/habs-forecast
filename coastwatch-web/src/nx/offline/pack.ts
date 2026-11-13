@@ -292,6 +292,7 @@ export function packWords(r: FieldRecord | null, page: string): { saved: string 
     alerts: "The alerts already on this device are listed. A new check of the ports you follow waits for a connection.",
     notices: "Notices issued or changed since then wait for a connection; call the agencies to be sure.",
     coast: "A newer sea window waits for a connection. The worksheet works as usual and stays on this device.",
+    trips: "Your trips, their saved evidence and the worksheet are on this device. A recheck compares with the newest saved copy until you are back online; no agency is contacted.",
     explore: "Only each layer's latest frame is saved, as a still picture: earlier frames, temperature lines, currents and tapping the water wait for a connection.",
     research: "Other stations, the native grid and the model's cells wait for a connection. The export works from what is on this page.",
     home: "Newer records wait for a connection.",
