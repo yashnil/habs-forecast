@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { asOfWord, recordWords } from "@/nx/alerts/words";
 import { alertChange, daysWords, firstDate, shortTitle } from "@/nx/alerts/change";
 
 /** The Alerts ticket's before → after (src/nx/alerts/change.ts): dates read from the record's own words, never made up. */
@@ -58,5 +59,19 @@ describe("shortTitle", () => {
     expect(shortTitle({ ...base, change: "changed", title: "Fort Bragg: Dungeness crab (commercial): Commercial season opens Jan 1, 2027", was: "Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027" })).toBe("Commercial Dungeness status changed");
     expect(shortTitle({ ...base, change: "gone", title: "Fort Bragg: no longer listed — Rock crab: Advisory", was: null })).toBe("Rock crab record no longer listed");
     expect(shortTitle({ ...base, trigger: "new_toxin_result", change: "new", title: "Fort Bragg: Dungeness crab test 9.8 ppm", was: null })).toBe("New toxin test");
+  });
+});
+
+describe("the record's words on the ticket", () => {
+  it("a quotation that ends a sentence ends it once, and days read as the reader's", () => {
+    expect(recordWords("Changed since 2026-11-08. Was: “Commercial season delayed to at least Jan 1, 2027.”. Source: CDFW, 2026-11-08.", "2026-11-13T12:00:00Z")).toBe(
+      "Changed since Nov 8. Was: “Commercial season delayed to at least Jan 1, 2027.” Source: CDFW, Nov 8.",
+    );
+    expect(recordWords("Was: “Season delayed”.")).toBe("Was: “Season delayed”.");
+  });
+  it("a record's date is when Neritic checked it; a toxin result's is its sample date", () => {
+    expect(asOfWord({ trigger: "status_change" })).toBe("checked");
+    expect(asOfWord({ trigger: "ramp_action" })).toBe("checked");
+    expect(asOfWord({ trigger: "new_toxin_result" })).toBe("sampled");
   });
 });

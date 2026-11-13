@@ -18,7 +18,7 @@ import { MAX_FOLLOWS, follow, setTrigger, unfollow, type Follow } from "./follow
 import type { InboxItem } from "./inbox";
 import { useFollows, useInbox, useLastCheck } from "./useInbox";
 import { useZoneCaption } from "./useZoneCaption";
-import { CHANNELS, DELIVERY, LOCAL_ONLY, TRIGGER_WORDS, itemChange, itemTitle, lastCheckedWords, plainDates, reportWords } from "./words";
+import { CHANNELS, DELIVERY, LOCAL_ONLY, TRIGGER_WORDS, itemChange, itemTitle, lastCheckedWords, recordWords, reportWords, asOfWord } from "./words";
 import s from "./alerts.module.css";
 
 /**
@@ -365,7 +365,7 @@ function LeadAlert({ item: i, open, following, since }: { item: InboxItem; open:
               ) : (
                 "No source listed"
               )}
-              {i.as_of ? ` · dated ${day(i.as_of)}` : ""}
+              {i.as_of ? ` · ${asOfWord(i)} ${day(i.as_of)}` : ""}
               {i.basis === "official" && i.verified === false ? <span className={s.flag}>Not verified</span> : null}
               {i.basis === "forecast" ? <span className={s.flag}>Model</span> : null}
             </span>
@@ -389,7 +389,7 @@ function LeadAlert({ item: i, open, following, since }: { item: InboxItem; open:
               </Micro>
               {c.now ? <p className={s.recordTitle}>{itemTitle(i)}</p> : null}
               {change ? <p>{change}</p> : null}
-              <p>{plainDates(i.body)}</p>
+              <p>{recordWords(i.body)}</p>
               {i.source?.url ? (
                 <p>
                   <a href={i.source.url} className={s.link} target={i.source.url.startsWith("/") ? undefined : "_blank"} rel="noreferrer">
@@ -423,7 +423,7 @@ function InboxRow({ item: i, onPick }: { item: InboxItem; onPick: () => void }) 
         {change ? <p className={s.itemMeta}>{change}</p> : null}
         <p className={s.itemMeta}>
           {i.source ? i.source.name : null}
-          {i.as_of ? ` · dated ${day(i.as_of)}` : ""} · noticed {dayTime(i.created_at)}
+          {i.as_of ? ` · ${asOfWord(i)} ${day(i.as_of)}` : ""} · noticed {dayTime(i.created_at)}
           {i.basis === "official" && i.verified === false ? <span className={s.flag}>Not verified</span> : null}
           {i.basis === "forecast" ? <span className={s.flag}>Model</span> : null}
           {i.sample ? <span className={s.flag}>Sample data</span> : null}
