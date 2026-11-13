@@ -103,8 +103,9 @@
 
 /* ------------------------------------------------------------ the sea dock (prototype .sea-dock) */
 /* the dock stands left of the ticket at every width (prototype: dock width = the port's x − 12) */
-.seaDock.seaDock { width: min(840px, calc(100% - var(--ticket-w) - 3 * var(--gutter) - 28px)); }
-.seaDock { display: grid; grid-template-columns: 262px minmax(0, 1fr); gap: 22px; align-items: stretch; }
+.seaDock { display: grid; grid-template-columns: minmax(0, 262px) minmax(0, 1fr); gap: 22px; align-items: stretch; }
+/* a narrow dock (a short or narrow screen): the words column gives way to the bars */
+@media (max-width: 1300px) and (min-width: 641px) { .seaDock { grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: var(--s-16); } }
 .seaLeft { min-width: 0; }
 .seaLeft h2 { display: block; }
 .seaZone { margin: var(--s-4) 0 0; font-size: var(--fs-13); color: var(--ink-2); }
@@ -171,8 +172,9 @@
   .panel { min-height: 0; padding-bottom: 2px; }
   .acts { margin-top: var(--s-12); padding-bottom: var(--s-14); }
   .acts > :first-child { flex: 1; }
+  /* at rest the ticket's action clears the destinations bar: on a phone the samples link lives in Record's gates */
+  .cellLink { display: none; }
   .seaDock { display: block; }
-  .seaDock.seaDock { width: auto; }
   .seaChart { height: 132px; margin-top: var(--s-12); }
   .chooserTitle { font-size: var(--fs-25); }
 }

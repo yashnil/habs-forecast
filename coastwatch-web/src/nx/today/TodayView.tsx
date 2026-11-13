@@ -457,7 +457,7 @@ function TicketStamp({ provenance: p, now }: { provenance: Provenance; now: stri
 function StatusPanel({ v, dl, researchHref }: { v: View; dl: ReturnType<typeof datesLine>; researchHref: string }) {
   const st = v.statement;
   // a short screen (prototype @media max-height 800): the dates line is drawn lower so the ticket's action stays in view
-  const short = useMedia("(max-height: 800px) and (min-width: 641px)");
+  const short = useMedia("(max-height: 800px), (max-width: 640px)");
   const t = v.test;
   return (
     <>
