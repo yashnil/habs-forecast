@@ -1,6 +1,6 @@
 # v14: the app beside the approved synthesis
 
-Generated 2026-11-13 12:23 UTC by `scripts/v14-app-shots.mjs` against `https://raw.githubusercontent.com/yashnil/habs-forecast/coastwatch-data-staging/v1`. Left: the prototype (`reference/`, from `scripts/v14-reference-shots.mjs`). Right: the app (`actual-staging/`). Device scale 1, reduced motion.
+Generated 2026-11-13 13:46 UTC by `scripts/v14-app-shots.mjs` against `https://raw.githubusercontent.com/yashnil/habs-forecast/coastwatch-data-staging/v1`. Left: the prototype (`reference/`, from `scripts/v14-reference-shots.mjs`). Right: the app (`actual-staging/`). Device scale 1, reduced motion.
 
 Live values differ from the prototype's examples by design; judge composition, typography, colour, cartography and hierarchy. Steps and errors per state: `actual-staging/notes.json`.
 

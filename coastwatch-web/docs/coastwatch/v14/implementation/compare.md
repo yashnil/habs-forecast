@@ -1,5 +1,13 @@
 # v14: the app beside the approved synthesis (assessment)
 
+**After the fix round (final commit, 2026-11-13):** `actual-staging/` and `compare-staging/` were re-shot on the final
+branch. The six significant differences below were fixed after this assessment: S1 (Today sea dock now stops 20 px short
+of the ticket at every width), S2 and S5 (Alerts ticket ends at "Open the record", short headline, settings behind "What
+alerts you"), S3 (My Coast frames the bay, zone limit, both buoys, the CDPH test and the NWS PZZ535 plate at 1440×900;
+at 1280×720 and 1100×800 the band above the pass is too short and some marks are dropped: open), S4 (phone Today's
+primary sits above the tab bar at 390; at 320 it is still just below the fold: open), S6 (Research draws the CDPH test).
+The assessment text below is the pre-fix record.
+
 App at `feat/neritic-v14` ee6f7505a, 2026-11-13. Stills: `scripts/v14-reference-shots.mjs` (prototype, `reference/`) and
 `scripts/v14-app-shots.mjs` (app, `actual-fixture/` + `actual-staging/`), device scale 1, reduced motion. Each composite is
 reference | actual. Generated listings with the set-up log per state: [compare-fixture.md](compare-fixture.md),
