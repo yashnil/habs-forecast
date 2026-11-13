@@ -1,0 +1,43 @@
+/* The trip's chart (TripChart): tags on the persistent chart, and the still plate where that chart cannot run. */
+
+.tag {
+  display: grid; gap: var(--s-2); max-width: 220px; padding: var(--s-8) var(--s-12); border-radius: var(--r-ctl);
+  background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-variant-numeric: tabular-nums;
+}
+.tag > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tagFig { margin: 0; font: var(--w7) var(--fs-15) / 1.2 var(--font); }
+.tagFig small { font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); }
+.testPoint { display: block; width: 12px; height: 12px; border: var(--rule) solid var(--ink); background: var(--paper); transform: rotate(45deg); }
+
+/* ------------------------------------------------------------ the plate */
+.plate {
+  position: relative; margin: 0; overflow: hidden; border-radius: var(--r-ctl);
+  background: var(--depth-1); box-shadow: inset 0 0 0 1px var(--line);
+}
+.svg { display: block; width: 100%; height: auto; }
+.sea { fill: var(--depth-2); }
+.land { fill: var(--land); stroke: var(--coast); stroke-width: 1.2; stroke-linejoin: round; }
+.grat { stroke: var(--graticule); stroke-width: 1; }
+.gratText { font: var(--w5) var(--fs-11) / 1 var(--font); fill: var(--water-label); font-style: italic; font-variant-numeric: tabular-nums; }
+.zoneBand { fill: var(--sw-reg); opacity: 0.5; }
+.zoneLine { stroke: var(--coral); stroke-width: 1.6; }
+.zoneText { font: var(--w7) var(--fs-13) / 1 var(--font); fill: var(--coral-map); paint-order: stroke; stroke: var(--shore-halo); stroke-width: 3px; letter-spacing: var(--track-micro); }
+.label { font: var(--w6) var(--fs-11) / 1 var(--font); fill: var(--ink); paint-order: stroke; stroke: var(--halo); stroke-width: 3px; font-variant-numeric: tabular-nums; }
+.buoy circle { fill: var(--ink); stroke: var(--paper); stroke-width: 1.5; }
+.test { fill: var(--paper); stroke: var(--ink); stroke-width: 1.6; }
+.testOld { fill: var(--ink-3); stroke: var(--ink-2); stroke-width: 1.6; }
+.port { fill: var(--ink); }
+.portHalo { fill: var(--paper); stroke: var(--ink); stroke-width: 1.4; }
+.portText { font: var(--w7) var(--fs-13) / 1 var(--font); fill: var(--ink); paint-order: stroke; stroke: var(--land-halo); stroke-width: 3.5px; }
+.caption {
+  position: absolute; left: var(--s-10); right: var(--s-10); bottom: var(--s-8);
+  display: flex; justify-content: space-between; gap: var(--s-12);
+  font: var(--w6) var(--fs-11) / 1.2 var(--font); color: var(--ink-2);
+}
+.caption span { padding: var(--s-2) var(--s-6); border-radius: var(--r-tag); background: var(--chip-glass); }
+.plateEmpty { min-height: 160px; }
+.emptyWater { position: absolute; inset: 0; background: var(--hatch-band); }
+
+@media print {
+  .plate { box-shadow: none; border: 1px solid var(--ink-3); break-inside: avoid; }
+}

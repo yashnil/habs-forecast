@@ -34,10 +34,17 @@
  *   in "neritic-kept-v1" (src/v4/offline/kept.ts). Offline, /coast/kept is answered from it (the copy
  *   itself is in the device's storage), its code from it, and the offline page links to it by name.
  *
+ * - Your trips (v15, /coast/trips: the history, a trip's workspace at ?id=, its briefing): the page keeps itself and
+ *   the files it loads in "neritic-trips-v1" each time it is opened online (src/nx/offline/trips.ts). Online the
+ *   page is network-first as always (the page then replaces its kept copy, code included, so the copy and its code
+ *   always come from one build); offline, or when the network fails,
+ *   /coast/trips at any address is answered from the kept copy, marked as a saved copy with the time it was kept
+ *   (self.__NERITIC_SAVED__), never as live. The trips themselves are in the device's storage, not in any cache.
+ *
  * Packs are never deleted here: a new worker version keeps them (they are removed only from the
  * page, by the reader). Browsers may still evict storage; the page says so.
  */
-const VERSION = "neritic-sw-6";
+const VERSION = "neritic-sw-7";
 /** How long a page or an /api answer waits for the network before a field pack answers instead. */
 const DEADLINE_MS = 5000;
 // one code cache per build: hashed files of an old build are never needed by the new one
@@ -46,6 +53,9 @@ const STATIC = `neritic-static-${BUILD ? BUILD.replace(/[^\w.-]/g, "").slice(0, 
 const PACK_PREFIX = "neritic-pack-";
 const KEPT = "neritic-kept-v1";
 const KEPT_PAGE = "/coast/kept";
+/** Your trips (v15): the /coast/trips page and its code, kept by the page itself (src/nx/offline/trips.ts). */
+const TRIPS = "neritic-trips-v1";
+const TRIPS_PAGE = "/coast/trips";
 /** Today at your port, saved from its "Save for offline" button (src/pilot/today/offline.ts). */
 const TODAY_PACK = "neritic-pack-today";
 /** A port's field pack (v12, Menu > Offline; src/nx/offline/pack.ts): Today, My Coast, Explore, Research. */
@@ -87,6 +97,33 @@ async function keptMatch(request) {
 async function keptPage(path) {
   if (path !== KEPT_PAGE || !(await caches.has(KEPT))) return null;
   return (await caches.open(KEPT)).match(KEPT_PAGE);
+}
+
+/** A file the trips page needs (its code, styles, fonts, the baked chart), from the trips cache. */
+async function tripsMatch(request) {
+  if (!(await caches.has(TRIPS))) return null;
+  const url = new URL(request.url);
+  return (await caches.open(TRIPS)).match(request, { ignoreSearch: url.pathname.startsWith("/_next/") });
+}
+
+/** The kept trips page for any /coast/trips address (the page reads ?id= on the device), marked as a saved copy. */
+async function tripsPage(path) {
+  if (path !== TRIPS_PAGE || !(await caches.has(TRIPS))) return null;
+  const r = await (await caches.open(TRIPS)).match(TRIPS_PAGE);
+  return r ? marked(r, new URL(TRIPS_PAGE, self.location.origin).href) : null;
+}
+
+/** When the trips page was kept, for the offline page's link; null without one. */
+async function tripsMeta() {
+  if (!(await caches.has(TRIPS))) return null;
+  const c = await caches.open(TRIPS);
+  if (!(await c.match(TRIPS_PAGE))) return null;
+  try {
+    const r = await c.match("/__trips__/meta");
+    return r ? await r.json() : {};
+  } catch {
+    return {};
+  }
 }
 
 /** What the offline page says about the kept copy: its title and when it was kept, or null. */
@@ -281,6 +318,7 @@ async function offlinePage(path, url) {
   const saved = await savedPageFor(path, url);
   if (saved) return saved;
   const kept = await keptMeta();
+  const trips = await tripsMeta();
   const brief = await savedPageFor("/coast");
   const field = await fieldRecord();
   const stamp = (t) => new Date(t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" });
@@ -291,6 +329,7 @@ async function offlinePage(path, url) {
     ...fieldLinks.map((p) => `<a class="btn" href="${esc(p.path)}" data-testid="offline-field">${esc(p.label)}${field.port && field.port.name ? ` at ${esc(field.port.name)}` : ""}<small>saved ${esc(stamp(field.savedAt))}, as it was then</small></a>`),
     // the pilot's front door: the reader's own port, as it was when they saved it
     ...todays.map((t) => `<a class="btn" href="${esc(t.href)}" data-testid="offline-today">Today${t.label ? ` at ${esc(t.label)}` : ""}<small>${t.at && !Number.isNaN(Date.parse(t.at)) ? `saved ${esc(stamp(t.at))}, as it was then` : "your saved copy"}</small></a>`),
+    trips ? `<a class="btn" href="/coast/trips" data-testid="offline-trips">Your trips<small>${trips.keptAt && !Number.isNaN(Date.parse(trips.keptAt)) ? `page kept ${esc(stamp(trips.keptAt))}; your trips are on this device` : "your trips are on this device"}</small></a>` : "",
     kept ? `<a class="btn" href="/coast/kept" data-testid="offline-kept">Your kept briefing${kept.title ? `<small>${esc(kept.title)}${when ? `, kept ${esc(when)}` : ""}</small>` : ""}</a>` : "",
     brief && !fieldLinks.length ? `<a class="btn" href="/coast">The saved briefing<small>from your field pack</small></a>` : "",
   ].join("");
@@ -366,7 +405,8 @@ async function briefingAnyTrip(url) {
 
 /** The pack's copy of a non-page request (exact address; a briefing for another trip of the same place). */
 async function packAnswer(req, url) {
-  const hit = (await packMatch(req)) || (url.origin === self.location.origin && url.pathname.startsWith("/_next/") ? await keptMatch(req) : null);
+  const same = url.origin === self.location.origin;
+  const hit = (await packMatch(req)) || (same && url.pathname.startsWith("/_next/") ? await keptMatch(req) : null) || (same ? await tripsMatch(req) : null);
   if (hit) return hit;
   return url.pathname === "/api/briefing" ? briefingAnyTrip(url) : null;
 }
@@ -380,7 +420,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const c = await caches.open(STATIC);
-        const hit = (await c.match(req)) || (await packMatch(req)) || (await keptMatch(req));
+        const hit = (await c.match(req)) || (await packMatch(req)) || (await keptMatch(req)) || (await tripsMatch(req));
         if (hit) return hit;
         const r = await fetch(req);
         if (r.ok) c.put(req, r.clone()).catch(() => undefined); // storage full: served, not kept
@@ -408,7 +448,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         if (offline) {
-          const saved = (await packNavigate(req)) || (await keptPage(url.pathname));
+          const saved = (await packNavigate(req)) || (await keptPage(url.pathname)) || (await tripsPage(url.pathname));
           if (saved) return saved;
           // offline and the pack never held this page: say so at once (no request that cannot succeed)
           if (!hasPackPage(url) && (await hasPack())) return offlinePage(url.pathname, url);
@@ -416,9 +456,9 @@ self.addEventListener("fetch", (event) => {
         try {
           // a slow network gives way to the pack after the deadline: the saved copy of this page, else
           // the short offline page (with a way to try again); with no pack at all, the network is waited for
-          return await withDeadline(req, async () => (await packNavigate(req)) || offlinePage(url.pathname, url), (await hasPack()) ? DEADLINE_MS : 0);
+          return await withDeadline(req, async () => (await packNavigate(req)) || (await tripsPage(url.pathname)) || offlinePage(url.pathname, url), (await hasPack()) ? DEADLINE_MS : 0);
         } catch {
-          return (await packNavigate(req)) || (await keptPage(url.pathname)) || offlinePage(url.pathname, url);
+          return (await packNavigate(req)) || (await keptPage(url.pathname)) || (await tripsPage(url.pathname)) || offlinePage(url.pathname, url);
         }
       })(),
     );

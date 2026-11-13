@@ -59,6 +59,7 @@ export const KEYS: KeyEntry[] = [
   local("nx-today-saved-v1", "offline", "Which ports' Today pages are saved for offline use, and when"),
   cache("neritic-pack-", "offline", "Pages, records and chart pictures saved for use without a connection"),
   local("neritic-pack-saved-", "offline", "When an offline pack from an earlier version was saved", { legacy: true }),
+  cache("neritic-trips-v1", "offline", "The trips page and its code, so your trips open without a connection"),
   cache("neritic-kept-v1", "offline", "Briefings kept for offline use in an earlier version", { legacy: true }),
   local("cw-kept-v1", "offline", "The list of briefings kept in an earlier version", { legacy: true }),
   // ---------------------------------------------------------------- preferences
