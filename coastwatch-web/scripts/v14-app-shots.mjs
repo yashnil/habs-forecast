@@ -23,7 +23,7 @@
  *   CW_DATA_BASE_URL=https://raw.githubusercontent.com/yashnil/habs-forecast/coastwatch-data-staging/v1 \
  *     node scripts/v14-app-shots.mjs                    the same on staging data (live clock and conditions)
  *   node scripts/v14-app-shots.mjs --base http://localhost:5900    an app that is already running
- *   env: FRAMES=today,alerts  SIZES=390x844,320x640  OUT=<dir> (default docs/coastwatch/v14/implementation)
+ *   env: SET=fixture|staging (output to actual-<set>/, compare-<set>/, compare-<set>.md)  FRAMES=today,alerts  SIZES=390x844,320x640  OUT=<dir> (default docs/coastwatch/v14/implementation)
  */
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -36,6 +36,10 @@ const arg = (k) => {
   return i > 0 ? process.argv[i + 1] : undefined;
 };
 const OUT = process.env.OUT ?? IMPL_DIR;
+// SET=fixture|staging keeps two runs side by side: actual-<set>/, compare-<set>/, compare-<set>.md
+const SET = process.env.SET ? `-${process.env.SET}` : "";
+const ACTUAL = `actual${SET}`;
+const COMPARE = `compare${SET}`;
 const DATA = process.env.CW_DATA_BASE_URL ?? "/data/fixture/v1";
 const FIXTURE = !/^https?:/.test(DATA);
 const PORT = Number(process.env.CW_E2E_PORT_BASE ?? 5900) + 10;
@@ -149,10 +153,12 @@ const SCENARIOS = {
     url: `/research?station=${RESEARCH.station}&var=${RESEARCH.v}&range=${RESEARCH.range}&day=${RESEARCH.day}`,
     async setup(page, step, note, size) {
       await step("plot drawn", () => page.getByTestId(SELECTORS.researchPlot).waitFor({ timeout: 25_000 }));
+      // v14 shows the selected sample in the phone sheet itself; only a layout that keeps it closed gets it opened
       if (size[0] <= PHONE_MAX)
-        await step("open the sample on a phone", async () => {
+        await step("the sample is shown on a phone", async () => {
+          const shown = await page.getByTestId(SELECTORS.inspector).isVisible().catch(() => false);
           const b = page.getByTestId(SELECTORS.sampleDetails);
-          if (await b.isVisible().catch(() => false)) await b.click();
+          if (!shown && (await b.isVisible().catch(() => false))) await b.click();
         });
       await step("the May 27 sample is the one shown", async () => {
         const insp = page.getByTestId(SELECTORS.inspector);
@@ -222,7 +228,7 @@ process.on("SIGINT", () => process.exit(130));
 
 // ---------------------------------------------------------------- run
 await up(BASE);
-for (const d of ["actual", "compare"]) mkdirSync(join(OUT, d), { recursive: true });
+for (const d of [ACTUAL, COMPARE]) mkdirSync(join(OUT, d), { recursive: true });
 const browser = await chromium.launch({ channel: process.env.CW_PROOF_CHANNEL ?? "chrome" });
 const tools = await imageTools(browser);
 const notes = {};
@@ -256,14 +262,20 @@ try {
       await step("open", () => page.goto(n.url, { waitUntil: "load", timeout: 30_000 }));
       await sc.setup(page, step, note, size, publish);
       await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
+      // the frame is the page at rest: typing and tapping scroll the phone sheet (an inner scroller) to the control;
+      // put every scroller back at its top, as a reader arriving would see it
+      await page.evaluate(() => {
+        for (const el of document.querySelectorAll("*")) if (el.scrollTop > 0) el.scrollTop = 0;
+        scrollTo(0, 0);
+      });
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(SETTLE);
       n.hscroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       const png = await page.screenshot();
-      writeFileSync(join(OUT, "actual", `${key}.webp`), await tools.webp(png, 0.86));
+      writeFileSync(join(OUT, ACTUAL, `${key}.webp`), await tools.webp(png, 0.86));
       const refFile = join(OUT, "reference", `${key}.webp`);
       const ref = existsSync(refFile) ? await tools.png(readFileSync(refFile)) : null;
-      writeFileSync(join(OUT, "compare", `${key}.webp`), await tools.composite(ref, png, { title: key }));
+      writeFileSync(join(OUT, COMPARE, `${key}.webp`), await tools.composite(ref, png, { title: key }));
       const failed = n.steps.filter((s) => s.startsWith("FAILED"));
       rows.push({ key, frame, size: sizeName(size), url: sc.url, failed, errors: n.errors.length, hscroll: n.hscroll });
       console.log(`${key}  ${failed.length ? `${failed.length} step(s) failed` : "ok"}${n.errors.length ? `, ${n.errors.length} error(s)` : ""}${n.hscroll > 0 ? `, scrolls sideways ${n.hscroll}px` : ""}`);
@@ -276,20 +288,24 @@ try {
   stop();
 }
 
-writeFileSync(join(OUT, "actual", "notes.json"), JSON.stringify(notes, null, 1));
+const notesFile = join(OUT, ACTUAL, "notes.json");
+const earlier = process.env.FRAMES || process.env.SIZES ? (existsSync(notesFile) ? JSON.parse(readFileSync(notesFile, "utf8")) : {}) : {};
+writeFileSync(notesFile, JSON.stringify({ ...earlier, ...notes }, null, 1));
 const when = new Date().toISOString().slice(0, 16).replace("T", " ");
 const md = [
   "# v14: the app beside the approved synthesis",
   "",
-  `Generated ${when} UTC by \`scripts/v14-app-shots.mjs\` against ${FIXTURE ? "fixture data (clock 2026-10-13)" : `\`${DATA}\``}. Left: the prototype (\`reference/\`, from \`scripts/v14-reference-shots.mjs\`). Right: the app (\`actual/\`). Device scale 1, reduced motion.`,
+  `Generated ${when} UTC by \`scripts/v14-app-shots.mjs\` against ${FIXTURE ? "fixture data (clock 2026-10-13)" : `\`${DATA}\``}. Left: the prototype (\`reference/\`, from \`scripts/v14-reference-shots.mjs\`). Right: the app (\`${ACTUAL}/\`). Device scale 1, reduced motion.`,
   "",
-  "Live values differ from the prototype's examples by design; judge composition, typography, colour, cartography and hierarchy. Steps and errors per state: `actual/notes.json`.",
+  `Live values differ from the prototype's examples by design; judge composition, typography, colour, cartography and hierarchy. Steps and errors per state: \`${ACTUAL}/notes.json\`.`,
   "",
   "| State | Size | App address | Set-up | Sideways scroll |",
   "|---|---|---|---|---|",
-  ...rows.map((r) => `| [${r.frame}](compare/${r.key}.webp) | ${r.size} | \`${r.url}\` | ${r.failed.length ? `${r.failed.length} step(s) failed: ${r.failed.map((f) => f.replace(/\|/g, "/")).join("; ")}` : "ok"}${r.errors ? `; ${r.errors} console error(s)` : ""} | ${r.hscroll > 0 ? `${r.hscroll} px` : "none"} |`),
+  ...rows.map((r) => `| [${r.frame}](${COMPARE}/${r.key}.webp) | ${r.size} | \`${r.url}\` | ${r.failed.length ? `${r.failed.length} step(s) failed: ${r.failed.map((f) => f.replace(/\|/g, "/")).join("; ")}` : "ok"}${r.errors ? `; ${r.errors} console error(s)` : ""} | ${r.hscroll > 0 ? `${r.hscroll} px` : "none"} |`),
   "",
-  ...pickFrames().flatMap((f) => [`## ${f}`, "", ...pickSizes().map((s) => `![${f} ${sizeName(s)}](compare/${f}-${sizeName(s)}.webp)`), ""]),
+  ...pickFrames().flatMap((f) => [`## ${f}`, "", ...pickSizes().map((s) => `![${f} ${sizeName(s)}](${COMPARE}/${f}-${sizeName(s)}.webp)`), ""]),
 ].join("\n");
-writeFileSync(join(OUT, "compare.md"), md);
-console.log(`wrote ${join(OUT, "compare.md")}`);
+// a filtered run (FRAMES/SIZES) replaces only its stills; the full listing is written by a full run
+const mdFile = join(OUT, `compare${SET}${process.env.FRAMES || process.env.SIZES ? "-partial" : ""}.md`);
+writeFileSync(mdFile, md);
+console.log(`wrote ${mdFile}`);
