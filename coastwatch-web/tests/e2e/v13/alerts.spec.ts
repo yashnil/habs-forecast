@@ -49,7 +49,9 @@ test("arriving from a port outside the pilot: it is offered, followed in one tap
   await expect(page.getByTestId(`alerts-port-${BODEGA}`)).toContainText("3 of 5 kinds of change alert you");
   await expect(page.getByTestId("alerts-offer")).toHaveCount(0);
 
-  // another port from the list, then stop following the first: its baseline goes with it
+  // another port from the list ("What alerts you", opened from the dock), then stop following the first: its baseline goes with it
+  await expect(page.getByTestId("alerts-kinds")).toHaveAttribute("aria-expanded", "false");
+  await page.getByTestId("alerts-kinds").click();
   await page.getByTestId("alerts-add-port").selectOption(MOSS);
   await page.getByTestId("alerts-add").click();
   await expect(page.getByTestId(`alerts-port-${MOSS}`)).toBeVisible();
@@ -87,15 +89,15 @@ test("a controlled change: two states of the records make exactly one alert, cou
   await expect(page.getByTestId("nx-unread")).toHaveText("1");
   expect(await stored(page, "nx-inbox-v1")).toHaveLength(1);
 
-  // the alert: what changed, what it said before, its source, its date, and that the record is not verified
+  // the alert: what changed, its source, its date, and that the record is not verified
   await page.getByTestId("nx-alerts-link").click();
   const items = page.getByTestId("alerts-item");
   await expect(items).toHaveCount(1);
   const item = items.first();
   await expect(item).toHaveAttribute("data-port", BODEGA);
-  await expect(item).toContainText("Bodega Bay · Season status and official notices");
-  await expect(item.getByRole("heading")).toHaveText("Dungeness crab (commercial): Commercial season opens Jan 1, 2027 with a 30-fathom depth limit.");
-  await expect(item).toContainText("Before: Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027");
+  await expect(item).toContainText("Unread · Bodega Bay · Season status");
+  await expect(item.getByRole("heading")).toHaveText("Commercial Dungeness status changed");
+  await expect(item.getByRole("img", { name: /was Jan 1, 2027, now Jan 1, 2027 \(sample data\)\. Same date\./ })).toBeVisible();
   await expect(item.getByRole("link", { name: "CDFW" })).toHaveAttribute("href", /^https:\/\/wildlife\.ca\.gov\//);
   await expect(item).toContainText("Not verified");
   await expect(item).toContainText("Sample data");
@@ -107,11 +109,18 @@ test("a controlled change: two states of the records make exactly one alert, cou
   await expect(page.getByTestId("alerts-said")).toHaveText("Checked: nothing has changed.");
   await expect(items).toHaveCount(1);
 
-  // read: the count leaves the page and the bar
+  // read ("What alerts you" holds the list's actions): the count leaves the page and the bar
+  await page.getByTestId("alerts-kinds").click();
   await page.getByTestId("alerts-mark-read").click();
   await expect(page.getByTestId("alerts-unread")).toHaveCount(0);
   await expect(page.getByTestId("nx-unread")).toHaveCount(0);
   await expect(item).toHaveAttribute("data-read", "");
+
+  // the record, one tap away: the kind of change, the record's sentence and what it said before
+  await page.getByTestId("alerts-open").click();
+  await expect(item).toContainText("Bodega Bay · Season status and official notices");
+  await expect(item).toContainText("Dungeness crab (commercial): Commercial season opens Jan 1, 2027 with a 30-fathom depth limit.");
+  await expect(item).toContainText("Before: Dungeness crab (commercial): Commercial season delayed to at least Jan 1, 2027");
 });
 
 test("the ticket says the change: the new date with the old struck, before → after on a date axis, and opening the record clears the count", async ({ page }) => {
@@ -136,8 +145,8 @@ test("the ticket says the change: the new date with the old struck, before → a
   const ticket = page.locator("[data-nx-ticket]");
   const item = ticket.getByTestId("alerts-item");
   await expect(item).toHaveAttribute("data-port", FORT);
-  await expect(item).toContainText("Unread · Fort Bragg · Season status and official notices");
-  await expect(item.getByRole("heading")).toHaveText("Dungeness crab (commercial): Commercial season delayed to at least Jan 15, 2027");
+  await expect(item).toContainText("Unread · Fort Bragg · Season status");
+  await expect(item.getByRole("heading")).toHaveText("Commercial Dungeness delay moved");
   await expect(item.getByRole("img", { name: /was Jan 1, 2027, now Jan 15, 2027 \(sample data\)\. \+14 days later\./ })).toBeVisible();
   await expect(item).toContainText("Not verified");
   await expect(item).toContainText("Noticed on this device");
@@ -151,6 +160,7 @@ test("the ticket says the change: the new date with the old struck, before → a
   await expect(item.getByRole("link", { name: /The record at CDFW/ })).toHaveAttribute("href", "https://wildlife.ca.gov/");
   await expect(item).toHaveAttribute("data-read", "");
   await expect(item).toContainText("Read · Fort Bragg");
+  await expect(item).toContainText("Dungeness crab (commercial): Commercial season delayed to at least Jan 15, 2027");
   await expect(page.getByTestId("nx-unread")).toHaveCount(0);
   expect((await stored(page, "nx-inbox-v1"))[0].read_at).toBeTruthy();
 
@@ -235,6 +245,7 @@ test("offline: the saved Alerts page lists the alerts already on the device and 
   await page.goto(`${OK}/alerts`);
   await expect(page.getByTestId("nx-alerts")).toBeVisible();
   await expect(page.getByTestId("alerts-item")).toHaveCount(1);
+  await page.getByTestId("alerts-open").click();
   await expect(page.getByTestId("alerts-item").first()).toContainText("opens Jan 1, 2027");
   await expect(page.getByTestId("alerts-last-checked")).toHaveText(lastChecked);
   await expect(page.getByTestId("alerts-said")).toContainText("You're offline: nothing can be checked.");
@@ -255,6 +266,8 @@ for (const [name, viewport] of [["desktop", { width: 1440, height: 900 }], ["pho
       records.publish();
       await page.getByTestId("alerts-check-now").click();
       await expect(page.getByTestId("alerts-item")).toHaveCount(1);
+      // the settings and the list's actions open from the dock's "What alerts you"
+      await page.getByTestId("alerts-kinds").click();
       expect(await axe(page)).toEqual([]);
       await noSidewaysScroll(page);
       for (const id of [`alerts-trigger-${MOSS}-status_change`, "alerts-check-now", "alerts-mark-read", "alerts-add-port", `alerts-unfollow-${MOSS}`, "alerts-open", "alerts-kinds"]) {

@@ -33,6 +33,8 @@ export type TodayPayload = { inputs: Omit<PortTodayInputs, "conditions" | "selec
  * status is read from the status records AND the official notices (a notice can set it), so it needs both.
  */
 type Part = "fisheries" | "notices" | "biotoxin" | "charm";
+/** The kinds of fact an alert can come from (diff.ts triggerFor). */
+const COMPARED_KINDS: FactKind[] = ["status", "notice", "test", "whale", "bloom_forecast", "data_age"];
 const PARTS: Partial<Record<FactKind, Part[]>> = {
   status: ["fisheries", "notices"],
   whale: ["fisheries"],
@@ -69,17 +71,27 @@ export function checkPort(prev: PortBaseline | null, payload: TodayPayload, foll
   if (prev && prev.data_at && dataAt && Date.parse(dataAt) < Date.parse(prev.data_at)) return { state: "older_copy", baseline: prev, items: [] };
   const { today, unread } = portToday(inputs);
   const fresh = snapshotOf(today, now);
-  if (!prev) return { state: "baselined", baseline: { snap: fresh, data_at: dataAt }, items: [] };
+  // the kinds this read could not see: when they first read later, what they list was never seen, so it is not "new"
+  const blind = COMPARED_KINDS.filter((k) => unread(k, k === "data_age" ? "data_age:charm" : k));
+  // no baseline, or one that holds nothing (damaged, or from before Neritic noted what it could not see): a first look
+  if (!prev || (!Object.keys(prev.snap.facts).length && !prev.blind)) return { state: "baselined", baseline: { snap: fresh, data_at: dataAt, blind }, items: [] };
 
   // what was seen before of the kinds that could not be read now stays as it was: neither gone nor, later, new
   const held = Object.fromEntries(Object.entries(prev.snap.facts).filter(([id, f]) => unread(f.sig.kind, id)));
   const comparable: PlaceSnapshot = { ...prev.snap, facts: Object.fromEntries(Object.entries(prev.snap.facts).filter(([id]) => !(id in held))) };
-  const items = diffFacts(comparable, today, follow.triggers, now).map((a): InboxItem => {
+  const kindOf = new Map(today.facts.map((x) => [x.id, x.kind]));
+  const unseen = new Set<string>(prev.blind ?? []);
+  const items = diffFacts(comparable, today, follow.triggers, now)
+    // a record of a kind the baseline could not see is being seen for the first time, not newly listed
+    .filter((a) => !(comparable.facts[a.fact_id] === undefined && !a.fact_version.startsWith("gone-") && unseen.has(kindOf.get(a.fact_id) ?? "")))
+    .map((a): InboxItem => {
     const before = comparable.facts[a.fact_id]?.sig.headline ?? null;
     const change = a.fact_version.startsWith("gone-") ? "gone" : before === null ? "new" : "changed";
     return { ...a, read_at: null, change, was: before, ...(fixture ? { sample: true } : {}) };
   });
-  return { state: "compared", baseline: { snap: { ...fresh, facts: { ...held, ...fresh.facts } }, data_at: dataAt ?? prev.data_at }, items };
+  // a kind never seen since the first look stays unseen while it is still unread; once read it is seen from here on
+  const stillBlind = blind.filter((k) => unseen.has(k));
+  return { state: "compared", baseline: { snap: { ...fresh, facts: { ...held, ...fresh.facts } }, data_at: dataAt ?? prev.data_at, blind: stillBlind }, items };
 }
 
 export type CheckReport =

@@ -190,6 +190,7 @@ test("Delete everything on this device: ports, follows, alerts, saved trips, vis
   await page.goto(`${OK}/`);
   await expect(page.locator("html")).toHaveAttribute("data-nx-entry", "home");
   await page.goto(`${OK}/alerts`);
+  await page.getByTestId("alerts-kinds").click();
   await expect(page.getByTestId("alerts-no-follows")).toBeVisible();
   await expect(page.getByTestId("alerts-empty")).toBeVisible();
 });

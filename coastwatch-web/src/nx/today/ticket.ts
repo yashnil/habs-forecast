@@ -194,3 +194,24 @@ export const compassDeg = (dir: string | null | undefined): number | null => {
   const i = dir ? COMPASS.indexOf(dir.toUpperCase()) : -1;
   return i < 0 ? null : i * 22.5;
 };
+
+// ---------------------------------------------------------------- notices whose sources differ
+
+export type NoticeLike = { id: string; agency: string; title: string };
+export type ConflictLike = { notice: { agency: string; title: string }; record: { headline: string; source: string } } | null;
+
+/**
+ * Which listed notices may not be presented as in effect (T40): one the season record contradicts (a status row's
+ * conflict names it). Each gets the words the /notices page and the Fisheries tab use: sources differ, awaiting a
+ * person's review; never "lifted". (A record an agency release appears to lift, the registry's own discrepancy, never
+ * reaches Today's list: src/pilot/today/load.ts leaves disputed records out, and /notices shows them as sources differ.)
+ */
+export function noticesDiffer(notices: NoticeLike[], conflicts: ConflictLike[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  for (const n of notices) {
+    const c = conflicts.find((x) => x && same(x.notice.title, n.title) && same(x.notice.agency, n.agency));
+    if (c) out.set(n.id, `Sources differ: ${c.record.source}'s season record says “${c.record.headline.replace(/[.\s]+$/, "")}”. Awaiting a person's review.`);
+  }
+  return out;
+}

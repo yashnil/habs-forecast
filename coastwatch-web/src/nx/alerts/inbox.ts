@@ -1,4 +1,5 @@
 import type { AlertItem, PlaceSnapshot } from "@/pilot/alerts/diff";
+import type { FactKind } from "@/pilot/contracts";
 import { readJSON, remove, writeJSON } from "@/nx/personal/store";
 
 /**
@@ -23,7 +24,12 @@ export type InboxItem = AlertItem & {
 };
 
 /** A port's baseline: the pilot's snapshot plus when the records it came from were published. */
-export type PortBaseline = { snap: PlaceSnapshot; data_at: string | null };
+export type PortBaseline = {
+  snap: PlaceSnapshot;
+  data_at: string | null;
+  /** kinds of fact the read could not see (a part failed to load): what they list when they first read is not "new" */
+  blind?: FactKind[];
+};
 
 /** The last check: when (device clock), the ports read, the ports that could not be read, and why it could not run. */
 export type CheckStamp = {

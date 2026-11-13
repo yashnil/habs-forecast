@@ -226,6 +226,30 @@ describe("comparing one port (checkPort)", () => {
     }
   });
 
+  it("parts that could not be read at the first look are not 'new' when they first read: whichever failed", () => {
+    const all = [...DEFAULT_TRIGGERS, "bloom_risk_jump", "data_stale"] as typeof DEFAULT_TRIGGERS;
+    const parts = ["fisheries", "notices", "biotoxin", "charm", "outlook"] as const;
+    for (const port of [MOSS, BODEGA]) {
+      const g = { port, triggers: all };
+      for (let mask = 1; mask < 1 << parts.length; mask++) {
+        const lost = parts.filter((_, i) => mask & (1 << i));
+        const first = checkPort(null, edited(port, (i) => void lost.forEach((p) => ((i as Record<string, unknown>)[p] = null))), g, now);
+        const r = checkPort(first.baseline, copy(port), g, now);
+        expect(r.items.map((x) => x.fact_id), `${port}: first look without ${lost.join("+")}, then all of it`).toEqual([]);
+        // and from then on a real change is caught
+        expect(checkPort(r.baseline, edited(port, statusChanges), g, now).items.map((x) => x.fact_id), `${port} after ${lost.join("+")}`).toContain("status:dungeness_commercial");
+      }
+    }
+  });
+
+  it("a baseline that holds nothing (damaged, or written before the parts were known) is a first look, never a flood of 'new'", () => {
+    const empty = { snap: { place_id: BODEGA, seen_at: "2026-10-12T00:00:00.000Z", facts: {} }, data_at: null };
+    const r = checkPort(empty, copy(BODEGA), f, now);
+    expect(r.state).toBe("baselined");
+    expect(r.items).toEqual([]);
+    expect(checkPort(r.baseline, edited(BODEGA, statusChanges), f, now).items.map((x) => x.fact_id)).toEqual(["status:dungeness_commercial"]);
+  });
+
   it("an older copy of the records than the baseline (a saved offline copy) is not compared", () => {
     const base = checkPort(null, edited(BODEGA, published("2026-10-12T18:00:00Z")), f, now).baseline;
     const r = checkPort(base, edited(BODEGA, statusChanges, published("2026-10-08T18:00:00Z")), f, now);

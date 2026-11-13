@@ -75,3 +75,24 @@ test("Alerts and the Others row reach the same list; without a port the saved on
   await expect(page).toHaveURL(/\/notices\?place=port-592$/);
   await expect(page.getByTestId("nx-notices").getByRole("heading", { level: 1 })).toContainText("Moss Landing");
 });
+
+test("Today's Notices tab never shows a notice as in effect where the sources differ: the season record contradicts it, or an agency release appears to lift it (T40)", async ({ page, context }) => {
+  // the season record says the mussel quarantine ended Oct 31 while the registry lists it: "sources differ", the same
+  // words the Fisheries tab ("Status unclear") and /notices use, never an active notice
+  await page.goto(`${FAILED}/today?place=port-592`);
+  await page.getByTestId("nx-today").getByRole("tab", { name: /^Notices/ }).click();
+  const panel = page.getByTestId("nx-today").getByRole("tabpanel");
+  const mussels = page.locator('[data-today-notice="cdph-2026-annual-mussel-quarantine"]');
+  await expect(mussels).toHaveAttribute("data-differ", "1");
+  await expect(mussels).toContainText("Sources differ: CDPH's season record says");
+  await expect(mussels).toContainText("Awaiting a person's review");
+  await expect(panel).toContainText(/where sources differ/);
+  // the record an agency release appears to lift (Monterey County bivalves) is not listed as in effect here at all
+  await expect(page.locator('[data-today-notice="cdph-2026-sn26-018-monterey-bivalves"]')).toHaveCount(0);
+  // the same at the port whose own fishery says "Status unclear"
+  await context.addInitScript(() => localStorage.setItem("nx-port-v1", JSON.stringify({ v: 1, place: null, for: "all", species: "any", lastPort: "port-550", fisheries: ["bivalve_shellfish"], vessel: null })));
+  await page.goto(`${FAILED}/today?place=port-550`);
+  await page.getByTestId("nx-today").getByRole("tab", { name: /^Notices/ }).click();
+  await expect(page.locator('[data-today-notice="cdph-2026-annual-mussel-quarantine"]')).toHaveAttribute("data-differ", "1");
+  await expect(page.locator('[data-today-notice="cdph-2026-annual-mussel-quarantine"]')).toContainText("Awaiting a person's review");
+});

@@ -87,7 +87,8 @@ export type CoastGates = {
 };
 
 export type SeaPeriod = { name: string; date: string | null; night: boolean; text: string; wind: string | null; seasLo: number | null; seasHi: number | null };
-export type CoastSea = { ok: true; now: string; sea: Omit<SeaView, "lanes"> & { lanes: SeaPeriod[] } };
+/** `windAt`: where the wind station stands (its published NDBC position), so its reading can be drawn there; null when unknown */
+export type CoastSea = { ok: true; now: string; sea: Omit<SeaView, "lanes"> & { lanes: SeaPeriod[] }; windAt?: { lat: number; lon: number } | null };
 export type CoastError = { ok: false; error: string };
 
 const TONE: Record<string, Tone> = { closed: "closure", delayed: "regulation", restricted: "regulation", watch: "regulation" };

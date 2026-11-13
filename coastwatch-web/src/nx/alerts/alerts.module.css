@@ -21,7 +21,7 @@
 .tag > span { font-weight: var(--w7); }
 .tag[data-tone="coral"] { border-color: var(--coral-ink); }
 .tag[data-tone="coral"] > span { color: var(--coral-ink); }
-.before { margin: var(--s-10) 0 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.words { margin: var(--s-6) 0 0; font-size: var(--fs-18); line-height: 1.3; font-weight: var(--w6); color: var(--ink); }
 
 .line { margin: var(--s-12) 0 var(--s-4); }
 
@@ -32,6 +32,7 @@
 .noticed { margin: var(--s-2) 0 0 var(--s-18); font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
 .record { margin: var(--s-12) 0 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
 .record p { margin: 0 0 var(--s-6); }
+.recordTitle { font-size: var(--fs-15); font-weight: var(--w6); color: var(--ink); }
 
 .offerHead { margin: var(--s-12) 0 0; font-size: var(--fs-25); line-height: 1.12; font-weight: var(--w7); letter-spacing: -0.02em; color: var(--ink); }
 .offerText { margin: var(--s-8) 0 0; font-size: var(--fs-15); line-height: 1.45; color: var(--ink); }
@@ -70,8 +71,15 @@
 .dockActs { display: flex; gap: var(--s-2); margin-left: auto; }
 .said { margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink); }
 .said:empty { display: none; }
-/* "What alerts you": the ports followed and their switches, in the ticket's stub (it scrolls when the ticket is tall) */
-.panel { margin-top: var(--s-14); padding-top: var(--s-6); border-top: var(--hair) solid var(--line); }
+/* "What alerts you": a panel over the chart, standing on the dock; opened on demand, never at rest. It scrolls when
+   the screen is short, so the dock and the ticket never move for it. */
+.panel {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + var(--s-12)); z-index: 3;
+  max-height: calc(100dvh - var(--stage-top) - 300px); overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--s-6) var(--s-24) var(--s-16); background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow);
+}
+.panel[hidden] { display: none; }
+.panel > .inbox:first-child { margin-top: 0; border-top: 0; }
 
 .ports { list-style: none; margin: 0; padding: 0; }
 .port { padding: var(--s-8) 0; }
@@ -97,8 +105,10 @@
 /* ------------------------------------------------------------ phone: blocks in the sheet */
 @media (max-width: 640px) {
   .move { font-size: var(--fs-40); gap: var(--s-6) var(--s-10); }
+  .wideOnly { display: none; }
   .arr { width: 26px; }
   .dock { margin-top: var(--s-16); }
+  .panel { position: static; max-height: none; overflow: visible; margin-top: var(--s-10); padding: var(--s-6) 0 0; border-radius: 0; box-shadow: none; border-top: var(--hair) solid var(--line); }
   .row2 { gap: 0 var(--s-12); }
   .dockActs { margin-left: -6px; }
   .acts > a, .acts > button:first-child { flex: none; }

@@ -130,7 +130,11 @@ test("Monterey Wharf opens on its last pDA sample (Aug 31, 2022), over the whole
 
 test("1440 × 900, on load: the pass keeps to the chart's foot (at most 45 % of the height) with the plot, tabs and card whole; so is the empty range with its actions", async ({ page }) => {
   await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=1y");
-  const pass = (await page.getByTestId("research-record").boundingBox())!;
+  // the pass springs in from its pin (a brief 1.006 overshoot): measure it once it has come to rest
+  const rec = page.getByTestId("research-record");
+  let prev = "";
+  await expect.poll(async () => { const b = await rec.boundingBox(); const k = b ? `${b.y.toFixed(1)}:${b.height.toFixed(1)}` : ""; const still = k !== "" && k === prev; prev = k; return still; }, { intervals: [150], timeout: 5000 }).toBe(true);
+  const pass = (await rec.boundingBox())!;
   expect(pass.height).toBeLessThanOrEqual(900 * 0.45 + 1);
   expect(pass.y + pass.height).toBeLessThanOrEqual(900);
   const plot = (await page.getByTestId("research-plot").boundingBox())!;
@@ -187,6 +191,27 @@ for (const [w, h] of [[1280, 720], [1100, 800]] as const) {
       await expect(page.getByTestId("inspector-others").locator("dd").last()).toBeInViewport({ ratio: 1 });
       const pass = (await page.getByTestId("research-record").boundingBox())!;
       expect(pass.height).toBeLessThanOrEqual(h * 0.45 + 1);
+    }
+    await ctx.close();
+  });
+}
+
+for (const [w, h] of [[1440, 900], [1280, 720], [1100, 800]] as const) {
+  test(`${w} × ${h}: with the model shown over the whole record, its words have their own room, clear of the time axis`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, storageState: { cookies: [], origins: [] } });
+    const page = await ctx.newPage();
+    await open(page, "station=HABs-SantaCruzWharf&var=pDA&range=3y&day=2026-05-27");
+    for (const r of ["range-all", "range-3y", "range-1y", "range-90d"]) {
+      await page.getByTestId(r).click();
+      if (r === "range-all") await page.getByTestId("research-model-switch").click();
+      await expect(page.getByTestId("research-plot-model")).toBeVisible();
+      await page.waitForTimeout(700); // the window eases to the preset
+      const words = (await page.getByTestId("research-model-words").evaluate((el) => el.closest("p")!.getBoundingClientRect().toJSON())) as DOMRect;
+      const labels = await page.getByTestId("research-plot").locator("[data-axis=x] text, [data-zero-lane] text").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON() as DOMRect));
+      expect(labels.length).toBeGreaterThan(0);
+      for (const b of labels) expect(b.bottom <= words.top + 0.5 || b.top >= words.bottom - 0.5, `${r}: an axis label (${Math.round(b.top)}–${Math.round(b.bottom)}) overlaps the model's words (${Math.round(words.top)}–${Math.round(words.bottom)})`).toBe(true);
+      const plot = (await page.getByTestId("research-plot").boundingBox())!;
+      expect(plot.y + plot.height).toBeLessThanOrEqual(words.top + 0.5);
     }
     await ctx.close();
   });

@@ -133,8 +133,8 @@ export function OpeningController() {
         });
         at(T(OPENING.isobathsInk[1]), () => {
           // the live lines take over from the drawn ones
-          map.setPaintProperty("isobaths-minor", "line-opacity", MINOR);
-          map.setPaintProperty("isobaths-index", "line-opacity", INDEX);
+          if (map.getLayer("isobaths-minor")) map.setPaintProperty("isobaths-minor", "line-opacity", MINOR);
+          if (map.getLayer("isobaths-index")) map.setPaintProperty("isobaths-index", "line-opacity", INDEX);
           stops.push(animate(svg, { opacity: [1, 0] }, fadeOut));
         });
         at(T(OPENING.tintsFlood[0]), () => {
