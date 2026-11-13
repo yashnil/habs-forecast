@@ -182,6 +182,16 @@ function writeFoot(frame: HTMLElement) {
 }
 const sameInsets = (a: Insets, b: Insets) => a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left;
 
+/** True while the opening plays and the chart's lettering waits for its beat (chart.css hides the overlay then). */
+const openingHidesMarks = () => {
+  const h = document.documentElement;
+  const op = h.getAttribute("data-nx-opening");
+  return (op === "on" || op === "run") && !h.hasAttribute("data-nx-marks");
+};
+
+/** How long after the map's "load" it counts as ready when "idle" has not come (ms). */
+const READY_AFTER_LOAD_MS = 1500;
+
 /** The chart's own zoom limits; a scene may narrow them (ChartScene.zoomRange). */
 const CHART_ZOOM = [4, 13.5] as const;
 
@@ -251,6 +261,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   // ---------------------------------------------------------------- placement of everything on the chart
   const placeNow = useCallback(() => {
     raf.current = 0;
+    // while the opening plays the lettering is hidden until its beat: nothing is placed (the page's first seconds on
+    // a slow machine belong to the opening); the attribute's change places everything at once
+    if (openingHidesMarks()) return;
     const f = frameRefLatest.current;
     const frameEl = frameRef.current;
     if (!f || !frameEl) return;
@@ -468,11 +481,22 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         publish({ center: [c.lng, c.lat], zoom: map.getZoom() }, { width: cvs.clientWidth, height: cvs.clientHeight }, true);
       };
       map.on("move", onMove);
-      map.once("idle", () => {
-        if (cancelled) return;
+      // ready when the map is first idle (style, sources and tiles drawn), or, if it never settles that far (software
+      // GL on a slow machine, a page that keeps the camera or a layer moving), a moment after its style and first
+      // frame have loaded: the chart never waits on "idle" alone
+      let ready = false;
+      let fallback = 0;
+      const markReady = () => {
+        if (ready || cancelled) return;
+        ready = true;
+        window.clearTimeout(fallback);
         setMapReady(true);
         setChartMap(map, true);
         onMove();
+      };
+      map.once("idle", markReady);
+      map.once("load", () => {
+        fallback = window.setTimeout(markReady, READY_AFTER_LOAD_MS);
       });
       const canvas = map.getCanvas();
       canvas.setAttribute("aria-label", "Chart of the California coast");
@@ -494,6 +518,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       canvas.addEventListener("webglcontextlost", onLost);
       canvas.addEventListener("webglcontextrestored", onRestored);
       destroy = () => {
+        window.clearTimeout(fallback);
         canvas.removeEventListener("webglcontextlost", onLost);
         canvas.removeEventListener("webglcontextrestored", onRestored);
         map.remove();
@@ -618,6 +643,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   }, [vp?.width, vp?.height]);
 
   useEffect(() => onMarksChange(schedule), [schedule]);
+  // the opening ending (or reaching its marks' beat): place the lettering now
+  useEffect(() => {
+    const mo = new MutationObserver(() => !openingHidesMarks() && schedule());
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-nx-opening", "data-nx-marks"] });
+    return () => mo.disconnect();
+  }, [schedule]);
   // what a page drew on the chart and asked lettering to keep clear of can change without the camera moving (a
   // transect arriving after its reading): the names are placed again when those shapes change
   useEffect(() => {

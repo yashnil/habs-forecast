@@ -93,6 +93,9 @@ export function DepthLabels() {
     };
 
     const place = (f: ChartFrame) => {
+      // not while the opening plays (its lettering waits for its beat); placed when it ends
+      const op = document.documentElement.getAttribute("data-nx-opening");
+      if ((op === "on" || op === "run") && !document.documentElement.hasAttribute("data-nx-marks")) return;
       const { width: W, height: H } = f.viewport;
       svg.replaceChildren();
       placed = [];
@@ -166,6 +169,11 @@ export function DepthLabels() {
       if (f) place(f);
     });
     const off = onFrame(onF);
+    const mo = new MutationObserver(() => {
+      const f = getFrame();
+      if (f && alive) place(f);
+    });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-nx-opening", "data-nx-marks"] });
     // a chip switched (or a page's defaults): fade at once, place again a moment later, off the page change's frames
     let relayout = 0;
     const offL = subscribeMapLayers(() => {
@@ -181,6 +189,7 @@ export function DepthLabels() {
       alive = false;
       off();
       offL();
+      mo.disconnect();
       window.clearTimeout(settle);
       window.clearTimeout(relayout);
     };
