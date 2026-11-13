@@ -35,6 +35,7 @@
    cover, so the place (a stub's length west of the ticket) and its name stay in the free area */
 .reserve { position: absolute; top: 0; bottom: 0; right: 0; width: calc(min(var(--ticket-w), calc(100vw - 2 * var(--gutter))) + clamp(0px, calc(10vw - var(--gutter)), calc(144px - var(--gutter)))); pointer-events: none; visibility: hidden; }
 .reserve[data-side="west"] { right: auto; left: 0; }
+.reserve[data-edge="gutter"] { width: min(var(--ticket-w), calc(100vw - 2 * var(--gutter))); }
 
 /* ------------------------------------------------------------ dock: low, quiet, wide. Time lives here. */
 .dock {

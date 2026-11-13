@@ -154,7 +154,7 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
         offset: isFocus ? 10 : 6,
         // the current port is named on the water side (its ticket stands to the east); the others on the land side
         // names stand on the water side of the coast, as on the synthesis chart (the current port's ticket stands east)
-        anchors: (["left", "top-left", "bottom-left", "right", "top-right", "bottom-right"] as const).slice(),
+        anchors: (isFocus ? (["left", "top-left", "bottom-left", "right", "top-right", "bottom-right", "top", "bottom"] as const) : (["left", "top-left", "bottom-left", "right", "top-right", "bottom-right"] as const)).slice(),
         point: <PortSymbol focus={isFocus} followed={followed.has(p.key)} />,
         content: (
           <span className="n12-port-label">

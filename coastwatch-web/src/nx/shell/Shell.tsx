@@ -159,7 +159,7 @@ export function Shell() {
       </a>
       <header className="n12-bar" data-testid="nx-bar">
         <div className="nx-brand">
-          <Link href="/" className="nx-brand-home" aria-label="Neritic, home">
+          <Link href="/" className="nx-brand-home n12-wordmark" aria-label="Neritic, home">
             <BrandMark />
             <span className="nx-brand-name">Neritic</span>
           </Link>
