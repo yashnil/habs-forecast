@@ -29,6 +29,8 @@ export interface TicketProps extends Data {
   labelledBy?: string;
   /** The camera brings the place to the ticket's edge (default true). Turn off for a second ticket on the same page. */
   lead?: boolean;
+  /** Stand in the flow of its container instead of floating on the chart (the catalog, a page's own column). */
+  inline?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -47,7 +49,8 @@ const read = (el: Element, v: string, fb: number) => parseFloat(getComputedStyle
  *
  * Compose it from `TicketMain` and `TicketStub` (the perforated part under the main, with its notches).
  */
-export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead = true, className, children, ...data }: TicketProps) {
+export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead: asked = true, inline = false, className, children, ...data }: TicketProps) {
+  const lead = asked && !inline;
   const ref = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGLineElement>(null);
   const reserveRef = useRef<HTMLDivElement>(null);
@@ -61,7 +64,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || inline) return;
     let raf = 0;
     const place = (f: ChartFrame | null) => {
       if (isPhoneNow()) {
@@ -114,7 +117,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       window.removeEventListener("resize", go);
       cancelAnimationFrame(raf);
     };
-  }, [lon, lat, side, anchorY, phone]);
+  }, [lon, lat, side, anchorY, phone, inline]);
 
   // the camera anchor: where the place should stand so the ticket sits beside it
   useEffect(() => {
@@ -138,11 +141,12 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         ref={ref}
         className={cx(s.ticket, className)}
         data-side={side}
+        data-inline={inline || undefined}
         style={style}
         aria-label={label}
         aria-labelledby={labelledBy}
-        initial={phone ? false : { opacity: 0, scale: TICKET_FROM }}
-        animate={phone || here ? { opacity: 1, scale: 1 } : { opacity: 0, scale: TICKET_FROM }}
+        initial={phone || inline ? false : { opacity: 0, scale: TICKET_FROM }}
+        animate={phone || inline || here ? { opacity: 1, scale: 1 } : { opacity: 0, scale: TICKET_FROM }}
         transition={{ default: ticketIn, opacity: ticketOpacity }}
         data-nx-ticket=""
         {...data}

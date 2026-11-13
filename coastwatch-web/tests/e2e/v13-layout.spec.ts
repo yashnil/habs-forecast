@@ -2,82 +2,22 @@ import { expect, test, type Page } from "@playwright/test";
 import { OK } from "./ports";
 
 /**
- * v13 "Desk and Chart" (docs/coastwatch/v13/design-system/README.md §1): desk pages give the work the space and
- * make the chart a pane the reader sizes; chart pages keep the margin and the sheet; one tree at every width,
- * before and after hydration; one map instance throughout.
+ * The shell's layout behaviour. v14 (docs/coastwatch/v14/design-system/README.md §2) replaced v13's "Desk and Chart"
+ * with the synthesis composition: one full-bleed chart behind every page, the page's objects floating on it, a phone
+ * sheet. The behaviours v13 held are held here in the new layout: one tree at every width, one map instance that is
+ * never rebuilt or resized per frame, the page change sequenced, the phone sheet's detents and requests. A v13 desk
+ * page (a floating panel until its page moves to the stage) keeps its own checks while it is one; each such check says
+ * so and stands down once the page has moved.
  */
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const RESEARCH = "/research?station=HABs-MontereyWharf&var=pDA";
 const box = async (page: Page, id: string) => (await page.getByTestId(id).boundingBox())!;
 const chart = (page: Page) => page.evaluate(() => (window as unknown as { __nxChart?: { inits: number } }).__nxChart?.inits ?? 0);
-async function open(page: Page, url: string) {
-  await page.addInitScript(() => localStorage.setItem("nx-opening-seen-v1", "1"));
-  await page.goto(`${OK}${url}`);
-}
-
-test("desk pages: the work has at least 60 % of a 1440 px screen and the chart is a pane beside it", async ({ page }) => {
-  for (const [url, id] of [
-    [RESEARCH, "nx-research"],
-    ["/coast?place=port-592", "nx-coast"],
-  ]) {
-    await open(page, url);
-    await expect(page.getByTestId(id)).toBeVisible();
-    const desk = await box(page, "nx-margin");
-    const pane = await box(page, "nx-pane");
-    expect(desk.width).toBeGreaterThanOrEqual(1440 * 0.6);
-    expect(pane.width).toBeGreaterThanOrEqual(320);
-    expect(pane.x).toBeGreaterThanOrEqual(desk.x + desk.width);
-    // nothing of the page is laid over the chart
-    await expect(page.getByTestId("nx-sheet")).toBeVisible();
-    expect(await page.evaluate(() => getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-right"))).toBe("0px");
-  }
-});
-
-test("chart pages keep the margin column beside a chart that takes the rest", async ({ page }) => {
-  await open(page, "/explore?place=port-592");
-  await expect(page.getByTestId("nx-explore")).toBeVisible();
-  const margin = await box(page, "nx-margin");
-  const pane = await box(page, "nx-pane");
-  expect(margin.width).toBeLessThanOrEqual(372);
-  expect(pane.width).toBeGreaterThanOrEqual(1440 - 372 - 1);
-  await expect(page.getByTestId("nx-pane-divider")).toBeHidden();
-});
-
-test("the divider is a separator: arrows step the pane's sizes, Enter collapses to the rail, the size is kept, the map is never rebuilt", async ({ page }) => {
-  await open(page, RESEARCH);
-  await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
-  const work = page.getByTestId("nx-work");
-  const divider = page.getByTestId("nx-pane-divider");
-  await expect(divider).toHaveAttribute("role", "separator");
-  await expect(work).toHaveAttribute("data-pane", "context");
-  await divider.focus();
-  await page.keyboard.press("ArrowLeft");
-  await expect(work).toHaveAttribute("data-pane", "split");
-  await expect(divider).toHaveAttribute("aria-valuenow", "2");
-  await expect.poll(async () => (await box(page, "nx-pane")).width).toBeGreaterThan(700);
-  // the chart resized with its pane and refitted: the canvas is the frame's size
-  await expect.poll(() => page.evaluate(() => Math.abs(document.querySelector(".maplibregl-canvas")!.clientWidth - document.querySelector(".n12-frame")!.clientWidth))).toBeLessThanOrEqual(1);
-  await page.keyboard.press("Enter");
-  await expect(work).toHaveAttribute("data-pane", "rail");
-  // (the columns travel to the new size)
-  await expect.poll(async () => (await box(page, "nx-pane")).width).toBeLessThanOrEqual(48);
-  expect((await box(page, "nx-margin")).width).toBeGreaterThan(1300);
-  await page.getByTestId("nx-pane-rail").click();
-  await expect(work).toHaveAttribute("data-pane", "split");
-  await page.reload();
-  await expect(page.getByTestId("nx-work")).toHaveAttribute("data-pane", "split");
-  // another route keeps its own size
-  await page.getByTestId("nx-bar").getByRole("link", { name: "My Coast" }).click();
-  await expect(page.getByTestId("nx-coast")).toBeVisible();
-  await expect(page.getByTestId("nx-work")).toHaveAttribute("data-pane", "context");
-  expect(await chart(page)).toBe(1);
-});
-
-test("dragging the divider never resizes the map until release", async ({ page }) => {
-  await open(page, RESEARCH);
-  await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
-  await page.evaluate(() => {
+const isDesk = async (page: Page) => (await page.locator('[data-nx-layout="desk"]').count()) > 0;
+/** Counts the map's resizes from now on. */
+const countResizes = (page: Page) =>
+  page.evaluate(() => {
     const w = window as unknown as { __resizes: number; __nxChart: { map: { resize: (...a: unknown[]) => unknown } } };
     w.__resizes = 0;
     const m = w.__nxChart.map;
@@ -87,31 +27,77 @@ test("dragging the divider never resizes the map until release", async ({ page }
       return o(...a);
     };
   });
-  const d = await box(page, "nx-pane-divider");
-  await page.mouse.move(d.x + d.width / 2, d.y + 300);
-  await page.mouse.down();
-  for (let i = 1; i <= 12; i++) await page.mouse.move(d.x - i * 30, d.y + 300);
-  expect(await page.evaluate(() => (window as unknown as { __resizes: number }).__resizes)).toBe(0);
-  // the chart keeps its height while it is clipped
-  expect((await box(page, "nx-sheet")).height).toBeGreaterThan(600);
-  await page.mouse.up();
-  await expect(page.getByTestId("nx-work")).toHaveAttribute("data-pane", "split");
-  await expect.poll(() => page.evaluate(() => (window as unknown as { __resizes: number }).__resizes)).toBe(1);
+const resizes = (page: Page) => page.evaluate(() => (window as unknown as { __resizes: number }).__resizes);
+async function open(page: Page, url: string) {
+  await page.addInitScript(() => localStorage.setItem("nx-opening-seen-v1", "1"));
+  await page.goto(`${OK}${url}`);
+}
+
+test("the chart is full-bleed behind every page: the page floats over it and the map fills the screen", async ({ page }) => {
+  for (const [url, id] of [
+    [RESEARCH, "nx-research"],
+    ["/coast?place=port-592", "nx-coast"],
+    ["/explore?place=port-592", "nx-explore"],
+  ]) {
+    await open(page, url);
+    await expect(page.getByTestId(id)).toBeVisible();
+    const pane = await box(page, "nx-pane");
+    expect(pane.x).toBe(0);
+    expect(pane.y).toBe(0);
+    expect(pane.width).toBe(1440);
+    expect(pane.height).toBeGreaterThanOrEqual(719);
+    await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
+    // the map's canvas is the whole sheet; the page stands inside the screen, over it
+    await expect.poll(() => page.evaluate(() => document.querySelector(".maplibregl-canvas")!.clientWidth)).toBe(1440);
+    const margin = await box(page, "nx-margin");
+    expect(margin.x).toBeGreaterThanOrEqual(0);
+    expect(margin.x + margin.width).toBeLessThanOrEqual(1440);
+    // the v13 divider is gone
+    await expect(page.getByTestId("nx-pane-divider")).toHaveCount(0);
+  }
 });
 
-test("a narrow screen gives the desk the width; the chart opens over it and Escape closes it", async ({ page }) => {
+test("a v13 page not yet moved floats as a card or a panel, and the chart is fitted beside it", async ({ page }) => {
+  await open(page, "/explore?place=port-592");
+  await expect(page.getByTestId("nx-explore")).toBeVisible();
+  if (await page.locator('[data-nx-layout="stage"]').count()) test.skip(true, "Explore has moved to the stage");
+  const margin = await box(page, "nx-margin");
+  expect(margin.width).toBeLessThanOrEqual(404);
+  expect(margin.x + margin.width).toBeLessThanOrEqual(1440 - 23);
+  // the chart's free area excludes the card (the camera fits beside it)
+  await expect.poll(() => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".n12-frame")!).getPropertyValue("--nx-cover-right")))).toBeGreaterThanOrEqual(404);
+});
+
+test("the map is built once and never resized while the reader moves between sections; the nav pill travels", async ({ page }) => {
+  await open(page, RESEARCH);
+  await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
+  await countResizes(page);
+  const bar = page.getByTestId("nx-bar");
+  for (const [name, id] of [
+    ["My Coast", "nx-coast"],
+    ["Today", "nx-today"],
+    ["Research", "nx-research"],
+  ]) {
+    await bar.getByRole("link", { name }).click();
+    await expect(page.getByTestId(id)).toBeVisible();
+    await expect(bar.getByRole("link", { name })).toHaveAttribute("aria-current", "page");
+    await expect(bar.locator(".n12-dest-on")).toHaveCount(1);
+  }
+  expect(await resizes(page)).toBe(0);
+  expect(await chart(page)).toBe(1);
+});
+
+test("a narrow screen gives a v13 desk the width; the chart opens from its header and Escape gives the desk back", async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 700 });
   await open(page, RESEARCH);
   await expect(page.getByTestId("nx-research")).toBeVisible();
-  expect((await box(page, "nx-margin")).width).toBeGreaterThanOrEqual(999);
-  await expect(page.getByTestId("nx-pane")).toBeHidden();
+  if (!(await isDesk(page))) test.skip(true, "Research has moved to the stage");
+  expect((await box(page, "nx-margin")).width).toBeGreaterThanOrEqual(1000 - 49);
   await page.getByTestId("nx-chart-toggle").click();
+  await expect(page.getByTestId("nx-margin")).toBeHidden();
   await expect(page.getByTestId("nx-pane")).toBeVisible();
-  const pane = await box(page, "nx-pane");
-  expect(pane.width).toBeGreaterThanOrEqual(480);
-  expect(pane.x + pane.width).toBeGreaterThanOrEqual(999);
   await page.keyboard.press("Escape");
-  await expect(page.getByTestId("nx-pane")).toBeHidden();
+  await expect(page.getByTestId("nx-margin")).toBeVisible();
 });
 
 test.describe("phone", () => {
@@ -128,12 +114,13 @@ test.describe("phone", () => {
     }
   });
 
-  test("a desk page scrolls as a page: the chart strip leaves a bar, 'Larger' grows it, and nothing scrolls sideways", async ({ page }) => {
+  test("a v13 desk page scrolls as a page: the chart strip leaves a bar, 'Larger' grows it, and nothing scrolls sideways", async ({ page }) => {
     await open(page, "/coast?place=port-592");
     await expect(page.getByTestId("nx-coast")).toBeVisible();
+    if (!(await isDesk(page))) test.skip(true, "My Coast has moved to the stage");
     const work = page.getByTestId("nx-work");
     const strip = await box(page, "nx-pane");
-    expect(strip.y).toBeGreaterThanOrEqual(51);
+    expect(strip.y).toBeGreaterThanOrEqual(0);
     await work.evaluate((el) => el.scrollTo(0, 600));
     await expect.poll(async () => (await box(page, "nx-pane")).y).toBeLessThan(0);
     const toggle = page.getByTestId("nx-pane-toggle");
@@ -168,10 +155,11 @@ test("the chart's own buttons zoom and bring the page's view back; names keep cl
   const zoom = () => page.evaluate(() => (window as unknown as { __nxChart: { camera: { zoom: number } } }).__nxChart.camera.zoom);
   const controls = page.getByTestId("nx-chart-controls");
   await expect(controls).toBeVisible();
+  // the prototype's 40 px buttons on a wide screen (a phone shows none: a pinch zooms)
   for (const b of await controls.getByRole("button").all()) {
     const r = (await b.boundingBox())!;
-    expect(r.width).toBeGreaterThanOrEqual(44);
-    expect(r.height).toBeGreaterThanOrEqual(44);
+    expect(r.width).toBeGreaterThanOrEqual(40);
+    expect(r.height).toBeGreaterThanOrEqual(40);
   }
   const z0 = await zoom();
   await page.getByTestId("nx-zoom-in").click();
@@ -199,76 +187,48 @@ test("the chart's own buttons zoom and bring the page's view back; names keep cl
   expect(await chart(page)).toBe(1);
 });
 
-test("a page change is sequenced: the old page is gone before the new one comes in, and the nav underline travels", async ({ page }) => {
+test("a page change is sequenced: the old page is gone before the new one is drawn, and the nav pill stays on its section", async ({ page }) => {
   await open(page, "/today?place=port-592");
   await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
-  // every view-transition animation of the page, recorded as it starts
+  await expect(page.getByTestId("nx-today")).toBeVisible();
+  // every frame, whether the two pages were ever on screen together (v14: the old object shrinks away on the ghost
+  // layer, which is inert and unnamed; the new page arrives with the camera)
   await page.evaluate(() => {
-    const w = window as unknown as { __vt: Array<{ pseudo: string; delay: number; duration: number; name: string }> };
-    w.__vt = [];
-    const seen = new WeakSet<Animation>();
+    const w = window as unknown as { __both: number; __frames: number };
+    w.__both = 0;
+    w.__frames = 0;
     const read = () => {
-      for (const a of document.getAnimations()) {
-        const e = a.effect as KeyframeEffect | null;
-        if (!e || seen.has(a) || !e.pseudoElement?.startsWith("::view-transition")) continue;
-        seen.add(a);
-        const t = e.getComputedTiming();
-        w.__vt.push({ pseudo: e.pseudoElement, delay: Number(t.delay), duration: Number(t.duration), name: (a as CSSAnimation).animationName ?? "" });
-      }
-      requestAnimationFrame(read);
+      w.__frames += 1;
+      if (document.querySelector('[data-testid="nx-today"]') && document.querySelector('[data-testid="nx-explore"]')) w.__both += 1;
+      if (w.__frames < 240) requestAnimationFrame(read);
     };
     requestAnimationFrame(read);
   });
-  await page.getByTestId("nx-bar").getByRole("link", { name: "Explore" }).click();
+  await page.getByTestId("nx-menu-button").click();
+  await page.getByRole("navigation", { name: "More" }).getByRole("link", { name: "Explore the water" }).click();
   await expect(page.getByTestId("nx-explore")).toBeVisible();
-  await expect(page.getByTestId("nx-bar").getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
+  // Explore is Today's own data layers and time: Today stays the current section, its pill drawn once
+  await expect(page.getByTestId("nx-bar").getByRole("link", { name: "Today" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("nx-bar").locator(".n12-dest-on")).toHaveCount(1);
-  const vt = await page.evaluate(() => (window as unknown as { __vt: Array<{ pseudo: string; delay: number; duration: number; name: string }> }).__vt);
-  const fades = (kind: string) => vt.filter((a) => a.pseudo.startsWith(`::view-transition-${kind}(`) && /fade/.test(a.name));
-  const out = fades("old"), incoming = fades("new");
-  expect(out.length).toBeGreaterThan(0);
-  expect(incoming.length).toBeGreaterThan(0);
-  // no double exposure: the new page's fade starts no earlier than the old page's ends
-  const outEnds = Math.max(...out.map((a) => a.delay + a.duration));
-  const inStarts = Math.min(...incoming.map((a) => a.delay));
-  expect(inStarts).toBeGreaterThanOrEqual(outEnds);
-  expect(outEnds).toBeLessThanOrEqual(120);
-  expect(inStarts + Math.max(...incoming.map((a) => a.duration))).toBeLessThanOrEqual(320);
+  expect(await page.evaluate(() => (window as unknown as { __both: number }).__both)).toBe(0);
+  // a leaving object's copy is inert and named nothing
+  expect(await page.locator("#nx-stage-ghosts [data-testid]").count()).toBe(0);
 });
 
-test("changing the pane's size moves the columns without resizing the map more than once", async ({ page }) => {
-  await open(page, RESEARCH);
+test("a layer chip fades the depth contours in and out without resizing the map, and the chart says what it draws", async ({ page }) => {
+  await open(page, "/today?place=port-592");
   await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
-  await page.evaluate(() => {
-    const w = window as unknown as { __resizes: number; __widths: number[]; __nxChart: { map: { resize: (...a: unknown[]) => unknown } } };
-    w.__resizes = 0;
-    w.__widths = [];
-    const m = w.__nxChart.map;
-    const o = m.resize.bind(m);
-    m.resize = (...a: unknown[]) => {
-      w.__resizes += 1;
-      return o(...a);
-    };
-    const pane = document.querySelector(".n12-pane")!;
-    const read = () => {
-      w.__widths.push(Math.round(pane.getBoundingClientRect().width));
-      if (w.__widths.length < 80) requestAnimationFrame(read);
-    };
-    requestAnimationFrame(read);
-  });
-  const before = (await box(page, "nx-pane")).width;
-  await page.getByTestId("nx-pane-divider").focus();
-  await page.keyboard.press("ArrowLeft");
-  await expect.poll(async () => (await box(page, "nx-pane")).width).toBeGreaterThan(719);
-  await expect(page.getByTestId("nx-work")).not.toHaveAttribute("data-pane-resizing", "");
-  await expect.poll(() => page.evaluate(() => (window as unknown as { __widths: number[] }).__widths.length)).toBeGreaterThanOrEqual(60);
-  const { widths, resizes } = await page.evaluate(() => {
-    const w = window as unknown as { __resizes: number; __widths: number[] };
-    return { widths: w.__widths, resizes: w.__resizes };
-  });
-  // the column travelled through widths between the two sizes (it did not cut), and the map resized once
-  expect(widths.some((v) => v > before + 20 && v < 700)).toBe(true);
-  expect(resizes).toBe(1);
+  await countResizes(page);
+  const chip = page.getByRole("group", { name: "Map layers" }).locator('[data-layer="depth"]');
+  const drawn = () => page.getByTestId("nx-sheet").getAttribute("data-layers");
+  const was = (await chip.getAttribute("aria-pressed")) === "true";
+  await expect.poll(async () => ((await drawn()) ?? "").split(" ").includes("depth")).toBe(was);
+  await chip.click();
+  await expect(chip).toHaveAttribute("aria-pressed", String(!was));
+  await expect.poll(async () => ((await drawn()) ?? "").split(" ").includes("depth")).toBe(!was);
+  await chip.click();
+  await expect.poll(async () => ((await drawn()) ?? "").split(" ").includes("depth")).toBe(was);
+  expect(await resizes(page)).toBe(0);
   expect(await chart(page)).toBe(1);
 });
 
@@ -324,6 +284,8 @@ test.describe("phone sheet requests", () => {
 test("a desk header condenses once and stays: scrolling through its threshold never flips it back and forth or moves the page under the reader", async ({ page }) => {
   {
     await open(page, RESEARCH);
+    await expect(page.getByTestId("nx-research")).toBeVisible();
+    if (!(await isDesk(page))) test.skip(true, "Research has moved to the stage");
     const header = page.locator("[data-nx-desk-header]");
     await expect(header).toBeVisible();
     const scroller = page.locator(".n12-margin-scroll");
@@ -381,6 +343,7 @@ test.describe("phone desk header and sheet", () => {
     await open(page, RESEARCH);
     const title = page.getByTestId("research-title");
     await expect(title).toBeVisible();
+    if (!(await isDesk(page))) test.skip(true, "Research has moved to the stage");
     const header = (await page.locator("[data-nx-desk-header]").boundingBox())!;
     expect((await title.boundingBox())!.width).toBeGreaterThanOrEqual(header.width * 0.9);
   });
@@ -412,25 +375,22 @@ test.describe("phone desk header and sheet", () => {
 
 test.describe("phone chart", () => {
   for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
-    test(`at ${size.width} px the chart's buttons are one small column that covers neither the port's name nor the scale`, async ({ browser }) => {
+    test(`at ${size.width} px the chart strip shows no buttons and no scale (a pinch zooms), and the port is named above the sheet`, async ({ browser }) => {
       const ctx = await browser.newContext({ viewport: size, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
       const page = await ctx.newPage();
       await open(page, "/explore?place=port-592");
       await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
-      const controls = page.getByTestId("nx-chart-controls");
-      await expect(controls).toBeVisible();
-      // zoom is a pinch on a phone: its buttons are not shown; what is shown is 44 px wide and named
       await expect(page.getByTestId("nx-zoom-in")).toBeHidden();
-      const c = (await controls.boundingBox())!;
-      expect(c.width).toBeLessThanOrEqual(48);
-      expect(c.height).toBeLessThanOrEqual(92);
-      for (const b of await controls.getByRole("button").all()) if (await b.isVisible()) expect(await b.getAttribute("aria-label")).toBeTruthy();
-      // above the resting sheet, inside the chart
+      await expect(page.locator(".n12-scale")).toBeHidden();
+      // the layers are one button named "Layers"; the sections a tab bar
+      await expect(page.getByRole("button", { name: "Layers", exact: true })).toBeVisible();
+      await expect(page.getByTestId("nx-tabs")).toBeVisible();
       const sheetTop = (await page.getByTestId("nx-margin").boundingBox())!.y;
-      expect(c.y + c.height).toBeLessThanOrEqual(sheetTop);
-      const hit = (r: { x: number; y: number; width: number; height: number } | null) => !!r && r.x < c.x + c.width && r.x + r.width > c.x && r.y < c.y + c.height && r.y + r.height > c.y;
-      expect(hit(await page.locator(".n12-port-name-focus").boundingBox())).toBe(false);
-      expect(hit(await page.locator(".n12-scale").boundingBox())).toBe(false);
+      const name = page.locator(".n12-port-name-focus");
+      await expect(name).toBeVisible();
+      const r = (await name.boundingBox())!;
+      expect(r.y + r.height).toBeLessThanOrEqual(sheetTop);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(size.width);
       await ctx.close();
     });
   }
@@ -439,6 +399,8 @@ test.describe("phone chart", () => {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: { cookies: [], origins: [] } });
     const page = await ctx.newPage();
     await open(page, RESEARCH);
+    await expect(page.getByTestId("nx-research")).toBeVisible();
+    if (!(await isDesk(page))) test.skip(true, "Research has moved to the stage");
     const subject = page.getByTestId("nx-pane-subject");
     await expect(subject).toBeVisible();
     // never the saved port's name over a chart that shows a station
@@ -464,13 +426,19 @@ test("an unticked checkbox is an empty ruled box and a ticked one is filled, in 
         el.remove();
         return out;
       };
-      const paper = getComputedStyle(app).backgroundColor;
+      // v14: the box is paper (the objects' ground) on a chart that fills the screen
+      const probe = document.createElement("div");
+      probe.style.background = "var(--paper)";
+      app.appendChild(probe);
+      const paper = getComputedStyle(probe).backgroundColor;
+      probe.remove();
       return { off: mk(false), on: mk(true), paper };
     }, mode);
     expect(r.off.appearance).toBe("none");
     expect(r.off.bg, mode).toBe(r.paper);
     expect(r.on.bg, mode).not.toBe(r.paper);
-    expect(r.off.border, mode).toBe(r.on.bg);
+    // ruled when unticked, filled in the pressable colour when ticked
+    expect(r.off.border, mode).not.toBe(r.paper);
     expect(r.off.w).toBe(20);
   }
 });
@@ -481,6 +449,7 @@ test.describe("phone desk page, before the chart pane has arrived", () => {
     for (const url of [RESEARCH, "/coast?place=port-592"]) {
       await open(page, url);
       await expect(page.getByTestId("nx-pane")).toBeVisible();
+      if (!(await isDesk(page))) continue; // a stage page's sheet is fixed over the chart: it never waits for the pane
       const tops = await page.evaluate(() => {
         const main = document.querySelector<HTMLElement>(".n12-margin")!;
         const pane = document.querySelector<HTMLElement>(".n12-pane")!;

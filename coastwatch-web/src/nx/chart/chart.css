@@ -6,6 +6,9 @@
 .n12-frame { position: relative; width: 100%; height: 100%; background: var(--depth-8); container-type: size; container-name: n12-frame; }
 .n12-map, .n12-poster, .n12-overlay, .n12-still, .n12-underlay { position: absolute; inset: 0; overflow: hidden; }
 .n12-underlay { pointer-events: none; }
+/* the ambient deep-water texture (DeepWater.tsx): only where the water is deeper than 200 m, hidden while the camera moves */
+.n12-deep { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity var(--dur-deep) linear; mix-blend-mode: var(--deep-blend); mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; }
+.n12-deep[data-on="1"] { opacity: var(--deep-opacity); }
 .n12-static-field { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; image-rendering: pixelated; }
 .n12-map .maplibregl-canvas { outline: none; }
 .n12-map .maplibregl-canvas:focus-visible { outline: 2.5px solid var(--ultra); outline-offset: -3px; }

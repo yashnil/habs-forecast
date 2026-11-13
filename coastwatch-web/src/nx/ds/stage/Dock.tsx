@@ -22,6 +22,8 @@ export interface DockProps extends Data {
   width?: number;
   /** The camera keeps the place above the dock (default true). */
   cover?: boolean;
+  /** Stand in the flow of its container instead of floating on the chart (the catalog). */
+  inline?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -31,23 +33,24 @@ export interface DockProps extends Data {
  * delivery, Explore's time). It springs up 70 ms after the page's ticket and the camera keeps the place above it. On a
  * phone it is a block in the sheet after the ticket, ruled off above.
  */
-export function Dock({ label, align = "left", width, cover = true, className, children, ...data }: DockProps) {
+export function Dock({ label, align = "left", width, cover = true, inline = false, className, children, ...data }: DockProps) {
   const ref = useRef<HTMLElement>(null);
   const id = useId();
   const phone = usePhone();
   const here = useArrival(0);
   useLeaveGhost(ref, 0.97);
-  useChartCover(`dock${id}`, ref, "bottom", !phone && cover);
+  useChartCover(`dock${id}`, ref, "bottom", !phone && cover && !inline);
   const style = width ? ({ "--dock-w": `${width}px` } as React.CSSProperties) : undefined;
   return (
     <motion.section
       ref={ref}
       className={cx(s.dock, className)}
       data-align={align}
+      data-inline={inline || undefined}
       style={style}
       aria-label={label}
-      initial={phone ? false : { opacity: 0, y: 28 }}
-      animate={phone || here ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+      initial={phone || inline ? false : { opacity: 0, y: 28 }}
+      animate={phone || inline || here ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
       transition={{ default: dockIn, opacity: { ...ticketOpacity, delay: dockIn.delay } }}
       data-nx-dock=""
       {...data}
@@ -66,6 +69,8 @@ export interface PassProps extends Data {
   stub: ReactNode;
   /** px; the trip's stub is 320, Research's 340. */
   stubWidth?: number;
+  /** Stand in the flow of its container instead of floating on the chart (the catalog). */
+  inline?: boolean;
   className?: string;
   stubClassName?: string;
   /** The main part: the equation and the figures, or the plot. */
@@ -77,20 +82,20 @@ export interface PassProps extends Data {
  * part holds the work, its perforated stub on the right the one result and the one filled action; a notch on its top
  * edge sits under its place. Springs up with the camera; on a phone the stub comes first and the main follows.
  */
-export function Pass({ label, at, stub, stubWidth = 320, className, stubClassName, children, ...data }: PassProps) {
+export function Pass({ label, at, stub, stubWidth = 320, inline = false, className, stubClassName, children, ...data }: PassProps) {
   const ref = useRef<HTMLElement>(null);
   const caretRef = useRef<HTMLSpanElement>(null);
   const id = useId();
   const phone = usePhone();
   const here = useArrival(0);
   useLeaveGhost(ref, 0.97);
-  useChartCover(`pass${id}`, ref, "bottom", !phone);
+  useChartCover(`pass${id}`, ref, "bottom", !phone && !inline);
   const lon = at?.lon ?? null, lat = at?.lat ?? null;
   useLayoutEffect(() => {
     const el = ref.current, c = caretRef.current;
     if (!el || !c) return;
     const place = (f: ChartFrame | null) => {
-      if (!f || lon == null || lat == null || isPhoneNow()) {
+      if (!f || lon == null || lat == null || isPhoneNow() || inline) {
         c.style.display = "none";
         return;
       }
@@ -104,15 +109,16 @@ export function Pass({ label, at, stub, stubWidth = 320, className, stubClassNam
     };
     place(getFrame());
     return onFrame(place);
-  }, [lon, lat]);
+  }, [lon, lat, inline]);
   return (
     <motion.section
       ref={ref}
       className={cx(s.pass, className)}
       style={{ "--stub-w": `${stubWidth}px` } as React.CSSProperties}
+      data-inline={inline || undefined}
       aria-label={label}
-      initial={phone ? false : { opacity: 0, y: 28 }}
-      animate={phone || here ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+      initial={phone || inline ? false : { opacity: 0, y: 28 }}
+      animate={phone || inline || here ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
       transition={{ default: dockIn, opacity: { ...ticketOpacity, delay: dockIn.delay } }}
       data-nx-pass=""
       {...data}
