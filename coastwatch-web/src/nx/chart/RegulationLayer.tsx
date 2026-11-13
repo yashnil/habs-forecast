@@ -51,6 +51,32 @@ export function extentLabel(e: NoticeExtent, wide: boolean): string {
 }
 
 type Box = { x: number; y: number; width: number; height: number };
+
+/**
+ * A regulation label's box without a layout per frame: its size is measured once per class and words (getBBox forces
+ * a layout, and the layer places a dozen labels on every frame of a flight), its place read from its own attributes.
+ */
+const sizes = new Map<string, { w: number; h: number; asc: number }>();
+export function regTextBox(el: SVGTextElement): Box {
+  const x = parseFloat(el.getAttribute("x") || "0"), y = parseFloat(el.getAttribute("y") || "0");
+  const key = `${el.getAttribute("class")}|${el.textContent}`;
+  let m = sizes.get(key);
+  if (!m) {
+    const b = el.getBBox();
+    m = { w: b.width, h: b.height, asc: y - b.y };
+    if (b.width) sizes.set(key, m);
+  }
+  const anchor = el.getAttribute("text-anchor");
+  const left = anchor === "end" ? x - m.w : anchor === "middle" ? x - m.w / 2 : x;
+  return { x: left, y: y - m.asc, width: m.w, height: m.h };
+}
+/** A drawn limit line's box from its own path ("M x,y H x2"). */
+export function regLineBox(el: SVGPathElement): Box | null {
+  const m = /M(-?[\d.]+),(-?[\d.]+)H(-?[\d.]+)/.exec(el.getAttribute("d") || "");
+  if (!m) return null;
+  const a = parseFloat(m[1]), y = parseFloat(m[2]), b = parseFloat(m[3]);
+  return { x: Math.min(a, b), y, width: Math.abs(b - a), height: 0 };
+}
 const overlap = (a: Box, b: Box, gap = 3) => a.x < b.x + b.width + gap && a.x + a.width + gap > b.x && a.y < b.y + b.height + gap && a.y + a.height + gap > b.y;
 
 /** What regulation's lettering keeps clear of, in frame px. */
@@ -127,7 +153,7 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
         if (!el) return null;
         el.textContent = text;
         set(el, { x, y, "text-anchor": anchor });
-        const b = (el as SVGTextElement).getBBox();
+        const b = regTextBox(el as SVGTextElement);
         if (!b.width || b.x < x0 - 1 || b.x + b.width > freeR || b.y < yTop || b.y + b.height > yBot) return null;
         if (!land && blockers.some((k) => overlap(b, k))) return null;
         if (land && blockers.some((k) => overlap(b, k, 6))) return null;
