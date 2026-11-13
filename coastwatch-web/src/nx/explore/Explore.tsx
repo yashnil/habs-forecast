@@ -654,7 +654,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
 
       {/* the layer group: what this view is, the data layers as chips, the legend (a ticket standing west, with no place) */}
-      <Ticket at={null} side="west" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
+      <Ticket at={null} side="west" edge="gutter" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
         <TicketMain>
           <Micro as="p">Explore · {LAYER_LABEL[product.id]}</Micro>
           <h1 id="nx-explore-title" className={s.srOnly}>
