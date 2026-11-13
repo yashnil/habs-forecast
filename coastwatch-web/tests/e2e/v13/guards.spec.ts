@@ -259,6 +259,8 @@ test.describe("G3: hand-offs arrive", () => {
       ["gate-whale", /alert/i, /\/alerts\?place=port-592/, ["nx-alerts", /Moss Landing/]],
     ] as const) {
       await page.goto(`${OK}/today?place=${MOSS}`);
+      // v14: the gates are in the ticket's Record tab
+      await page.getByTestId("nx-today").getByRole("tab", { name: "Record" }).click();
       await expect(page.getByTestId("gate-sea")).toContainText("Waves", { timeout: 15_000 });
       const a = page.getByTestId("gate-list").locator(`a[href*="place=${MOSS}"]`).filter({ hasText: link }).first();
       await expect(a, `${gate}: a link matching ${link}`).toBeVisible();

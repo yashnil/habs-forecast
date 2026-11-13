@@ -68,3 +68,23 @@ export function phoneBounds(port: P, points: P[], maxKm = 70): Bounds {
     [e, n],
   ];
 }
+
+/**
+ * v14 Today (the approved synthesis): a RAMP reader's camera frames the port's whole whale zone, its limits drawn from
+ * the shore out at their real latitudes, with the open water west of the port; the ticket stands east of the port (the
+ * host brings the port to the ticket's edge). Readings near the port are kept in. Without a zone, the port's water.
+ */
+export function zoneBounds(port: P, zone: { north: number; south: number } | null, points: P[] = [], maxKm = 70): Bounds {
+  if (!zone) return todayBounds(port, points, { minHalfKm: 40 });
+  const near = points.filter((p) => distanceKm(port, p) <= maxKm);
+  // the zone, but never more than about 0.8° either side of the port (zone 4 runs to Lopez Point)
+  const n = Math.max(Math.min(zone.north + 0.04, port.lat + 0.8), ...near.map((p) => p.lat + 0.05));
+  const s = Math.min(Math.max(zone.south - 0.04, port.lat - 0.8), ...near.map((p) => p.lat - 0.05));
+  const latSpan = n - s;
+  const e = port.lon + 0.06;
+  const w = Math.min(e - (latSpan * 1.25) / Math.cos((port.lat * Math.PI) / 180), ...near.map((p) => p.lon - 0.1));
+  return [
+    [w, s],
+    [e, n],
+  ];
+}

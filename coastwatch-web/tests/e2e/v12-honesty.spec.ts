@@ -22,6 +22,8 @@ async function seed(ctx: BrowserContext, record = MOSS) {
 }
 
 const margin = (page: Page) => page.getByTestId("nx-margin");
+/** v14: Today's ticket tabs (Status / Record / Fisheries / Notices) */
+const tab = (page: Page, name: string) => page.getByTestId("nx-today").getByRole("tab", { name: new RegExp(`^${name}`) }).click();
 
 /** T36: verdict words never appear, in any state. "open" is checked separately where it could be a status. */
 const FORBIDDEN = /\b(safe to|is safe|all clear|no-go|good day|good to fish|hotspot|best spot|recommended area|expected catch|price forecast|green light|low risk|toxin forecast|bloom risk)\b/i;
@@ -35,27 +37,36 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await expect(m.getByRole("heading", { level: 1 })).toHaveText("Season delayed to at least Jan 1, 2027");
     await expect(m.getByRole("button", { name: /^Official · CDFW · checked Oct 12 · not verified\. Open where this comes from$/ }).first()).toBeVisible();
     await expect(m).toContainText("Next whale assessment, subject to change");
+    // the marks' words: in the Record tab's legend
+    await tab(page, "Record");
     await expect(m).toContainText("Official, not verified");
   });
 
   test("a test is a named lab result with its age, in the domoic acid gate (T6, T8, T17)", async ({ page }) => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
+    // v14: the ticket's Status shows the test against its action level, with its age
+    await expect(m.getByTestId("nx-test-cell")).toContainText("Dungeness, highest 9.8 of 30 ppm");
+    await expect(m.getByTestId("nx-test-cell")).toContainText("6 samples · Monterey Bay · Sep 28 · 14 days ago");
     // v13: the test is held by the gate it informs (CDPH tests), with the highest result, the count and the age
+    await tab(page, "Record");
     const gate = m.getByTestId("gate-domoic");
     await expect(gate).toContainText("CDPH tests");
     await expect(gate).toContainText("Dungeness test, Monterey Bay, Sep 28: highest 9.8 of 30 ppm, 6 samples");
     await expect(gate).toContainText("14 days ago");
     await expect(m.getByRole("button", { name: /^Measured · CDPH · sampled Sep 28/ }).first()).toBeVisible();
-    // the figure set on the chart names the action level beside it, never a bare number
+    // the figure set on the chart (under Toxin tests) names the action level beside it, never a bare number
+    await page.locator('[data-testid="nx-layers"] [data-layer="toxin"]').click();
     await expect(page.locator("[data-nx-sounding=test]")).toContainText("of 30 ppm", { timeout: 15_000 });
   });
 
   test("the models row says algae, not toxin; C-HARM carries its mandatory words and is a past run (T3, T5, T9, T10)", async ({ page }) => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
+    // v14: the models sit quietly under the ticket's Notices tab, after the official notices
+    await tab(page, "Notices");
+    await expect(m).toContainText("Models · not toxin tests");
     await expect(m).toContainText("Algae higher than usual, not toxin");
-    await m.getByRole("button", { name: /^Models/ }).click();
     await expect(m).toContainText("P(pDA > 500 ng/L): a probability of conditions in the water, not toxin in seafood.");
     await expect(m).toContainText("C-HARM, past run");
   });
@@ -64,9 +75,12 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await page.goto(`${OK}/today?place=port-592`);
     const m = margin(page);
     await expect(m.getByRole("heading", { level: 1 })).toBeVisible();
-    // v13: CDFW's own clauses and the other test sites are lines of their gates; models and others are rows
-    for (const name of ["Models", "Others"]) await m.getByRole("button", { name: new RegExp(`^${name}`) }).click();
-    const text = await m.innerText();
+    // v13: CDFW's own clauses and the other test sites are lines of their gates; v14: every tab of the ticket
+    let text = await m.innerText();
+    for (const name of ["Fisheries", "Notices", "Record"]) {
+      await tab(page, name);
+      text += await m.innerText();
+    }
     expect(text).not.toMatch(FORBIDDEN);
     for (const w of ["Measured", "Model or prediction", "Official, not verified", "No view: no data, not a low value", "(old)"]) await expect(m).toContainText(w);
   });
@@ -75,7 +89,9 @@ test.describe("Today (Moss Landing, Dungeness commercial)", () => {
     await page.goto(`${FAILED}/today?place=port-592`);
     const m = margin(page);
     await expect(m.getByRole("heading", { level: 1 })).toHaveText("Season delayed to at least Jan 1, 2027");
+    await tab(page, "Record");
     await expect(m).toContainText("Records published Oct 12, 11:00 AM PT.");
+    await tab(page, "Notices");
     await expect(m).toContainText("Past C-HARM run only");
     expect(await m.innerText()).not.toMatch(FORBIDDEN);
   });

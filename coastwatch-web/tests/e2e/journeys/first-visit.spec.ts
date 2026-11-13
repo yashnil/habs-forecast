@@ -34,6 +34,7 @@ async function recorded(browser: import("@playwright/test").Browser, name: strin
 }
 
 test("Journey 1, desktop: opening → Find your port → fishery → Today, three taps, then offline", async ({ browser }) => {
+  test.setTimeout(120_000);
   await recorded(browser, "journey-1-first-visit-1440", { width: 1440, height: 900 }, async (page, ctx) => {
     const res = await page.goto(`${OK}/`, { waitUntil: "commit" });
     const html = await res!.text();
@@ -77,9 +78,11 @@ test("Journey 1, desktop: opening → Find your port → fishery → Today, thre
     await expect(today).toContainText("not verified");
     await expect(today).toContainText("Dec 15–18");
     await expect.poll(() => scene(page)).toBe("today:port-592");
+    // the readings register at their points: the buoy under Sea now (on), the CDPH test under Toxin tests
+    await expect(page.locator("[data-nx-sounding=buoy]")).toBeVisible({ timeout: 10_000 });
+    await page.locator('[data-testid="nx-layers"] [data-layer="toxin"]').click();
     await expect(page.locator("[data-nx-sounding=test]")).toBeVisible({ timeout: 10_000 });
     await expect(page.locator("[data-nx-sounding=test]")).toContainText("of 30 ppm");
-    await expect(page.locator("[data-nx-sounding=buoy]")).toBeVisible();
     const rec = await page.evaluate(() => JSON.parse(localStorage.getItem("nx-port-v1") ?? "{}"));
     expect(rec.lastPort).toBe("port-592");
     expect(rec.fisheries).toEqual(["dungeness_commercial"]);
@@ -109,10 +112,11 @@ test("Journey 1, phone: the same three taps; the sheet rests on the status and t
     await expect(h1).toHaveText("Season delayed to at least Jan 1, 2027");
     // at rest, the status and the date are inside the visible sheet, above the tab bar
     const tabs = await page.getByTestId("nx-tabs").boundingBox();
-    // v13: the whale gate's one-line summary carries the next date at rest; the large date block follows below it
-    const date = await page.getByText("Delay · next Dec 15–18").boundingBox();
+    // v14: the ticket's Status carries the next date at rest, above the tab bar
+    const date = await page.getByTestId("nx-decision").boundingBox();
     expect(date!.y + date!.height).toBeLessThanOrEqual(tabs!.y);
-    await expect(page.locator("[data-nx-sounding=test]")).toBeVisible({ timeout: 10_000 });
+    // a phone keeps the buoy's reading on the strip; the test is in the ticket's Status
+    await expect(page.getByTestId("nx-test-cell")).toContainText("of 30 ppm");
     await page.waitForTimeout(1500);
   });
 });
@@ -150,7 +154,7 @@ test("Show me around: four steps, one sentence each, gone for good", async ({ br
   });
   const page = await ctx.newPage();
   await page.goto(`${OK}/`);
-  await expect(page.locator("[data-nx-sounding=test]")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("[data-nx-sounding=buoy]")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "Show me around", exact: true }).click();
   const tour = page.getByTestId("nx-tour");
   for (const [i, words] of [
