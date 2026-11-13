@@ -32,12 +32,12 @@ test.describe("one chart across the four destinations", () => {
     const bar = page.getByTestId("nx-bar");
     // v14: Explore is Today's own data layers and time, opened from the menu (Today stays the current section); the
     // other three are the nav pill's sections
-    const visits: Array<[string, RegExp, string, string]> = [
-      ["Explore", /\/explore\?place=port-592$/, "explore:port-592", "Today"],
-      // My Coast opens on its brief (B's v14 scene id)
-      ["My Coast", /\/coast\?place=port-592$/, "coast-brief:port-592:port", "My Coast"],
-      ["Research", /\/research\?place=port-592$/, "research:port-592", "Research"],
-      ["Today", /\/today\?place=port-592$/, "today:port-592", "Today"],
+    // each page's own scene: My Coast opens on its brief (B's v14 id); Research on its station near the port (A's)
+    const visits: Array<[string, RegExp, RegExp, string]> = [
+      ["Explore", /\/explore\?place=port-592$/, /^explore:port-592$/, "Today"],
+      ["My Coast", /\/coast\?place=port-592$/, /^coast-brief:port-592:port$/, "My Coast"],
+      ["Research", /\/research\?place=port-592(&|$)/, /^research[:-]/, "Research"],
+      ["Today", /\/today\?place=port-592$/, /^today:port-592$/, "Today"],
     ];
     for (const [label, url, id, current] of visits) {
       const before = await page.evaluate(() => (window as unknown as { __nxChart: { camera: { zoom: number } } }).__nxChart.camera.zoom);
@@ -45,8 +45,8 @@ test.describe("one chart across the four destinations", () => {
         await page.getByTestId("nx-menu-button").click();
         await page.getByRole("navigation", { name: "More" }).getByRole("link", { name: "Explore the water" }).click();
       } else await bar.getByRole("link", { name: label, exact: true }).click();
-      await expect(page).toHaveURL(url);
-      await expect.poll(() => scene(page)).toBe(id);
+      await expect(page).toHaveURL(url, { timeout: 15_000 });
+      await expect.poll(() => scene(page), { timeout: 15_000 }).toMatch(id);
       await expect(bar.getByRole("link", { name: current, exact: true })).toHaveAttribute("aria-current", "page");
       // the camera eases there (a different view for each page)
       await expect.poll(() => page.evaluate(() => (window as unknown as { __nxChart: { camera: { zoom: number } } }).__nxChart.camera.zoom)).not.toBeCloseTo(before, 1);

@@ -618,6 +618,23 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   }, [vp?.width, vp?.height]);
 
   useEffect(() => onMarksChange(schedule), [schedule]);
+  // what a page drew on the chart and asked lettering to keep clear of can change without the camera moving (a
+  // transect arriving after its reading): the names are placed again when those shapes change
+  useEffect(() => {
+    let last = "";
+    const t = window.setInterval(() => {
+      const f = frameRefLatest.current;
+      if (!f) return;
+      const sig = drawnObstacles(f.project)
+        .map((r) => `${Math.round(r.x0)},${Math.round(r.y0)},${Math.round(r.x1)},${Math.round(r.y1)}`)
+        .join(";");
+      if (sig !== last) {
+        last = sig;
+        schedule();
+      }
+    }, 250);
+    return () => window.clearInterval(t);
+  }, [schedule]);
   // what the chart draws, kept current: a chip switched, regulation arriving or leaving (RegulationLayer's event)
   useEffect(() => {
     let r = 0;
