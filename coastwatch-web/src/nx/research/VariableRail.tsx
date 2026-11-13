@@ -24,7 +24,27 @@ export type RailRow = {
  * short at the foot: a reported 0; short at the head: rejected; a dot: visited, this variable not measured),
  * with the window framed. So "is there any pDA here, and when" is answered before a range is guessed.
  */
-export function VariableRail({ rows, drawTicks = true, selected, onSelect, extent, win, now, stationName }: { rows: RailRow[]; /** the ticks are drawn in the browser (their box is always there): as HTML they are 8 KB a row */ drawTicks?: boolean; selected: ObsVariableId; onSelect: (v: ObsVariableId) => void; extent: [number, number]; win: [number, number]; now: number; stationName: string }) {
+export function VariableRail({
+  rows,
+  drawTicks = true,
+  selected,
+  onSelect,
+  extent,
+  win,
+  now,
+  stationName,
+  list = false,
+}: {
+  rows: RailRow[];
+  /** the ticks are drawn in the browser (their box is always there): as HTML they are 8 KB a row */ drawTicks?: boolean;
+  selected: ObsVariableId;
+  onSelect: (v: ObsVariableId) => void;
+  extent: [number, number];
+  win: [number, number];
+  now: number;
+  stationName: string;
+  /** v14: a plain list of buttons (the record's "Measured here"), the variable tabs being the page's radiogroup */ list?: boolean;
+}) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const span = Math.max(1, extent[1] - extent[0]);
   const pct = (t: number) => Math.min(100, Math.max(0, ((t - extent[0]) / span) * 100));
@@ -37,7 +57,7 @@ export function VariableRail({ rows, drawTicks = true, selected, onSelect, exten
     refs.current[n]?.focus();
   };
   return (
-    <div className={s.rail} role="radiogroup" aria-label={`Variable measured at ${stationName}`} data-testid="research-rail">
+    <div className={s.rail} role={list ? "group" : "radiogroup"} aria-label={list ? `What ${stationName} has measured, and when` : `Variable measured at ${stationName}`} data-testid="research-rail">
       {rows.map((r, i) => {
         const on = r.a.v === selected;
         const last = r.a.last;
@@ -52,13 +72,14 @@ export function VariableRail({ rows, drawTicks = true, selected, onSelect, exten
               refs.current[i] = el;
             }}
             type="button"
-            role="radio"
-            aria-checked={on}
-            tabIndex={on ? 0 : -1}
+            role={list ? undefined : "radio"}
+            aria-checked={list ? undefined : on}
+            aria-current={list && on ? "true" : undefined}
+            tabIndex={list || on ? 0 : -1}
             className={s.railRow}
             onClick={() => onSelect(r.a.v)}
-            onKeyDown={key(i)}
-            data-testid={`rail-${r.a.v}`}
+            onKeyDown={list ? undefined : key(i)}
+            data-testid={list ? `avail-${r.a.v}` : `rail-${r.a.v}`}
             data-empty={r.a.withValue === 0 || undefined}
           >
             <span className={s.railName}>
