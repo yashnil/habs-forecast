@@ -71,6 +71,7 @@
 .lead { height: auto !important; min-height: 0; padding: 0 !important; font-size: var(--fs-11) !important; }
 .nl li { font-weight: var(--w5); line-height: 1.4; }
 .nl strong { font-weight: var(--w6); }
+.differ { display: block; margin-top: 2px; font-size: var(--fs-11); font-weight: var(--w6); color: var(--coral-ink); }
 .areas { margin-top: var(--s-12); }
 .pick {
   display: grid; grid-template-columns: 10px 1fr; gap: var(--s-8); align-items: baseline; width: 100%; min-height: var(--target);
