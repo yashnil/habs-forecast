@@ -61,12 +61,14 @@ export function CoastMap({ port, fishery, gates, sea }: { port: ShellPort | null
       priority: 70,
       leader: true,
       offset: phone ? 14 : 22,
-      anchors: ["bottom-right", "right", "bottom", "bottom-left", "left", "top-left", "top-right"],
+      // on a phone the water is west of the buoy and the strip is narrow: the tag goes there first
+      anchors: phone ? ["bottom-left", "left", "top-left", "bottom", "top"] : ["bottom-right", "right", "bottom", "bottom-left", "left", "top-left", "top-right"],
       label: `Buoy ${buoy.id}, measured ${day(buoy.at)} ${time(buoy.at)}: ${waves ? `waves ${buoy.waveFt!.toFixed(1)} ft${buoy.periodS != null ? ` at ${Math.round(buoy.periodS)} s` : ""}` : `wind ${Math.round(buoy.windKt!)} kt`}${water != null ? `, water ${water} °F` : ""}`,
       content: (
         <div className={s.tag} data-compact={compact || undefined}>
           <Micro glyph="measured">
-            Buoy {buoy.id} · {time(buoy.at)}
+            Buoy {buoy.id}
+            {phone ? "" : ` · ${time(buoy.at)}`}
           </Micro>
           <p className={s.tagFig}>
             {waves ? buoy.waveFt!.toFixed(1) : Math.round(buoy.windKt!)} <small>{waves ? `ft${buoy.periodS != null ? ` at ${Math.round(buoy.periodS)} s` : ""}` : `kt${buoy.windDir ? ` ${buoy.windDir}` : ""}`}</small>
