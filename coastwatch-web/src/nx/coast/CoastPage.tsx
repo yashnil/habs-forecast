@@ -142,7 +142,7 @@ export function CoastPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <CoastMap port={port} fishery={fishery} gates={gates} sea={sea} view={view} />
+      <CoastMap port={port} fishery={fishery} gates={gates} sea={sea} />
       <PageLayout mode="stage" paneKey="coast" chartLabel={port?.name} phoneMap={trip ? 0.42 : 0.4} />
       <article className={s.page} data-testid="nx-coast" data-view={view}>
         {trip ? (
@@ -160,7 +160,12 @@ export function CoastPage() {
             sea={sea}
             saved={saved}
             onGates={() => setGatesOpen(true)}
-            onTrip={() => setView("trip")}
+            onTrip={() => {
+              // one surface carries the page's header per view: the brief's ticket leaves (its copy shrinking to the pin)
+              // without the mark, so only the trip's strip has it
+              document.querySelectorAll("[data-coast-brief] [data-nx-desk-header]").forEach((el) => el.removeAttribute("data-nx-desk-header"));
+              setView("trip");
+            }}
           />
         )}
 
@@ -208,7 +213,7 @@ function CoastBrief({
   const rec = fishery && audienceOf(fishery) === "recreational";
   return (
     <>
-      <Ticket key={port?.key ?? "none"} at={port ? { lon: port.lon, lat: port.lat } : null} anchorY={120} width={404} labelledBy="coast-title" className={s.ticket}>
+      <Ticket key={port?.key ?? "none"} at={port ? { lon: port.lon, lat: port.lat } : null} anchorY={120} width={404} labelledBy="coast-title" className={s.ticket} data-coast-brief="">
         <TicketMain className={s.ticketMain}>
           <div className={s.head} data-nx-desk-header="">
             <Micro>{kind ? `My Coast · ${kind}` : "My Coast"}</Micro>
