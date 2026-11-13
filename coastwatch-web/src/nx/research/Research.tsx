@@ -1252,7 +1252,13 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                   <div ref={measuredRef} className={x.measured} data-testid="research-main" data-empty={empty ? "" : undefined}>
                     {empty ? (
                       <div className={x.empty}>
-                        <Micro glyph="none">Not collected in this range</Micro>
+                        {/* the source on the heading's row, so the actions keep to one row under any font's metrics */}
+                        <div className={x.emptyTop}>
+                          <Micro glyph="none">Not collected in this range</Micro>
+                          <a href={st.source_url} target="_blank" rel="noreferrer" className={x.emptySource} data-testid="empty-source">
+                            The record at SCCOOS ERDDAP ↗
+                          </a>
+                        </div>
                         <h2 className={x.emptyH}>
                           {LABEL[focus]} at {st.name}
                         </h2>
@@ -1275,9 +1281,6 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                               Open {neighbour.station.name}
                             </Button>
                           ) : null}
-                          <Button variant="quiet" href={st.source_url} external data-testid="empty-source">
-                            The record at SCCOOS ERDDAP
-                          </Button>
                         </ButtonGroup>
                       </div>
                     ) : !drawn || chartH === 0 ? (

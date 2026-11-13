@@ -132,6 +132,11 @@
 .emptyH { margin: 0; font-size: var(--fs-18); line-height: 1.2; letter-spacing: -0.02em; }
 .emptyP { margin: 0; color: var(--ink-2); font-size: var(--fs-13); line-height: 1.4; }
 .emptyActions { margin-top: var(--s-4); }
+.emptyTop { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-2) var(--s-16); align-self: stretch; }
+.emptySource {
+  font-size: var(--fs-13); font-weight: var(--w6); color: var(--ultra-deep);
+  text-decoration: underline dashed; text-underline-offset: 4px; text-decoration-thickness: 1.5px;
+}
 
 /* ------------------------------------------------------------ a panel over the pass's main part: the sample record, the tools */
 .panel {
@@ -176,11 +181,16 @@
 .visitHead { margin-bottom: 2px; }
 .visitList { display: contents; }
 .visit div { display: flex; justify-content: space-between; gap: var(--s-12); font-size: var(--fs-13); }
-.visit dt { color: var(--ink-2); }
+.visit dt { min-width: 0; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .visit dd { margin: 0; font-weight: var(--w7); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .visit dd small { font-weight: var(--w5); color: var(--ink-2); font-size: var(--fs-13); }
-.acts { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s-14); }
-.acts .recordBtn { flex: 1 0 auto; padding-left: var(--s-16); }
+/* the record and the source on one row at every width and with any font's metrics: the button takes what is left */
+.acts { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 var(--s-12); }
+.acts .recordBtn { min-width: 0; padding-left: var(--s-14); }
+.acts .recordBtn > span:first-of-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 641px) {
+  .pass .stub { padding-left: var(--s-24); padding-right: var(--s-20); }
+}
 
 /* ------------------------------------------------------------ shorter screens: the card fits without scrolling (design issue 3) */
 @media (max-height: 820px) and (min-width: 641px) {
@@ -210,8 +220,9 @@
   .tabsArea { margin-left: calc(-1 * var(--s-10)); }
 }
 @media (max-width: 1240px) and (min-width: 641px) {
-  .pass .stub { padding-left: var(--s-24); padding-right: var(--s-20); }
-  .acts { gap: 0 var(--s-12); }
+  /* a 312 px stub: the record takes the row, the source link stands under it (as the prototype at this width) */
+  .acts { grid-template-columns: minmax(0, 1fr); }
+  .pass .acts > a { justify-self: start; height: 32px; min-height: 32px; }
   .rr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
