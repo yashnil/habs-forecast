@@ -1157,8 +1157,9 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     <section ref={pageRef} className={x.page} data-testid="nx-research" data-station={st.station_id} data-var={focus} data-layout="stage">
       <PageLayout mode="stage" phoneMap={0.42} chartLabel={st.name} />
       <MapLayers page="research" defaults={{ toxin: true }} />
-      {/* the port pill names the station's area, as the prototype ("Near Santa Cruz") */}
-      <PortLabel text={st.nearest_port_name ? `Near ${st.nearest_port_name}` : null} />
+      {/* the port pill keeps the reader's port or the link's place (the v13 hand-off); with neither, it names the
+          station's area as the prototype does ("Near Santa Cruz") */}
+      <PortLabel text={!place && !port && st.nearest_port_name ? `Near ${st.nearest_port_name}` : null} />
       <ChartScene scene={scene} />
       <StationMarks
         stations={stations.map((y) => ({
