@@ -43,6 +43,7 @@ export const KEYS: KeyEntry[] = [
   local("nx-coast-v1", "personal", "The fishery you last planned for on My Coast"),
   // ---------------------------------------------------------------- trips and vessel economics (My Coast)
   local("nx-trip-v1:", "personal", "Your saved trips, vessels and their costs and prices (My Coast's worksheet)"),
+  local("nx-trips-v1:", "personal", "Your trips: plans, dates, limits, economics, what Neritic showed when you planned and rechecked, and what happened"),
   local("cw-trip-checks-v1:", "personal", "Trip checklist ticks from an earlier version", { legacy: true }),
   local("cw-sea-limits-v1", "personal", "Your own wind and sea limits from an earlier version", { legacy: true }),
   // ---------------------------------------------------------------- alerts on this device
@@ -58,6 +59,7 @@ export const KEYS: KeyEntry[] = [
   local("nx-today-saved-v1", "offline", "Which ports' Today pages are saved for offline use, and when"),
   cache("neritic-pack-", "offline", "Pages, records and chart pictures saved for use without a connection"),
   local("neritic-pack-saved-", "offline", "When an offline pack from an earlier version was saved", { legacy: true }),
+  cache("neritic-trips-v1", "offline", "The trips page and its code, so your trips open without a connection"),
   cache("neritic-kept-v1", "offline", "Briefings kept for offline use in an earlier version", { legacy: true }),
   local("cw-kept-v1", "offline", "The list of briefings kept in an earlier version", { legacy: true }),
   // ---------------------------------------------------------------- preferences

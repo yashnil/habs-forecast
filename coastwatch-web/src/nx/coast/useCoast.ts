@@ -54,6 +54,31 @@ function readChoice(): string {
   return defaultFishery(readPortRecord().fisheries) ?? "";
 }
 
+/** The whole stored record ({ fishery, plan }), or {} where storage is blocked or holds something else. */
+export function readRecord(): Record<string, unknown> {
+  try {
+    const raw = window.localStorage.getItem(COAST_KEY);
+    const v = raw ? (JSON.parse(raw) as unknown) : null;
+    return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Write one field of the record and tell every view reading it. */
+export function writeRecordField(k: string, v: unknown) {
+  try {
+    window.localStorage.setItem(COAST_KEY, JSON.stringify({ ...readRecord(), [k]: v }));
+  } catch {
+    /* private window: this page view only */
+  }
+  listeners.forEach((l) => l());
+}
+
+export function subscribeCoast(l: () => void) {
+  return subscribe(l);
+}
+
 function subscribe(l: () => void) {
   listeners.add(l);
   const onStorage = (e: StorageEvent) => (e.key === COAST_KEY || e.key === null) && l();
@@ -71,7 +96,8 @@ export function useFishery(): [FisheryId | null | undefined, (f: FisheryId) => v
     // kept for this page view even where storage is blocked
     memo = f;
     try {
-      window.localStorage.setItem(COAST_KEY, JSON.stringify({ fishery: f }));
+      // the record also holds the planner's date and limits (./plan.ts): kept, only the fishery is replaced
+      window.localStorage.setItem(COAST_KEY, JSON.stringify({ ...readRecord(), fishery: f }));
     } catch {
       /* private window: this page view only */
     }

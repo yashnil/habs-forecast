@@ -1,0 +1,406 @@
+/* The departure timeline and the two-period comparison (v15, agent B). Tokens only: src/nx/ds/tokens.css. */
+
+.root {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-16);
+  margin-bottom: var(--s-8);
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+}
+.legend > span::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+.legWind::before {
+  background: var(--ink);
+}
+.legSeas::before {
+  background: var(--hatch-band), var(--paper);
+  border: var(--hair) solid var(--ink);
+}
+.legLimit::before {
+  height: 0 !important;
+  width: 14px !important;
+  border-top: var(--rule) dashed var(--coral);
+}
+.legNone::before {
+  background: var(--hatch-net);
+}
+
+/* the chart scrolls sideways inside itself; the page never does. The scale stays put beside it. */
+.frame {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.axis {
+  flex: none;
+  display: block;
+}
+.limitTick {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--coral-ink);
+}
+.scroll {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.list {
+  position: relative;
+  outline: none;
+}
+.list:focus-visible .hitFocus {
+  outline: 2px solid var(--focus);
+  outline-offset: -3px;
+}
+.svg {
+  display: block;
+}
+.hits {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+.hit {
+  cursor: pointer;
+}
+.hit:hover {
+  background: var(--sel);
+}
+
+.band {
+  fill: var(--paper);
+}
+.night .band {
+  fill: var(--paper-2);
+}
+.depMark {
+  fill: var(--ultra);
+}
+.colDay,
+.colHalf,
+.tick,
+.num,
+.tideText,
+.noneText,
+.limit text,
+.gust text {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.num,
+.gust text,
+.limit text,
+.tideText {
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.night .num,
+.night .gust text,
+.night .tideText {
+  stroke: var(--paper-2);
+}
+.colDay {
+  font-size: 15px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.colDep {
+  fill: var(--ultra);
+}
+.colHalf {
+  font-size: 13px;
+  fill: var(--ink-2);
+}
+.tick {
+  font-size: 11px;
+  fill: var(--ink-2);
+}
+.num {
+  font-size: 13px;
+  fill: var(--ink);
+}
+.noneText {
+  font-size: 12px;
+  fill: var(--ink-2);
+}
+.expired {
+  opacity: 0.55;
+}
+.none {
+  stroke: var(--rule-soft);
+}
+.hatchLine {
+  stroke: var(--ink-3);
+  stroke-width: 1.2;
+}
+
+.adv {
+  fill: var(--coral-hatch);
+  stroke: var(--coral);
+  stroke-width: 1;
+}
+
+.windBar {
+  fill: var(--ink);
+}
+/* the lower end is not stated ("light", "less than 10 kt"): drawn open at the bottom */
+.windOpen {
+  fill: var(--ink-2);
+}
+.over {
+  fill: var(--coral);
+}
+/* seas stay a forecast mark (hatched) under the part over the limit */
+.overSeas {
+  fill-opacity: 0.72;
+}
+.arrow {
+  width: 14px;
+  height: 14px;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  fill: none;
+}
+.gust line {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.gust text {
+  font-size: 11px;
+  fill: var(--ink-2);
+}
+.gustOver line {
+  stroke: var(--coral);
+}
+.gustOver text {
+  fill: var(--coral-ink);
+}
+
+.seasBar {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.seasHatch {
+  stroke: var(--hatch);
+  stroke-width: 1;
+}
+
+.tideBase {
+  stroke: var(--rule-soft);
+}
+.tideTick {
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
+}
+.tideText {
+  font-size: 11px;
+  fill: var(--ink-2);
+}
+
+.limit line {
+  stroke: var(--coral);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.limit text {
+  font-size: 11px;
+  fill: var(--coral-ink);
+}
+
+.picked {
+  fill: none;
+  stroke: var(--ultra);
+  stroke-width: 3;
+  rx: 2;
+}
+
+.hint {
+  min-height: 1.4em;
+  margin: var(--s-6) 0 0;
+  font-size: var(--type-body);
+  color: var(--ink-2);
+}
+
+/* the focused period */
+.detail {
+  margin-top: var(--s-12);
+}
+.detailHead {
+  display: grid;
+  gap: var(--s-2);
+}
+.detailName {
+  margin: 0;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.detailWind {
+  margin: 0;
+  font-size: var(--type-head);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+}
+.detailNone {
+  margin: 0;
+  color: var(--ink-2);
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-8) var(--s-24);
+  margin: var(--s-12) 0 0;
+}
+.facts > div {
+  display: grid;
+  gap: var(--s-2);
+}
+.facts dt {
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.flags {
+  display: grid;
+  gap: var(--s-4);
+  margin: var(--s-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.flags li {
+  padding-left: var(--s-12);
+  border-left: var(--rule) solid var(--coral);
+}
+.flagOver {
+  color: var(--coral-ink);
+}
+.flagAdv {
+  color: var(--ink);
+}
+.quote {
+  margin: var(--s-12) 0 0;
+  padding-left: var(--s-12);
+  border-left: var(--hair) solid var(--rule-soft);
+  color: var(--ink-2);
+  font-size: var(--type-small);
+}
+.quoteName {
+  font-weight: 600;
+  color: var(--ink);
+}
+.link {
+  color: var(--ultra);
+  text-underline-offset: 3px;
+}
+
+.source {
+  margin-top: var(--s-16);
+}
+.sourceText {
+  display: grid;
+  gap: var(--s-6);
+  margin: 0;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+
+/* the comparison */
+.compare {
+  margin-top: var(--s-16);
+  padding: var(--s-16) 0 0;
+  border-top: var(--rule) solid var(--ink);
+}
+.cmpHead,
+.cmpRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--s-8);
+  align-items: baseline;
+}
+.cmpName {
+  margin: 0;
+  font-weight: 600;
+}
+.cmpVs {
+  color: var(--ink-3);
+}
+.cmpRows {
+  display: grid;
+  margin: var(--s-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.cmpRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "label label" "a b";
+  padding: var(--s-8) 0;
+  border-bottom: var(--hair) solid var(--rule-soft);
+}
+.cmpLabel {
+  grid-area: label;
+  font-size: var(--type-small);
+  color: var(--ink-2);
+}
+.cmpA,
+.cmpB {
+  font-size: var(--type-head);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.cmpA {
+  grid-area: a;
+}
+.cmpB {
+  grid-area: b;
+}
+.cmpSame {
+  margin: var(--s-12) 0 0;
+  font-size: var(--type-body);
+  color: var(--ink-2);
+}
+.cmpClear {
+  margin-top: var(--s-8);
+}
+
+@media (max-width: 480px) {
+  .cmpA,
+  .cmpB {
+    font-size: var(--type-body);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll {
+    scroll-behavior: auto;
+  }
+}

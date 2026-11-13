@@ -38,7 +38,7 @@ describe("Delete everything on this device", () => {
     expect([...d.session.keys()]).toEqual([]);
     // only the app's own code is left: it says nothing about the reader
     expect([...d.caches.keys()]).toEqual(["neritic-static-port-592"]);
-    expect(gone.caches.sort()).toEqual(["neritic-kept-v1", "neritic-pack-port-592"]);
+    expect(gone.caches.sort()).toEqual(["neritic-kept-v1", "neritic-pack-port-592", "neritic-trips-v1"]);
     expect(gone.failed).toEqual([]);
   });
 

@@ -1,0 +1,31 @@
+/* v15 planner fields: the when, the reader's own limits and the area. Tokens only. */
+.fields { display: grid; gap: var(--s-8); }
+.row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-8) var(--s-16); }
+.when { display: grid; gap: var(--s-4); min-width: 0; }
+.when[data-look="date"] { display: inline-flex; align-items: center; }
+.label { font: var(--w6) var(--fs-13) / 1.2 var(--font); color: var(--ink-2); }
+.opt { font-weight: var(--w5); color: var(--ink-2); }
+.date,
+.time,
+.area {
+  min-height: var(--target); padding: 0 var(--s-8); border: var(--hair) solid var(--rule-soft); border-radius: var(--r-ctl);
+  background: var(--paper); color: var(--ink); font: var(--w6) var(--fs-15) / 1.2 var(--font); font-variant-numeric: tabular-nums;
+}
+.date { min-width: 10.5em; }
+.time { min-width: 7em; }
+.area { width: 100%; font-weight: var(--w5); }
+.area::placeholder { color: var(--ink-2); }
+.date:focus-visible,
+.time:focus-visible,
+.area:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* the worksheet's strip: a date as quiet as the fishery's select beside it */
+.when[data-look="date"] .date {
+  min-height: 32px; min-width: 0; padding: 0 var(--s-2); border: 0; border-bottom: var(--rule) dashed var(--ultra); border-radius: var(--r-0);
+  background: transparent; font-size: var(--fs-13);
+}
+.more { margin-top: var(--s-2); }
+.note { margin: 0 0 var(--s-8); font-size: var(--fs-13); color: var(--ink-2); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 640px) {
+  .when[data-look="date"] .date { min-height: var(--target); }
+}

@@ -1,0 +1,88 @@
+/* v15 trips: the history and the Trip Workspace on the stage. Tokens only (src/nx/ds/tokens.css). */
+.page { display: contents; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- the ticket */
+.ticket { font-variant-numeric: tabular-nums; }
+/* the lead (heading, what changed, the next action) never gives way: the quieter stub scrolls instead */
+.ticket .main.main { flex: none; overflow: visible; }
+.ticket .stub.stub.stub { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: var(--s-12); }
+.mainInner { display: grid; gap: var(--s-16); }
+.mainInner[data-off] { opacity: 0.86; }
+
+/* ---------------------------------------------------------------- heading */
+.heading { display: grid; gap: var(--s-4); min-width: 0; }
+.stamp { display: flex; flex-wrap: wrap; color: var(--ink-2); }
+.stamp[data-state="planned"] .stampState { color: var(--ultra-deep); }
+.name { margin: 0; min-width: 0; font: var(--w7) var(--fs-18) / 1.25 var(--font); letter-spacing: -0.005em; }
+.nameButton {
+  display: block; max-width: 100%; min-height: 32px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left;
+  white-space: normal; overflow-wrap: anywhere; cursor: text; border-radius: var(--r-sm);
+}
+.nameButton:hover { text-decoration: underline dashed var(--ultra); text-underline-offset: 5px; }
+.nameButton:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.nameInput { width: 100%; min-height: 36px; padding: 0 var(--s-6); border: var(--hair) solid var(--ultra); border-radius: var(--r-sm); background: var(--paper); color: var(--ink); font: inherit; }
+.historyTitle { margin: 0; font: var(--w7) var(--fs-25) / 1.15 var(--font); }
+
+/* ---------------------------------------------------------------- since you planned: the one dominant part */
+.since { display: grid; gap: var(--s-10, 10px); padding-top: var(--s-16); border-top: var(--rule) solid var(--ink); }
+.sinceH { margin: 0; font: var(--w7) var(--fs-18) / 1.25 var(--font); }
+/* the feed's own quiet action lines up with the feed's text, as the links under it do */
+.since [data-testid="trip-recheck"] { padding-inline: 0; }
+.planned { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-16); margin: 0; }
+.inline.inline { min-height: var(--target); padding: 0; font-size: var(--fs-13); }
+/* planned vs actual (C): a figure not yet worked out reads as words, not as a control */
+.since [data-testid="pv-difference"] > span:only-child { padding: 0; border: 0; background: none; font: var(--w6) var(--fs-15) / 1.4 var(--font); color: var(--ink-2); }
+.cancelled { margin: 0; padding-top: var(--s-12); border-top: var(--hair) dashed var(--rule-soft); color: var(--ink-2); }
+
+/* ---------------------------------------------------------------- the next action */
+.next { display: grid; }
+.nextInner { display: grid; gap: var(--s-6); }
+.why { margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+
+/* ---------------------------------------------------------------- the quieter row */
+.rest { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--s-16); align-items: start; }
+.status { display: grid; gap: var(--s-4); min-width: 0; }
+.statusLine { display: flex; gap: var(--s-6); align-items: baseline; margin: 0; font: var(--w6) var(--fs-13) / 1.35 var(--font); color: var(--coral-ink); }
+.statusLine[data-verified] { color: var(--ink); }
+.aged { display: flex; gap: var(--s-6); align-items: baseline; margin: 0; font: var(--w6) var(--fs-13) / 1.35 var(--font); color: var(--ink-2); }
+.statusSub { margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+.src { font-size: var(--fs-13); color: var(--ultra); text-decoration: underline dashed; text-underline-offset: 3px; }
+.money { display: grid; gap: var(--s-2); justify-items: start; min-width: 0; }
+.moneyFig { margin: 0; font: var(--w7) var(--fs-25) / 1.15 var(--font); letter-spacing: -0.01em; }
+.menu { display: grid; justify-items: start; gap: var(--s-2); padding: var(--s-6) var(--s-8); }
+.quietActions { display: flex; flex-wrap: wrap; gap: 0 var(--s-16); }
+.local { display: flex; gap: var(--s-6); align-items: baseline; margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+.said { margin: 0; font-size: var(--fs-13); color: var(--coral-ink); }
+
+/* ---------------------------------------------------------------- the departure dock */
+/* the workspace ticket is 440px wide (Workspace.tsx; --ticket-w here inherits another value) and stands a margin (ds/stage .reserve: up to 10vw, at most 144px) in from the right: the dock
+   stops a gutter before it at every desk width */
+.dock.dock { width: min(760px, calc(100% - 440px - clamp(var(--gutter), 10vw, 144px) - 2 * var(--gutter))); max-height: min(54%, calc(100% - var(--stage-top) - var(--gutter))); overflow-y: auto; scroll-padding-bottom: var(--s-16); overscroll-behavior: contain; }
+.departures { display: grid; gap: var(--s-8); border-radius: var(--r-sm); outline: 2px solid transparent; outline-offset: 6px; transition: outline-color 180ms ease; }
+.departures[data-invite] { outline-color: var(--ultra); }
+.depHead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4) var(--s-12); }
+.depH { margin: 0; font: var(--w7) var(--fs-18) / 1.25 var(--font); }
+
+/* ---------------------------------------------------------------- edit */
+.edit { display: grid; gap: var(--s-16); }
+
+/* ---------------------------------------------------------------- empty: the chartroom */
+.empty { display: grid; justify-items: start; gap: var(--s-12); padding: var(--s-8) 0 var(--s-4); }
+.emptyArt { width: 100%; max-width: 280px; height: auto; margin-bottom: var(--s-4); }
+.iso { fill: none; stroke: var(--depth-5); stroke-width: 1.5; }
+.isoFaint { fill: none; stroke: var(--depth-3); stroke-width: 1.5; }
+.course { fill: none; stroke: var(--ultra); stroke-width: 2; stroke-dasharray: 6 6; }
+.portDot { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; }
+.markHollow { fill: var(--paper); stroke: var(--ultra); stroke-width: 2; }
+.emptyTitle { margin: 0; font: var(--w7) var(--fs-25) / 1.2 var(--font); letter-spacing: -0.01em; max-width: 16em; }
+
+@media (max-width: 640px) {
+  .rest { grid-template-columns: minmax(0, 1fr); }
+  .dock.dock { width: auto; max-height: none; overflow: visible; }
+  .next[data-pinned] {
+    position: sticky; bottom: 0; z-index: 3; margin: 0 calc(-1 * var(--gutter)); padding: var(--s-8) var(--gutter) var(--s-10, 10px);
+    border-top: var(--hair) solid var(--line); background: var(--paper);
+  }
+  /* pinned, the bar is the button alone: its reason stays for a screen reader */
+  .next[data-pinned] .why { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}

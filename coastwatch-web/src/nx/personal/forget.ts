@@ -8,7 +8,8 @@ import { emit, resetMemory } from "./store";
  * Deleting is not driven by the registry: it removes EVERY key this origin holds in localStorage and
  * sessionStorage and every cache, so a key nobody registered is still deleted. Two things stay, both said
  * on the page: a signed-in account's session (`sb-…`; signing out ends it) and the app's own code cache
- * (`neritic-static-…`, nothing about the reader). The registry (keys.ts) names what each key holds.
+ * (`neritic-static-…`, nothing about the reader). Your trips go with everything else: every `nx-trips-v1:` key
+ * (trips, snapshots, the index) and the trips page kept for offline use (`neritic-trips-v1`). The registry (keys.ts) names what each key holds.
  */
 export type Device = {
   local: Storage | null;
@@ -49,6 +50,27 @@ async function cacheNames(d: Device): Promise<string[]> {
   }
 }
 
+/**
+ * Modules that hold a copy of stored values in memory (the trips store's index, a hook's snapshot) register here, so
+ * "Delete everything" leaves nothing behind in this page view either. Returns the unregister function.
+ */
+const forgetHooks = new Set<() => void>();
+export function onForget(reset: () => void): () => void {
+  forgetHooks.add(reset);
+  return () => {
+    forgetHooks.delete(reset);
+  };
+}
+function runForgetHooks() {
+  for (const f of forgetHooks) {
+    try {
+      f();
+    } catch {
+      // one module's reset never stops the others
+    }
+  }
+}
+
 export type Forgotten = { local: string[]; session: string[]; caches: string[]; /** what could not be removed, by name */ failed: string[] };
 
 /** Remove everything Neritic keeps in this browser. Safe to call twice; never throws. */
@@ -79,6 +101,7 @@ export async function forgetEverything(d: Device = thisDevice()): Promise<Forgot
   // values a blocked browser was holding in memory for this page view
   resetPortMemory();
   resetMemory();
+  runForgetHooks();
   emit();
   return out;
 }
@@ -99,6 +122,7 @@ export function forgetStorage(d: Device = thisDevice()): string[] {
   }
   resetPortMemory();
   resetMemory();
+  runForgetHooks();
   return gone;
 }
 
