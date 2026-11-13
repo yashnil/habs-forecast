@@ -19,6 +19,13 @@ export interface TabsProps<T extends string> {
   className?: string;
   /** id prefix for the panels, so `TabPanel` can name its tab */
   idBase?: string;
+  /**
+   * `tabs` (default): a tablist whose tabs control `TabPanel`s. `radio`: a radiogroup of choices (Research's variables,
+   * which change the plot rather than show a panel); each is `role="radio"` with `aria-checked`.
+   */
+  semantics?: "tabs" | "radio";
+  /** data-testid per item ("rail-pDA"), from its id */
+  testIdPrefix?: string;
 }
 
 /** The tab and panel ids for a Tabs `idBase` and item id. */
@@ -28,7 +35,8 @@ export const tabIds = (base: string, id: string) => ({ tab: `${base}-tab-${id}`,
  * Tabs (v14 README §3): a tablist with roving focus (Left/Right, Home/End) and counts after the words ("Fisheries 8").
  * Panels are `TabPanel`s; the chosen one fades and slides in (220 ms).
  */
-export function Tabs<T extends string>({ label, items, value, onChange, look = "seg", className, idBase }: TabsProps<T>) {
+export function Tabs<T extends string>({ label, items, value, onChange, look = "seg", className, idBase, semantics = "tabs", testIdPrefix }: TabsProps<T>) {
+  const radio = semantics === "radio";
   const auto = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const base = idBase ?? auto;
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -47,7 +55,7 @@ export function Tabs<T extends string>({ label, items, value, onChange, look = "
     refs.current[items.indexOf(next)]?.focus();
   };
   return (
-    <div className={cx(look === "seg" ? s.seg : s.tabs, className)} role="tablist" aria-label={label}>
+    <div className={cx(look === "seg" ? s.seg : s.tabs, className)} role={radio ? "radiogroup" : "tablist"} aria-label={label}>
       {items.map((it, i) => {
         const on = it.id === value;
         const ids = tabIds(base, it.id);
@@ -58,10 +66,12 @@ export function Tabs<T extends string>({ label, items, value, onChange, look = "
               refs.current[i] = el;
             }}
             type="button"
-            role="tab"
+            role={radio ? "radio" : "tab"}
             id={ids.tab}
-            aria-selected={on}
-            aria-controls={ids.panel}
+            aria-selected={radio ? undefined : on}
+            aria-checked={radio ? on : undefined}
+            aria-controls={radio ? undefined : ids.panel}
+            data-testid={testIdPrefix ? `${testIdPrefix}${it.id}` : undefined}
             tabIndex={on ? 0 : -1}
             disabled={it.disabled}
             onClick={() => onChange(it.id)}

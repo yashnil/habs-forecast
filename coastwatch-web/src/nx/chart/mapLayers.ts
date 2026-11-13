@@ -46,6 +46,8 @@ const subscribe = (l: () => void) => {
   };
 };
 export const getMapLayers = () => state;
+/** A drawing layer (RegulationLayer) arrived on or left the chart: the host writes `data-layers` again. */
+export const LAYERS_DRAWN_EVENT = "nx-layers-drawn";
 /** For code outside React (the chart host, depth labels). */
 export const subscribeMapLayers = subscribe;
 

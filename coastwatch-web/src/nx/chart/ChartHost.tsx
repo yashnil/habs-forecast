@@ -21,7 +21,7 @@ import { DeepWater } from "./DeepWater";
 import { useChartHighlight } from "./highlight";
 import { anchorShift, getCameraAnchor, onCameraAnchor, type CameraAnchor } from "./anchor";
 import { flightDelay, noteFlight } from "./flight";
-import { getMapLayers, useMapLayer } from "./mapLayers";
+import { getMapLayers, LAYERS_DRAWN_EVENT, subscribeMapLayers, useMapLayer } from "./mapLayers";
 import { useRegulation } from "./regulation";
 
 /** The place lit from outside the chart (highlight.ts): a ring at its point, redrawn with the camera. */
@@ -66,7 +66,7 @@ function ChartControls() {
   );
 }
 
-type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView } };
+type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView; anchor?: CameraAnchor | null; target?: Camera } };
 
 const bezier = (t: number) => {
   // cubic-bezier(EASE_FLIGHT) solved for y at x = t: the camera's curve between places (slow out, long glide in)
@@ -233,9 +233,15 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     const m = mapRef.current;
     const on: string[] = [];
     if (m && m.getLayer("contours") && m.getLayoutProperty("contours", "visibility") !== "none" && getMapLayers().on.depth) on.push("depth");
-    if (el.querySelector(".n12-reg-wrap")) on.push("regulation");
-    const marked = new Set(allMarks().filter((e) => e.el.style.visibility !== "hidden").map((e) => e.spec.layer).filter(Boolean) as string[]);
-    for (const id of marked) if (!on.includes(id)) on.push(id);
+    if (el.querySelector(".n12-reg-wrap:not([data-leaving])")) on.push("regulation");
+    // a page's marks (buoys, tests, stations): a layer is drawn while its marks are on the chart (they mount with the
+    // chip and leave with it); a layer that has nothing to draw at this place counts as drawn while its chip is on
+    const layers = getMapLayers();
+    const registered = new Set(allMarks().map((e) => e.spec.layer).filter(Boolean) as string[]);
+    for (const id of Object.keys(layers.on)) {
+      if (id === "depth" || id === "regulation" || on.includes(id)) continue;
+      if (registered.has(id) || layers.on[id]) on.push(id);
+    }
     const v = on.join(" ");
     if (el.getAttribute("data-layers") !== v) el.setAttribute("data-layers", v);
   }, []);
@@ -524,7 +530,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const target = cameraFor(scene, vp, coverRef.current, getCameraAnchor());
       const m = mapRef.current;
       const w = window as Win;
-      if (w.__nxChart) w.__nxChart.scene = scene.id;
+      if (w.__nxChart) {
+        w.__nxChart.scene = scene.id;
+        // for tests: the anchor and the camera the scene asked for
+        w.__nxChart.anchor = getCameraAnchor();
+        w.__nxChart.target = target;
+      }
       document.documentElement.dataset.nxScene = scene.id;
       if (m) {
         // the view's own zoom limits (Explore keeps the coast in sight), else the chart's
@@ -597,6 +608,21 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   }, [vp?.width, vp?.height]);
 
   useEffect(() => onMarksChange(schedule), [schedule]);
+  // what the chart draws, kept current: a chip switched, regulation arriving or leaving (RegulationLayer's event)
+  useEffect(() => {
+    let r = 0;
+    const later = () => {
+      cancelAnimationFrame(r);
+      r = requestAnimationFrame(writeLayers);
+    };
+    const off = subscribeMapLayers(later);
+    window.addEventListener(LAYERS_DRAWN_EVENT, later);
+    return () => {
+      off();
+      window.removeEventListener(LAYERS_DRAWN_EVENT, later);
+      cancelAnimationFrame(r);
+    };
+  }, [writeLayers]);
 
   // the chart's own buttons arrive with the map: the furniture's height is measured against them. What changed while
   // the map was loading (a ticket's anchor, a dock's cover) is applied now, as a refinement of the same view.

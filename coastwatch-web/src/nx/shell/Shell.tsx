@@ -14,6 +14,7 @@ import { useUnread } from "@/nx/alerts/useInbox";
 import { Icon } from "@/nx/ds/Icon";
 import { navPill } from "@/nx/ds/motion";
 import { LayerChips } from "@/nx/ds/synth/Chips";
+import { usePortLabel } from "./portLabel";
 
 export { DESTINATIONS, activeDestination, withPlace } from "./destinations";
 
@@ -141,6 +142,9 @@ export function Shell() {
   const { port, key } = useCurrentPort();
   const active = activeDestination(pathname, saved);
   const portName = port?.name ?? null;
+  // a page about a station names its area ("Near Santa Cruz"); otherwise the port
+  const context = usePortLabel();
+  const pill = context ?? portName;
   // undefined until the device's inbox has been read (after hydration): nothing is shown until then
   const unread = useUnread() ?? 0;
   // the sliding pill is drawn once hydrated (the saved port, which decides the section at `/`, is known only then);
@@ -159,9 +163,9 @@ export function Shell() {
             <BrandMark />
             <span className="nx-brand-name">Neritic</span>
           </Link>
-          <button type="button" className="nx-brand-port" onClick={openPortFinder} data-testid="nx-port-control" aria-haspopup="dialog" aria-label={portName ? `Port: ${portName}. Change port` : "Find your port"}>
+          <button type="button" className="nx-brand-port" onClick={openPortFinder} data-testid="nx-port-control" aria-haspopup="dialog" aria-label={context ? `${context}. Choose a port` : portName ? `Port: ${portName}. Change port` : "Find your port"}>
             <span className="n12-port-control-name" suppressHydrationWarning>
-              {portName ?? "Find your port"}
+              {pill ?? "Find your port"}
             </span>
             <Chevron />
           </button>

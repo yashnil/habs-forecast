@@ -7,6 +7,7 @@ import { layerIn, layerOut, portRing } from "@/nx/ds/motion";
 import { useFollows } from "@/nx/alerts/useInbox";
 import { useHomePortKey } from "@/nx/shell/port";
 import { useMapLayerState } from "./mapLayers";
+import { day } from "@/nx/ds/format";
 import { onFrame, registerMark, updateMark, type MarkSpec } from "./runtime";
 import { useScene } from "./scene";
 import { CANYON_AXIS, CANYON_NAME, WATER_NAMES } from "./features";
@@ -109,6 +110,16 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
   const home = useHomePortKey() ?? null;
   const follows = useFollows();
   const followed = new Set((follows ?? []).map((f) => f.port));
+  const since = new Map((follows ?? []).map((f) => [f.port, f.since]));
+  /** the line under a port's name: the current followed port says since when (the synthesis), else home or following */
+  const tagOf = (key: string, isFocus: boolean): string | null => {
+    if (isFocus && followed.has(key)) {
+      const s0 = since.get(key);
+      return s0 && !Number.isNaN(Date.parse(s0)) ? `Following since ${day(s0)}` : "Following";
+    }
+    if (key === home) return "Home port";
+    return followed.has(key) ? "Following" : null;
+  };
   const hydrated = useHydrated();
   const named = scene?.named ?? [];
   // a port the page already names (a station "Monterey Wharf" 1 km from Monterey) is left off, unless it is the reader's
@@ -135,17 +146,20 @@ export function ChartLabels({ ports }: { ports: ChartPort[] }) {
         lon: p.lon,
         lat: p.lat,
         priority: isFocus ? 100 : p.pilot ? 30 : 20,
-        minZoom: isFocus ? 0 : p.pilot ? 6.4 : 8.6,
+        // the neighbouring ports are named from a coast's scale (Shelter Cove, Point Arena, Bodega Bay …), as the
+        // synthesis does; the collision pass drops whichever do not fit
+        minZoom: isFocus ? 0 : p.pilot ? 5.8 : 6.6,
         keep: isFocus,
         pointRadius: isFocus ? 14 : 6,
         offset: isFocus ? 10 : 6,
         // the current port is named on the water side (its ticket stands to the east); the others on the land side
-        anchors: isFocus ? (["left", "top-left", "bottom-left", "right", "top-right", "bottom-right"] as const).slice() : (["right", "left", "top-right", "bottom-right", "top-left", "bottom-left"] as const).slice(),
+        // names stand on the water side of the coast, as on the synthesis chart (the current port's ticket stands east)
+        anchors: (["left", "top-left", "bottom-left", "right", "top-right", "bottom-right"] as const).slice(),
         point: <PortSymbol focus={isFocus} followed={followed.has(p.key)} />,
         content: (
-          <span className={isFocus ? "n12-port-name n12-port-name-focus" : "n12-port-name"}>
-            {p.name}
-            {p.key === home ? <span className="n12-port-tag">Home port</span> : followed.has(p.key) && !isFocus ? <span className="n12-port-tag">Following</span> : null}
+          <span className="n12-port-label">
+            <span className={isFocus ? "n12-port-name n12-port-name-focus" : "n12-port-name"}>{p.name}</span>
+            {tagOf(p.key, isFocus) ? <span className="n12-port-tag">{tagOf(p.key, isFocus)}</span> : null}
           </span>
         ),
         label: p.name,
