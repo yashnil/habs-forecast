@@ -50,6 +50,11 @@ export type MarkSpec = Omit<PlaceItem, "x" | "y" | "width" | "height"> & {
   maxZoom?: number;
   /** a leader line and dot from the point to the box (a sounding placed away from its buoy) */
   leader?: boolean;
+  /**
+   * the map layer the mark belongs to (v14: "sea" for a buoy, "toxin" for a test or a station; mapLayers.ts): it is
+   * drawn only while that layer's chip is on, fading in and out
+   */
+  layer?: string;
 };
 
 type Entry = { spec: MarkSpec; el: HTMLElement; w: number; h: number };

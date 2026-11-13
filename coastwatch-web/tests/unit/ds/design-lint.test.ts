@@ -9,6 +9,7 @@ const rules = (file: string, text: string) => lint(file, text).map((f) => f.rule
 const CSS = "src/nx/ds/Thing.module.css";
 const TSX = "src/nx/ds/Thing.tsx";
 const PAGE = "src/app/(neritic)/today/Page.tsx";
+const PAGE_STYLE = "src/nx/today/today.module.css";
 
 describe("design lint: good samples pass", () => {
   it("a token-only stylesheet is clean", () => {
@@ -52,33 +53,37 @@ describe("design lint: each rule catches its tell", () => {
     expect(rules(TSX, `export const s = { color: "hsl(10 50% 50%)" };`)).toContain("colour-literal");
   });
 
-  it("text under 14 px", () => {
-    expect(rules(CSS, ".a { font-size: 12px; }")).toContain("font-size");
-    expect(rules(CSS, ".a { font: 600 13px/1 var(--font-sans); }")).toContain("font-size");
-    expect(rules(CSS, ".a { font-size: 0.75rem; }")).toContain("font-size");
-    expect(rules(TSX, `export const A = () => <text fontSize={11}>x</text>;`)).toContain("font-size");
-    expect(rules(TSX, `export const s = { fontSize: "12px" };`)).toContain("font-size");
+  // v14 (README §8): the synthesis scale starts at 11 px
+  it("text under 11 px", () => {
+    expect(rules(CSS, ".a { font-size: 10px; }")).toContain("font-size");
+    expect(rules(CSS, ".a { font: 600 10px/1 var(--font-sans); }")).toContain("font-size");
+    expect(rules(CSS, ".a { font-size: 0.6rem; }")).toContain("font-size");
+    expect(rules(TSX, `export const A = () => <text fontSize={10}>x</text>;`)).toContain("font-size");
+    expect(rules(TSX, `export const s = { fontSize: "9px" };`)).toContain("font-size");
+    expect(rules(CSS, ".a { font-size: 11px; }")).not.toContain("font-size");
   });
 
-  it("shadows, backdrop filters and gradients", () => {
-    expect(rules(CSS, ".a { box-shadow: 0 1px 2px var(--ink); }")).toContain("decoration");
+  // v14: objects float with the token shadows; backdrop filters and raw gradients stay out (hatches are tokens)
+  it("backdrop filters and raw gradients", () => {
     expect(rules(CSS, ".a { backdrop-filter: blur(8px); }")).toContain("decoration");
     expect(rules(CSS, ".a { background: linear-gradient(90deg, var(--ink), var(--paper)); }")).toContain("decoration");
-    expect(rules(TSX, `export const s = { boxShadow: "inset 3px 0 0 var(--ink)" };`)).toContain("decoration");
+    expect(rules(TSX, `export const s = { backdropFilter: "blur(4px)" };`)).toContain("decoration");
+    expect(rules(CSS, ".a { box-shadow: var(--shadow); background: var(--hatch-ultra); }")).toEqual([]);
   });
 
-  it("radius not from tokens, and pills", () => {
-    expect(rules(CSS, ".a { border-radius: 8px; }")).toContain("radius");
-    expect(rules(CSS, ".a { border-radius: 999px; }")).toContain("radius");
-    expect(rules(CSS, ".a { border-top-left-radius: 50%; }")).toContain("radius");
-    expect(rules(TSX, `export const s = { borderRadius: 4 };`)).toContain("radius");
+  it("a page's radius not from tokens", () => {
+    expect(rules(PAGE_STYLE, ".a { border-radius: 8px; }")).toContain("radius");
+    expect(rules(PAGE_STYLE, ".a { border-radius: 999px; }")).toContain("radius");
+    expect(rules(PAGE, `export const s = { borderRadius: 4 };`)).toContain("radius");
+    expect(rules(PAGE_STYLE, ".a { border-radius: var(--r-card) var(--r-card) 0 0; }")).toEqual([]);
   });
 
-  it("uppercase, small caps and letter-spaced labels", () => {
-    expect(rules(CSS, ".a { text-transform: uppercase; }")).toContain("caps");
-    expect(rules(CSS, ".a { font-variant: all-small-caps; }")).toContain("caps");
-    expect(rules(CSS, ".a { letter-spacing: 0.12em; }")).toContain("caps");
-    expect(rules(TSX, `export const s = { textTransform: "uppercase" };`)).toContain("caps");
+  it("a page's capitals and spaced labels (the design system's Micro and the chart's map voice may)", () => {
+    expect(rules(PAGE_STYLE, ".a { text-transform: uppercase; }")).toContain("caps");
+    expect(rules(PAGE_STYLE, ".a { font-variant: all-small-caps; }")).toContain("caps");
+    expect(rules(PAGE_STYLE, ".a { letter-spacing: 0.12em; }")).toContain("caps");
+    expect(rules(PAGE, `export const s = { textTransform: "uppercase" };`)).toContain("caps");
+    expect(rules(CSS, ".micro { text-transform: uppercase; letter-spacing: var(--track-micro); }")).toEqual([]);
   });
 
   it("emoji", () => {
@@ -115,18 +120,19 @@ describe("design lint: each rule catches its tell", () => {
     expect(rules(CSS, ".a { font: 400 14px/1 ui-monospace, monospace; }")).toContain("font-family");
   });
 
-  it("spacing off the scale", () => {
-    expect(rules(CSS, ".a { padding: 7px 10px; }")).toContain("space-scale");
-    expect(rules(CSS, ".a { gap: 6px; }")).toContain("space-scale");
+  it("a page's spacing off the 2 px grid", () => {
+    expect(rules(PAGE_STYLE, ".a { padding: 7px 10px; }")).toContain("space-scale");
+    expect(rules(PAGE_STYLE, ".a { gap: 5px; }")).toContain("space-scale");
+    expect(rules(PAGE_STYLE, ".a { gap: 6px 14px; padding: var(--s-28); }")).toEqual([]);
   });
 
   it("allowances need a rule and a reason; with one, the line passes", () => {
-    expect(rules(CSS, "/* design-lint-allow space-scale: hairline optical nudge for the rail */\n.a { margin: -1px; }")).toEqual([]);
-    expect(rules(CSS, "/* design-lint-allow */\n.a { margin: -1px; }")).toEqual(expect.arrayContaining(["allow-reason", "space-scale"]));
+    expect(rules(PAGE_STYLE, "/* design-lint-allow space-scale: hairline optical nudge for the rail */\n.a { margin: -1px; }")).toEqual([]);
+    expect(rules(PAGE_STYLE, "/* design-lint-allow */\n.a { margin: -1px; }")).toEqual(expect.arrayContaining(["allow-reason", "space-scale"]));
   });
 
   it("reports file and line", () => {
-    const [f] = lint(CSS, ".a {\n  color: var(--ink);\n  box-shadow: 0 0 2px var(--ink);\n}");
+    const [f] = lint(CSS, ".a {\n  color: var(--ink);\n  backdrop-filter: blur(2px);\n}");
     expect(f).toMatchObject({ file: CSS, line: 3, rule: "decoration" });
   });
 });

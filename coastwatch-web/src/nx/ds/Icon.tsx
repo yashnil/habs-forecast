@@ -21,7 +21,9 @@ export type IconName =
   | "offline"
   | "alert"
   | "plus"
-  | "minus";
+  | "minus"
+  | "menu"
+  | "recentre";
 
 const PATHS: Record<IconName, ReactNode> = {
   // a port on the chart: circled dot
@@ -118,6 +120,14 @@ const PATHS: Record<IconName, ReactNode> = {
   ),
   plus: <path d="M12 5.25v13.5M5.25 12h13.5" />,
   minus: <path d="M5.25 12h13.5" />,
+  menu: <path d="M4.75 7.25h14.5M4.75 12h14.5M4.75 16.75h14.5" />,
+  // back to the page's place: a ring with four ticks
+  recentre: (
+    <>
+      <circle cx="12" cy="12" r="5.75" />
+      <path d="M12 2.75v3.5M12 17.75v3.5M2.75 12h3.5M17.75 12h3.5" />
+    </>
+  ),
 };
 
 export const ICON_NAMES = Object.keys(PATHS) as IconName[];

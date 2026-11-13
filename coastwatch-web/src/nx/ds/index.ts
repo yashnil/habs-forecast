@@ -1,5 +1,6 @@
 /**
- * Neritic Chart component library (docs/coastwatch/v12/design-system/README.md section 9; reference in
+ * Neritic component library. v14 synthesis: docs/coastwatch/v14/design-system/README.md (tokens, Ticket, Dock, Pass,
+ * Sheet, buttons, chips, tabs, the rolling figure, the map layer API, motion). Earlier: v12 README section 9; reference in
  * components.md; living catalog at /system). v13 additions (layout, controls, states, the plot kit):
  * docs/coastwatch/v13/design-system/README.md. Import tokens.css once at the app root and put `fontVariables`
  * (./fonts) on <html>. fonts.ts is not re-exported here: it calls next/font, which belongs in a layout.
@@ -12,7 +13,7 @@ export { ChartModeRoot, usePortalContainer } from "./Root";
 export { cx, svgId, VisuallyHidden } from "./util";
 export { useMedia, usePhone, useElementWidth, PHONE_QUERY } from "./useMedia";
 export { Icon, ICON_NAMES, type IconName, type IconProps } from "./Icon";
-export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./Button";
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize, type ButtonGlyph } from "./Button";
 export { ButtonGroup, type ButtonGroupProps } from "./ButtonGroup";
 export { IconButton, type IconButtonProps } from "./IconButton";
 export { RangeControl, ScrubNumber, Disclosure, ToggleRow, Hint, type RangeControlProps, type ScrubNumberProps, type DisclosureProps, type ToggleRowProps, type HintProps } from "./Controls";
@@ -45,3 +46,14 @@ export { Brush, clampWindow, frameEdges, MIN_FRAME, type BrushProps, type BrushH
 export { Field, Stepper, Segmented, Toggle, type FieldProps, type StepperProps, type SegmentedProps, type ToggleProps } from "./worksheet/Inputs";
 export { Waterfall, SensitivityTable, type WaterfallProps, type SensitivityTableProps } from "./worksheet/Waterfall";
 export { layoutWaterfall, type WaterfallStep, type WaterfallLayout, type Bar, type StepKind } from "./worksheet/waterfallLayout";
+
+/* ---------------------------------------------------------------- v14 synthesis (docs/coastwatch/v14/design-system/README.md) */
+export { Ticket, TicketMain, TicketStub, type TicketProps, type Place } from "./stage/Ticket";
+export { Dock, Pass, type DockProps, type PassProps } from "./stage/Dock";
+export { Sheet, setSheetRest, useSheetRest } from "./stage/Sheet";
+export { Glyph, Micro, StampLine, Slot, Pennant, WindArrow, LimitGauge, GLYPH_WORDS, type GlyphKind } from "./synth/Grammar";
+export { FollowButton, type FollowButtonProps } from "./synth/FollowButton";
+export { Chip, LayerChips, type ChipProps } from "./synth/Chips";
+export { Tabs, TabPanel, tabIds, type TabsProps, type TabItem } from "./synth/Tabs";
+export { RollingNumber, type RollingNumberProps } from "./synth/RollingNumber";
+export { MapLayers, useMapLayers, useMapLayer, setMapLayer, toggleMapLayer, MAP_LAYERS, type MapLayerId, type MapLayerDef } from "@/nx/chart/mapLayers";
