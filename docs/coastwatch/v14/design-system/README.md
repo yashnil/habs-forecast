@@ -243,3 +243,29 @@ jumps, and the shader holds still. The v13 presets remain for v13 parts.
 - **Spacing:** a page's spacing sits on the 2 px grid up to 64 px, or uses a `--s-*` token.
 - Everything else is unchanged from v12 §3 and v13 §10: token colours, Figtree, the motion presets, truth words, ISO
   dates, and the page rules.
+
+## 9. Changes after the pages were built
+
+- **Ticket composition (the prototype's).** The camera stands the lead ticket a tenth of the screen in from its side
+  (144 px at 1440, never under the gutter), its top level with the nav (94 px) when it clears the layer chips, and its
+  place a stub's length from its edge at `anchorY`. `top` asks for a lower ticket; `edge="gutter"` stands a panel at the
+  gutter instead (Explore's place-less layers panel). A re-keyed ticket moves the camera once.
+- **Page change.** A refinement arriving while the flight waits for the leaving object re-aims that flight and keeps
+  the wait, so the camera never moves under the shrinking ghost (measured across Research, Alerts, Today and My Coast:
+  ghost about 105–240 ms, camera from about 270 ms, the ticket at 62 % of the flight, the dock 70 ms after it, no frame
+  over 40 ms after the route's own render).
+- **Labels.** The current followed port says "Following since <date>"; neighbouring ports are named from a coast's
+  scale on the water side; the reader's port name gives way to what a page asked lettering to keep clear of (a transect,
+  a locator) and keeps its symbol; the whale-zone tag never covers a port name, and on a phone the zone's name is not
+  set at all (the line and the tint say it, as the prototype).
+- **`ChartRegulation advisory`**: `{ id, north, south, title, note }`, a health advisory's latitude band, hatched light
+  inside and heavier at its limits, named with the record's words and a "not verified" note. With the chip on and no
+  page spec, Regulation draws every whale-zone limit.
+- **`data-layers`** appears once the map has drawn and is rewritten on every chip change; a layer with page marks counts
+  while they are on the chart, one with nothing to draw at this place while its chip is on.
+- **`PortLabel`** (`<PortLabel text="Near Santa Cruz" />`) names the port pill's context on a page about a station.
+- **`Tabs semantics="radio"`** (a radiogroup with `aria-checked`) and `testIdPrefix`.
+- **The offline notice** on a stage page is a paper card of its own, between the brand and the nav where there is room,
+  else under the layer chips.
+- **Not drawn:** the prototype's dashed "NWS PZZ455 · out 10 nm" line. The app reads the NWS zone without its geometry
+  (`include_geometry=false`) and the zone's ends are names, not coordinates, so the line would be invented.

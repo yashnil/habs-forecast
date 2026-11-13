@@ -59,3 +59,4 @@ export { Tabs, TabPanel, tabIds, type TabsProps, type TabItem } from "./synth/Ta
 export { RollingNumber, type RollingNumberProps } from "./synth/RollingNumber";
 export { MapLayers, useMapLayers, useMapLayer, setMapLayer, toggleMapLayer, MAP_LAYERS, type MapLayerId, type MapLayerDef } from "@/nx/chart/mapLayers";
 export { Waterfall, Dumbbell, DatesLine, SeaBars, type WaterfallProps, type CascadeStep, type CascadeStepKind, type DumbbellProps, type DumbbellRow, type DumbbellEnd, type DatesLineProps, type SeaBarsProps, type SeaPeriod } from "./synth/charts";
+export { PortLabel } from "@/nx/shell/portLabel";

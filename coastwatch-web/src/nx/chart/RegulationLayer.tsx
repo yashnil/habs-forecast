@@ -1,10 +1,10 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef } from "react";
+import { AnimatePresence, motion, useIsPresent } from "motion/react";
+import { useEffect, useId, useRef } from "react";
 import { layerIn, layerOut, zoneDraw } from "@/nx/ds/motion";
 import { unproject } from "./mercator";
-import { useMapLayer } from "./mapLayers";
+import { LAYERS_DRAWN_EVENT, useMapLayer } from "./mapLayers";
 import { RAMP_BOUNDARIES, RAMP_ZONES, rampZoneAt, shoreLon, useRegulation, type ChartRegulationSpec, type NoticeExtent } from "./regulation";
 import { getFrame, onFrame, type ChartFrame } from "./runtime";
 
@@ -51,6 +51,32 @@ export function extentLabel(e: NoticeExtent, wide: boolean): string {
 }
 
 type Box = { x: number; y: number; width: number; height: number };
+
+/**
+ * A regulation label's box without a layout per frame: its size is measured once per class and words (getBBox forces
+ * a layout, and the layer places a dozen labels on every frame of a flight), its place read from its own attributes.
+ */
+const sizes = new Map<string, { w: number; h: number; asc: number }>();
+export function regTextBox(el: SVGTextElement): Box {
+  const x = parseFloat(el.getAttribute("x") || "0"), y = parseFloat(el.getAttribute("y") || "0");
+  const key = `${el.getAttribute("class")}|${el.textContent}`;
+  let m = sizes.get(key);
+  if (!m) {
+    const b = el.getBBox();
+    m = { w: b.width, h: b.height, asc: y - b.y };
+    if (b.width) sizes.set(key, m);
+  }
+  const anchor = el.getAttribute("text-anchor");
+  const left = anchor === "end" ? x - m.w : anchor === "middle" ? x - m.w / 2 : x;
+  return { x: left, y: y - m.asc, width: m.w, height: m.h };
+}
+/** A drawn limit line's box from its own path ("M x,y H x2"). */
+export function regLineBox(el: SVGPathElement): Box | null {
+  const m = /M(-?[\d.]+),(-?[\d.]+)H(-?[\d.]+)/.exec(el.getAttribute("d") || "");
+  if (!m) return null;
+  const a = parseFloat(m[1]), y = parseFloat(m[2]), b = parseFloat(m[3]);
+  return { x: Math.min(a, b), y, width: Math.abs(b - a), height: 0 };
+}
 const overlap = (a: Box, b: Box, gap = 3) => a.x < b.x + b.width + gap && a.x + a.width + gap > b.x && a.y < b.y + b.height + gap && a.y + a.height + gap > b.y;
 
 /** What regulation's lettering keeps clear of, in frame px. */
@@ -63,18 +89,32 @@ function stageBlockers(frameEl: Element | null | undefined): Box[] {
     .map((r) => ({ x: r.left - fr.left, y: r.top - fr.top, width: r.width, height: r.height }));
 }
 
+/** With the chip on and nothing declared by the page, the layer still answers its question: every whale-zone limit. */
+const ALL_ZONES: ChartRegulationSpec = { zones: { highlight: null } };
+
 export function RegulationLayer() {
-  const spec = useRegulation();
+  const asked = useRegulation();
   const on = useMapLayer("regulation");
-  const show = !!spec && (!!spec.zones || !!spec.extents?.length) && on;
-  return <AnimatePresence>{show && spec ? <Drawing key={JSON.stringify(spec)} spec={spec} /> : null}</AnimatePresence>;
+  const spec = asked && (asked.zones || asked.extents?.length || asked.advisory) ? asked : ALL_ZONES;
+  const told = () => window.dispatchEvent(new Event(LAYERS_DRAWN_EVENT));
+  return (
+    <AnimatePresence onExitComplete={told}>
+      {on ? <Drawing key={JSON.stringify(spec)} spec={spec} /> : null}
+    </AnimatePresence>
+  );
 }
 
 function Drawing({ spec }: { spec: ChartRegulationSpec }) {
+  const present = useIsPresent();
+  useEffect(() => {
+    window.dispatchEvent(new Event(LAYERS_DRAWN_EVENT));
+  }, [present]);
   const svgRef = useRef<SVGSVGElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
   const zones = spec.zones ?? null;
   const extents = spec.extents ?? NONE;
+  const advisory = spec.advisory ?? null;
+  const hatchId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const hl = zones?.highlight ?? null;
   const hlZone = RAMP_ZONES.find((z) => z.zone === hl) ?? null;
 
@@ -113,7 +153,7 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
         if (!el) return null;
         el.textContent = text;
         set(el, { x, y, "text-anchor": anchor });
-        const b = (el as SVGTextElement).getBBox();
+        const b = regTextBox(el as SVGTextElement);
         if (!b.width || b.x < x0 - 1 || b.x + b.width > freeR || b.y < yTop || b.y + b.height > yBot) return null;
         if (!land && blockers.some((k) => overlap(b, k))) return null;
         if (land && blockers.some((k) => overlap(b, k, 6))) return null;
@@ -180,7 +220,9 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
         // the port's zone named on the water in its tag; its neighbours' numbers quiet by the shore
         const pin = pinRef.current;
         let pinShown = false;
-        if (pin && hlZone) {
+        // on a phone the strip is too small for the zone's name: the line and the tint say it (as the prototype)
+        if (pin && hlZone && phone) pin.style.visibility = "hidden";
+        if (pin && hlZone && !phone) {
           const [, nTop] = unproject(f.camera, f.viewport, W / 2, yTop + 90);
           const [, sBot] = unproject(f.camera, f.viewport, W / 2, yBot - 60);
           const n = Math.min(hlZone.north, nTop), s = Math.max(hlZone.south, sBot);
@@ -192,7 +234,15 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
             const w = pin.offsetWidth, h = pin.offsetHeight;
             const cx = Math.max(x0 + w / 2 + 8, Math.min(xs - w / 2 - 60, xs - W * 0.36));
             const b = { x: cx - w / 2, y: y - h / 2, width: w, height: h };
-            ok = b.x > 0 && b.x + b.width < xs - 8 && !blockers.some((k) => overlap(b, k, 8)) && !placed.some((k) => overlap(b, k));
+            // never over a port's name or symbol (on a phone the strip is small: the tag gives way, as the prototype's does)
+            const fr = frameEl?.getBoundingClientRect();
+            const names = fr
+              ? [...document.querySelectorAll<HTMLElement>(".n12-labels .n12-mark, .n12-labels .n12-point")]
+                  .filter((e) => e.style.visibility === "visible")
+                  .map((e) => e.getBoundingClientRect())
+                  .map((r) => ({ x: r.left - fr.left - 6, y: r.top - fr.top - 6, width: Math.max(r.width, 12) + 12, height: Math.max(r.height, 12) + 12 }))
+              : [];
+            ok = b.x > 0 && b.x + b.width < xs - 8 && !blockers.some((k) => overlap(b, k, 8)) && !names.some((k) => overlap(b, k, 4)) && !placed.some((k) => overlap(b, k));
             if (ok) {
               placed.push(b);
               pin.style.transform = `translate(${Math.round(b.x)}px, ${Math.round(b.y)}px)`;
@@ -214,12 +264,28 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
         const corner = q("[data-reg-corner]");
         let cornerBox: Box | null = null;
         // the port's zone named in its tag already says which zone the view lies in
-        if (!drawn.size && !pinShown) {
+        if (!drawn.size && !pinShown && !phone) {
           const top = rampZoneAt(unproject(f.camera, f.viewport, W / 2, yTop + 120)[1]);
           const bottom = rampZoneAt(unproject(f.camera, f.viewport, W / 2, yBot)[1]);
           if (top && top === bottom) cornerBox = tryText(corner, `Whole view: Whale zone ${top}`, phone ? 12 : 292, phone ? 80 : 160);
         }
         show(corner, !!cornerBox);
+      }
+
+      if (advisory) {
+        const bandEl = q("[data-reg-adv-band]");
+        const yn = yOf(advisory.north), ys = yOf(advisory.south);
+        set(bandEl, { d: band(advisory.north, advisory.south) });
+        set(q("[data-reg-adv-n]"), { x: -8, y: yn, width: Math.max(0, shoreX(advisory.north) + 8), height: 14 });
+        set(q("[data-reg-adv-s]"), { x: -8, y: ys - 14, width: Math.max(0, shoreX(advisory.south) + 8), height: 14 });
+        // named on the water near its south limit (or its middle when that limit is out of view)
+        const xs = shoreX(Math.min(advisory.north, Math.max(advisory.south, unproject(f.camera, f.viewport, W / 2, yBot)[1])));
+        const ty = Math.min(ys, yBot - 24) - 30;
+        const x0a = phone ? 12 : Math.max(24, xs - 470);
+        const t1 = tryText(q("[data-reg-adv-t]"), advisory.title, x0a, ty);
+        const t2 = t1 ? tryText(q("[data-reg-adv-s2]"), advisory.note, x0a, ty + 17) : null;
+        show(q("[data-reg-adv-t]"), !!t1);
+        show(q("[data-reg-adv-s2]"), !!t2);
       }
 
       extents.forEach((e, j) => {
@@ -256,11 +322,26 @@ function Drawing({ spec }: { spec: ChartRegulationSpec }) {
     };
     draw(getFrame());
     return onFrame(draw);
-  }, [zones, extents, hl, hlZone]);
+  }, [zones, extents, hl, hlZone, advisory]);
 
   return (
-    <motion.div className="n12-reg-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: layerIn }} exit={{ opacity: 0, transition: layerOut }}>
+    <motion.div className="n12-reg-wrap" data-leaving={present ? undefined : ""} initial={{ opacity: 0 }} animate={{ opacity: 1, transition: layerIn }} exit={{ opacity: 0, transition: layerOut }}>
       <svg ref={svgRef} className="n12-reg" aria-hidden="true" data-testid="nx-regulation">
+        {advisory ? (
+          <g data-testid="nx-reg-advisory">
+            <defs>
+              <pattern id={`a${hatchId}`} width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="7" height="7" className="n12-reg-hatch-ground" />
+                <rect width="2.4" height="7" className="n12-reg-hatch-stripe" />
+              </pattern>
+            </defs>
+            <path data-reg-adv-band="" className="n12-reg-adv-band" style={{ fill: `url(#a${hatchId})` }} />
+            <rect data-reg-adv-n="" className="n12-reg-adv-edge" style={{ fill: `url(#a${hatchId})` }} />
+            <rect data-reg-adv-s="" className="n12-reg-adv-edge" style={{ fill: `url(#a${hatchId})` }} />
+            <text data-reg-adv-t="" data-reg-hold="" className="n12-reg-adv-title" visibility="hidden" />
+            <text data-reg-adv-s2="" className="n12-reg-adv-note" visibility="hidden" />
+          </g>
+        ) : null}
         {zones ? (
           <g data-testid="nx-reg-zones">
             {hlZone ? (

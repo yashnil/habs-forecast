@@ -1,100 +1,26 @@
-/* Every official notice: a ruled list in the margin, no cards. Tokens only (src/nx/ds/tokens.css). */
+/* Every official notice (v14: restyled onto the synthesis parts, behaviour unchanged): one ticket at the port, the
+   list in its perforated stub. Tokens only (src/nx/ds/tokens.css). */
 
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-24);
-  color: var(--ink);
-}
-.kicker {
-  margin: 0;
-  font-weight: 600;
-}
-.scope {
-  font-weight: 600;
-}
-.lead {
-  margin: 0;
-  color: var(--ink-2);
-}
-.group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-8);
-}
-.head {
-  margin: 0;
-  padding-top: var(--s-12);
-  border-top: var(--rule) solid var(--ink);
-  font-size: var(--t-18);
-  font-weight: 600;
-}
-.count {
-  font-weight: 400;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-}
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.entry {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-4);
-  padding: var(--s-12) 0 var(--s-16);
-  border-top: var(--hair) solid var(--rule-soft);
-}
-.entry:first-child {
-  border-top: 0;
-}
-.meta {
-  margin: 0;
-  font-size: var(--t-14);
-  font-weight: 600;
-  color: var(--reg-text);
-}
-.title {
-  margin: 0;
-  font-size: var(--t-16);
-  font-weight: 600;
-  line-height: 1.35;
-}
-.summary,
-.dates {
-  margin: 0;
-}
-.flag {
-  margin: 0;
-  padding-left: var(--s-8);
-  border-left: var(--rule) solid var(--closure);
-  color: var(--closure);
-  font-weight: 500;
-}
-.area {
-  margin: 0;
-  font-size: var(--t-14);
-  color: var(--ink-2);
-}
-.sources {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.source {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--target);
-  font-size: var(--t-14);
-  font-weight: 600;
-  color: var(--ink);
-  text-decoration-thickness: var(--hair);
-  text-underline-offset: 3px;
-}
-.legend {
-  margin-top: var(--s-8);
-}
-.back {
-  margin: 0;
-}
+.page { display: contents; color: var(--ink); }
+.ticket { color: var(--ink); }
+.stub { display: flex; flex-direction: column; gap: var(--s-16); }
+.kicker { margin: 0 0 var(--s-8); font-weight: var(--w6); }
+.scope { font-weight: var(--w6); }
+.lead { margin: 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
+.group { display: flex; flex-direction: column; gap: var(--s-6); }
+.head { display: flex; gap: var(--s-6); margin: 0; }
+.count { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.list { list-style: none; margin: 0; padding: 0; }
+.entry { display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-12) 0 var(--s-14); border-top: 1px solid var(--line); }
+.entry:first-child { border-top: 0; padding-top: var(--s-4); }
+.meta { color: var(--coral-ink); }
+.title { margin: 0; font-size: var(--fs-15); font-weight: var(--w7); line-height: 1.35; }
+.summary, .dates { margin: 0; font-size: var(--fs-13); line-height: 1.45; }
+.summary { color: var(--ink-2); }
+.flag { margin: 0; padding: var(--s-4) var(--s-8); border-radius: var(--r-sm); background: var(--coral-wash); color: var(--coral-ink); font-size: var(--fs-13); font-weight: var(--w6); }
+.area { margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+.sources { list-style: none; margin: 0; padding: 0; }
+.source { display: inline-flex; align-items: center; min-height: 36px; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ultra); text-decoration: underline dashed; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+.source:hover { color: var(--ultra-deep); text-decoration-style: solid; }
+.legend { margin-top: var(--s-4); }
+.back { margin: 0; }

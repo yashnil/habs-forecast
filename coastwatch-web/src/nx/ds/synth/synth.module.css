@@ -86,12 +86,12 @@
 .seg { display: flex; padding: 3px; background: var(--paper-2); border-radius: 11px; }
 .seg button { flex: 1; height: 34px; padding: 0 11px; border-radius: 8px; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; transition: background-color var(--dur-quick) linear, color var(--dur-quick) linear; }
 .seg button:hover:not([aria-selected="true"]) { color: var(--ink); }
-.seg button[aria-selected="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-seg); }
+.seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-seg); }
 .n { color: var(--ink-2); margin-left: 4px; }
 .tabs { display: flex; gap: 2px; min-width: 0; }
 .tabs button { height: 36px; padding: 0 11px; border-radius: var(--r-sm); font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); white-space: nowrap; }
 .tabs button:hover { background: var(--paper-2); color: var(--ink); }
-.tabs button[aria-selected="true"] { color: var(--ultra-deep); background: var(--ultra-wash); }
+.tabs button[aria-selected="true"], .tabs button[aria-checked="true"] { color: var(--ultra-deep); background: var(--ultra-wash); }
 .panel { outline: none; }
 .panel:focus-visible { outline: 2.5px solid var(--ultra); outline-offset: 4px; border-radius: 6px; }
 @media (max-width: 640px) {

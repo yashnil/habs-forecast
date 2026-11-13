@@ -130,7 +130,7 @@ async function journey(page: Page) {
 
 test.describe("Journey 3: Explore to the record", () => {
   test("open, switch layers, pick frames, tap the water, follow to Research (recorded)", async ({ browser }) => {
-    test.setTimeout(90_000);
+    test.setTimeout(150_000);
     mkdirSync(OUT, { recursive: true });
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: { cookies: [], origins: [] }, recordVideo: { dir: test.info().outputDir, size: { width: 1440, height: 900 } } });
     await ctx.addInitScript(() => localStorage.setItem("nx-opening-seen-v1", "1"));

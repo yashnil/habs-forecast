@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, ChartDock, MarginSticky, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, type Provenance } from "@/nx/ds";
+import { age, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, Micro, MapLayers, type Provenance } from "@/nx/ds";
+import { getFrame } from "@/nx/chart/runtime";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { openMargin } from "@/nx/shell/Margin";
@@ -624,88 +625,122 @@ export function Explore({ model }: { model: ExploreModel }) {
   const valued = r?.status === "ready" ? r.transect.filter((p) => p.value !== null) : [];
   const tStart = valued.length ? valued[0].lon : null;
   const tEnd = valued.length ? valued[valued.length - 1].lon : null;
+  // the reading's ticket stands on the side of its point with the more open chart (it follows the point; the camera stays)
+  const f = getFrame();
+  const readAt = cell ?? pt;
+  const readSide: "east" | "west" = readAt && f && f.project(readAt.lon, readAt.lat).x > f.viewport.width * 0.55 ? "west" : "east";
+  const dockH = streaks ? 284 : 204;
+  const readSlot = (
+    <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-open={readout ? "1" : "0"} data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
+      {readout && readAt ? (
+        phone ? (
+          readout
+        ) : (
+          <Ticket at={{ lon: readAt.lon, lat: readAt.lat }} side={readSide} lead={false} anchorY={48} width={372} label="Reading at this point" className={s.readTicket}>
+            <TicketMain>{readout}</TicketMain>
+          </Ticket>
+        )
+      ) : null}
+    </div>
+  );
   return (
-    <section className={s.explore} data-testid="nx-explore" data-product={product.id} data-frame={frame.id}>
+    <section className={s.explore} data-testid="nx-explore" data-product={product.id} data-frame={frame.id} style={{ "--explore-dock": `${dockH}px` } as React.CSSProperties}>
+      <PageLayout mode="stage" phoneMap={0.5} />
+      <MapLayers page="explore" defaults={{ depth: true }} />
       <ChartScene scene={scene} />
       {/* the mark sits on the cell that was read (its centre, its outline), not on the tap */}
       {pt ? <ReadingOnChart lat={cell?.lat ?? pt.lat} lon={cell?.lon ?? pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} outline={cell?.outline ?? null} /> : null}
       {phone ? <Locator /> : null}
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
-      <h1 className={s.srOnly}>Explore: {LAYER_LABEL[product.id]}</h1>
-      <p className={s.lead} data-testid="nx-explore-lead">
-        {leadSentence(product, frame)}
-      </p>
-      {/* the layer has no cells at the reader's port: said in words, with where it does have them */}
-      {port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
-        <p className={s.coverage} data-testid="nx-coverage-note">
-          {coverageNote(LAYER_LABEL[product.id], port.name, gridBounds(frame.grid))}
-        </p>
-      ) : null}
-      {/* the legend stays at the head of the margin while a reading is open, so the ramp is always in sight */}
-      <MarginSticky edge="top" data-testid="nx-legend-sticky">
-        <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
-      </MarginSticky>
-      {tier === "static" && frame?.grid && product.id !== "sst" ? (
-        <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
-      ) : null}
-      {tier === "static" ? (
-        product.id === "sst" ? (
-          <Unavailable what="Isotherms need a device that draws the chart live" why="This device shows the chart as a still picture (no WebGL, data saver, or a saved copy); the other layers are baked into it." next="Station temperatures are in Research, as tables and series." />
-        ) : (
-          <p className={s.prompt} data-testid="nx-static-note">
-            A still picture of this frame, baked on this device (no WebGL, data saver, or a saved copy). Tapping the water needs the live chart.
+
+      {/* the layer group: what this view is, the data layers as chips, the legend (a ticket standing west, with no place) */}
+      <Ticket at={null} side="west" edge="gutter" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
+        <TicketMain>
+          <Micro as="p">Explore · {LAYER_LABEL[product.id]}</Micro>
+          <h1 id="nx-explore-title" className={s.srOnly}>
+            Explore: {LAYER_LABEL[product.id]}
+          </h1>
+          <p className={s.lead} data-testid="nx-explore-lead">
+            {leadSentence(product, frame)}
           </p>
-        )
-      ) : null}
-      <div ref={switchRef} className={s.switch} role="radiogroup" aria-label="Layer" data-testid="nx-layers">
-        {model.products.map((p) => (
-          // design-lint-allow raw-button: the layer switch is one radio group whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Segmented and OptionList are single-line
-          <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`}>
-            <span>{LAYER_LABEL[p.id]}</span>
-            {/* the tab says only "past run"; its date is in the legend and on the rail (critic N8: no 3-line tab) */}
-            <small>{p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
-          </button>
-        ))}
-        {/* a layer this data run does not hold stays in the switch, disabled, with the reason (never dropped silently) */}
-        {model.missing.map((m) => (
-          <button key={m.id} type="button" role="radio" aria-checked={false} disabled className={s.switchItem} data-missing="1" data-testid={`nx-layer-${m.id}`}>
-            <span>{m.label}</span>
-            <small>{m.why.toLowerCase()}</small>
-          </button>
-        ))}
-        {model.currents ? (
-          <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
-            <span>Currents</span>
-            <small data-state={currentsState}>{currentsToggleWords(currentsState, current)}</small>
-          </button>
-        ) : null}
-      </div>
-      {/* phone: what is on show and Play sit with the layer switch at the top of the sheet (review F-01) */}
-      {phone ? (
-        <div className={s.timeBar}>
-          <TimeHead model={model} product={product} frameId={frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
-        </div>
-      ) : null}
-      {/* wide: the rail runs along the foot of the chart it steps, full width; on a phone it reads in the sheet */}
-      <ChartDock label="Time" height={streaks ? 284 : 204} align="frame" variant="rail">
-      <TimeRail
-        head={!phone}
-        model={model}
-        product={product}
-        frameId={frame.id}
-        onFrame={chooseFrame}
-        onProduct={chooseProduct}
-        currentsOn={streaks}
-        currentId={hourId}
-        onCurrent={chooseHour}
-        playing={playing}
-        canPlay={canPlay}
-        onPlay={() => setPlaying((p) => !p)}
-      />
-      </ChartDock>
-      <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-open={readout ? "1" : "0"} data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
-        {readout ?? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p>}
-      </div>
+          {/* the layer has no cells at the reader's port: said in words, with where it does have them */}
+          {port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
+            <p className={s.coverage} data-testid="nx-coverage-note">
+              {coverageNote(LAYER_LABEL[product.id], port.name, gridBounds(frame.grid))}
+            </p>
+          ) : null}
+          <div ref={switchRef} className={s.switch} role="radiogroup" aria-label="Data layer" data-testid="nx-data-layers">
+            {model.products.map((p) => (
+              // design-lint-allow raw-button: the data layers are one radio group of chips whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Chip is a toggle, not a radio
+              <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`}>
+                <span>{LAYER_LABEL[p.id]}</span>
+                {/* the chip says only "past run"; its date is in the legend and on the rail (critic N8) */}
+                <small>{p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
+              </button>
+            ))}
+            {/* a layer this data run does not hold stays in the group, disabled, with the reason (never dropped silently) */}
+            {model.missing.map((m) => (
+              <button key={m.id} type="button" role="radio" aria-checked={false} disabled className={s.switchItem} data-missing="1" data-testid={`nx-layer-${m.id}`}>
+                <span>{m.label}</span>
+                <small>{m.why.toLowerCase()}</small>
+              </button>
+            ))}
+            {model.currents ? (
+              <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
+                <span>Currents</span>
+                <small data-state={currentsState}>{currentsToggleWords(currentsState, current)}</small>
+              </button>
+            ) : null}
+          </div>
+          {/* phone: what is on show and Play sit with the layers at the top of the sheet (review F-01) */}
+          {phone ? (
+            <div className={s.timeBar}>
+              <TimeHead model={model} product={product} frameId={frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
+            </div>
+          ) : null}
+          {phone ? readSlot : null}
+        </TicketMain>
+        <TicketStub>
+          <div data-testid="nx-legend-sticky">
+            <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
+          </div>
+          {tier === "static" && frame?.grid && product.id !== "sst" ? (
+            <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />
+          ) : null}
+          {tier === "static" ? (
+            product.id === "sst" ? (
+              <Unavailable what="Isotherms need a device that draws the chart live" why="This device shows the chart as a still picture (no WebGL, data saver, or a saved copy); the other layers are baked into it." next="Station temperatures are in Research, as tables and series." />
+            ) : (
+              <p className={s.prompt} data-testid="nx-static-note">
+                A still picture of this frame, baked on this device (no WebGL, data saver, or a saved copy). Tapping the water needs the live chart.
+              </p>
+            )
+          ) : null}
+          {!readout ? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p> : null}
+        </TicketStub>
+      </Ticket>
+
+      {/* the reading: a ticket anchored to the cell that was read, with its links to Research and My Coast (on a phone, a
+          block that leads the sheet with the layers and Play: see the panel) */}
+      {!phone ? readSlot : null}
+
+      {/* the time rail: a dock along the chart's foot, full width; on a phone it reads in the sheet */}
+      <Dock label="Time" align="full" className={s.timeDock} data-testid="nx-time-dock">
+        <TimeRail
+          head={!phone}
+          model={model}
+          product={product}
+          frameId={frame.id}
+          onFrame={chooseFrame}
+          onProduct={chooseProduct}
+          currentsOn={streaks}
+          currentId={hourId}
+          onCurrent={chooseHour}
+          playing={playing}
+          canPlay={canPlay}
+          onPlay={() => setPlaying((p) => !p)}
+        />
+      </Dock>
     </section>
   );
 }

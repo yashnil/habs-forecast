@@ -1,8 +1,195 @@
-/* The trip workspace (v13): page-local layout over the ds kit. Tokens only (src/nx/ds/tokens.css). */
+/* My Coast's trip (v14 synthesis: art/concept-4-synthesis, trip-empty / trip-done). The pass along the chart's foot:
+   strip, equation, terms, waterfall and what-if in the main part; the result and the one button in the stub. Page
+   layout over the ds kit (Pass, Micro, RollingNumber, Segmented). Tokens only (src/nx/ds/tokens.css). */
 
-.aside {
-  font-variant-numeric: tabular-nums;
+/* ---------------------------------------------------------------- the pass */
+.pass { font-variant-numeric: tabular-nums; }
+.scroll {
+  max-height: min(var(--front-h, 420px), calc(55dvh - var(--gutter)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
+.front { position: relative; display: flex; flex-direction: column; }
+/* the stub never sets the pass's height: the main part does, and the stub scrolls inside it */
+.stub { container-type: inline-size; overflow-y: auto; height: 0; min-height: 100%; padding-top: var(--s-20); padding-bottom: var(--s-20); }
+
+/* the strip: hypothetical, the port and fishery, the season line in the record's words */
+/* the strip stays at the top of the pass while what is under the fold scrolls (the port, the fishery, "hypothetical" and the
+   season line are always in view) */
+.scroll > div:first-child { position: sticky; top: 0; z-index: 2; }
+.strip { display: flex; flex-wrap: wrap; align-items: stretch; border-bottom: var(--hair) solid var(--line); background: var(--paper); }
+.hy {
+  display: inline-flex; align-items: center; gap: var(--s-12); min-height: 42px; padding: 0 var(--s-22, 22px) 0 var(--pad-obj-x);
+  background: var(--hatch-band); white-space: nowrap; min-width: 0;
+}
+.hyMicro { color: var(--ultra-deep); }
+.where { margin: 0; font: var(--w6) var(--fs-13) / 1.2 var(--font); color: var(--ink); }
+.dot { margin: 0 -6px; font-size: var(--fs-13); color: var(--ink-2); }
+.select {
+  appearance: none; min-height: 32px; max-width: 100%; padding: 0 var(--s-2); border: 0; border-bottom: var(--rule) dashed var(--ultra);
+  border-radius: var(--r-0); background: transparent; color: var(--ink); font: var(--w6) var(--fs-13) / 1.2 var(--font); cursor: pointer;
+  text-overflow: ellipsis; field-sizing: content;
+}
+.select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.warn.warn {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--s-2) var(--s-8); margin-left: auto; min-height: 42px; height: auto;
+  padding: var(--s-4) var(--s-26, 26px) var(--s-4) var(--s-22, 22px); border: 0; border-radius: var(--r-0); text-decoration: none; text-align: left;
+  white-space: normal; font: var(--w7) var(--fs-15) / 1.25 var(--font); color: var(--coral-ink); background: transparent;
+}
+.warn[data-tone="ink"] { color: var(--ink-2); font-weight: var(--w6); }
+.warn:hover { background: var(--coral-wash); }
+.warnG { flex: none; margin-right: var(--s-6); vertical-align: -1px; }
+.warnSrc { font: var(--w5) var(--fs-13) / 1.2 var(--font); color: var(--ink-2); }
+.carried { flex: 1 0 100%; margin: 0; padding: var(--s-4) var(--pad-obj-x); border-top: var(--hair) solid var(--line); font-size: var(--fs-13); color: var(--ink-2); }
+
+/* ---------------------------------------------------------------- the equation */
+.inputs { padding: var(--s-12) var(--s-22, 22px) var(--s-2) var(--pad-obj-x); }
+.eq { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s-6) var(--s-12); }
+.grp { position: relative; display: grid; gap: var(--s-4); justify-items: start; }
+.grpLabel { color: var(--ink-2); }
+.expr { display: flex; align-items: center; gap: var(--s-6); white-space: nowrap; }
+.times { font-style: normal; font-size: var(--fs-13); color: var(--ink-2); }
+.op { margin-top: var(--s-20); font: var(--w5) var(--fs-25) / 40px var(--font); color: var(--ink-2); }
+.opEq { margin-left: auto; color: var(--ink); font-weight: var(--w6); }
+.f {
+  position: relative; display: inline-flex; align-items: baseline; justify-content: center; gap: var(--s-2); height: 40px; min-width: 44px;
+  padding: 0 var(--s-10); border: 1.6px solid transparent; border-radius: var(--r-pill); background: var(--paper-2); line-height: 37px; cursor: text;
+}
+.f { align-items: center; }
+.f i { line-height: 1; font-style: normal; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); }
+.f input {
+  align-self: stretch; height: 100%;
+  min-width: 1.4ch; padding: 0; border: 0; outline: 0; background: none; color: var(--ink); text-align: right;
+  font: var(--w7) var(--fs-18) / 1 var(--font); font-variant-numeric: tabular-nums;
+}
+.f input::placeholder { color: var(--ink-2); font-weight: var(--w5); }
+.f:hover { border-color: var(--ultra-hatch); }
+.f:focus-within { border-color: var(--ultra); background: var(--paper); outline: 3px solid var(--ultra-wash); }
+.f[data-empty] { background: none; border: 1.6px dotted var(--ink-3); }
+.f[data-next] { border: 1.6px dashed var(--ultra); background: var(--ultra-wash); }
+.f[data-error] { border: 1.6px solid var(--coral); }
+.fErr { position: absolute; left: 0; top: 100%; margin-top: var(--s-2); font: var(--w6) var(--fs-11) / 1.2 var(--font); color: var(--coral-ink); white-space: nowrap; }
+.derivedGal { padding: 0 var(--s-6); font: var(--w7) var(--fs-15) / 40px var(--font); color: var(--ink-2); }
+
+/* the terms: only where they move the money */
+.terms { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-6) var(--s-20); padding-top: var(--s-8); }
+.term.term { display: flex; align-items: center; gap: var(--s-8); }
+.term > span:first-child { font: var(--w6) var(--fs-13) / 1.2 var(--font); color: var(--ink-2); white-space: nowrap; }
+.terms .term [role="radiogroup"] { border-width: var(--hair); border-radius: var(--r-tag); overflow: hidden; }
+.terms .term button[role="radio"] { min-height: 30px; padding: 0 var(--s-10); font-size: var(--fs-13); }
+
+/* ---------------------------------------------------------------- the figures */
+.figs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 34%); gap: var(--s-28); height: 168px; padding: var(--s-6) var(--s-26, 26px) var(--s-10) var(--pad-obj-x); }
+.fold { margin-left: auto; font: var(--w6) var(--fs-13) / 1.4 var(--font); color: var(--ultra); text-decoration: underline dashed; text-underline-offset: 3px; }
+.fold:hover { color: var(--ultra-deep); }
+
+.wf { position: relative; min-width: 0; height: 100%; }
+.wfCols { position: absolute; inset: 0; pointer-events: none; }
+.wfCol { position: absolute; top: 0; bottom: 0; pointer-events: auto; outline: none; border-radius: var(--r-sm); }
+.wfCol:focus-visible { background: var(--sel); }
+.beStrong { font-weight: var(--w7); fill: var(--ink); }
+.callout {
+  position: absolute; top: 0; z-index: 3; width: 260px; padding: var(--s-8) var(--s-12); border-radius: var(--r-ctl); background: var(--ink); color: var(--paper);
+  font-size: var(--fs-13); line-height: 1.4; pointer-events: none; box-shadow: var(--shadow-sm);
+}
+.callout b { display: block; font-weight: var(--w7); }
+.callout span { display: block; }
+.wi { position: relative; min-width: 0; height: 100%; }
+
+/* ---------------------------------------------------------------- the stub */
+.hero { display: grid; justify-items: start; }
+.heroMicro { color: var(--ultra-deep); }
+.net { margin: var(--s-8) 0 var(--s-10) -2px; max-width: 100%; }
+.netFig { display: block; font: var(--w7) min(var(--fs-68), 24cqi) / 1 var(--font); letter-spacing: -0.04em; white-space: nowrap; color: var(--ink); }
+.netFig[data-loss] { color: var(--coral-ink); }
+.netSlot {
+  display: flex; align-items: center; width: min(210px, 100%); height: 60px; margin: var(--s-2) 0; padding: 0 var(--s-18);
+  border: 1.8px dotted var(--ink-3); border-radius: var(--r-bar); font: var(--w6) var(--fs-25) / 1 var(--font); color: var(--ink-2);
+}
+.showing { margin: 0 0 var(--s-4); font: var(--w6) var(--fs-13) / 1.3 var(--font); color: var(--ultra-deep); }
+.showing:empty { display: none; }
+.basis { margin: 0; max-width: 34ch; font-size: var(--fs-13); line-height: 1.42; color: var(--ink-2); text-wrap: pretty; }
+.cta { padding-top: var(--s-16); }
+.scBar { display: grid; gap: var(--s-2); margin-top: var(--s-8); min-width: 0; }
+.scQuiet { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-14); margin: 0; font-size: var(--fs-13); }
+.netBar { display: none; }
+
+/* ---------------------------------------------------------------- under the fold */
+.more, .worked, .scMoreWrap { padding: var(--s-16) var(--s-26, 26px) var(--s-16) var(--pad-obj-x); border-top: var(--hair) solid var(--line); }
+.moreGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-12) var(--s-28); }
+.moreCol { display: grid; align-content: start; gap: var(--s-8); min-width: 0; }
+.worked { display: grid; gap: var(--s-20); }
+.workedFigs { display: grid; gap: var(--s-6); }
+.readWith { display: grid; gap: var(--s-4); }
+
+/* ---------------------------------------------------------------- shorter and narrower screens */
+@media (max-height: 800px) and (min-width: 641px) {
+  .figs { height: 138px; padding-bottom: var(--s-6); }
+  .inputs { padding-top: var(--s-6); }
+  .eq { gap: var(--s-2) var(--s-8); }
+  .grp { gap: var(--s-2); }
+  .hy, .warn.warn { min-height: 32px; }
+  .stub { padding-top: var(--s-16); padding-bottom: var(--s-16); }
+  .net { margin: var(--s-4) 0 var(--s-6) -2px; }
+}
+@media (max-width: 1340px) and (min-width: 641px) {
+  .eq { gap: var(--s-6) var(--s-8); }
+  .f { height: 38px; min-width: 40px; padding: 0 var(--s-6); line-height: 35px; }
+  .f input { font-size: var(--fs-15); }
+  .op { margin-top: var(--s-18); font-size: var(--fs-18); }
+}
+@media (max-width: 1360px) and (min-width: 641px) {
+  .warn.warn { flex: 1 0 100%; margin-left: 0; padding-left: var(--pad-obj-x); min-height: 34px; border-top: var(--hair) solid var(--line); }
+}
+@media (max-width: 1240px) and (min-width: 641px) {
+  .eq { gap: var(--s-6) var(--s-4); }
+  .inputs { padding: var(--s-12) var(--s-12) 0 var(--s-22, 22px); }
+  .f { gap: var(--s-2); padding: 0 var(--s-4); }
+  .op { font-size: var(--fs-15); }
+  .hy { padding-left: var(--s-22, 22px); }
+  .figs { padding-left: var(--s-22, 22px); gap: var(--s-20); }
+}
+
+/* ---------------------------------------------------------------- phone: a block in the sheet */
+@media (max-width: 640px) {
+  .scroll { max-height: none; overflow: visible; }
+  .stub { height: auto; min-height: 0; overflow: visible; padding: 0 0 var(--s-10); }
+  .pass [role="radio"] { min-height: 44px; }
+  /* what is scrolled to stays clear of the pinned strip above and the result bar below */
+  .pass :is(input, button, select, a, [tabindex]) { scroll-margin: 132px 0 140px; }
+  .netFig { font-size: var(--fs-54); }
+  .front { display: flex; flex-direction: column; }
+  .strip { display: block; margin: 0 calc(-1 * var(--gutter)); border-top: var(--hair) solid var(--line); order: 0; }
+  .hy { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-10); min-height: 0; padding: var(--s-8) var(--gutter) var(--s-6); white-space: normal; }
+  .warn.warn { display: flex; width: 100%; margin: 0; min-height: 44px; padding: var(--s-6) var(--gutter) var(--s-8); border-top: var(--hair) solid var(--line); font-size: var(--fs-15); line-height: 1.3; }
+  .carried { padding: var(--s-4) var(--gutter); }
+  .figs { display: contents; }
+  .wf { order: 1; height: 196px; margin-top: var(--s-14); flex: none; }
+  .inputs { order: 2; margin-top: var(--s-12); padding: var(--s-12) 0 var(--s-4); border-top: var(--hair) solid var(--line); }
+  .wi { order: 3; height: 150px; margin: var(--s-10) 0 var(--s-4); padding-top: var(--s-10); border-top: var(--hair) solid var(--line); flex: none; }
+  .eq { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-10); }
+  .grp { grid-template-columns: 96px minmax(0, 1fr); align-items: center; justify-items: start; gap: var(--s-8); }
+  .expr { flex-wrap: wrap; }
+  .op { display: none; }
+  .f { height: 46px; min-width: 52px; line-height: 43px; padding: 0 var(--s-12); }
+  .f input { font-size: var(--fs-18); }
+  .terms { display: grid; gap: var(--s-10); padding-top: var(--s-12); }
+  .term.term { display: grid; gap: var(--s-4); }
+  .terms .term button[role="radio"] { min-height: 44px; padding: 0 var(--s-14); font-size: var(--fs-15); }
+  .more, .worked, .scMoreWrap { padding-left: 0; padding-right: 0; }
+  .netBar {
+    position: sticky; bottom: 0; z-index: 3; display: grid; gap: var(--s-8); margin: 0 calc(-1 * var(--gutter)); padding: var(--s-8) var(--gutter) var(--s-10);
+    border-top: var(--hair) solid var(--line); background: var(--paper);
+  }
+  .netBarText { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-8); margin: 0; font-size: var(--fs-13); color: var(--ink-2); }
+  .netBarText strong { font: var(--w7) var(--fs-18) / 1.2 var(--font); color: var(--ink); }
+  .netBarLabel { color: var(--ink-2); }
+  .netBarShowing { margin-left: auto; }
+  .netBarText[data-quiet] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ---------------------------------------------------------------- shared words, lines and the saved trips */
 .compact {
   justify-self: start;
   min-height: var(--s-32);
@@ -39,24 +226,6 @@
   white-space: nowrap;
 }
 
-/* ---------------------------------------------------------------- inputs */
-.inputs {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-16);
-  margin-top: var(--s-12);
-}
-.group {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-4);
-  padding-top: var(--s-8);
-  border-top: var(--rule) solid var(--ink);
-}
-.groupHead {
-  margin: 0;
-  font: 600 var(--t-18) / var(--lh-snug) var(--font-sans);
-}
 .line {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -108,70 +277,6 @@
   font-size: var(--type-small);
 }
 
-/* ---------------------------------------------------------------- results */
-.results {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-8);
-  font-variant-numeric: tabular-nums;
-}
-.anchor {
-  scroll-margin-top: var(--trip-top, 120px);
-}
-.hero {
-  background: var(--paper);
-}
-/* the one result, with the catch and the price that break even beside it */
-.heroRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--s-8) var(--s-32);
-}
-.heroRow > * {
-  min-width: 0;
-}
-/* wide: the break-evens stand beside the result, not under it */
-@container nx-desk (min-width: 880px) {
-  /* once there is a result; while it waits, its words take the line and the break-evens go under */
-  .heroRow[data-ready] {
-    flex-wrap: nowrap;
-  }
-  .heroRow[data-ready] > :first-child {
-    flex: 0 1 auto;
-  }
-  .heroRow[data-ready] > .heroSide {
-    flex: 0 0 auto;
-  }
-}
-.heroSide {
-  display: grid;
-  gap: 0;
-  padding-bottom: var(--s-8);
-}
-.heroSideNote {
-  font-size: var(--type-small);
-  color: var(--ink-2);
-}
-.heroNote {
-  margin: var(--s-4) 0 0;
-  font-size: var(--type-small);
-  line-height: var(--lh-snug);
-  color: var(--ink-2);
-}
-.fall {
-  min-width: 0;
-}
-.hypo {
-  font-size: var(--type-small);
-  font-weight: 400;
-  color: var(--ink-2);
-}
-/* the scenario line keeps its own line whether or not it has words, so the grid never moves under the pointer */
-.showing {
-  display: block;
-  min-height: calc(var(--type-small) * 1.5);
-}
 .inlineButton {
   min-height: 0;
   padding: 0;
@@ -188,18 +293,6 @@
   color: var(--reg-text);
 }
 /* what the result is made of: one compact row */
-.figures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-4) var(--s-32);
-  padding: var(--s-4) 0;
-  border-top: var(--hair) solid var(--rule-soft);
-  border-bottom: var(--hair) solid var(--rule-soft);
-}
-.figures > * {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 .sens {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -226,64 +319,18 @@
 .assume li + li {
   margin-top: var(--s-4);
 }
-
-/* the result stays in view while the rest of the main column scrolls under it (wide, tall screens) */
-@container nx-desk (min-width: 880px) {
-  @media (min-height: 700px) {
-    .hero {
-      position: sticky;
-      /* tucked a hair under the header (whose height is a fraction of a pixel) and closed with its own rule, so
-         nothing of the chart scrolling beneath shows between them or under it (F-17) */
-      top: calc(var(--trip-top, 120px) - 2px);
-      z-index: 2;
-      padding: var(--s-4) 0 var(--s-8);
-      border-bottom: var(--hair) solid var(--rule-soft);
-      background: var(--paper);
-    }
-  }
+/* what the result is made of: one compact row */
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-32);
+  padding: var(--s-4) 0;
+  border-top: var(--hair) solid var(--rule-soft);
+  border-bottom: var(--hair) solid var(--rule-soft);
 }
-
-/* ---------------------------------------------------------------- scenario strip, saved trips */
-/* The saving controls in the header: three rows of one line each, the same height whatever they say (a long
-   name is cut with its whole text in the title; a confirmation takes the line kept for it and leaves again). */
-.scBar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s-4);
+.figures > * {
   min-width: 0;
-  /* a fixed measure: its one-line texts are cut to it, they never widen it */
-  width: 440px;
-  max-width: 100%;
-}
-.scBar .stripHead {
-  flex-wrap: nowrap;
-  min-width: 0;
-}
-.scBar .tripState {
-  flex: none;
-  white-space: nowrap;
-}
-.scBar .tripName {
-  white-space: nowrap;
-}
-.scButtons {
-  flex-wrap: nowrap;
-}
-.scBar .said {
-  margin: 0;
-  line-height: var(--lh-snug);
-  min-height: calc(var(--type-small) * 1.3);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.fallWaiting {
-  margin: var(--s-4) 0 0;
-  font-size: var(--type-body);
-  color: var(--ink-2);
-}
-.lead {
-  margin-top: var(--s-16);
+  overflow-wrap: anywhere;
 }
 .scMore {
   display: grid;
@@ -426,180 +473,15 @@
   border-top: var(--rule) solid var(--ink);
 }
 
-/* ---------------------------------------------------------------- the phone's result bar */
-.netBar {
-  display: none;
-}
-@media (max-width: 720px) {
-  .netBar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s-12);
-  }
-  .netBarText {
-    display: grid;
-    margin: 0;
-    min-width: 0;
-    font-size: var(--type-small);
-    line-height: var(--lh-snug);
-    font-variant-numeric: tabular-nums;
-  }
-  .netBarText strong {
-    font-size: var(--t-18);
-  }
-  .netBarLabel,
-  .netBarShowing {
-    color: var(--ink-2);
-  }
-  /* thumbs: the quiet actions keep a full target on a phone */
-  .compact {
-    min-height: var(--target);
-    font-size: var(--type-body);
-  }
-  .scBar {
-    width: 100%;
-    padding: var(--s-8) 0;
-  }
-  /* with the results on a phone there is room for the words: a confirmation reads whole, the buttons may wrap */
-  .scBar .said {
-    white-space: normal;
-  }
-  .scButtons {
-    flex-wrap: wrap;
-  }
-  /* F-07: the last controls of the results end clear of the result bar that stays above the destinations */
-  .results {
-    padding-bottom: var(--s-64);
-  }
-  /* F-14: once the header has condensed it is context, the title and one line of status; the whole sentence
-     is a tap away (it opens the gates) */
-  :is([data-condensed], [data-measuring]) .chip {
-    display: block;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-  :is([data-condensed], [data-measuring]) .carried {
-    display: none;
-  }
 
-  /* a phone opens with the first input in reach: the column's own heading gives way to the group's */
-  .aside > .h2 {
-    display: none;
-  }
-  /* the fishery has the header's whole width on a phone, so its name is never cut: the select says "fishery"
-     by what it holds */
-  .pinned > :first-child {
-    flex: 1 1 100%;
-    display: block;
-    max-width: 100%;
-  }
-  .pinned > :first-child > label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  /* the name stops short of the select's own arrow, and is cut rather than run under it */
-  .pinned > :first-child > select {
-    width: 100%;
-    max-width: 100%;
-    text-align: left;
-    padding-left: 0;
-    padding-right: var(--s-32);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-  .inputs {
-    margin-top: var(--s-8);
-  }
+/* the confirmation keeps one line in the stub: longer words are cut with an ellipsis, the whole sentence in its title */
+.scBar .said {
+  display: block; min-height: 1.45em; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%;
 }
-
-/* ---------------------------------------------------------------- the header's pinned context (CoastPage) */
-/* the context line: what this is, and (in the trip) the way back to the gates beside it */
-/* One line whatever the font: the words give way with an ellipsis before the link is ever pushed to a second
-   line or cut (a wider face on another system must not change the header's height). */
-.ctx {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0 var(--s-16);
-  min-width: 0;
-  max-width: 100%;
+.scBar .tripName { font-size: var(--fs-13); }
+@media (max-width: 640px) {
+  .scBar .said { white-space: normal; overflow: visible; }
 }
-.ctx > span {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.ctxLink {
-  flex: none;
-  min-height: var(--s-32);
-  font-size: var(--type-small);
-  font-weight: 400;
-  white-space: nowrap;
-}
-@media (max-width: 360px) {
-  .ctxWord {
-    display: none;
-  }
-  .ctx {
-    column-gap: var(--s-12);
-  }
-}
-.pinned {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--s-24);
-}
-/* the fishery and the way back share a line; the season line takes its own, whole */
-.pinned > :first-child {
-  flex: 0 1 300px;
-  margin-top: 0;
-}
-.pinned .chip {
-  flex: 1 0 100%;
-  order: 3;
-}
-.pinned .carried {
-  flex: 1 0 100%;
-  order: 4;
-}
-.chip {
-  justify-content: flex-start;
-  text-align: left;
-  min-width: 0;
-  max-width: 100%;
-  white-space: normal;
-  font-size: var(--type-small);
-  line-height: var(--lh-snug);
-}
-.chip[data-tone="closure"] {
-  color: var(--closure);
-}
-.chip[data-tone="regulation"] {
-  color: var(--reg-text);
-}
-.carried {
-  margin: 0;
-  font-size: var(--type-small);
-  color: var(--ink-2);
-}
-.briefMoney {
-  display: grid;
-  gap: var(--s-12);
-  justify-items: start;
-  padding: var(--s-16) 0;
-  border-top: var(--rule) solid var(--ink);
-}
-.briefMoney p {
-  margin: 0;
-  max-width: var(--measure);
+@media (max-width: 640px) {
+  .scBar .said:empty { display: none; }
 }

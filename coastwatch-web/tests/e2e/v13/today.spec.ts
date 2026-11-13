@@ -2,7 +2,10 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { OK } from "../ports";
 
 /**
- * Today as the three gates (v13 lead decision 6; audit-C acceptance tests 1–8). A returning Moss Landing
+ * Today as the three gates (v13 lead decision 6; audit-C acceptance tests 1–8), in the v14 synthesis layout: the
+ * ticket's Status tab says why, the next date (once) and the domoic-acid test; its Record tab holds the three gates in
+ * detail; the sea dock holds the NWS advisories; readings sit on the chart under their layer chips (the CDPH test
+ * under "Toxin tests", off by default on Today). A returning Moss Landing
  * commercial Dungeness reader, on the fixture; the sea and the page clock are changed per test by answering the
  * page's own two reads (/today/data, /api/conditions), never by adding a fact to the product.
  */
@@ -42,6 +45,10 @@ async function monthLater(page: Page) {
 }
 
 const gates = (page: Page) => page.getByTestId("gate-list");
+/** the ticket's Record tab: the source record and the three gates in detail */
+const record = (page: Page) => page.getByTestId("nx-today").getByRole("tab", { name: "Record" }).click();
+/** the "Toxin tests" chip: the CDPH test's figure on the chart */
+const toxinLayer = (page: Page) => page.locator('[data-testid="nx-layers"] [data-layer="toxin"]').click();
 const inViewport = async (page: Page, testid: string) => {
   const b = await page.getByTestId(testid).first().boundingBox();
   const v = page.viewportSize()!;
@@ -54,6 +61,12 @@ test("the gates, in order: whale measures with the next assessment, then domoic 
   const page = await ctx.newPage();
   await page.goto(`${OK}/`);
   await expect(page.getByTestId("nx-today").getByRole("heading", { level: 1 })).toHaveText("Season delayed to at least Jan 1, 2027");
+  // the next date that can change it is said once on the page (the ticket's Status), above the detail
+  const today = page.getByTestId("nx-today");
+  await expect(today).toContainText("Next whale assessment, subject to change");
+  await expect(today).toContainText("Dec 15–18");
+  expect((await today.innerText()).match(/Next whale assessment/g)).toHaveLength(1);
+  await record(page);
   await expect(gates(page)).toBeVisible();
   expect(await gates(page).locator("[data-gate]").evaluateAll((els) => els.map((e) => e.getAttribute("data-gate")))).toEqual(["whale", "domoic", "sea"]);
   const whale = page.getByTestId("gate-whale");
@@ -63,11 +76,6 @@ test("the gates, in order: whale measures with the next assessment, then domoic 
   await expect(whale).toContainText("This is what delays the season: a whale-entanglement decision by CDFW, not a toxin result.");
   await expect(whale).toContainText("CDFW, for commercial crabbers: “Commercial season delayed");
   await expect(whale).not.toContainText(/recreational/i);
-  // the next date that can change it is said once on the page, large, above the gates
-  const today = page.getByTestId("nx-today");
-  await expect(today).toContainText("Next whale assessment, subject to change");
-  await expect(today).toContainText("Dec 15–18");
-  expect((await today.innerText()).match(/Next whale assessment/g)).toHaveLength(1);
   const domoic = page.getByTestId("gate-domoic");
   await expect(domoic).toContainText("Domoic acid");
   await expect(domoic).toContainText("CDPH tests");
@@ -75,7 +83,9 @@ test("the gates, in order: whale measures with the next assessment, then domoic 
   await expect(domoic).toContainText("A test result, at any level, does not lift the whale delay");
   await expect(page.getByTestId("gate-sea")).toContainText("NWS and NDBC");
   await expect(page.getByTestId("gate-sea")).toContainText("The sea and the season are separate");
-  // the fresh test (14 days) is still a figure on the chart, with the buoy
+  // the fresh test (14 days) is still a figure on the chart, under Toxin tests, with the buoy under Sea now
+  await expect(page.locator("[data-nx-sounding=buoy]")).toBeVisible({ timeout: 10_000 });
+  await toxinLayer(page);
   await expect(page.locator("[data-nx-sounding=test]")).toBeVisible({ timeout: 10_000 });
   // small words (audit T-4, T-6)
   const text = await page.getByTestId("nx-today").innerText();
@@ -92,14 +102,20 @@ test("a test older than 30 days is history: off the chart, worded as old in its 
   const page = await ctx.newPage();
   await monthLater(page);
   await page.goto(`${OK}/`);
+  // the ticket's Status says it is old (half-filled mark and the words)
+  await expect(page.getByTestId("nx-test-cell")).toHaveAttribute("data-state", "old");
+  await expect(page.getByTestId("nx-test-cell")).toContainText("(old)");
+  await record(page);
   const domoic = page.getByTestId("gate-domoic");
   await expect(domoic).toHaveAttribute("data-state", "old");
   await expect(domoic.getByTestId("nx-gate-domoic-headline")).toContainText("highest 9.8 of 30 ppm");
   await expect(domoic).toContainText("old");
   await expect(domoic).toContainText("This test is older than 30 days: it is history, not a reading of the water now.");
   await expect(domoic).toContainText("does not lift the whale delay");
-  // the buoy registers on the chart; the old test never does
+  // the buoy registers on the chart; the old test never does, not even with Toxin tests on
   await expect(page.locator("[data-nx-sounding=buoy]")).toBeVisible({ timeout: 10_000 });
+  await toxinLayer(page);
+  await page.waitForTimeout(600);
   await expect(page.locator("[data-nx-sounding=test]")).toHaveCount(0);
   // the port's other test site is in the gate too, old as well
   await expect(domoic).toContainText(/rock crab.*highest 20 ppm of 30/);
@@ -107,36 +123,38 @@ test("a test older than 30 days is history: off the chart, worded as old in its 
 });
 
 for (const [name, size] of Object.entries({ desktop: SIZES.desktop, phone: SIZES.phone })) {
-  test(`an NWS advisory is in the first screen at ${size.width} px, under the status, stamped with NWS and its issue time`, async ({ browser }) => {
+  test(`an NWS advisory is in the first screen at ${size.width} px (the sea dock; the ticket's strip on a phone), stamped with NWS and its issue time`, async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: size, storageState: { cookies: [], origins: [] } });
     await reader(ctx);
     const page = await ctx.newPage();
     await withAdvisory(page);
     await page.goto(`${OK}/`);
     const adv = page.getByTestId("advisories");
-    await expect(adv).toContainText("NWS Small Craft Advisory in effect from Thursday morning through Friday morning");
+    await expect(adv).toHaveCount(1);
+    await expect(adv).toContainText("Small Craft Advisory");
+    await expect(adv).toContainText("in effect from Thursday morning through Friday morning");
     await expect(adv).toContainText(/Advisory · NWS · issued/i);
     await expect(adv).not.toContainText("not verified");
     await page.waitForTimeout(600);
-    // the sea's summary line names the advisory in the first screen at every width; the advisory's own block
-    // (its full words and stamp) is in the first screen on a desktop and follows the three lines on a phone
-    const seaLine = page.getByTestId("nx-gate-summary").locator('li[data-gate="sea"]');
-    await expect(seaLine).toHaveAttribute("data-advisory", "1");
-    await expect(seaLine).toContainText("Small Craft Advisory");
-    await expect(seaLine).toBeInViewport({ ratio: 1 });
-    if (name === "desktop") expect(await inViewport(page, "advisories"), "advisory block inside the first viewport").toBe(true);
+    // in the first screen at every width: the dock along the chart's foot on a desktop, the ticket's strip under the
+    // status on a phone (above the tabs)
+    expect(await inViewport(page, "advisories"), `advisory block inside the first viewport at ${name}`).toBe(true);
+    // and its span over the forecast bars
+    await expect(page.getByTestId("nx-sea-dock")).toContainText(/Small craft/i);
     // it also leads the sea gate
+    await record(page);
     await expect(page.getByTestId("nx-gate-sea-headline")).toHaveAttribute("data-role", "advisory");
     await ctx.close();
   });
 }
 
 for (const size of [SIZES.phone, SIZES.narrow]) {
-  test(`at ${size.width} px the measured waves are in the sea gate (the chart has no room for the buoy figure)`, async ({ browser }) => {
+  test(`at ${size.width} px the measured waves are in the sea gate (the chart has room for little)`, async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: size, storageState: { cookies: [], origins: [] } });
     await reader(ctx);
     const page = await ctx.newPage();
     await page.goto(`${OK}/`);
+    await record(page);
     await expect(page.getByTestId("gate-sea")).toContainText(/Waves \d+\.\d ft at \d+ s at buoy 46236/, { timeout: 15_000 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await ctx.close();
@@ -149,6 +167,7 @@ test("each gate's next steps keep the port and are never dead ends; a line of fa
   await reader(ctx);
   const page = await ctx.newPage();
   await page.goto(`${OK}/`);
+  await record(page);
   await expect(page.getByTestId("gate-sea")).toContainText("Waves", { timeout: 15_000 });
   const hrefs = await gates(page).locator("a[href]").evaluateAll((as) => as.map((a) => a.getAttribute("href")!));
   const inApp = hrefs.filter((h) => h.startsWith("/"));
@@ -184,28 +203,22 @@ test("first visit: what Neritic is, what choosing a port leads to, and the one a
   await ctx.close();
 });
 
-test("the three gates are said in three lines under the status: all in the first screen at 1440, the first at 390 at rest", async ({ browser }) => {
+test("what decides a trip is in the first screen: why and the next date, the domoic-acid test, the sea; all at 1440, the status at 390 at rest", async ({ browser }) => {
   for (const [size, need] of [[SIZES.desktop, 3], [SIZES.phone, 1]] as const) {
     const ctx = await browser.newContext({ viewport: size, storageState: { cookies: [], origins: [] } });
     await reader(ctx);
     const page = await ctx.newPage();
     await page.goto(`${OK}/`);
-    const lines = page.getByTestId("nx-gate-summary").locator("li");
-    await expect(lines).toHaveCount(3);
-    await expect(page.getByTestId("gate-sea")).toContainText("Waves", { timeout: 15_000 });
+    await expect(page.getByTestId("nx-sea-dock")).toContainText("NWS PZZ535", { timeout: 15_000 });
     await page.waitForTimeout(800);
-    expect(await lines.evaluateAll((els) => els.map((e) => e.getAttribute("data-gate")))).toEqual(["whale", "domoic", "sea"]);
-    await expect(lines.nth(0)).toHaveText(/^Whale\s*Delay · next Dec 15–18$/);
-    await expect(lines.nth(1)).toHaveText(/^Domoic acid\s*Test 14 days ago$/);
-    await expect(lines.nth(2)).toHaveText(/^Sea\s*Seas \d+–\d+ ft forecast$/);
-    // one line each: no summary wraps in the margin or the sheet
-    for (const h of await lines.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))) expect(h).toBeLessThan(36);
-    for (let i = 0; i < need; i++) await expect(lines.nth(i), `${size.width}: line ${i + 1} in the first screen`).toBeInViewport({ ratio: 1 });
-    if (size.width === 1440) {
-      // and the summary sits above the advisory slot, the change line and the next date
-      const sum = (await page.getByTestId("nx-gate-summary").boundingBox())!;
-      expect(sum.y + sum.height).toBeLessThan(480);
-    }
+    // whale: the delay's cause and the next date it can change, said once; domoic acid: the test and its age; the sea
+    const parts = [page.getByTestId("nx-decision"), page.getByTestId("nx-test-cell"), page.getByTestId("nx-sea-dock")];
+    await expect(parts[0]).toHaveText(/Next whale assessment, subject to change · Dec 15–18/);
+    await expect(page.getByTestId("nx-today")).toContainText("Humpback whale entanglements");
+    await expect(parts[1]).toContainText("Dungeness, highest 9.8 of 30 ppm");
+    await expect(parts[1]).toContainText("14 days ago");
+    await expect(parts[2]).toContainText(/ft · NWS forecast/i);
+    for (let i = 0; i < need; i++) await expect(parts[i], `${size.width}: part ${i + 1} in the first screen`).toBeInViewport({ ratio: size.width === 1440 ? 1 : 0.5 });
     await ctx.close();
   }
 });
@@ -228,7 +241,7 @@ test("nothing jumps when the port's records arrive: the placeholder stands at th
   });
   await page.goto(`${OK}/`);
   await expect(page.getByTestId("skeleton").first()).toBeVisible();
-  await expect(page.getByTestId("nx-gate-summary")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("nx-decision")).toBeVisible({ timeout: 15_000 });
   await page.waitForTimeout(1500);
   expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBeLessThan(0.1);
   await ctx.close();

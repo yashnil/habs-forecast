@@ -1,0 +1,279 @@
+{
+ "trip-empty-1440x900": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type catch and price"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-done-1440x900": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type the regression trip",
+   "ok crew after costs, 20 %",
+   "ok fuel and bait/ice shared (off the top)",
+   "net to boat: Net to boat, hypothetical: $2,602.24 $2,602.24 $2,602.24",
+   "ok net to boat shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "today-1440x900": {
+  "url": "http://localhost:5910/today?place=port-223",
+  "steps": [
+   "ok open",
+   "ok Today heading"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "research-1440x900": {
+  "url": "http://localhost:5910/research?station=HABs-SantaCruzWharf&var=pDA&range=3y&day=2026-05-27",
+  "steps": [
+   "ok open",
+   "ok plot drawn",
+   "inspector: SAMPLE 887 OF 905 ‹ › 11 11 ng/mL ng/mL May 27, 2026 · 7:45 AM PDT 2026-05-27 14:45 UTC Measured, as published: 11.1919 ng/mL 22× the model’s reference level SAME VISIT Pseudo-nitzschia, seriata 2,245",
+   "ok the May 27 sample is the one shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "alerts-1440x900": {
+  "url": "http://localhost:5910/alerts?place=port-223",
+  "steps": [
+   "ok open",
+   "ok follow Fort Bragg",
+   "alerts: 1",
+   "ok check now makes one alert"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-empty-1280x720": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type catch and price"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-done-1280x720": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type the regression trip",
+   "ok crew after costs, 20 %",
+   "ok fuel and bait/ice shared (off the top)",
+   "net to boat: Net to boat, hypothetical: $2,602.24 $2,602.24 $2,602.24",
+   "ok net to boat shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "today-1280x720": {
+  "url": "http://localhost:5910/today?place=port-223",
+  "steps": [
+   "ok open",
+   "ok Today heading"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "research-1280x720": {
+  "url": "http://localhost:5910/research?station=HABs-SantaCruzWharf&var=pDA&range=3y&day=2026-05-27",
+  "steps": [
+   "ok open",
+   "ok plot drawn",
+   "inspector: SAMPLE 887 OF 905 ‹ › 11 11 ng/mL ng/mL May 27, 2026 · 7:45 AM PDT 2026-05-27 14:45 UTC Measured, as published: 11.1919 ng/mL 22× the model’s reference level SAME VISIT Pseudo-nitzschia, seriata 2,245",
+   "ok the May 27 sample is the one shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "alerts-1280x720": {
+  "url": "http://localhost:5910/alerts?place=port-223",
+  "steps": [
+   "ok open",
+   "ok follow Fort Bragg",
+   "alerts: 1",
+   "ok check now makes one alert"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-empty-1100x800": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type catch and price"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-done-1100x800": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type the regression trip",
+   "ok crew after costs, 20 %",
+   "ok fuel and bait/ice shared (off the top)",
+   "net to boat: Net to boat, hypothetical: $2,602.24 $2,602.24 $2,602.24",
+   "ok net to boat shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "today-1100x800": {
+  "url": "http://localhost:5910/today?place=port-223",
+  "steps": [
+   "ok open",
+   "ok Today heading"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "research-1100x800": {
+  "url": "http://localhost:5910/research?station=HABs-SantaCruzWharf&var=pDA&range=3y&day=2026-05-27",
+  "steps": [
+   "ok open",
+   "ok plot drawn",
+   "inspector: SAMPLE 887 OF 905 ‹ › 11 11 ng/mL ng/mL May 27, 2026 · 7:45 AM PDT 2026-05-27 14:45 UTC Measured, as published: 11.1919 ng/mL 22× the model’s reference level SAME VISIT Pseudo-nitzschia, seriata 2,245",
+   "ok the May 27 sample is the one shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "alerts-1100x800": {
+  "url": "http://localhost:5910/alerts?place=port-223",
+  "steps": [
+   "ok open",
+   "ok follow Fort Bragg",
+   "alerts: 1",
+   "ok check now makes one alert"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-empty-390x844": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type catch and price"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-done-390x844": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type the regression trip",
+   "ok crew after costs, 20 %",
+   "ok fuel and bait/ice shared (off the top)",
+   "net to boat: $2,602.24",
+   "ok net to boat shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "today-390x844": {
+  "url": "http://localhost:5910/today?place=port-223",
+  "steps": [
+   "ok open",
+   "ok Today heading"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "research-390x844": {
+  "url": "http://localhost:5910/research?station=HABs-SantaCruzWharf&var=pDA&range=3y&day=2026-05-27",
+  "steps": [
+   "ok open",
+   "ok plot drawn",
+   "ok the sample is shown on a phone",
+   "inspector: SAMPLE 887 OF 905 ‹ › 11 11 ng/mL ng/mL May 27, 2026 · 7:45 AM PDT 2026-05-27 14:45 UTC Details Measured, as published: 11.1919 ng/mL 22× the model’s reference level SAME VISIT Pseudo-nitzschia, seria",
+   "ok the May 27 sample is the one shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "alerts-390x844": {
+  "url": "http://localhost:5910/alerts?place=port-223",
+  "steps": [
+   "ok open",
+   "ok follow Fort Bragg",
+   "alerts: 1",
+   "ok check now makes one alert"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-empty-320x640": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type catch and price"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "trip-done-320x640": {
+  "url": "http://localhost:5910/coast?place=port-592&view=trip",
+  "steps": [
+   "ok open",
+   "ok trip inputs visible",
+   "ok type the regression trip",
+   "ok crew after costs, 20 %",
+   "ok fuel and bait/ice shared (off the top)",
+   "net to boat: $2,602.24",
+   "ok net to boat shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "today-320x640": {
+  "url": "http://localhost:5910/today?place=port-223",
+  "steps": [
+   "ok open",
+   "ok Today heading"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "research-320x640": {
+  "url": "http://localhost:5910/research?station=HABs-SantaCruzWharf&var=pDA&range=3y&day=2026-05-27",
+  "steps": [
+   "ok open",
+   "ok plot drawn",
+   "ok the sample is shown on a phone",
+   "inspector: SAMPLE 887 OF 905 ‹ › 11 11 ng/mL ng/mL May 27, 2026 · 7:45 AM PDT 2026-05-27 14:45 UTC Details Measured, as published: 11.1919 ng/mL 22× the model’s reference level SAME VISIT Pseudo-nitzschia, seria",
+   "ok the May 27 sample is the one shown"
+  ],
+  "errors": [],
+  "hscroll": 0
+ },
+ "alerts-320x640": {
+  "url": "http://localhost:5910/alerts?place=port-223",
+  "steps": [
+   "ok open",
+   "ok follow Fort Bragg",
+   "alerts: 1",
+   "ok check now makes one alert"
+  ],
+  "errors": [],
+  "hscroll": 0
+ }
+}

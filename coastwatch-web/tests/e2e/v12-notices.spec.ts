@@ -23,9 +23,11 @@ test.beforeEach(async ({ context }) => seed(context));
 
 test("Today's notices row opens every notice for the port and the coast, each with agency, action, dates, source and 'not verified'", async ({ page }) => {
   await page.goto(`${OK}/today?place=port-592`);
-  const row = page.getByRole("button", { name: /^Notices/ });
-  await expect(row).toContainText("official, not verified");
+  // v14: the ticket's Notices tab, its count on the tab
+  const row = page.getByTestId("nx-today").getByRole("tab", { name: /^Notices/ });
+  await expect(row).toContainText(/Notices\s*\d+/);
   await row.click();
+  await expect(page.getByTestId("nx-today").getByRole("tabpanel")).toContainText(/official notices? · not verified/i);
   await page.getByTestId("nx-notices-link").click();
   await expect(page).toHaveURL(/\/notices\?place=port-592$/);
   const list = page.getByTestId("nx-notices");

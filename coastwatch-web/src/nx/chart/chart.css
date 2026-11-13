@@ -34,7 +34,9 @@
 .n12-water-name-sm { color: var(--water-label); text-shadow: 0 0 2px var(--shore-halo), 0 0 5px var(--shore-halo); }
 .n12-port-name { font-family: var(--font); font-weight: var(--w6); font-size: var(--fs-13); color: var(--ink); text-shadow: 0 0 2px var(--halo), 0 0 5px var(--halo), 0 0 8px var(--halo); }
 .n12-port-name-focus { font-size: var(--fs-15); font-weight: var(--w7); }
-.n12-port-tag { display: block; margin-top: 2px; font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--ink); }
+.n12-port-label { display: block; }
+.n12-mark[data-anchor$="left"] .n12-port-label { text-align: right; }
+.n12-port-tag { display: block; margin-top: 2px; text-shadow: 0 0 2px var(--halo), 0 0 4px var(--halo), 0 0 7px var(--halo); font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--ink); }
 /* a port: a ringed dot; the current port larger, on a paper halo, its ring expanding once; a followed port in ultramarine */
 .n12-port-sym { position: absolute; left: 0; top: 0; width: 0; height: 0; }
 .n12-port-sym i { position: absolute; left: -4.5px; top: -4.5px; width: 9px; height: 9px; box-sizing: border-box; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); }
@@ -69,6 +71,13 @@
 .n12-reg-tick { stroke: var(--coral); stroke-width: 1.8; }
 .n12-reg .n12-reg-wash { fill: var(--coral); opacity: 0.085; }
 .n12-reg-ribbon { fill: var(--coral); opacity: 0.16; }
+/* a health advisory's area: the coral illustrative hatch, light inside, heavier at its two limits */
+.n12-reg-hatch-ground { fill: var(--coral-hatch); }
+.n12-reg-hatch-stripe { fill: var(--coral); }
+.n12-reg .n12-reg-adv-band { opacity: 0.1; }
+.n12-reg-adv-edge { opacity: 0.42; }
+.n12-reg-adv-title { font-family: var(--font); font-size: var(--fs-13); font-weight: var(--w7); fill: var(--coral-map); paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 5px; stroke-linejoin: round; }
+.n12-reg-adv-note { font-family: var(--font); font-size: var(--fs-11); font-weight: var(--w6); fill: var(--ink); paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 4px; stroke-linejoin: round; }
 .n12-reg-bracket { stroke: var(--coral); stroke-width: 4; stroke-linejoin: miter; }
 .n12-reg-limitline { stroke: var(--coral); stroke-width: 1.5; stroke-dasharray: 8 6; }
 .n12-reg-text { font-family: var(--font); font-size: var(--fs-13); font-weight: var(--w6); fill: var(--coral-map); paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 4px; stroke-linejoin: round; }

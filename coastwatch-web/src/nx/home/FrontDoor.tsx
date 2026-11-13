@@ -1,5 +1,7 @@
 "use client";
 
+import { Ticket, TicketMain } from "@/nx/ds/stage/Ticket";
+import { PageLayout } from "@/nx/ds/layout";
 import { LayoutGroup, MotionConfig } from "motion/react";
 import { useCallback, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { ChartScene } from "@/nx/chart/scene";
@@ -56,10 +58,16 @@ export function FrontDoor({ finder }: { finder: FinderData }) {
               <TodayView port={{ key: port.key, name: port.name, lon: port.lon, lat: port.lat }} initial={null} arriving={arriving} />
             ) : (
               <section className={t.today} data-testid="nx-today">
-                <p className={t.scope}>
-                  <RootPortName />
-                </p>
-                <Skeleton label="Reading your port’s records" figure lines={4} />
+                {/* v14: the placeholder stands where Today's ticket will (the stage's right side), in Today's layout */}
+                <PageLayout mode="stage" phoneMap={0.27} />
+                <Ticket at={null} width={404} label="Today at your port">
+                  <TicketMain>
+                    <p className={t.scope}>
+                      <RootPortName />
+                    </p>
+                    <Skeleton label="Reading your port’s records" figure lines={4} />
+                  </TicketMain>
+                </Ticket>
               </section>
             )}
           </div>

@@ -108,7 +108,35 @@ export type ModelsView = {
   outlook: { headline: string; words: string[]; provenance: Provenance | null; signal: "higher" | "lower" | "none" | "unknown" } | null;
 };
 
+/**
+ * v14: the domoic-acid test the ticket's Status shows (its gauge against the action level), or the honest slot when the
+ * port has no CDPH test site. The same test the domoic gate leads with; never an average (T8).
+ */
+export type TestCell =
+  | { state: "none" }
+  | { state: "error" }
+  | {
+      state: "ok";
+      /** "Dungeness" */
+      species: string;
+      site: string;
+      tissue: string | null;
+      /** the highest result, ppm; null when none was detected */
+      max: number | null;
+      /** CDPH's action level, ppm, when one applies */
+      limit: number | null;
+      n: number;
+      /** "Sep 28" */
+      day: string;
+      /** "14 days ago" */
+      age: string;
+      old: boolean;
+      provenance: Provenance | null;
+    };
+
 export type TodayView = {
+  /** v14: the test the ticket's Status shows */
+  test: TestCell;
   place: { key: string; name: string; lat: number; lon: number };
   now: string;
   fishery: FisheryId;
@@ -286,7 +314,7 @@ function testFor(model: TodayModel, fishery: FisheryId): TestSiteView | null {
 }
 
 const speciesShort = (s: string) => (/dungeness/i.test(s) ? "Dungeness" : cap1(s.toLowerCase()));
-const ppmWords = (v: number) => String(Number(v.toPrecision(3)));
+export const ppmWords = (v: number) => String(Number(v.toPrecision(3)));
 const nums = (t: TestSiteView) => (t.latest?.values_ppm ?? []).filter((v): v is number => v != null);
 /** each result as CDPH printed it ("<2.5", "ND", "20"): censored values stay censored (T7) */
 const rawOf = (t: TestSiteView) => (t.latest as (NonNullable<TestSiteView["latest"]> & { values_raw?: string[] }) | null)?.values_raw ?? (t.latest?.values_ppm ?? []).map((v) => (v == null ? "ND" : String(v)));
@@ -520,7 +548,26 @@ export function buildToday(inp: TodayInputs, o: BuildOptions): TodayView {
   }
   const gates = buildGates({ place: o.place.key, whale: whaleIn, test: testIn, sea: seaInput(model, sea, now, today) });
 
+  const testCell: TestCell = model.testsError
+    ? { state: "error" }
+    : !test?.latest
+      ? { state: "none" }
+      : {
+          state: "ok",
+          species: speciesShort(test.site.species),
+          site: test.site.site_label,
+          tissue: test.latest.tissue === "unknown" ? null : test.latest.tissue,
+          max: maxOf(test),
+          limit: test.action,
+          n: test.latest.values_ppm.length,
+          day: day(test.latest.date, { ref: now }),
+          age: ageWords(test.latest.date, now),
+          old: test.stale,
+          provenance: testProvenance(test),
+        };
+
   return {
+    test: testCell,
     place: { key: o.place.key, name: o.place.name, lat: inp.place.lat, lon: inp.place.lon },
     now,
     fishery: o.fishery,

@@ -15,13 +15,13 @@ import { Icon } from "@/nx/ds/Icon";
 import { chartStyle, CHART_FRAME, DEPTH_LAYER_IDS, modePaint, posterImages, posterLandEast, readPalette } from "./style";
 import { GraticuleLabels } from "./Neatline";
 import { ChartLabels, CanyonName, type ChartPort } from "./Labels";
-import { RegulationLayer } from "./RegulationLayer";
+import { RegulationLayer, regLineBox, regTextBox } from "./RegulationLayer";
 import { DepthLabels } from "./DepthLabels";
 import { DeepWater } from "./DeepWater";
 import { useChartHighlight } from "./highlight";
 import { anchorShift, getCameraAnchor, onCameraAnchor, type CameraAnchor } from "./anchor";
 import { flightDelay, noteFlight } from "./flight";
-import { getMapLayers, useMapLayer } from "./mapLayers";
+import { getMapLayers, LAYERS_DRAWN_EVENT, subscribeMapLayers, useMapLayer } from "./mapLayers";
 import { useRegulation } from "./regulation";
 
 /** The place lit from outside the chart (highlight.ts): a ring at its point, redrawn with the camera. */
@@ -66,7 +66,7 @@ function ChartControls() {
   );
 }
 
-type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView } };
+type Win = Window & { __cwMap?: MapLibreMap; __nxChart?: { inits: number; map: MapLibreMap | null; tier: GraphicsTier; camera: Camera | null; scene: string | null; keep?: typeof keepChartPointInView; anchor?: CameraAnchor | null; target?: Camera } };
 
 const bezier = (t: number) => {
   // cubic-bezier(EASE_FLIGHT) solved for y at x = t: the camera's curve between places (slow out, long glide in)
@@ -230,12 +230,20 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const writeLayers = useCallback(() => {
     const el = sheetRef.current;
     if (!el) return;
+    // not before the chart can say: on the live tier, once the map has drawn (the attribute appears then)
+    if (el.dataset.tier !== "static" && el.dataset.mapReady !== "1") return;
     const m = mapRef.current;
     const on: string[] = [];
     if (m && m.getLayer("contours") && m.getLayoutProperty("contours", "visibility") !== "none" && getMapLayers().on.depth) on.push("depth");
-    if (el.querySelector(".n12-reg-wrap")) on.push("regulation");
-    const marked = new Set(allMarks().filter((e) => e.el.style.visibility !== "hidden").map((e) => e.spec.layer).filter(Boolean) as string[]);
-    for (const id of marked) if (!on.includes(id)) on.push(id);
+    if (el.querySelector(".n12-reg-wrap:not([data-leaving])")) on.push("regulation");
+    // a page's marks (buoys, tests, stations): a layer is drawn while its marks are on the chart (they mount with the
+    // chip and leave with it); a layer that has nothing to draw at this place counts as drawn while its chip is on
+    const layers = getMapLayers();
+    const registered = new Set(allMarks().map((e) => e.spec.layer).filter(Boolean) as string[]);
+    for (const id of Object.keys(layers.on)) {
+      if (id === "depth" || id === "regulation" || on.includes(id)) continue;
+      if (registered.has(id) || layers.on[id]) on.push(id);
+    }
     const v = on.join(" ");
     if (el.getAttribute("data-layers") !== v) el.setAttribute("data-layers", v);
   }, []);
@@ -269,15 +277,16 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       if (b.width) obstacles.push({ x0: b.x, y0: b.y, x1: b.x + b.width, y1: b.y + b.height });
     }
     // a regulation line's or band's name holds its place (RegulationLayer.tsx draws a line only with its name)
-    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text[data-reg-hold]").forEach((t) => {
+    frameEl.querySelectorAll<SVGTextElement>(".n12-reg text[data-reg-hold]").forEach((t) => {
       if (t.getAttribute("visibility") === "hidden") return;
-      const b = t.getBBox();
+      const b = regTextBox(t);
       if (b.width) obstacles.push({ x0: b.x - 2, y0: b.y - 2, x1: b.x + b.width + 2, y1: b.y + b.height + 2 });
     });
     // a zone's boundary line (a parallel of latitude): a name is never set across it, struck through
-    frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg path.n12-reg-line, .n12-reg path.n12-reg-limitline").forEach((ln) => {
-      const b = ln.getBBox();
-      if (b.width > 24 && b.height < 3) obstacles.push({ x0: b.x, y0: b.y - 7, x1: b.x + b.width, y1: b.y + b.height + 7 });
+    frameEl.querySelectorAll<SVGPathElement>(".n12-reg path.n12-reg-line, .n12-reg path.n12-reg-limitline").forEach((ln) => {
+      if (ln.getAttribute("visibility") === "hidden") return;
+      const b = regLineBox(ln);
+      if (b && b.width > 24 && b.height < 3) obstacles.push({ x0: b.x, y0: b.y - 7, x1: b.x + b.width, y1: b.y + b.height + 7 });
     });
     const z = f.camera.zoom;
     const entries = allMarks().filter((e) => (e.spec.minZoom ?? -1) <= z && z <= (e.spec.maxZoom ?? 99));
@@ -290,9 +299,9 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
     // stations and ports (priority 20 and up), which matter more where they stand, and holds its place against the
     // names of water below them (a label that yielded keeps `data-reg-yield` so the layer's per-frame drawing does
     // not flash it back)
-    const reg = [...frameEl.querySelectorAll<SVGGraphicsElement>(".n12-reg text:not([data-reg-hold])")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: t.getBBox() }));
+    const reg = [...frameEl.querySelectorAll<SVGTextElement>(".n12-reg text:not([data-reg-hold])")].filter((t) => t.getAttribute("visibility") !== "hidden" || t.hasAttribute("data-reg-yield")).map((t) => ({ t, b: regTextBox(t) }));
     if (reg.length) {
-      const hits = (i: number, b: DOMRect) => b.x < placed[i].left + items[i].width && b.x + b.width > placed[i].left && b.y < placed[i].top + items[i].height && b.y + b.height > placed[i].top;
+      const hits = (i: number, b: { x: number; y: number; width: number; height: number }) => b.x < placed[i].left + items[i].width && b.x + b.width > placed[i].left && b.y < placed[i].top + items[i].height && b.y + b.height > placed[i].top;
       const live = reg.filter(({ t, b }) => {
         const yields = placed.some((pl, i) => pl.visible && items[i].priority >= 20 && hits(i, b));
         if (yields) t.setAttribute("data-reg-yield", "");
@@ -305,6 +314,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       });
     }
     const shown = new Set<string>();
+    const keptDots = new Set<string>();
     const leaders: string[] = [];
     placed.forEach((pl, i) => {
       const e = entries[i];
@@ -328,7 +338,10 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const pt = e.el.previousElementSibling as HTMLElement | null;
       if (pt?.dataset.nxPoint === e.spec.id) {
         pt.style.transform = `translate(${Math.round(it.x)}px, ${Math.round(it.y)}px)`;
-        pt.style.visibility = pl.visible ? "visible" : "hidden";
+        // the reader's port keeps its symbol where its name gave way (to a transect, a locator)
+        const keepDot = !!e.spec.keep && it.x >= area.x0 && it.x <= area.x1 && it.y >= area.y0 && it.y <= area.y1;
+        pt.style.visibility = pl.visible || keepDot ? "visible" : "hidden";
+        if (keepDot) keptDots.add(e.spec.id);
       }
     });
     const svg = frameEl.querySelector(".n12-leaders");
@@ -338,7 +351,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       if (shown.has(e.spec.id)) continue;
       e.el.style.visibility = "hidden";
       const pt = e.el.previousElementSibling as HTMLElement | null;
-      if (pt?.dataset.nxPoint === e.spec.id) pt.style.visibility = "hidden";
+      if (pt?.dataset.nxPoint === e.spec.id && !keptDots.has(e.spec.id)) pt.style.visibility = "hidden";
     }
   }, [writeLayers]);
 
@@ -524,7 +537,12 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
       const target = cameraFor(scene, vp, coverRef.current, getCameraAnchor());
       const m = mapRef.current;
       const w = window as Win;
-      if (w.__nxChart) w.__nxChart.scene = scene.id;
+      if (w.__nxChart) {
+        w.__nxChart.scene = scene.id;
+        // for tests: the anchor and the camera the scene asked for
+        w.__nxChart.anchor = getCameraAnchor();
+        w.__nxChart.target = target;
+      }
       document.documentElement.dataset.nxScene = scene.id;
       if (m) {
         // the view's own zoom limits (Explore keeps the coast in sight), else the chart's
@@ -548,8 +566,11 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         // the same view refined while its pan is still travelling (Today's soundings arrive a moment after the
         // page): the pan carries on to the refined camera instead of jumping there
         const left = panUntil.current - performance.now();
-        const glide = !animate && left > 60;
-        const still = (!animate && !glide) || reduced || opening === "on" || opening === "run";
+        // a refinement that arrives while the flight is still waiting for a leaving ticket (the new ticket's anchor, a
+        // dock's cover) re-aims that flight, keeping its wait: the camera never starts before the old ticket has gone
+        const waiting = !animate && left > 60 && flightDelay() > 4;
+        const glide = !animate && left > 60 && !waiting;
+        const still = (!animate && !glide && !waiting) || reduced || opening === "on" || opening === "run";
         window.clearTimeout(flightTimer.current);
         if (still) {
           noteFlight(0, 0);
@@ -597,13 +618,48 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   }, [vp?.width, vp?.height]);
 
   useEffect(() => onMarksChange(schedule), [schedule]);
+  // what a page drew on the chart and asked lettering to keep clear of can change without the camera moving (a
+  // transect arriving after its reading): the names are placed again when those shapes change
+  useEffect(() => {
+    let last = "";
+    const t = window.setInterval(() => {
+      const f = frameRefLatest.current;
+      if (!f) return;
+      const sig = drawnObstacles(f.project)
+        .map((r) => `${Math.round(r.x0)},${Math.round(r.y0)},${Math.round(r.x1)},${Math.round(r.y1)}`)
+        .join(";");
+      if (sig !== last) {
+        last = sig;
+        schedule();
+      }
+    }, 250);
+    return () => window.clearInterval(t);
+  }, [schedule]);
+  // what the chart draws, kept current: a chip switched, regulation arriving or leaving (RegulationLayer's event)
+  useEffect(() => {
+    let r = 0;
+    const later = () => {
+      cancelAnimationFrame(r);
+      r = requestAnimationFrame(writeLayers);
+    };
+    const off = subscribeMapLayers(later);
+    window.addEventListener(LAYERS_DRAWN_EVENT, later);
+    return () => {
+      off();
+      window.removeEventListener(LAYERS_DRAWN_EVENT, later);
+      cancelAnimationFrame(r);
+    };
+  }, [writeLayers]);
 
   // the chart's own buttons arrive with the map: the furniture's height is measured against them. What changed while
   // the map was loading (a ticket's anchor, a dock's cover) is applied now, as a refinement of the same view.
   useEffect(() => {
     const el = frameRef.current;
     if (!el || !mapReady) return;
-    requestAnimationFrame(() => writeFoot(el));
+    requestAnimationFrame(() => {
+      writeFoot(el);
+      writeLayers();
+    });
     applyScene(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady]);
@@ -718,7 +774,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
   const scale = cam && vp ? scaleBar(cam.center[1], cam.zoom, Math.min(120, Math.max(60, freeW * 0.12))) : null;
 
   return (
-    <div className="n12-sheet" ref={sheetRef} data-testid="nx-sheet" data-tier={tier ?? "pending"} data-map-ready={mapReady ? "1" : "0"} data-layers="">
+    <div className="n12-sheet" ref={sheetRef} data-testid="nx-sheet" data-tier={tier ?? "pending"} data-map-ready={mapReady ? "1" : "0"}>
       <div className="n12-frame" ref={frameRef}>
         {showPoster && cam && vp ? (
           <div className="n12-poster" data-testid="nx-poster" aria-hidden="true">

@@ -76,6 +76,14 @@ export type ChartRegulationSpec = {
   zones?: { highlight: string | null; caption?: string | null } | null;
   /** official notice latitude bands */
   extents?: NoticeExtent[];
+  /**
+   * a health advisory's area as a latitude band (the rock crab "do not eat internal organs" advisory, CA/OR border to
+   * the Mendocino/Sonoma line): hatched water between the shore and the frame's west edge, lighter inside and heavier
+   * at its north and south limits, named with the record's words (`title`) and its provenance (`note`, which must say
+   * "not verified"). The record gives no offshore limit, so the band runs to the frame's edge. Illustrative-hatch
+   * coral: an area, not a measurement.
+   */
+  advisory?: { id: string; north: number; south: number; title: string; note: string } | null;
 };
 
 let current: { owner: number; spec: ChartRegulationSpec } | null = null;

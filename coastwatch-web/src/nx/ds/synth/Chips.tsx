@@ -65,12 +65,13 @@ export function LayerChips({ className }: { className?: string }) {
   }, [open]);
   const n = layers.filter((l) => on[l.id]).length;
   return (
-    <div ref={ref} className={cx(s.layers, open && s.layersOpen, className)} role="group" aria-label="Map layers" data-testid="nx-layers" data-n={n}>
+    <div ref={ref} className={cx(s.layers, open && s.layersOpen, className)} data-testid="nx-layers" data-n={n}>
       <button type="button" className={s.lyHead} aria-label="Layers" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((o) => !o)} data-testid="nx-layers-button">
         <LayersIcon />
         <span>Layers</span>
       </button>
-      <div className={s.lyList} id={listId}>
+      {/* the group is the chips themselves: on a phone it is hidden until "Layers" opens it */}
+      <div className={s.lyList} id={listId} role="group" aria-label="Map layers">
         {layers.map((l) => (
           <Chip key={l.id} pressed={!!on[l.id]} onPress={() => toggle(l.id)} swatch={l.swatch} keyText={{ question: l.question, key: l.key }} data-testid={`nx-layer-${l.id}`} data-layer={l.id}>
             {l.name}

@@ -13,17 +13,17 @@ import s from "./trip.module.css";
 type Said = { words: string; twin?: { id: string; name: string } } | null;
 
 /**
- * The trip's saving controls, in two parts the page places itself. `bar`: the trip's name, where it stands
- * against the saved list, and the actions that change that list (it sits in the desk header on a wide screen,
- * so it costs the results no height). `more`: the quieter actions, what was just undone or cleared, and the
- * saved trips drawer.
+ * The trip's actions, in two parts the pass places itself. `bar`: the stub's one filled button (it walks the blanks,
+ * then saves, then updates), the trip's name and where it stands against the saved list, and the quieter Save as new,
+ * Update and Saved. `more`: under the fold, the way back to the gates, Duplicate, the numbers-only link, New trip,
+ * what was just undone or cleared, and the saved trips drawer.
  *
  * What Save will do is said before it is pressed: "Update" exists only while a saved trip is open; "Save as
  * new" always adds one and refuses an exact copy (naming the trip that already holds those numbers) unless the
  * reader insists. The saved list is every port's, because the device's limit counts them all; two of them can
  * be set side by side.
  */
-export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorkspace; fishery: CoastFishery | null; placeKey: string }): { bar: ReactNode; more: ReactNode } {
+export function useTripScenarios({ trip, fishery, placeKey, next, toBrief, toMore }: { trip: TripWorkspace; fishery: CoastFishery | null; placeKey: string; next: { words: string; go: () => void } | null; toBrief: () => void; toMore: () => void }): { primary: ReactNode; bar: ReactNode; more: ReactNode } {
   const ports = usePorts();
   const portName = useMemo(() => {
     const m = new Map(ports.map((p) => [p.key, p.name]));
@@ -79,6 +79,43 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
   const b = picked.length === 2 ? trip.data?.scenarios.find((x) => x.id === picked[1]) : undefined;
   const cmp = a && b ? compareTrips(a, b, portName) : null;
 
+  // The one filled button: it walks the blanks while the trip does not add up ("Add fuel" → … ), then keeps the trip
+  // ("Save trip"), then updates the open trip once it has changed; a saved trip with nothing changed is said on it.
+  let primary: ReactNode;
+  if (next)
+    primary = (
+      <Button variant="primary" glyph="→" full onClick={next.go} data-testid="trip-next">
+        {next.words}
+      </Button>
+    );
+  else if (isOpen)
+    primary =
+      st.kind === "changed" ? (
+        <Button variant="primary" glyph="↓" full onClick={() => tell(trip.update(), (n) => `Updated “${n}”. Kept on this device only.`)} data-testid="trip-update">
+          Update
+        </Button>
+      ) : (
+        <Button variant="secondary" glyph="✓" full disabled data-testid="trip-update">
+          Saved on this device
+        </Button>
+      );
+  else
+    primary = (
+      <Button variant="primary" glyph="↓" full disabled={!entry} onClick={() => tell(trip.saveAsNew(), (n) => `Saved as “${n}”. Kept on this device only.`)} data-testid="trip-save-new">
+        Save trip
+      </Button>
+    );
+  const quietUpdate = isOpen && next ? (
+    <Button variant="quiet" className={s.inlineButton} disabled={st.kind !== "changed"} onClick={() => tell(trip.update(), (n) => `Updated “${n}”. Kept on this device only.`)} data-testid="trip-update">
+      Update
+    </Button>
+  ) : null;
+  const quietSave = isOpen || next ? (
+    <Button variant="quiet" className={s.inlineButton} disabled={!entry} onClick={() => tell(trip.saveAsNew(), (n) => `Saved as “${n}”. Kept on this device only.`)} data-testid="trip-save-new">
+      Save as new
+    </Button>
+  ) : null;
+
   const bar = (
     <section className={s.scBar} aria-label="This trip" data-testid="trip-strip">
       <div className={s.stripHead}>
@@ -93,19 +130,18 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
           {st.words}
         </p>
       </div>
-      <ButtonGroup wrap={false} className={s.scButtons}>
-        {isOpen ? (
-          <Button variant={st.kind === "changed" ? "primary" : "secondary"} disabled={st.kind !== "changed"} onClick={() => tell(trip.update(), (n) => `Updated “${n}”. Kept on this device only.`)} data-testid="trip-update">
-            Update
-          </Button>
-        ) : null}
-        <Button variant={isOpen ? "secondary" : "primary"} disabled={!entry} onClick={() => tell(trip.saveAsNew(), (n) => `Saved as “${n}”. Kept on this device only.`)} data-testid="trip-save-new">
-          Save as new
-        </Button>
-        <Button variant="secondary" onClick={() => setOpen(true)} aria-label={`Saved trips (${trip.capacity.used})`} data-testid="trip-saved-open">
+      <p className={s.scQuiet}>
+        {quietUpdate}
+        {quietSave}
+        <Button variant="quiet" className={s.inlineButton} onClick={() => setOpen(true)} aria-label={`Saved trips (${trip.capacity.used})`} data-testid="trip-saved-open">
           Saved ({trip.capacity.used})
         </Button>
-      </ButtonGroup>
+        {phone ? null : (
+          <Button variant="quiet" className={s.inlineButton} onClick={toMore} data-testid="trip-to-more">
+            More inputs
+          </Button>
+        )}
+      </p>
       <p className={s.said} aria-live="polite" data-testid="trip-said" title={said?.words}>
         {said?.twin ? (
           <>
@@ -137,6 +173,9 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
     <section className={s.scMore} aria-label="More for this trip, and your saved trips">
       <p className={s.said}>Trips are kept on this device only. Nothing is sent to Neritic.</p>
       <div className={s.scMoreActions}>
+        <Button variant="quiet" className={s.compact} onClick={toBrief} aria-label="Back to the gates and sea window" data-testid="coast-to-brief">
+          Gates and sea
+        </Button>
         {isOpen ? (
           <Button variant="quiet" className={s.compact} onClick={() => tell(trip.duplicate(st.id), (n) => `Copied as “${n}”.`)} data-testid="trip-duplicate">
             Duplicate this trip
@@ -321,5 +360,5 @@ export function useTripScenarios({ trip, fishery, placeKey }: { trip: TripWorksp
     </section>
   );
 
-  return { bar, more };
+  return { primary, bar, more };
 }

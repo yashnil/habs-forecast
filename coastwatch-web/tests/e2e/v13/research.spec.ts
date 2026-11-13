@@ -122,6 +122,8 @@ test("Monterey Wharf opens on its last pDA sample (Aug 31, 2022), over the whole
   await open(page, "station=HABs-MontereyWharf&var=pDA");
   await expect(page.getByTestId("range-all")).toHaveAttribute("aria-checked", "true");
   await expect(page.getByTestId("inspector-utc")).toHaveText("2022-08-31 14:45 UTC");
+  // the port pill names the station's area
+  await expect(page.getByTestId("nx-port-control")).toContainText("Near Monterey");
   await expect(page.getByTestId("inspector-position")).toContainText(/Sample (\d[\d,]*) of \1/);
   await expect(page.getByTestId("research-plot").locator("[data-selection]")).toBeVisible();
 });

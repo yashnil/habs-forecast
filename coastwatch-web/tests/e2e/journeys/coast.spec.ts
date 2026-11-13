@@ -5,7 +5,8 @@ import { OK } from "../ports";
 import { exact, field, inView, MOSS, savedCount, seed } from "../v13/trip";
 
 /**
- * Journey: planning a trip on My Coast (docs/coastwatch/v12/design-system/journeys.md, "Planning a trip"; the
+ * Journey: planning a trip on My Coast (v14: the brief is a ticket beside the port and the sea window in a dock; the
+ * trip is the pass along the chart's foot) (docs/coastwatch/v12/design-system/journeys.md, "Planning a trip"; the
  * v13 desk page and trip workspace). The brief: gates with their sources, the sea window chosen by the reader.
  * Then the money (`?view=trip`): the reader's own numbers, nothing filled in, "waiting for …" while blank, who
  * pays chosen explicitly, a grid scenario shown in the result and returned from, a trip saved on this device
@@ -91,7 +92,8 @@ test("a trip from Moss Landing: gates, the sea, the money, a scenario, saved and
   await expect(p.getByRole("heading", { name: "Sea window" })).toBeVisible();
   await p.goForward();
   await expect(p.getByTestId("trip-inputs")).toBeVisible();
-  await expect(p.locator("[data-nx-desk-header]")).toContainText("Hypothetical trip · Commercial");
+  await expect(p.getByTestId("trip-pass").locator("[data-nx-desk-header]")).toContainText("Hypothetical trip");
+  await expect(p.getByTestId("coast-fishery")).toHaveValue("dungeness_commercial");
 
   // nothing filled in, every result waiting and saying for what
   for (const label of ["Catch", "Price", "Fuel", "Fuel price", "Bait and ice", "Fees", "Crew"]) await expect(field(p, label)).toHaveValue("");
@@ -166,8 +168,8 @@ test("on a phone: the page scrolls under the chart strip; the season line and th
   await seed(ctx);
   const p = await ctx.newPage();
   await open(p, "&view=trip");
-  // v13: My Coast is a desk page. On a phone it is the page itself under a chart strip (no sheet to raise)
-  await expect(p.getByRole("button", { name: "Show more of this page" })).toBeHidden();
+  // v14: the trip is a block in the sheet, which rests leaving the chart strip at least 40 % of the screen (design issue 2)
+  expect((await p.getByTestId("nx-margin").boundingBox())!.y).toBeGreaterThanOrEqual(844 * 0.4 - 1);
   // the season line is whole, in view and clear of both bars, before and after the page is scrolled
   const whole = async (where: string) => {
     const box = (await status(p).boundingBox())!;
@@ -218,6 +220,8 @@ test("while the gates and the sea are read, placeholders hold their place: what 
     await p.goto(`${OK}/coast?place=${MOSS}`);
     await expect(p.getByTestId("skeleton")).toHaveCount(2);
     await expect(p.getByTestId("skeleton").first()).toContainText("Reading the season list, whale measures and CDPH tests");
+    // the stage settles first (the ticket finds its place beside the port), then the placeholders are measured
+    await p.waitForTimeout(1200);
     // what stands under each placeholder: the money section under the sea window, the sea window (phone) or the foot under the gates
     const under = p.getByRole("heading", { name: "The money" });
     const before = (await under.boundingBox())!.y + (await p.evaluate(() => document.querySelector(".n12-margin-scroll")!.scrollTop + window.scrollY));
