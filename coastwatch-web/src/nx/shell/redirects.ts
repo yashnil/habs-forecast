@@ -46,7 +46,7 @@ export function coastRedirect(sp: SP): string | null {
   return `/research${typeof sp.place === "string" ? qs([["place", sp.place]]) : ""}`;
 }
 
-const DESTINATIONS = new Set(["/today", "/explore", "/coast", "/research"]);
+const DESTINATIONS = new Set(["/today", "/explore", "/coast", "/research", "/alerts"]);
 
 /** Where choosing a port in the bar's finder takes the reader: the same page at the new port; from `/`, Today. */
 export function hrefForPort(pathname: string, key: string): string {

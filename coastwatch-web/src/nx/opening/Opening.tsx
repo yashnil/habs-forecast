@@ -28,8 +28,8 @@ export function OpeningStill() {
 
 const html = () => document.documentElement;
 const state = () => html().getAttribute("data-nx-opening");
-const MINOR = 0.42;
-const INDEX = 0.78;
+const MINOR = 0.3;
+const INDEX = 0.62;
 
 function finalPaint(map: MapLibreMap) {
   for (const d of DEPTH_THRESHOLDS) {
@@ -157,7 +157,7 @@ export function OpeningController() {
         html().setAttribute("data-nx-marks", "on");
         const overlay = document.querySelector<HTMLElement>(".n12-overlay");
         if (overlay) stops.push(animate(overlay, { opacity: [0, 1] }, register));
-        if (map) map.setPaintProperty("isobath-labels", "text-opacity", 1);
+        if (map?.getLayer("isobath-labels")) map.setPaintProperty("isobath-labels", "text-opacity", 1);
       });
       at(T(OPENING.total), finish);
     };

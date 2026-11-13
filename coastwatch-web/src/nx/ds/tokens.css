@@ -1,181 +1,363 @@
-/* Neritic Chart design tokens. The only file in src/nx allowed to hold colour literals (with palette.ts).
-   Spec: docs/coastwatch/v12/design-system/README.md. Three chart modes, each its own table, never an automatic
-   inversion of another. Data ramps: high is dark on Day's paper, high is light on Dusk's and Night's dark ground.
-   Contrast (WCAG 2) of each text token on its mode's paper is noted. */
+/* Neritic design tokens, v14 "synthesis" (docs/coastwatch/v14/design-system/README.md §1). The only file in src/nx
+   allowed to hold colour literals (with palette.ts).
+
+   The approved prototype (art/concept-4-synthesis/SYSTEM.md) is light: a lit sea (pale shelf, a slope that darkens
+   fast past 200 m, a saturated deep), warm paper land, white objects that float on the chart, ink text,
+   ultramarine for everything you can press or drag, coral for regulation and nothing else. Day is that palette.
+   Dusk and Night are not in the prototype: they keep v13's dark tables for the chart and map the synthesis roles
+   onto them (ultramarine and coral lightened for a dark ground), the smallest extension of the language.
+
+   Names kept from v12/v13 (--paper, --ink, --reg, --depth-*, --wash ...) carry the synthesis values, so every
+   existing component takes the new look without an edit. New names (--ultra, --coral, --paper-2 ...) are the
+   synthesis's own. */
 
 :root,
 [data-chart-mode="day"] {
-  --paper: #fffefa;
-  --ink: #0e1417;          /* 18.4 */
-  --ink-2: #2f4a5b;        /* 9.2 */
-  --water-name: #1f4c74;   /* 8.9 */
-  --reg: #a83ba6;          /* regulation line/rail colour, never text */
-  --reg-text: #7b2279;     /* 8.9 */
-  --closure: #8a3307;      /* 8.1, official closures only */
-  --land: #dfd8ae;
-  --land-relief-opacity: 0.55;
-  --depth-0: #7cb5f0; --depth-1: #90c3f4; --depth-2: #a5cff5; --depth-3: #badbf3; --depth-4: #cbe6f0;
-  --depth-5: #d6edee; --depth-6: #def1ee; --depth-7: #e5f4f0; --depth-8: #ebf6f2;
-  --isobath: #4b6270;
+  /* surfaces and ink */
+  --paper: #ffffff;             /* objects on the chart: tickets, docks, bars */
+  --paper-2: #f1f4f6;           /* a field's fill, a quiet surface, a hover */
+  --ink: #0c2233;               /* text and measured data; 16.2 on paper */
+  --ink-2: #47616f;             /* secondary text and labels; 6.5 on paper */
+  --ink-3: #8497a2;             /* hairlines and non-text marks only */
+  --line: rgba(12, 34, 51, 0.11);
+  --ultra: #2b3bd6;             /* everything you can press or drag */
+  --ultra-deep: #1d2aa8;
+  --ultra-press: #18238f;
+  --ultra-wash: #e8ebff;
+  --ultra-hatch: #dde1fb;
+  --coral: #f0502a;             /* regulation drawn on the water (lines only) */
+  --coral-ink: #bf360f;         /* regulation as text on paper, 5.6 */
+  --coral-map: #6e1903;         /* regulation as small text on water, haloed */
+  --coral-wash: #fdf0eb;
+  --coral-hatch: #fdeae3;
+  --water-label: #123b4d;
+  --land-label: #566b77;
+  --coast: #234e62;
+  /* the trip's columns (Waterfall) */
+  --gross: #1e4459; --cost: #cbd5dc; --crew: #bfc7f6; --cost-swatch: #dde4e9; --crew-swatch: #c9d0f7; --net-hatch: #9aa5f2; --net-wash: #eef1ff;
+  --track: #e3e9ed;             /* a gauge's empty track */
+  --switch-off: #7e929d;
+  --grab: #cad4da;              /* the phone sheet's handle */
+  --water-name-light: #eaf6f3;  /* a big water name on the deep blue */
+  --shore-halo: rgba(240, 249, 246, 0.92);  /* lettering on the water */
+  --land-halo: rgba(239, 241, 230, 0.9);    /* lettering on land */
+  --chip-glass: rgba(255, 255, 255, 0.86);  /* a tag set on the water (zone, sea area) */
+  --slot-glass: rgba(255, 255, 255, 0.94);
+
+  /* names kept from v12/v13, synthesis values */
+  --water-name: #123b4d;
+  --reg: #f0502a;
+  --reg-text: #bf360f;
+  --closure: #bf360f;
+  --land: #eff1e6;
+  --land-relief-opacity: 0.22;
+  /* the lit sea, shoal to deep: depth-0 is shallower than 10 m, depth-7 is 1,000 to 2,000 m, depth-8 deeper than 2,000 m.
+     The step from depth-4 to depth-5 is the shelf edge (200 m). */
+  --depth-0: #e9f7f2; --depth-1: #ddf2ee; --depth-2: #cfebea; --depth-3: #bfe2e6; --depth-4: #acd7e1;
+  --depth-5: #84bcd5; --depth-6: #6aa6c9; --depth-7: #5894be; --depth-8: #4c86b3;
+  --isobath: #ffffff;           /* band edges are fine light lines on the lit sea */
+  --contour: #0c2b3c;           /* the Depth layer's fathom contours */
+  --depth-label: #0c2b3c; --depth-label-2: #29475a;
+  --graticule: rgba(255, 255, 255, 0.26);
+  --graticule-land: rgba(42, 86, 106, 0.085);
   --halo: rgba(255, 255, 255, 0.92);
-  --rule-soft: rgba(14, 20, 23, 0.26);
+  --rule-soft: rgba(12, 34, 51, 0.16);
   --neat-a: #b7c4ca;
-  --hatch: rgba(14, 20, 23, 0.55);
-  --wash: #f4f2ea;                    /* a hover or surface ground, a shade under paper; ink on it 16.5 */
-  --sel: rgba(14, 20, 23, 0.1);       /* a selection ground (a pinned sample, a chosen cell): ink, not a hue */
-  /* the plot kit's marks (ds/plot): the crosshair and focus ring, a censored or reported-zero mark's stroke, the
-     model's dashed line, grid and gaps. Each mode's own values, so a hollow mark never sinks into a dark ground. */
-  --plot-cross: #0e1417; --plot-focus: #0e1417; --plot-point: #0e1417; --plot-censored: #0e1417; --plot-zero: #2f4a5b;
-  --plot-model: #2f4a5b; --plot-grid: rgba(14, 20, 23, 0.14); --plot-gap: rgba(14, 20, 23, 0.4);
+  --hatch: rgba(12, 34, 51, 0.55);
+  --wash: #f1f4f6;
+  --sel: rgba(12, 34, 51, 0.08);
+  --plot-cross: #2b3bd6; --plot-focus: #2b3bd6; --plot-point: #0c2233; --plot-censored: #0c2233; --plot-zero: #0c2233;
+  --plot-model: #47616f; --plot-grid: rgba(12, 34, 51, 0.11); --plot-gap: rgba(12, 34, 51, 0.4);
   --chl-0: #f6f4dc; --chl-1: #e6ebb8; --chl-2: #bdd68f; --chl-3: #82b77c;
   --chl-4: #418f74; --chl-5: #1b635b; --chl-6: #0b3e41; --chl-7: #052327;
-  --streak: #0e1417;
-  /* C-HARM probability, cw-probability-classes-v1's ten 10-point display intervals (display classes, not risk
-     tiers, T12): a quiet slate-violet, high is dark, never a warning hue and well clear of --reg. Built in OKLCH,
-     L* 95.9 → 22.7 in near-equal steps (min ΔL* 8.0); on paper 1.10:1 (class 0) to 11.9:1 (class 9). */
+  --streak: #0c2233;
+  /* C-HARM probability display classes (cw-probability-classes-v1, T12): unchanged from v13, a quiet slate-violet,
+     never a warning hue and well clear of coral */
   --prob-0: #f4f2fb; --prob-1: #dedae8; --prob-2: #c7c3d5; --prob-3: #b1acc3; --prob-4: #9b96b2;
   --prob-5: #8581a0; --prob-6: #706c8f; --prob-7: #5c587e; --prob-8: #48446d; --prob-9: #34315d;
-  /* Sea temperature, sequential (T21: never diverging without a stated climatology), cream to rust, its own
-     hue family (T22). OKLCH, L* 95.4 → 35.0 (min ΔL* 8.4); on paper 1.11:1 to 7.7:1. */
   --sst-0: #f8f2dc; --sst-1: #e8d9b5; --sst-2: #d9be90; --sst-3: #cba36f;
   --sst-4: #bc8952; --sst-5: #ac6f3b; --sst-6: #995628; --sst-7: #853e19;
-  /* which way the data ramps run in this mode, for the legend's words (RampLegend): on paper, high is dark */
   --ramp-says-darker: inline; --ramp-says-lighter: none;
+
+  /* elevation: objects float on the chart (the prototype's two shadows) */
+  --shadow: 0 1px 2px rgba(12, 34, 51, 0.1), 0 6px 16px rgba(12, 34, 51, 0.1), 0 20px 48px rgba(12, 34, 51, 0.16);
+  --shadow-sm: 0 1px 2px rgba(12, 34, 51, 0.12), 0 4px 14px rgba(12, 34, 51, 0.12);
+  --shadow-ticket: drop-shadow(0 1px 2px rgba(12, 34, 51, 0.12)) drop-shadow(0 10px 24px rgba(12, 34, 51, 0.16));
+  --shadow-pass: drop-shadow(0 1px 2px rgba(12, 34, 51, 0.12)) drop-shadow(0 12px 28px rgba(12, 34, 51, 0.18));
+  --shadow-btn: 0 1px 0 rgba(12, 34, 51, 0.25), 0 2px 6px rgba(43, 59, 214, 0.28);
+  --shadow-btn-hover: 0 1px 0 rgba(12, 34, 51, 0.3), 0 4px 10px rgba(43, 59, 214, 0.34);
+  --shadow-sheet: 0 -2px 6px rgba(12, 34, 51, 0.08), 0 -12px 32px rgba(12, 34, 51, 0.16);
+  --shadow-seg: 0 1px 3px rgba(12, 34, 51, 0.18);
+  --shadow-chip: 0 1px 2px rgba(12, 34, 51, 0.12);
+  --shadow-port: 0 0 0 5px rgba(255, 255, 255, 0.92), 0 2px 8px 4px rgba(12, 34, 51, 0.28);
+  --perf: rgba(12, 34, 51, 0.2);  /* a ticket's perforation */
+  --perf-light: rgba(255, 255, 255, 0.55);
+  /* the data-state grammar's two hatches (hypothetical, illustrative) */
+  --hatch-ultra: repeating-linear-gradient(135deg, #2b3bd6 0 1.6px, #dde1fb 1.6px 4px);
+  --hatch-coral: repeating-linear-gradient(135deg, #f0502a 0 1.6px, #fdeae3 1.6px 4px);
+  --hatch-net: repeating-linear-gradient(135deg, #9aa5f2 0 1.6px, #eef1ff 1.6px 4.6px);
+  --hatch-band: repeating-linear-gradient(135deg, rgba(43, 59, 214, 0.09) 0 2px, transparent 2px 9px);
+  --half-old: linear-gradient(90deg, #47616f 50%, #ffffff 50%);
+  --half-old-d: linear-gradient(135deg, #47616f 50%, #ffffff 50%);
+  --fade-paper: linear-gradient(rgba(255, 255, 255, 0), #ffffff 12px);
+  --sw-depth: repeating-linear-gradient(180deg, #cfebea 0 5px, #84bcd5 5px 6.5px, #acd7e1 6.5px 10px);
+  --sw-reg: rgba(240, 80, 42, 0.12);
+  --deep-blend: soft-light;
+  --deep-opacity: 0.42;
   color-scheme: light;
 }
 
 [data-chart-mode="dusk"] {
   --paper: #1c2226;
-  --ink: #e2e7e8;          /* 12.9 */
-  --ink-2: #aebbc0;        /* 8.2 */
-  --water-name: #a9c6de;   /* 9.0 */
-  --reg: #cf8ccd;
-  --reg-text: #e6b8e4;     /* 9.4 */
-  --closure: #f0a27c;      /* 7.8 */
+  --paper-2: #262d32;
+  --ink: #e2e7e8;
+  --ink-2: #aebbc0;
+  --ink-3: #6d7e86;
+  --line: rgba(226, 231, 232, 0.14);
+  --ultra: #9aa4ff;
+  --ultra-deep: #b7beff;
+  --ultra-press: #c9cfff;
+  --ultra-wash: #2a3157;
+  --ultra-hatch: #2e3560;
+  --coral: #ff7d5a;
+  --coral-ink: #ff9b7e;
+  --coral-map: #ffc2ae;
+  --coral-wash: #3a2722;
+  --coral-hatch: #46281f;
+  --water-label: #a9c6de;
+  --land-label: #b6b29c;
+  --coast: #a9c6de;
+  --gross: #a9c6de; --cost: #4c5a63; --crew: #5f679c; --cost-swatch: #4c5a63; --crew-swatch: #5f679c; --net-hatch: #9aa4ff; --net-wash: #2a3157;
+  --track: #39444b;
+  --switch-off: #6d7e86;
+  --grab: #4c5a63;
+  --water-name-light: #d4e6f1;
+  --shore-halo: rgba(28, 34, 38, 0.92);
+  --land-halo: rgba(28, 34, 38, 0.9);
+  --chip-glass: rgba(28, 34, 38, 0.86);
+  --slot-glass: rgba(28, 34, 38, 0.94);
+  --water-name: #a9c6de;
+  --reg: #ff7d5a;
+  --reg-text: #ff9b7e;
+  --closure: #ff9b7e;
   --land: #3d3a2e;
-  --land-relief-opacity: 0.35;
+  --land-relief-opacity: 0.3;
   --depth-0: #35617f; --depth-1: #315a75; --depth-2: #2d526b; --depth-3: #2a4a61; --depth-4: #274357;
   --depth-5: #243c4e; --depth-6: #223645; --depth-7: #20313e; --depth-8: #1f2d38;
-  --isobath: #7d97a6;
+  --isobath: #9fb6c4;
+  --contour: #d4e6f1;
+  --depth-label: #d4e6f1; --depth-label-2: #a9c6de;
+  --graticule: rgba(226, 231, 232, 0.12);
+  --graticule-land: rgba(226, 231, 232, 0.08);
   --halo: rgba(28, 34, 38, 0.92);
   --rule-soft: rgba(226, 231, 232, 0.24);
   --neat-a: #4a5a63;
   --hatch: rgba(226, 231, 232, 0.5);
   --wash: #262d32;
   --sel: rgba(226, 231, 232, 0.14);
-  --plot-cross: #e2e7e8; --plot-focus: #ffffff; --plot-point: #e2e7e8; --plot-censored: #e2e7e8; --plot-zero: #aebbc0;
+  --plot-cross: #9aa4ff; --plot-focus: #ffffff; --plot-point: #e2e7e8; --plot-censored: #e2e7e8; --plot-zero: #aebbc0;
   --plot-model: #aebbc0; --plot-grid: rgba(226, 231, 232, 0.16); --plot-gap: rgba(226, 231, 232, 0.42);
-  /* Dusk and Night are their own tables (README §4), not an inversion of Day: on a dark ground every data ramp
-     runs dark to light, high is LIGHT (as the depth tints run shoal-light to deep-dark here), lightness monotone.
-     High-is-dark on this ground would sink the highest values into the water. The legend says so in words. */
   --ramp-says-darker: none; --ramp-says-lighter: inline;
   --chl-0: #10302f; --chl-1: #17473f; --chl-2: #1f6150; --chl-3: #3a7d5c;
   --chl-4: #6a9a63; --chl-5: #a3b76e; --chl-6: #d4d48a; --chl-7: #f4f1c4;
   --streak: #e2e7e8;
-  /* dusk: high is light on the dark ground, lightness monotone. prob L* 18.4 → 85.7 (min ΔL* 7.1), on paper
-     1.17:1 to 11.1:1; sst L* 18.1 → 86.0 (min ΔL* 9.6), 1.16:1 to 11.2:1 */
   --prob-0: #2d2b3c; --prob-1: #3e3b53; --prob-2: #504a6a; --prob-3: #635b80; --prob-4: #766d96;
   --prob-5: #8a7faa; --prob-6: #9e93bd; --prob-7: #b2a7ce; --prob-8: #c7bcdf; --prob-9: #dbd2ef;
   --sst-0: #422518; --sst-1: #5f3820; --sst-2: #7b4e2a; --sst-3: #956636;
   --sst-4: #ac8049; --sst-5: #c29c62; --sst-6: #d6b981; --sst-7: #e9d6a3;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.3), 0 20px 48px rgba(0, 0, 0, 0.36);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32), 0 4px 14px rgba(0, 0, 0, 0.3);
+  --shadow-ticket: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) drop-shadow(0 10px 24px rgba(0, 0, 0, 0.36));
+  --shadow-pass: var(--shadow-ticket);
+  --shadow-btn: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-btn-hover: 0 1px 0 rgba(0, 0, 0, 0.5);
+  --shadow-sheet: 0 -2px 6px rgba(0, 0, 0, 0.3), 0 -12px 32px rgba(0, 0, 0, 0.36);
+  --shadow-seg: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.32);
+  --shadow-port: 0 0 0 5px rgba(28, 34, 38, 0.92);
+  --perf: rgba(226, 231, 232, 0.24);
+  --perf-light: rgba(28, 34, 38, 0.55);
+  --hatch-ultra: repeating-linear-gradient(135deg, #9aa4ff 0 1.6px, #2e3560 1.6px 4px);
+  --hatch-coral: repeating-linear-gradient(135deg, #ff7d5a 0 1.6px, #46281f 1.6px 4px);
+  --hatch-net: repeating-linear-gradient(135deg, #9aa4ff 0 1.6px, #2a3157 1.6px 4.6px);
+  --hatch-band: repeating-linear-gradient(135deg, rgba(154, 164, 255, 0.14) 0 2px, transparent 2px 9px);
+  --half-old: linear-gradient(90deg, #aebbc0 50%, #1c2226 50%);
+  --half-old-d: linear-gradient(135deg, #aebbc0 50%, #1c2226 50%);
+  --fade-paper: linear-gradient(rgba(28, 34, 38, 0), #1c2226 12px);
+  --sw-depth: repeating-linear-gradient(180deg, #35617f 0 5px, #9fb6c4 5px 6.5px, #274357 6.5px 10px);
+  --sw-reg: rgba(255, 125, 90, 0.16);
+  --deep-blend: screen;
+  --deep-opacity: 0.14;
   color-scheme: dark;
 }
 
 [data-chart-mode="night"] {
   --paper: #06090b;
-  --ink: #a89c88;          /* 7.4, dim and warm for dark adaptation */
-  --ink-2: #8a8070;        /* 5.1 */
-  --water-name: #7f93a3;   /* 6.3 */
-  --reg: #8f6a8d;
-  --reg-text: #b98db6;     /* 7.2 */
-  --closure: #c08a6a;      /* 6.7 */
+  --paper-2: #0f1417;
+  --ink: #a89c88;
+  --ink-2: #8a8070;
+  --ink-3: #4d483f;
+  --line: rgba(168, 156, 136, 0.14);
+  --ultra: #9a93c4;
+  --ultra-deep: #b0a9d6;
+  --ultra-press: #bfb9de;
+  --ultra-wash: #17162a;
+  --ultra-hatch: #1d1b33;
+  --coral: #c07a62;
+  --coral-ink: #c08a6a;
+  --coral-map: #c9a08a;
+  --coral-wash: #1c120e;
+  --coral-hatch: #24160f;
+  --water-label: #7f93a3;
+  --land-label: #8a8070;
+  --coast: #7f93a3;
+  --gross: #7f93a3; --cost: #2a2a24; --crew: #2e2b45; --cost-swatch: #2a2a24; --crew-swatch: #2e2b45; --net-hatch: #9a93c4; --net-wash: #17162a;
+  --track: #1d211f;
+  --switch-off: #4d483f;
+  --grab: #2a2a24;
+  --water-name-light: #8fa2b0;
+  --shore-halo: rgba(6, 9, 11, 0.92);
+  --land-halo: rgba(6, 9, 11, 0.9);
+  --chip-glass: rgba(6, 9, 11, 0.88);
+  --slot-glass: rgba(6, 9, 11, 0.94);
+  --water-name: #7f93a3;
+  --reg: #c07a62;
+  --reg-text: #c08a6a;
+  --closure: #c08a6a;
   --land: #15140f;
   --land-relief-opacity: 0;
   --depth-0: #13222c; --depth-1: #13222c; --depth-2: #13222c; --depth-3: #0e1a21; --depth-4: #0e1a21;
   --depth-5: #0e1a21; --depth-6: #0a1217; --depth-7: #0a1217; --depth-8: #0a1217;
   --isobath: #4a5560;
+  --contour: #8fa2b0;
+  --depth-label: #8fa2b0; --depth-label-2: #7f93a3;
+  --graticule: rgba(168, 156, 136, 0.1);
+  --graticule-land: rgba(168, 156, 136, 0.06);
   --halo: rgba(6, 9, 11, 0.92);
   --rule-soft: rgba(168, 156, 136, 0.22);
   --neat-a: #2a2a24;
   --hatch: rgba(168, 156, 136, 0.45);
   --wash: #0f1417;
   --sel: rgba(168, 156, 136, 0.16);
-  --plot-cross: #a89c88; --plot-focus: #c9bda8; --plot-point: #a89c88; --plot-censored: #a89c88; --plot-zero: #8a8070;
+  --plot-cross: #9a93c4; --plot-focus: #c9bda8; --plot-point: #a89c88; --plot-censored: #a89c88; --plot-zero: #8a8070;
   --plot-model: #8a8070; --plot-grid: rgba(168, 156, 136, 0.16); --plot-gap: rgba(168, 156, 136, 0.4);
-  /* night, as dusk: high is light on the dark ground, lightness monotone; the legend says so */
   --ramp-says-darker: none; --ramp-says-lighter: inline;
   --chl-0: #0b1715; --chl-1: #10221e; --chl-2: #163027; --chl-3: #213f2f;
   --chl-4: #344e37; --chl-5: #4e5d40; --chl-6: #6e6e4c; --chl-7: #8f855c;
   --streak: #a89c88;
-  /* night: very low emission, high is light. prob L* 4.3 → 41.9 (min ΔL* 3.5), on paper 1.04:1 to 3.3:1;
-     sst L* 4.3 → 44.1 (min ΔL* 5.1), 1.04:1 to 3.6:1 (fills, never text) */
   --prob-0: #100e14; --prob-1: #18161d; --prob-2: #211e27; --prob-3: #2a2731; --prob-4: #33303b;
   --prob-5: #3d3945; --prob-6: #474250; --prob-7: #514c5b; --prob-8: #5b5667; --prob-9: #666072;
   --sst-0: #160d07; --sst-1: #23180f; --sst-2: #302418; --sst-3: #3e3021;
   --sst-4: #4d3c2a; --sst-5: #5c4934; --sst-6: #6b573e; --sst-7: #7a6548;
+  --shadow: 0 0 0 1px rgba(168, 156, 136, 0.18);
+  --shadow-sm: 0 0 0 1px rgba(168, 156, 136, 0.18);
+  --shadow-ticket: drop-shadow(0 0 1px rgba(168, 156, 136, 0.4));
+  --shadow-pass: var(--shadow-ticket);
+  --shadow-btn: none;
+  --shadow-btn-hover: none;
+  --shadow-sheet: 0 -1px 0 rgba(168, 156, 136, 0.22);
+  --shadow-seg: 0 0 0 1px rgba(168, 156, 136, 0.22);
+  --shadow-chip: 0 0 0 1px rgba(168, 156, 136, 0.18);
+  --shadow-port: 0 0 0 4px rgba(6, 9, 11, 0.92);
+  --perf: rgba(168, 156, 136, 0.22);
+  --perf-light: rgba(6, 9, 11, 0.55);
+  --hatch-ultra: repeating-linear-gradient(135deg, #9a93c4 0 1.6px, #1d1b33 1.6px 4px);
+  --hatch-coral: repeating-linear-gradient(135deg, #c07a62 0 1.6px, #24160f 1.6px 4px);
+  --hatch-net: repeating-linear-gradient(135deg, #9a93c4 0 1.6px, #17162a 1.6px 4.6px);
+  --hatch-band: repeating-linear-gradient(135deg, rgba(154, 147, 196, 0.12) 0 2px, transparent 2px 9px);
+  --half-old: linear-gradient(90deg, #8a8070 50%, #06090b 50%);
+  --half-old-d: linear-gradient(135deg, #8a8070 50%, #06090b 50%);
+  --fade-paper: linear-gradient(rgba(6, 9, 11, 0), #06090b 12px);
+  --sw-depth: repeating-linear-gradient(180deg, #13222c 0 5px, #4a5560 5px 6.5px, #0e1a21 6.5px 10px);
+  --sw-reg: rgba(192, 122, 98, 0.16);
+  --deep-blend: normal;
+  --deep-opacity: 0;
   color-scheme: dark;
 }
 
 :root {
-  /* type */
-  --font-serif: var(--nx-literata), Georgia, serif;
-  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
+  /* type: Figtree only (synthesis). The v12/v13 family names resolve to it, so older components follow. */
+  --font: var(--nx-figtree), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font);
+  --font-sans: var(--font);
+  /* the synthesis scale: 11 / 13 / 15 / 18 / 25 / 40 / 54 / 68 px; nothing under 11 */
+  --fs-11: 11px; --fs-13: 13px; --fs-15: 15px; --fs-18: 18px; --fs-25: 25px; --fs-40: 40px; --fs-54: 54px; --fs-68: 68px;
+  --w5: 500; --w6: 650; --w7: 750;
+  --track-micro: 0.08em;        /* micro-labels: 11 px capitals */
+  /* v12/v13 literal sizes, kept for pages not yet moved */
   --t-14: 14px; --t-16: 16px; --t-18: 18px; --t-20: 20px; --t-22: 22px; --t-28: 28px;
   --t-32: 32px; --t-36: 36px; --t-40: 40px; --t-44: 44px; --t-48: 48px; --t-64: 64px;
-  /* type roles (v13 README §2): components name a role, not a size. Phone values below. */
-  --type-display: var(--t-64); --type-title: var(--t-40); --type-head: var(--t-22); --type-lead: var(--t-18);
-  --type-body: var(--t-16); --type-small: var(--t-14);
-  /* result figures: Public Sans 600, tabular; xl is the one result of a view */
-  --figure-xl: var(--t-64); --figure-l: var(--t-36); --figure-m: var(--t-22);
-  --lh-tight: 1.1; --lh-snug: 1.3; --lh-body: 1.5; --measure: 62ch;
-  /* space */
-  --s-4: 4px; --s-8: 8px; --s-12: 12px; --s-16: 16px; --s-24: 24px; --s-32: 32px; --s-48: 48px; --s-64: 64px;
-  /* structure */
-  --bar-h: 52px; --tabbar-h: 56px; --margin-w: clamp(340px, 26vw, 372px);
-  --neat-band: 4px; --neat-label: 20px; --rule: 1.5px; --hair: 1px;
+  /* type roles mapped onto the synthesis scale */
+  --type-display: var(--fs-68); --type-title: var(--fs-25); --type-head: var(--fs-18); --type-lead: var(--fs-18);
+  --type-body: var(--fs-15); --type-small: var(--fs-13); --type-micro: var(--fs-11);
+  --figure-xl: var(--fs-68); --figure-l: var(--fs-40); --figure-m: var(--fs-18);
+  --lh-tight: 1.1; --lh-snug: 1.3; --lh-body: 1.45; --measure: 62ch;
+  /* space: 4 px base; objects pad 24 to 28; margins 24 (phone 20) */
+  --s-2: 2px; --s-4: 4px; --s-6: 6px; --s-8: 8px; --s-10: 10px; --s-12: 12px; --s-14: 14px; --s-16: 16px; --s-18: 18px; --s-20: 20px;
+  --s-24: 24px; --s-28: 28px; --s-32: 32px; --s-48: 48px; --s-64: 64px;
+  --gutter: 24px;               /* objects stand this far from the screen's edge */
+  --pad-obj: 24px; --pad-obj-x: 28px;
+  /* radius: card 20, control 12, small 9 */
+  --r-card: 20px; --r-ctl: 12px; --r-sm: 9px; --r-bar: 14px; --r-pill: 10px; --r-tag: 6px; --r-sheet: 24px;
   --r-0: 0; --r-1: 2px;
-  --target: 48px;
-  /* motion (mirrors ds/motion.ts; CSS only for hover/press colour changes) */
-  --ease-chart: cubic-bezier(0.65, 0, 0.35, 1);
+  /* structure */
+  --bar-h: 48px; --bar-top: 20px; --chips-top: 80px; --tabbar-h: 62px;
+  --stage-top: 136px;           /* below the bar and the layer chips: where a ticket may start */
+  --ticket-w: 404px; --stub-len: 24px;
+  --margin-w: clamp(340px, 26vw, 404px);
+  --neat-band: 0px; --neat-label: 0px; --rule: 1.5px; --hair: 1px;
+  --target: 44px;
+  /* motion (mirrors ds/motion.ts; CSS only for hover and press colour changes) */
+  --ease-chart: cubic-bezier(0.45, 0, 0.15, 1);
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
-  --dur-quick: 120ms;
+  --ease-toggle: cubic-bezier(0.3, 1.5, 0.5, 1);
+  --dur-quick: 120ms; --dur-hover: 140ms;
   --dur-swap-out: 90ms; --dur-swap-in: 180ms;
-}
-
-/* Added for the component library (v12 system). The font stacks are re-declared on every mode scope so
-   they resolve wherever the next/font variables (ds/fonts.ts) are applied: a custom property that refers
-   to another is resolved where it is declared, and the variables may sit below :root. Same values. */
-[data-chart-mode] {
-  --font-serif: var(--nx-literata), Georgia, serif;
-  --font-sans: var(--nx-public-sans), system-ui, -apple-system, sans-serif;
-  --focus: var(--ink);
-}
-
-:root {
-  /* the knockout halo behind any text set on the chart */
   --halo-w: 3px;
+  /* a ticket's perforation notches: masks (colour-free; the mask's alpha is all that counts) */
+  --notch-main: radial-gradient(circle 9px at 0 100%, #0000 97%, #000) 0 0 / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 100%, #0000 97%, #000) 100% 0 / 51% 100% no-repeat;
+  --notch-stub: radial-gradient(circle 9px at 0 0, #0000 97%, #000) 0 0 / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 0, #0000 97%, #000) 100% 0 / 51% 100% no-repeat;
+  --notch-pass-main: radial-gradient(circle 9px at 100% 0, #0000 97%, #000) 0 0 / 100% 51% no-repeat, radial-gradient(circle 9px at 100% 100%, #0000 97%, #000) 0 100% / 100% 51% no-repeat;
+  --notch-pass-stub: radial-gradient(circle 9px at 0 0, #0000 97%, #000) 0 0 / 100% 51% no-repeat, radial-gradient(circle 9px at 0 100%, #0000 97%, #000) 0 100% / 100% 51% no-repeat;
 }
 
-@media (max-width: 720px) {
+/* The font stacks are re-declared on every mode scope so they resolve wherever next/font's variable is applied. */
+[data-chart-mode] {
+  --font: var(--nx-figtree), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font);
+  --font-sans: var(--font);
+  --focus: var(--ultra);
+}
+
+@media (max-width: 640px) {
   :root {
-    --neat-band: 3px; --neat-label: 16px;
-    --type-display: var(--t-40); --type-title: var(--t-32); --type-head: var(--t-20);
-    --figure-xl: var(--t-44); --figure-l: var(--t-28);
+    --gutter: 20px;
+    --type-display: var(--fs-54); --type-title: var(--fs-18);
+    --figure-xl: var(--fs-54); --figure-l: var(--fs-25);
+    --bar-h: 44px; --bar-top: 12px;
   }
 }
+@media (max-width: 359px) {
+  :root { --gutter: 14px; --type-display: var(--fs-40); --figure-xl: var(--fs-40); }
+}
+@media (max-height: 800px) and (min-width: 641px) {
+  :root { --type-display: var(--fs-54); }
+}
 
-/* The primary button (ds/Button): an ink block on paper by day and dusk. At night a large luminous block is what the
-   Night table exists to avoid, so it is an outline in ink, filled only faintly when pressed or hovered. */
+/* The primary button: ultramarine on every mode (one filled action per screen). Night keeps it an outline. */
 :root,
 [data-chart-mode] {
-  --primary-bg: var(--ink);
-  --primary-fg: var(--paper);
-  --primary-hover-bg: var(--ink-2);
-  --primary-hover-line: var(--ink-2);
+  --primary-bg: var(--ultra);
+  --primary-fg: #ffffff;
+  --primary-hover-bg: var(--ultra-deep);
+  --primary-hover-line: var(--ultra-deep);
+}
+[data-chart-mode="dusk"] {
+  --primary-fg: #10142e;
 }
 [data-chart-mode="night"] {
   --primary-bg: transparent;
-  --primary-fg: var(--ink);
-  --primary-hover-bg: var(--neat-a);
-  --primary-hover-line: var(--ink);
+  --primary-fg: var(--ultra);
+  --primary-hover-bg: var(--ultra-wash);
+  --primary-hover-line: var(--ultra);
 }

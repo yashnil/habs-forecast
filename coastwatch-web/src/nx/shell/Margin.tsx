@@ -1,33 +1,35 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, ViewTransition, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { animate, motion, useDragControls, useMotionValue, type PanInfo } from "motion/react";
-import { marginSwap, pane as paneMove, sheet as sheetSpring } from "@/nx/ds/motion";
+import { marginSwap, sheet as sheetSpring } from "@/nx/ds/motion";
 import { useChartCover } from "@/nx/chart/cover";
 import { Icon } from "@/nx/ds/Icon";
 import { CHART_DOCK_ID } from "@/nx/ds/layout/Desk";
-import { PANE_DETENTS, panePlacement, setPaneDetent, setPaneOpen, useChartPane, usePageLayout, type PaneDetent } from "@/nx/ds/layout/pane";
+import { setPaneOpen, useChartPane, usePageLayout } from "@/nx/ds/layout/pane";
+import { GHOST_LAYER_ID } from "@/nx/ds/stage/arrive";
+import { useSheetRest } from "@/nx/ds/stage/Sheet";
 import { PHONE_QUERY, useMedia } from "@/nx/ds/useMedia";
 import { OfflineNotice } from "@/nx/offline/OfflineNotice";
 
 /**
- * The phone sheet's detents: resting (the page's statement in view above the tab bar), half (a reading and the
- * chart around it), reading height. A page asks for one with `openMargin`, e.g. Explore when a reading arrives.
+ * The phone sheet's detents. `rest`: the page's statement in view under the chart strip; `half`; `full`: reading
+ * height. `peek` is lower than rest (about 30 % of the screen): a reading's first lines with most of the chart in
+ * view; only a page asks for it (Explore when a reading arrives).
  */
-/** `peek` is lower than rest (about 30 % of the screen): a reading's first lines with most of the chart in view. Only a page asks for it. */
 export type MarginDetent = "peek" | "rest" | "half" | "full";
-const ORDER: MarginDetent[] = ["rest", "half", "full"];
-/** `at` for the peek detent (below the first of the sheet's own three). */
 const PEEK = -1;
 
 let asked: { detent: MarginDetent; n: number } = { detent: "rest", n: 0 };
 const askListeners = new Set<() => void>();
-/** Opens the phone margin sheet to a detent. Does nothing on wider screens, where the margin is a column. */
+/** Opens the phone sheet to a detent. Does nothing on wider screens. */
 export function openMargin(detent: MarginDetent) {
   asked = { detent, n: asked.n + 1 };
   askListeners.forEach((l) => l());
 }
+/** v14 name for the same request. */
+export const openSheet = openMargin;
 const useAsked = () =>
   useSyncExternalStore(
     (l) => {
@@ -38,10 +40,15 @@ const useAsked = () =>
     () => asked,
   );
 
-const TABS = 56;
-const BAR = 52;
-/** The sheet's heights above the tab bar, px: resting (shell.css --n12-rest: min(44dvh, 340px)), half, reading. */
-function useDetents(): { heights: number[]; rest: number; peek: number } {
+/** The bottom tab bar's height (shell.css --tabbar-h) and the room kept at the top for the brand pill. */
+const TABS = 62;
+const TOP = 64;
+
+/**
+ * The sheet's heights above the tab bar, px. A v14 stage page sets how much chart its resting sheet leaves
+ * (ds Sheet `map`, 27 % by default); a v13 page rests at min(44 %, 340 px).
+ */
+function useDetents(stage: boolean, mapShare: number): { heights: number[]; rest: number; peek: number } {
   const [h, setH] = useState(844);
   useEffect(() => {
     const on = () => setH(window.innerHeight);
@@ -49,17 +56,18 @@ function useDetents(): { heights: number[]; rest: number; peek: number } {
     window.addEventListener("resize", on);
     return () => window.removeEventListener("resize", on);
   }, []);
-  const rest = Math.round(Math.min(h * 0.44, 340));
-  return { heights: [rest, Math.round(Math.max(rest + 120, h * 0.62)), h - BAR - 12 - TABS], rest, peek: Math.round(Math.min(rest - 48, h * 0.3)) };
+  const full = h - TOP - TABS;
+  const rest = stage ? Math.max(160, Math.min(full, Math.round(h - TABS - h * mapShare))) : Math.round(Math.min(h * 0.44, 340));
+  const half = Math.round(Math.max(rest + 120, h * 0.62));
+  const heights = half < full - 40 ? [rest, half, full] : [rest, full];
+  return { heights, rest, peek: Math.round(Math.min(rest - 48, h * 0.3)) };
 }
 
 /**
- * Every route change starts the new page at its top. Back and forward: React runs a history traversal without a
- * view transition (it finishes it at once so the browser can restore scroll), so the page would swap with a cut
- * while a tab or link cross-fades. The new page comes in with the same `marginSwap` fade instead; the chart pans
- * as on every route change. Reduced motion: no fade (ds/MotionPrefs makes every Motion animation its final state).
+ * Every route change starts the new page at its top. Back and forward bring the new page in with the `marginSwap`
+ * fade (a v13 legacy page's whole column; v14 objects arrive with the camera on their own).
  */
-function useBackForwardSwap() {
+function useRouteStart() {
   const pathname = usePathname();
   const ref = useRef<HTMLDivElement>(null);
   const traversed = useRef(false);
@@ -74,8 +82,6 @@ function useBackForwardSwap() {
       first.current = false;
       return;
     }
-    // a new page starts at its top: the page's column (or, on a phone desk, the whole work area) is its own
-    // scroller, so the router's scroll reset does not reach it
     for (let el = ref.current?.parentElement; el; el = el.parentElement) {
       const oy = getComputedStyle(el).overflowY;
       if (oy === "auto" || oy === "scroll") el.scrollTop = 0;
@@ -89,125 +95,49 @@ function useBackForwardSwap() {
   return ref;
 }
 
-/** The pane's width in px for each size beside the desk (shell.css holds the same values). */
-function detentWidths(total: number): Record<PaneDetent, number> {
-  return { rail: 48, context: Math.min(440, Math.max(320, total * 0.28)), split: total * 0.5, chart: total - 436 };
-}
-
 /**
- * The divider between the desk and the chart pane: a separator the reader drags or steps with the arrow keys
- * through the pane's sizes (Enter collapses to the rail and back). While it is dragged the chart is only
- * clipped; on release the pane takes the nearest size and the chart resizes once and refits with `pan`.
- */
-function PaneDivider({ work }: { work: React.RefObject<HTMLDivElement | null> }) {
-  const pane = useChartPane();
-  const start = useRef<{ x: number; w: number; total: number } | null>(null);
-  const at = PANE_DETENTS.indexOf(pane.detent);
-  const key = (e: KeyboardEvent<HTMLDivElement>) => {
-    // the divider moves left as the pane grows
-    const d = e.key === "ArrowLeft" ? 1 : e.key === "ArrowRight" ? -1 : 0;
-    if (d) {
-      e.preventDefault();
-      pane.setDetent(PANE_DETENTS[Math.min(PANE_DETENTS.length - 1, Math.max(0, at + d))]);
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      pane.toggle();
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      pane.setDetent("rail");
-    } else if (e.key === "End") {
-      e.preventDefault();
-      pane.setDetent("chart");
-    }
-  };
-  const down = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const el = work.current;
-    const paneEl = el?.querySelector<HTMLElement>(".n12-pane");
-    if (!el || !paneEl) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    start.current = { x: e.clientX, w: paneEl.offsetWidth, total: el.clientWidth };
-    el.style.setProperty("--pane-hold", `${paneEl.offsetWidth}px`);
-    el.setAttribute("data-pane-resizing", "");
-  };
-  const move = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const st = start.current;
-    if (!st || !work.current) return;
-    const w = Math.min(st.total - 320, Math.max(48, st.w + (st.x - e.clientX)));
-    work.current.style.setProperty("--pane-w", `${Math.round(w)}px`);
-  };
-  const up = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const st = start.current;
-    const el = work.current;
-    start.current = null;
-    if (!st || !el) return;
-    const w = Math.min(st.total - 320, Math.max(48, st.w + (st.x - e.clientX)));
-    const widths = detentWidths(st.total);
-    let best: PaneDetent = pane.detent;
-    // a click without travel leaves the size alone
-    if (Math.abs(st.x - e.clientX) > 4) for (const d of PANE_DETENTS) if (Math.abs(widths[d] - w) < Math.abs(widths[best] - w)) best = d;
-    if (best === pane.detent) {
-      // back where it was: nothing travels
-      el.style.removeProperty("--pane-w");
-      el.style.removeProperty("--pane-hold");
-      el.removeAttribute("data-pane-resizing");
-      return;
-    }
-    // the new size takes over from where the hand left the divider (Workspace's travel clears the hold)
-    setPaneDetent(best);
-  };
-  return (
-    <div
-      className="n12-divider"
-      role="separator"
-      aria-orientation="vertical"
-      aria-label="Chart pane size"
-      aria-valuenow={at}
-      aria-valuemin={0}
-      aria-valuemax={PANE_DETENTS.length - 1}
-      aria-valuetext={{ rail: "Chart collapsed", context: "Chart beside the page", split: "Half and half", chart: "Chart largest" }[pane.detent]}
-      tabIndex={0}
-      onKeyDown={key}
-      onPointerDown={down}
-      onPointerMove={move}
-      onPointerUp={up}
-      onPointerCancel={up}
-      data-testid="nx-pane-divider"
-    />
-  );
-}
-
-/**
- * The workspace (v13 README §1): the page (a margin beside the chart, or a desk with the chart as a pane), the
- * divider and the chart pane, laid out by the stylesheet from the page's declared mode. One tree at every
- * width, before and after hydration: on a phone in chart mode the same <main> becomes the bottom sheet (its
- * handle and "More" control are always in the tree, shown by the stylesheet), dragged with Motion and the
- * `sheet` spring; on a phone desk page it is the page itself, under a chart strip that scrolls away to a bar.
- * Contents cross-fade with React's <ViewTransition> when the route changes; the chart is never in the snapshot.
+ * The workspace (v14 README §2): one persistent full-bleed chart behind every page, and the page over it.
+ *
+ * - `stage` (v14 pages): the page's objects (Ticket, Dock, Pass) float on the chart and place themselves; the page
+ *   element is a transparent stage. On a phone the chart is a strip at the top and the page reads in one bottom
+ *   sheet whose resting detent leaves the strip useful (ds Sheet).
+ * - `chart` (a v13 page not yet moved): the page's column floats as a card on the right, the chart fitted beside it;
+ *   on a phone, the same sheet.
+ * - `desk` (a v13 desk page not yet moved): the desk floats as a wide panel on the left; on a phone, v13's chart
+ *   strip over a scrolling page.
+ *
+ * One tree at every width before and after hydration; one MapLibre instance for every page (ChartHost), never
+ * resized per frame. The ghost layer on top is where a leaving ticket shrinks after its page has gone.
  */
 export function Workspace({ chart, children }: { chart: React.ReactNode; children: React.ReactNode }) {
   const pathname = usePathname();
   const phone = useMedia(PHONE_QUERY);
   const layout = usePageLayout();
   const pane = useChartPane();
-  const sheetOn = phone && layout.mode === "chart";
-  const pageRef = useBackForwardSwap();
+  const mode = layout.mode;
+  const stage = mode === "stage";
+  const sheetOn = phone && mode !== "desk";
+  const pageRef = useRouteStart();
   const workRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
   const bodyId = useId();
+  const sheetRest = useSheetRest();
 
-  // ------------------------------------------------------------ the phone sheet (chart mode)
+  // ------------------------------------------------------------ the phone sheet
   const ask = useAsked();
-  const { heights, rest, peek } = useDetents();
+  const { heights, rest, peek } = useDetents(stage, sheetRest.map);
   const [at, setAt] = useState(0);
-  // a new page rests again; a page's request moves the sheet
   useEffect(() => setAt(0), [pathname]);
   const seen = useRef(ask.n);
   useEffect(() => {
     if (ask.n === seen.current) return;
     seen.current = ask.n;
-    setAt(ask.detent === "peek" ? PEEK : ORDER.indexOf(ask.detent));
-  }, [ask]);
+    const order: MarginDetent[] = heights.length === 3 ? ["rest", "half", "full"] : ["rest", "full", "full"];
+    setAt(ask.detent === "peek" ? PEEK : Math.min(heights.length - 1, order.indexOf(ask.detent)));
+  }, [ask, heights.length]);
   const full = heights[heights.length - 1];
-  const heightAt = (i: number) => (i === PEEK ? peek : heights[i]);
+  const heightAt = (i: number) => (i === PEEK ? peek : heights[Math.min(i, heights.length - 1)]);
   const offset = (i: number) => full - heightAt(i);
   const y = useMotionValue(0);
   const controls = useDragControls();
@@ -219,7 +149,6 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
       return;
     }
     const target = full - heightAt(at);
-    // the first frame as a sheet is drawn at its detent (no slide in on arrival)
     if (!was.current) {
       was.current = true;
       y.set(target);
@@ -230,9 +159,7 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetOn, at, full, heightAt(at)]);
   const onDragEnd = (_: unknown, info: PanInfo) => {
-    // where the hand was heading: the nearest detent to the position a fling would carry the sheet to
     const aim = y.get() + info.velocity.y * 0.18;
-    // the peek detent is offered to the hand only while the page has the sheet there
     let best = at === PEEK ? PEEK : 0;
     heights.forEach((_h, i) => {
       if (Math.abs(offset(i) - aim) < Math.abs(offset(best) - aim)) best = i;
@@ -240,8 +167,7 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
     if (best === at) animate(y, offset(at), sheetSpring);
     else setAt(best);
   };
-  // back at rest from a raised detent, the sheet shows the page from its first line: a resting sheet never
-  // rests on the middle of a paragraph. (The peek detent is a page's own request and keeps the page's scroll.)
+  // back at rest from a raised detent, the sheet shows the page from its first line
   const prevAt = useRef(at);
   useEffect(() => {
     const from = prevAt.current;
@@ -251,48 +177,19 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
     if (body) body.scrollTop = 0;
   }, [at, sheetOn, bodyId]);
   const last = at === heights.length - 1;
-  // the chart frames its scenes in the part the resting sheet leaves free, whatever detent the reader drags to
+
+  // ------------------------------------------------------------ what covers the chart, for the camera and the names
   const restRef = useRef<HTMLDivElement>(null);
   useChartCover("phone-margin", restRef, "bottom", sheetOn);
-
-  // ------------------------------------------------------------ the pane changing size beside the desk: the columns travel (`pane`)
-  // The chart is never resized per frame: growing, it takes its new size at once and the column uncovers it;
-  // shrinking, it keeps its size, is clipped, and resizes once when the column has arrived.
-  useLayoutEffect(() => {
-    const el = workRef.current;
-    const paneEl = el?.querySelector<HTMLElement>(".n12-pane");
-    const from = layout.fromW;
-    if (!el || !paneEl) return;
-    const done = () => {
-      el.style.removeProperty("--pane-w");
-      el.style.removeProperty("--pane-hold");
-      el.removeAttribute("data-pane-resizing");
-    };
-    // (a drag that ended on a new size leaves its hold in place for this travel to take over)
-    if (from === null || layout.mode !== "desk" || panePlacement() !== "beside" || performance.now() - layout.changedAt > 200) return done();
-    // the width the new size gives, measured without the drag's or a previous travel's inline width
-    el.style.removeProperty("--pane-w");
-    const to = paneEl.offsetWidth;
-    if (Math.abs(to - from) < 2) return done();
-    // one resize of the chart for the whole change, a drag included: a hold a drag left in place is kept unless
-    // the new size is larger than it (then the chart takes the new size now and is uncovered as the column arrives)
-    const held = el.hasAttribute("data-pane-resizing") ? parseFloat(el.style.getPropertyValue("--pane-hold")) || 0 : 0;
-    el.style.setProperty("--pane-hold", `${held ? Math.max(held, to) : Math.max(from, to)}px`);
-    el.style.setProperty("--pane-w", `${from}px`);
-    el.setAttribute("data-pane-resizing", "");
-    const a = animate(from, to, { ...paneMove, onUpdate: (v) => el.style.setProperty("--pane-w", `${Math.round(v)}px`), onComplete: done });
-    return () => {
-      a.stop();
-      done();
-    };
-  }, [layout.detent, layout.fromW, layout.changedAt, layout.mode]);
+  useChartCover("margin-card", mainRef, mode === "desk" ? "left" : "right", !phone && !stage && !(mode === "desk" && layout.open));
+  useChartCover("chart-dock", dockRef, "bottom", !phone);
 
   // for tests: the page-facing sheet request, as a page would call it
   useEffect(() => {
     (window as unknown as { __nxShell?: { openMargin: typeof openMargin } }).__nxShell = { openMargin };
   }, []);
 
-  // ------------------------------------------------------------ the pane as an overlay: Escape closes it
+  // a v13 desk page's chart opened over it (narrow screens, the phone strip): Escape closes it
   useEffect(() => {
     if (!layout.open) return;
     const key = (e: globalThis.KeyboardEvent) => e.key === "Escape" && setPaneOpen(false);
@@ -300,21 +197,21 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
     return () => document.removeEventListener("keydown", key);
   }, [layout.open]);
   const toggleStrip = () => {
-    if (panePlacement() === "strip" && !layout.open) workRef.current?.scrollTo({ top: 0 });
+    if (phone && !layout.open) workRef.current?.scrollTo({ top: 0 });
     pane.toggle();
   };
 
   return (
-    <div className="n12-work" ref={workRef} data-pane={layout.detent} data-pane-open={layout.open ? "" : undefined} data-testid="nx-work">
+    <div className="n12-work" ref={workRef} data-mode={mode} data-pane={layout.detent} data-pane-open={layout.open ? "" : undefined} data-testid="nx-work">
       <div ref={restRef} className="n12-margin-rest" style={{ height: at === PEEK ? peek : rest }} aria-hidden="true" />
       <motion.main
+        ref={mainRef}
         id="nx-margin"
         className="n12-margin"
         data-nx-margin=""
         data-testid="nx-margin"
         data-detent={sheetOn ? (at === PEEK ? "peek" : at) : undefined}
         tabIndex={-1}
-        // --sheet-hidden: how much of the sheet lies below the screen at this detent; its scroller stops short by that
         style={{ y, height: sheetOn ? full : undefined, "--sheet-hidden": `${sheetOn ? offset(at) : 0}px` } as unknown as React.CSSProperties}
         drag={sheetOn ? "y" : false}
         dragListener={false}
@@ -324,7 +221,7 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
         dragMomentum={false}
         onDragEnd={onDragEnd}
       >
-        {/* the sheet's handle row: in the tree at every width (one tree before and after hydration), shown on a phone in chart mode */}
+        {/* the sheet's handle row: in the tree at every width, shown on a phone */}
         <div className="n12-sheet-top" onPointerDown={(e) => sheetOn && controls.start(e)}>
           <span className="n12-sheet-handle" aria-hidden="true" />
           <button
@@ -336,31 +233,22 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
             aria-controls={bodyId}
             aria-label={last ? "Show less of this page" : "Show more of this page"}
           >
-            {last ? "Less" : "More"}
             <Icon name="chevron" size={20} direction={last ? "down" : "up"} />
           </button>
         </div>
         <div className="n12-margin-scroll" id={bodyId}>
-          <ViewTransition name="nx-margin" default="nx-margin-swap">
-            <div className="n12-margin-page" ref={pageRef}>
-              <OfflineNotice />
-              {children}
-            </div>
-          </ViewTransition>
+          <div className="n12-margin-page" ref={pageRef}>
+            <OfflineNotice />
+            {children}
+          </div>
         </div>
       </motion.main>
-      <PaneDivider work={workRef} />
       <div className="n12-pane" data-testid="nx-pane">
         {chart}
-        <div id={CHART_DOCK_ID} className="n12-dock-slot" />
-        {/* desk pages only (the stylesheet shows each where it applies): the rail, the phone strip's bar, the overlay's close */}
-        <button type="button" className="n12-pane-rail" onClick={pane.toggle} aria-label={layout.subject ? `Show the chart of ${layout.subject}` : "Show the chart"} data-testid="nx-pane-rail">
-          <Icon name="chevron" size={20} direction="left" />
-          {/* words, not a picture: the chart is out of sight here, so the rail says what opening it shows */}
-          <span>{layout.subject ? `Chart · ${layout.subject}` : "Chart"}</span>
-        </button>
+        {/* a v13 page's ChartDock (Explore's time) floats along the chart's foot */}
+        <div id={CHART_DOCK_ID} ref={dockRef} className="n12-dock-slot" />
+        {/* v13 desk pages only (the stylesheet shows each where it applies): the phone strip's bar, the overlay's close */}
         <div className="n12-pane-bar">
-          {/* the page names what its chart shows (PageLayout chartLabel); without that, only "Chart" */}
           <span className="n12-pane-bar-name" data-testid="nx-pane-subject">
             {layout.subject ? `Chart · ${layout.subject}` : "Chart"}
           </span>
@@ -373,6 +261,7 @@ export function Workspace({ chart, children }: { chart: React.ReactNode; childre
           <Icon name="close" />
         </button>
       </div>
+      <div id={GHOST_LAYER_ID} className="nx-ghosts" aria-hidden="true" />
     </div>
   );
 }
