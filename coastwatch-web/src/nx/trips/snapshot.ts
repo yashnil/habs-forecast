@@ -38,6 +38,15 @@ export type SnapshotInput = {
 
 export const SOURCE_KEYS: SourceKey[] = ["season", "whale", "cdphTest", "nwsForecast", "nwsAlerts", "buoy", "tides"];
 
+/**
+ * What a recheck must read to be complete: the official records, the latest CDPH test, and NWS's zone forecast and
+ * advisories (what the plan rests on and what can change it). Optional context: the buoy's latest reading (it says
+ * what the sea is doing now, not what is forecast) and CO-OPS tide predictions (published long ahead; a failed read
+ * hides nothing new). An optional source that fails is still named; it does not make the check incomplete.
+ */
+export const REQUIRED_SOURCES: SourceKey[] = ["season", "whale", "cdphTest", "nwsForecast", "nwsAlerts"];
+export const isRequired = (k: SourceKey) => REQUIRED_SOURCES.includes(k);
+
 /** Who publishes each source, as the reader knows them. */
 export const SOURCE_LABEL: Record<SourceKey, string> = {
   season: "CDFW season record",

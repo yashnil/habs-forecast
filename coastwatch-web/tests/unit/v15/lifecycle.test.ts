@@ -14,7 +14,7 @@ const planned = (date = "2026-11-20", o: Partial<Parameters<typeof draftTrip>[0]
 };
 const ctx = (o: Partial<NextCtx> = {}): NextCtx => ({ changes: null, recheck: null, now: NOW, ...o });
 const change = (priority: 1 | 2 | 3): Change => ({ id: `c${priority}`, priority, category: "forecast", kind: "revised", title: "Marine forecast updated since you planned.", detail: null, before: null, after: null, where: null, when: null, url: null, periodKey: null, evidenceKey: null });
-const recheck = (at: string, complete = true): Recheck => ({ at, mode: "live", complete, changed: [], same: [], unchecked: [], verify: [], baseId: "s1", snapshotId: "s2" });
+const recheck = (at: string, complete = true): Recheck => ({ at, mode: "live", complete, changed: [], same: [], unchecked: [], stale: [], verify: [], baseId: "s1", snapshotId: "s2" });
 const draftEcon = { preset: null, inputs: {}, pots: null, baitUsdPerPot: null, basis: {} } as unknown as Draft;
 
 describe("creating a trip", () => {
@@ -186,9 +186,9 @@ describe("nextAction: one primary action", () => {
     expect(nextAction(planned("2026-11-14"), ctx({ recheck: recheck("2026-11-12T17:00:00Z") }))?.id).toBe("recheck");
   });
   it("a check that could not read NWS asks for a forecast recheck before any comparison", () => {
-    const failed = { ...recheck("2026-11-13T17:00:00Z", false), unchecked: [{ source: "nwsForecast" as const, why: "did not answer" }] };
+    const failed = { ...recheck("2026-11-13T17:00:00Z", false), unchecked: [{ source: "nwsForecast" as const, why: "did not answer", required: true }] };
     expect(nextAction(planned("2026-11-16"), ctx({ recheck: failed }))).toMatchObject({ id: "recheck", label: "Recheck the forecast" });
-    const cdphOnly = { ...recheck("2026-11-13T17:00:00Z", false), unchecked: [{ source: "cdphTest" as const, why: "did not answer" }] };
+    const cdphOnly = { ...recheck("2026-11-13T17:00:00Z", false), unchecked: [{ source: "cdphTest" as const, why: "did not answer", required: true }] };
     expect(nextAction(planned("2026-11-16"), ctx({ recheck: cdphOnly }))?.id).toBe("compare-departures");
   });
   it("the known forecast decides: an older one or none asks for a recheck before comparing", () => {

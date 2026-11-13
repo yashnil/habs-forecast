@@ -3,7 +3,7 @@ import { feedView, groupUnchecked, readableDetail, stopPosition, timelineOf } fr
 import type { Recheck, Snapshot } from "@/nx/trips/types";
 import { gates, LATER, PLAN_AT, snap } from "./evidenceFixtures";
 
-const base: Recheck = { at: LATER, mode: "live", complete: true, changed: [], same: [], unchecked: [], verify: [], baseId: "plan-1", snapshotId: "r1" };
+const base: Recheck = { at: LATER, mode: "live", complete: true, changed: [], same: [], unchecked: [], stale: [], verify: [], baseId: "plan-1", snapshotId: "r1" };
 const FORBIDDEN = /\b(safe|legal|allowed|open for you|all clear|approved)\b/i;
 
 describe("v15 feed: the words of 'Since you planned this trip'", () => {
@@ -20,9 +20,9 @@ describe("v15 feed: the words of 'Since you planned this trip'", () => {
   });
 
   it("an incomplete check is never an all-clear and names what it could not see", () => {
-    const v = feedView({ planning: snap(), result: { ...base, complete: false, unchecked: [{ source: "cdphTest", why: "CDPH's test results could not be read." }] }, checking: false, now: LATER });
+    const v = feedView({ planning: snap(), result: { ...base, complete: false, unchecked: [{ source: "cdphTest", why: "CDPH's test results could not be read.", required: true }] }, checking: false, now: LATER });
     expect(v.state).toBe("incomplete");
-    expect(v.headline).toBe("Incomplete: 1 source could not be checked");
+    expect(v.headline).toBe("Incomplete: 1 required source could not be checked");
     expect(v.headline).not.toMatch(/no changes/i);
     expect(v.unchecked.map((u) => u.label)).toEqual(["CDPH domoic acid test"]);
   });
@@ -51,11 +51,30 @@ describe("v15 feed: the words of 'Since you planned this trip'", () => {
     expect(stopPosition(LATER, PLAN_AT, LATER)).toBe(1);
   });
 
+  it("complete with only optional sources missing says so, and lists stale records apart", () => {
+    const v = feedView({
+      planning: snap(),
+      result: { ...base, complete: true, unchecked: [{ source: "tides", why: "CO-OPS did not answer.", required: false }], stale: [{ key: "cdph:x", title: "CDPH test, Monterey Bay", asOf: "2026-09-28" }] },
+      checking: false,
+      now: LATER,
+    });
+    expect(v.state).toBe("complete");
+    expect(v.headline).toMatch(/^No changes found in the sources checked at/);
+    expect(v.sub).toMatch(/Every required source answered/);
+    expect(v.sub).toMatch(/CO-OPS tide predictions could not be read \(optional context/);
+    expect(v.sub).toMatch(/1 record answered but is old/);
+    expect(v.unchecked.map((u) => u.source)).toEqual(["tides"]);
+    expect(v.stale).toHaveLength(1);
+  });
+
   it("says one reason once for every source it applies to, and hides raw period keys", () => {
     const why = "Offline: not checked.";
     const all = (["season", "whale", "cdphTest", "nwsForecast", "nwsAlerts", "buoy", "tides"] as const).map((source) => ({ source, why }));
-    expect(groupUnchecked(all)).toEqual([{ sources: all.map((x) => x.source), labels: "Every source", why }]);
+    expect(groupUnchecked(all)).toEqual([{ sources: all.map((x) => x.source), labels: "Every source", why, required: true }]);
     expect(groupUnchecked([{ source: "buoy", why: "a" }, { source: "tides", why: "a" }])[0].labels).toBe("NDBC buoy, CO-OPS tide predictions");
+    // required and optional never share a line; optional is marked, and required comes first
+    const g = groupUnchecked([{ source: "tides", why: "a", required: false }, { source: "nwsForecast", why: "a", required: true }]);
+    expect(g.map((x) => x.labels)).toEqual(["NWS zone forecast", "CO-OPS tide predictions (optional)"]);
     expect(readableDetail("2026-10-12|night")).toBeNull();
     expect(readableDetail("NW winds 20 kt")).toBe("NW winds 20 kt");
   });

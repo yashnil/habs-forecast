@@ -4,8 +4,8 @@ import { dayTime } from "@/nx/ds/format";
 import { FIELD_CACHE, FIELD_RECORD } from "@/nx/offline/pack";
 import { diffSnapshots } from "./diff";
 import { holdingWords, knownSnapshot, knownView, type KnownView } from "./known";
-import { readOk, SOURCE_KEYS, SOURCE_LABEL, takeSnapshot, type Answer } from "./snapshot";
-import type { Change, ForecastSnap, Recheck, Snapshot, Trip } from "./types";
+import { isRequired, readOk, SOURCE_KEYS, SOURCE_LABEL, SOURCE_OF, takeSnapshot, type Answer } from "./snapshot";
+import type { Change, EvidenceItem, ForecastSnap, Recheck, Snapshot, Trip } from "./types";
 
 /**
  * Recheck before departure (v15 §9). Reads the two My Coast endpoints again (each on its own 12 s clock, so a slow
@@ -130,26 +130,34 @@ export function verifyLinks(...snaps: (Snapshot | null)[]): { label: string; url
 export function summarize(base: Snapshot, next: Snapshot, changed: Change[], at: string, view?: KnownView): Recheck {
   const changedKeys = new Set(changed.map((c) => c.evidenceKey).filter(Boolean));
   const A = new Map(base.evidence.map((e) => [e.key, e]));
-  const same = next.evidence.filter((e) => A.get(e.key)?.version === e.version && !changedKeys.has(e.key)).map((e) => ({ key: e.key, title: e.title }));
+  // an official record or test that answered but is old is "stale", told apart from one that is simply unchanged;
+  // a buoy reading ages within hours and is context, so it is never listed as either
+  const officialOld = (e: EvidenceItem) => e.stale && (e.kind === "season" || e.kind === "whale" || e.kind === "cdphTest");
+  const live = next.mode === "live";
+  const stale = live ? next.evidence.filter((e) => officialOld(e) && readOk(next.sources[SOURCE_OF[e.kind]])).map((e) => ({ key: e.key, title: e.title, asOf: e.asOf })) : [];
+  const same = next.evidence
+    .filter((e) => e.kind !== "observation" && A.get(e.key)?.version === e.version && !changedKeys.has(e.key) && !(live && officialOld(e)))
+    .map((e) => ({ key: e.key, title: e.title }));
   // a source that could not be read is told once, under "couldn't check", with what it hides from the plan
   const lost = new Map(changed.filter((c) => c.category === "source" && c.kind === "unavailable").map((c) => [c.id.split(":")[1], c]));
   const unchecked = SOURCE_KEYS.filter((k) => next.mode === "saved" || !readOk(next.sources[k])).map((k) => {
     const hides = lost.get(k)?.detail?.match(/Shown when you planned: .*$/)?.[0] ?? null;
     if (next.mode === "saved") {
       const known = view?.sources[k].knownAt ?? (readOk(next.sources[k]) ? readAt(next) : null);
-      return { source: k, why: known ? `Offline: not checked now. The copy on this device is from ${dayTime(known, { ref: at })}.` : "Offline: not checked now, and there is no copy of it on this device." };
+      return { source: k, required: isRequired(k), why: known ? `Offline: not checked now. The copy on this device is from ${dayTime(known, { ref: at })}.` : "Offline: not checked now, and there is no copy of it on this device." };
     }
     const why = next.sources[k].detail ?? `${SOURCE_LABEL[k]} did not answer.`;
     const holding = view ? holdingWords(view, k, at) : null;
-    return { source: k, why: [why, holding, hides].filter(Boolean).join(" ") };
+    return { source: k, required: isRequired(k), why: [why, holding, hides].filter(Boolean).join(" ") };
   });
   return {
     at,
     mode: next.mode,
-    complete: next.mode === "live" && unchecked.length === 0,
+    complete: live && !unchecked.some((u) => u.required),
     changed: changed.filter((c) => !(c.category === "source" && c.kind === "unavailable")),
     same,
     unchecked,
+    stale,
     verify: verifyLinks(next, base),
     baseId: base.id,
     snapshotId: next.id,
