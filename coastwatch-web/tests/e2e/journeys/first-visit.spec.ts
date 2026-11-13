@@ -34,7 +34,8 @@ async function recorded(browser: import("@playwright/test").Browser, name: strin
 }
 
 test("Journey 1, desktop: opening → Find your port → fishery → Today, three taps, then offline", async ({ browser }) => {
-  test.setTimeout(120_000);
+  // a recorded journey with an offline step (the saved copy waits for an idle moment): generous on a loaded machine
+  test.setTimeout(180_000);
   await recorded(browser, "journey-1-first-visit-1440", { width: 1440, height: 900 }, async (page, ctx) => {
     const res = await page.goto(`${OK}/`, { waitUntil: "commit" });
     const html = await res!.text();

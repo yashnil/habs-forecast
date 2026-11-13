@@ -7,7 +7,7 @@ import { fisheryLabel as labelOf, nextTide, pacificDay, rowHeadline } from "@/pi
 import { readSaved } from "@/pilot/today/prefs";
 import { saveTodayOffline } from "@/pilot/today/offline";
 import { useFollow } from "@/nx/alerts/useFollow";
-import { ChartRegulation, RAMP_FISHERIES, RAMP_ZONES, rampZoneAt, type NoticeExtent } from "@/nx/chart/regulation";
+import { ChartRegulation, RAMP_FISHERIES, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
 import { setMapLayer, MapLayers } from "@/nx/chart/mapLayers";
 import { Agenda, type AgendaItem } from "@/nx/ds/Agenda";
@@ -214,7 +214,8 @@ function Assembled({ port, inputs, fishery, bands }: { port: NonNullable<TodayPr
   // an advisory area a Fisheries row put on the chart (rock crab's "do not eat internal organs", for one)
   const notices = (inputs.notices ?? []).filter((n) => n.action !== "reopening" && n.action !== "advisory_lifted");
   const areaNotice = area ? notices.find((n) => n.id === area) : null;
-  const extents: NoticeExtent[] = areaNotice && bands[areaNotice.id] ? [{ id: areaNotice.id, label: `${areaNotice.agency} ${areaNotice.species[0] ?? ""} advisory`.replace(/\s+/g, " "), south: bands[areaNotice.id].south, north: bands[areaNotice.id].north, count: 1 }] : [];
+  // hatched on the water from shore to the frame's edge, in the record's words, with its "not verified" stamp
+  const advisory = areaNotice && bands[areaNotice.id] ? { id: areaNotice.id, north: bands[areaNotice.id].north, south: bands[areaNotice.id].south, title: areaNotice.title, note: `${areaNotice.agency} · official, not verified` } : null;
 
   // the dates on record: the delay from its effective date to the earliest start, today, the next assessment
   const eff = v.agenda.find((a) => a.id === "notice")?.start ?? null;
@@ -268,11 +269,11 @@ function Assembled({ port, inputs, fishery, bands }: { port: NonNullable<TodayPr
   return (
     <>
       <ChartScene scene={{ id: sceneId, view: { bounds }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />
-      <ChartRegulation spec={{ zones: ramp ? { highlight: zoneId, caption } : null, extents }} />
+      <ChartRegulation spec={{ zones: ramp ? { highlight: zoneId, caption } : null, advisory }} />
       <TodaySoundings items={v.soundings} sceneId={sceneId} extra={extra} onOpen={(id) => setOpen(v.soundings.find((d) => d.id === id)?.provenance ?? null)} />
       {open ? <ProvenanceSheet provenance={open} now={v.now} open onOpenChange={(o) => !o && setOpen(null)} /> : null}
 
-      <Ticket key={port.key} at={{ lon: port.lon, lat: port.lat }} anchorY={170} width={TICKET_W} labelledBy="nx-today-title" className={s.ticket}>
+      <Ticket key={port.key} at={{ lon: port.lon, lat: port.lat }} anchorY={170} top={208} width={TICKET_W} labelledBy="nx-today-title" className={s.ticket}>
         <TicketMain data-tour="status">
           <Micro as="p" className={s.scope}>
             {port.name} · {scopeWords(st.fisheryLabel)}

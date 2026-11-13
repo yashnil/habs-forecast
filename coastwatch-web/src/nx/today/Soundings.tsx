@@ -104,7 +104,8 @@ export function TodaySoundings({ items, sceneId, onOpen, extra }: { items: Sound
         lat: d.lat,
         layer: d.id === "test" ? "toxin" : "sea",
         priority: d.id === "test" ? 90 : 85,
-        insist: d.id === "buoy" && phone,
+        // the reading the reader switched on is not dropped for another place's dot
+        insist: d.id === "test" || phone,
         leader: true,
         offset: phone ? 18 : 26,
         anchors: phone ? ["left", "top-left", "bottom-left", "top", "bottom"] : d.id === "buoy" ? ["left", "bottom-left", "top-left", "bottom", "right"] : ["top-left", "left", "top-right", "right", "bottom-left"],

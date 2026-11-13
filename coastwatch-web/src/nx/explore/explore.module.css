@@ -7,7 +7,7 @@
 .readTicket { z-index: 3; max-height: calc(100% - var(--stage-top) - var(--explore-dock, 204px) - 2 * var(--gutter)); }
 .readTicket > div:first-of-type { padding: var(--s-6) var(--s-8) var(--s-8); }
 /* the dock runs from the layer group to the right gutter, so neither covers the other */
-.timeDock.timeDock { left: calc(348px + 2 * var(--gutter)); padding: var(--s-14) var(--s-20) var(--s-10); }
+.timeDock.timeDock { left: calc(clamp(var(--gutter), 10vw, 144px) + 348px + var(--gutter)); padding: var(--s-14) var(--s-20) var(--s-10); }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
 .kicker { margin: 0; font-weight: 600; }
 /* the first line: what this view is, before any instrument (5-second test) */
