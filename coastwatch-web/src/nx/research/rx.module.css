@@ -7,6 +7,11 @@
 
 /* ------------------------------------------------------------ the pass: at most about 45 % of the screen's height */
 .pass { height: clamp(300px, 45vh, 404px); }
+/* on a short screen the model (or a comparison), asked for by the reader, takes its room above the pass: the measured
+   plot keeps a readable height and the model's words their own lines, clear of the time axis */
+@media (max-height: 860px) and (min-width: 641px) {
+  .pass[data-model] { height: calc(clamp(300px, 45vh, 404px) + 120px); }
+}
 .main {
   position: relative; height: 100%; min-height: 0;
   display: flex; flex-direction: column;

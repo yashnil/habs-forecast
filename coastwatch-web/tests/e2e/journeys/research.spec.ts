@@ -28,6 +28,8 @@ async function tools(page: Page) {
 }
 
 test("arrive from Explore, move the window, read the table, export exactly the window", async ({ browser }) => {
+  // recorded as video at 1440 x 900 beside a parallel run: more than the default 45 s on a loaded machine
+  test.setTimeout(90_000);
   mkdirSync(MEDIA, { recursive: true });
   const dir = path.join(test.info().outputDir, "video");
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, recordVideo: { dir, size: { width: 1440, height: 900 } }, acceptDownloads: true, storageState: { cookies: [], origins: [] } });
