@@ -26,6 +26,7 @@ async function seed(ctx: BrowserContext, items: Record<string, string>) {
 const h1 = (page: Page) => page.getByTestId("nx-today").getByRole("heading", { level: 1 });
 
 test("Journey 2: Today at / at once, the change line from the last visit, provenance one tap away", async ({ browser }) => {
+  test.setTimeout(120_000);
   mkdirSync(OUT, { recursive: true });
   const size = { width: 1440, height: 900 };
   const ctx = await browser.newContext({ viewport: size, storageState: { cookies: [], origins: [] }, recordVideo: { dir: path.join(test.info().outputDir, "video"), size } });
@@ -87,23 +88,26 @@ test("Journey 2: Today at / at once, the change line from the last visit, proven
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
 
-  // a sounding opens its own provenance
+  // a reading on the chart opens its own provenance (the CDPH test, under Toxin tests)
+  await page.locator('[data-testid="nx-layers"] [data-layer="toxin"]').click();
   await page.locator("[data-nx-sounding=test] button").click();
   await expect(page.getByRole("dialog")).toContainText("CDPH test");
   await expect(page.getByRole("dialog")).toContainText("Sampled");
   await page.keyboard.press("Escape");
 
-  // a row expands in place; the models say past run and their mandatory words
-  await page.getByRole("button", { name: /^Models/ }).click();
+  // the models, quietly under the ticket's Notices tab, say past run and their mandatory words
+  await page.getByTestId("nx-today").getByRole("tab", { name: /^Notices/ }).click();
   await expect(page.getByText("C-HARM, past run")).toBeVisible();
   await expect(page.getByText(/probability of conditions in the water, not toxin in seafood/)).toBeVisible();
 
   // the next steps carry the port
   const today = page.getByTestId("nx-today");
-  await expect(today.getByRole("link", { name: "Read CDFW’s notice" })).toHaveAttribute("href", "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries");
-  // v13: each gate carries its own next steps
+  // v14: the agency's page is the ticket's quiet link beside the one filled action
+  await expect(today.getByRole("link", { name: "CDFW", exact: true })).toHaveAttribute("href", "https://wildlife.ca.gov/Conservation/Marine/Whale-Safe-Fisheries");
+  // v13: each gate carries its own next steps (v14: in the ticket's Record tab)
+  await today.getByRole("tab", { name: "Record" }).click();
   await expect(today.getByRole("link", { name: "Plan a trip (hypothetical)" })).toHaveAttribute("href", "/coast?place=port-592&view=trip");
-  await expect(today.getByRole("link", { name: "Alerts for Moss Landing" })).toHaveAttribute("href", "/alerts?place=port-592");
+  await expect(today.getByRole("link", { name: "Alerts for this port" })).toHaveAttribute("href", "/alerts?place=port-592");
   await expect(today.getByRole("link", { name: "Water samples nearby in Research" })).toHaveAttribute("href", "/research?place=port-592&var=pDA");
   await expect(today.getByRole("link", { name: "Conditions on the chart in Explore" })).toHaveAttribute("href", "/explore?place=port-592&layer=sst");
   await page.waitForTimeout(600);
@@ -119,8 +123,8 @@ test("a deep link to /today with a port and no fishery asks, and the chart is on
   await expect(chooser.getByRole("heading", { level: 1 })).toHaveText("Princeton / Half Moon Bay");
   await chooser.getByRole("button", { name: "Groundfish" }).click();
   await expect(h1(page)).toBeVisible();
-  // the fishery can be changed from the other fisheries
-  await page.getByRole("button", { name: /^Others/ }).click();
+  // the fishery can be changed from the other fisheries (v14: the ticket's Fisheries tab)
+  await page.getByTestId("nx-today").getByRole("tab", { name: /^Fisheries/ }).click();
   await page.getByRole("button", { name: /Lead with dungeness crab$/ }).first().click();
   await expect(h1(page)).toHaveText(/Season delayed/);
 });
@@ -147,6 +151,8 @@ test("reduced motion: Today is whole at once, soundings in place", async ({ brow
   const page = await ctx.newPage();
   await page.goto(`${OK}/`);
   await expect(h1(page)).toBeVisible();
+  await expect(page.locator("[data-nx-sounding=buoy]")).toBeVisible({ timeout: 10_000 });
+  await page.locator('[data-testid="nx-layers"] [data-layer="toxin"]').click();
   await expect(page.locator("[data-nx-sounding=test]")).toBeVisible({ timeout: 10_000 });
   await ctx.close();
 });

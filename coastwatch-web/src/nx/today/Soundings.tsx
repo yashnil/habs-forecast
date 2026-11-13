@@ -3,16 +3,19 @@
 import { useEffect, useState } from "react";
 import { ChartMarks } from "@/nx/chart/Labels";
 import { onFrame } from "@/nx/chart/runtime";
-import { Sounding } from "@/nx/ds/chart/Sounding";
+import { LimitGauge, Micro, WindArrow } from "@/nx/ds/synth/Grammar";
 import { useMedia } from "@/nx/ds/useMedia";
-
-export const COMPACT = "(max-width: 720px), (max-height: 480px)";
 import type { SoundingDatum } from "./model";
+import s from "./today.module.css";
+
+export const COMPACT = "(max-width: 640px), (max-height: 480px)";
 
 /**
- * At most two figures set where they were measured (README principle 2): the test area and the buoy. They
- * wait for the chart to settle on Today's view, then each registers in place (ds Sounding, `register`).
- * The host (src/nx/chart) places them clear of the port and the names, with a leader to the point.
+ * The readings set where they were measured (v14 synthesis, SYSTEM.md "Map layers"): the buoy belongs to Sea now and
+ * the CDPH crab test to Toxin tests, each drawn only while its chip is on. The reading lives once, at its point: a
+ * small card on the water with its time, its value and (the buoy) the wind; it opens where it comes from. They wait
+ * for the chart to settle on Today's view, then register in place. The host places them clear of the port and the
+ * names, with a leader to the point.
  */
 export function useChartSettled(sceneId: string): boolean {
   const [settled, setSettled] = useState(false);
@@ -36,69 +39,77 @@ export function useChartSettled(sceneId: string): boolean {
   return settled;
 }
 
-function Figure({ d, onOpen, phone, narrow }: { d: SoundingDatum; onOpen: () => void; phone: boolean; narrow: boolean }) {
+/** The reading's time in the card's head: the buoy's clock time ("10:30 PM"), the test's day ("Sep 28"). */
+const when = (d: SoundingDatum) => {
+  const c = (d.caption[0] ?? "").replace(/^(NDBC|CDPH), /, "");
+  return d.id === "buoy" ? c.replace(/^[A-Z][a-z]{2} \d{1,2}, /, "").replace(/ PT$/, "") : c.split(",")[0];
+};
+
+export type ReadingExtra = { windDeg: number | null; wind: string | null };
+
+/** The sea dock's buoy mark lights the buoy's card on the chart while it is hovered or focused (ds SeaBars "nx-buoy-hl"). */
+function useBuoyHighlight(on: boolean): boolean {
+  const [hl, setHl] = useState(false);
+  useEffect(() => {
+    if (!on) return;
+    const h = (e: Event) => setHl(!!(e as CustomEvent<boolean>).detail);
+    document.addEventListener("nx-buoy-hl", h);
+    return () => document.removeEventListener("nx-buoy-hl", h);
+  }, [on]);
+  return hl;
+}
+
+function Card({ d, onOpen, small, extra, tour }: { d: SoundingDatum; onOpen: () => void; small: boolean; extra?: ReadingExtra; tour?: boolean }) {
+  const hl = useBuoyHighlight(d.id === "buoy");
+  const test = d.id === "test";
+  const value = test && d.unit ? Number(d.value) : NaN;
+  const limit = test && d.unit ? Number(/of ([\d.]+) ppm/.exec(d.unit)?.[1]) : NaN;
   return (
-    <div className="nx-today-sounding" data-nx-sounding={d.id} data-tour={d.id === "test" ? "sounding" : undefined}>
-      <Sounding
-        x={0}
-        y={0}
-        placement="box"
-        value={d.value}
-        unit={d.unit ?? undefined}
-        label={phone ? undefined : d.label}
-        caption={
-          phone ? (
-            d.short
-          ) : (
-            <>
-              {d.caption.map((c, i) => (
-                <span key={i} style={{ display: "block" }}>
-                  {c}
-                </span>
-              ))}
-            </>
-          )
-        }
-        kind="measured"
-        anchor="se"
-        size={phone ? "md" : "lg"}
-        stale={d.stale}
-        onActivate={onOpen}
-        ariaLabel={d.spoken}
-        width={narrow ? 150 : phone ? 156 : 256}
-      />
+    <div className={s.readingWrap} data-nx-sounding={d.id} data-tour={tour ? "sounding" : undefined}>
+      {/* design-lint-allow raw-button: a reading on the chart is a card that opens its provenance; no ds control is a chart card */}
+      <button type="button" className={s.reading} data-stale={d.stale ? "1" : undefined} data-hl={hl ? "1" : undefined} aria-label={d.spoken} onClick={onOpen}>
+        <Micro glyph={d.stale ? "old" : "measured"} className={s.readingHead}>
+          {test ? "CDPH crab test" : d.label.replace(/^(Waves|Wind), buoy /, "Buoy ")} · {when(d)}
+        </Micro>
+        <span className={s.readingBig}>
+          {d.value}
+          {d.unit ? <small>{d.unit}</small> : null}
+        </span>
+        {test && Number.isFinite(value) && Number.isFinite(limit) ? <LimitGauge value={value} limit={limit} label={`${d.value} against an action level of ${limit} ppm`} /> : null}
+        {test && !small ? <span className={s.readingSub}>{d.label}</span> : null}
+        {!test && !small && extra?.wind ? (
+          <span className={s.readingSub}>
+            {extra.windDeg != null ? <WindArrow fromDeg={extra.windDeg} /> : null}
+            {extra.wind}
+          </span>
+        ) : null}
+      </button>
     </div>
   );
 }
 
-export function TodaySoundings({ items, sceneId, onOpen }: { items: SoundingDatum[]; sceneId: string; onOpen: (id: SoundingDatum["id"]) => void }) {
+export function TodaySoundings({ items, sceneId, onOpen, extra }: { items: SoundingDatum[]; sceneId: string; onOpen: (id: SoundingDatum["id"]) => void; extra?: ReadingExtra }) {
   const settled = useChartSettled(sceneId);
-  // phones, and short landscape screens: a figure and one line
   const phone = useMedia(COMPACT);
-  const narrow = useMedia("(max-width: 360px)");
+  const narrow = useMedia("(max-width: 359px)");
   if (!settled || !items.length) return null;
+  // a phone keeps the buoy (Sea now is on by default); the test lives in the ticket's Status on a phone
+  const shown = items.filter((d) => !phone || d.id === "buoy");
+  if (narrow) return null;
   return (
     <ChartMarks
-      marks={items.map((d) => ({
+      marks={shown.map((d) => ({
         id: `today-${d.id}`,
         lon: d.lon,
         lat: d.lat,
+        layer: d.id === "test" ? "toxin" : "sea",
         priority: d.id === "test" ? 90 : 85,
-        // the test is Today's main number: on a small screen it may cover a neighbouring port's dot rather
-        // than be dropped (critic 12, 320 px); the buoy still drops to the margin's water row
-        insist: d.id === "test",
+        // the reading the reader switched on is not dropped for another place's dot
+        insist: d.id === "test" || phone,
         leader: true,
-        // 320 px: a shorter leader, so the named figure fits between the point and the scale bar
-        offset: narrow ? 14 : phone ? 22 : 26,
-        // on a phone the water lies west of the points (camera.ts phoneBounds): the type goes there first
-        anchors: phone
-          ? d.id === "test"
-            ? ["top-left", "bottom-left", "left", "top", "bottom", "top-right", "right"]
-            : ["bottom-left", "bottom", "left", "bottom-right", "right", "top-left"]
-          : d.id === "buoy"
-            ? ["bottom-right", "top-right", "right", "bottom-left", "left", "top-left"]
-            : ["top-right", "top-left", "right", "left", "bottom-right", "bottom-left"],
-        content: <Figure d={d} phone={phone} narrow={narrow} onOpen={() => onOpen(d.id)} />,
+        offset: phone ? 18 : 26,
+        anchors: phone ? ["left", "top-left", "bottom-left", "top", "bottom"] : d.id === "buoy" ? ["left", "bottom-left", "top-left", "bottom", "right"] : ["top-left", "left", "top-right", "right", "bottom-left"],
+        content: <Card d={d} small={phone} extra={d.id === "buoy" ? extra : undefined} tour={d.id === (shown.some((x) => x.id === "buoy") ? "buoy" : "test")} onOpen={() => onOpen(d.id)} />,
       }))}
     />
   );

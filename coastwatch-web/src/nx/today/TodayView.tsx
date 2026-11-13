@@ -1,40 +1,46 @@
 "use client";
 
-import { FollowLine } from "@/nx/alerts/FollowLine";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { FisheryId } from "@/pilot/contracts";
-import { fisheryLabel as labelOf } from "@/pilot/facts";
+import { fisheryLabel as labelOf, nextTide, pacificDay, rowHeadline } from "@/pilot/facts";
 import { readSaved } from "@/pilot/today/prefs";
 import { saveTodayOffline } from "@/pilot/today/offline";
-import { ChartRegulation, RAMP_FISHERIES, rampZoneAt } from "@/nx/chart/regulation";
+import { useFollow } from "@/nx/alerts/useFollow";
+import { ChartRegulation, RAMP_FISHERIES, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
 import { ChartScene } from "@/nx/chart/scene";
+import { setMapLayer, MapLayers } from "@/nx/chart/mapLayers";
 import { Agenda, type AgendaItem } from "@/nx/ds/Agenda";
-import { BigDate } from "@/nx/ds/BigDate";
 import { Button } from "@/nx/ds/Button";
 import { dayTime } from "@/nx/ds/format";
 import { markFor } from "@/nx/ds/kinds";
 import { Legend } from "@/nx/ds/Mark";
-import { MarginRow, MarginRows } from "@/nx/ds/Margin";
-import { pan, register, registerFrom, registerTo, settle } from "@/nx/ds/motion";
-import { ProvenanceSheet, Stamp, type Provenance } from "@/nx/ds/Stamp";
+import { PageLayout } from "@/nx/ds/layout";
+import { settle } from "@/nx/ds/motion";
+import { ProvenanceSheet, Stamp, stampText, type Provenance } from "@/nx/ds/Stamp";
 import { SourcesDiffer, Unavailable } from "@/nx/ds/States";
 import { Skeleton } from "@/nx/ds/DataState";
-import { Mark } from "@/nx/ds/Mark";
 import { Statement } from "@/nx/ds/Statement";
+import { Ticket, TicketMain, TicketStub } from "@/nx/ds/stage/Ticket";
+import { FollowButton } from "@/nx/ds/synth/FollowButton";
+import { Glyph, LimitGauge, Micro, Pennant, Slot } from "@/nx/ds/synth/Grammar";
+import { Tabs, TabPanel } from "@/nx/ds/synth/Tabs";
 import { useMedia, usePhone } from "@/nx/ds/useMedia";
 import { CANYON_AXIS } from "@/nx/chart/features";
-import { distanceKm, phoneBounds, portWater, todayBounds } from "./camera";
+import { sectorOf, whaleMeasures } from "@/nx/regulation/whale";
+import { distanceKm, portWater, zoneBounds } from "./camera";
 import type { ChangeLine } from "./change";
 import { useChangeLine } from "./useChangeLine";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
-import { PORT_NAME_LAYOUT } from "./layout";
-import { Advisories, GateList, type GateItem } from "@/nx/ds/GateList";
+import { GateList, type GateItem } from "@/nx/ds/GateList";
 import { gateHrefs, type Gate } from "./gates";
-import { buildToday, othersLine, scopeWords, type TodayInputs, type TodayView as View } from "./model";
-import { COMPACT, TodaySoundings } from "./Soundings";
+import { buildToday, ppmWords, scopeWords, type TodayInputs, type TodayView as View } from "./model";
+import { advisoryParts, SeaDock } from "./SeaDock";
+import { TodaySoundings } from "./Soundings";
 import { chooseFishery, useFisheries, useTourState } from "./store";
+import { compassDeg, datesLine, glyphFor, pennantsFor, posterParts, seaBars, zoneCaption } from "./ticket";
+import { DatesLine } from "@/nx/ds/synth/charts";
 import { Tour, TourLink } from "./Tour";
 import s from "./today.module.css";
 
@@ -45,13 +51,17 @@ export type TodayProps = {
   arriving?: boolean;
 };
 
-
 const canyonHead = { lon: CANYON_AXIS[0][0], lat: CANYON_AXIS[0][1] };
+const TICKET_W = 404;
 
 /**
- * Today at your port (journeys.md Journeys 1 and 2): the season status for your fishery, the next date that
- * can change it, what changed since your last visit, the dated agenda, two soundings on the chart and the
- * rest as one-line rows. Each value opens its provenance. Every missing source says so in words.
+ * Today at your port (v14, the approved synthesis "Today"): the chart is the page. One ticket stands beside the port
+ * and says one thing: the season status as a poster ("Season delayed to at least **Jan 1, 2027**", the record's own
+ * words), its stamp, and four tabs: Status (why, the dates on record, the domoic-acid test), Record (the source record
+ * in detail: the three gates, the dates, when the records were published and saved), Fisheries (every fishery at the
+ * port) and Notices (official notices, then the models, quietly). The sea dock along the foot holds the NWS zone,
+ * advisories, the forecast seas, the buoy's point and the tide. Readings live on the chart at their points, under their
+ * layer chips. Every value comes from the published records and opens where it comes from.
  */
 export function TodayView({ port, initial, arriving = false }: TodayProps) {
   const fisheries = useFisheries();
@@ -59,47 +69,67 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
   const primary = fisheries?.[0];
   if (!port) return null;
   const inputs = data.state === "ok" ? data.inputs : null;
-  // RAMP's zone lines on the chart for a crab reader, the port's own zone heavier (E T43)
   const ramp = !!fisheries?.some((f) => RAMP_FISHERIES.has(f));
+  const assembled = fisheries !== undefined && !!primary && data.state === "ok" && !!inputs;
+  const at = { lon: port.lon, lat: port.lat };
+  const scene = <ChartScene scene={{ id: `today:${port.key}`, view: { bounds: portWater(port) }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />;
   return (
     <MotionConfig reducedMotion="user">
-      <ChartRegulation spec={ramp ? { zones: { highlight: rampZoneAt(port.lat) } } : null} />
+      <PageLayout mode="stage" phoneMap={0.27} />
+      <MapLayers page="today" defaults={{ regulation: true, depth: true, sea: true }} />
+      {!assembled ? <ChartRegulation spec={ramp ? { zones: { highlight: rampZoneAt(port.lat) } } : null} /> : null}
       <section className={s.today} data-testid="nx-today" aria-labelledby="nx-today-title">
         {fisheries === undefined ? (
-          <PortHeading name={port.name} />
+          <Ticket key={port.key} at={at} anchorY={110} width={TICKET_W} labelledBy="nx-today-title">
+            <TicketMain>
+              <PortHeading name={port.name} />
+            </TicketMain>
+          </Ticket>
         ) : !primary ? (
           <>
-            {!arriving ? <ChartScene scene={{ id: `today:${port.key}`, view: { bounds: portWater(port) }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} /> : null}
-            <FisheryChooser port={port} inputs={data.state === "loading" ? undefined : inputs} onChoose={chooseFishery} />
+            {!arriving ? scene : null}
+            <Ticket key={port.key} at={arriving ? null : at} anchorY={110} width={TICKET_W} labelledBy="nx-today-title">
+              <TicketMain>
+                <FisheryChooser port={port} inputs={data.state === "loading" ? undefined : inputs} onChoose={chooseFishery} />
+              </TicketMain>
+            </Ticket>
           </>
         ) : data.state === "loading" ? (
           <>
-            <ChartScene scene={{ id: `today:${port.key}`, view: { bounds: portWater(port) }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />
-            <PortHeading name={port.name} fishery={primary} />
-            {/* a placeholder at the page's own geometry: the statement, then the gates' three lines */}
-            <Skeleton label={`Reading the records for ${port.name}`} figure lines={4} />
+            {scene}
+            <Ticket key={port.key} at={at} anchorY={170} width={TICKET_W} labelledBy="nx-today-title">
+              <TicketMain>
+                <PortHeading name={port.name} fishery={primary} />
+                {/* a placeholder at the ticket's own geometry: the poster, then the tabs' first lines */}
+                <Skeleton label={`Reading the records for ${port.name}`} figure lines={4} />
+              </TicketMain>
+            </Ticket>
           </>
-        ) : data.state === "error" || !inputs ? (
+        ) : !assembled ? (
           <>
-            <ChartScene scene={{ id: `today:${port.key}`, view: { bounds: portWater(port) }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />
-            <PortHeading name={port.name} fishery={primary} />
-            <Unavailable
-              what={`Today at ${port.name} could not be read`}
-              why="Neritic's published records did not load. The agencies' own pages still work."
-              next={
-                <p className={s.links}>
-                  <Button variant="text" href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" external>
-                    CDFW advisories
-                  </Button>
-                  <Button variant="text" href="https://www.weather.gov/mtr/" external>
-                    NWS marine forecast
-                  </Button>
-                </p>
-              }
-            />
+            {scene}
+            <Ticket key={port.key} at={at} anchorY={170} width={TICKET_W} labelledBy="nx-today-title">
+              <TicketMain>
+                <PortHeading name={port.name} fishery={primary} />
+                <Unavailable
+                  what={`Today at ${port.name} could not be read`}
+                  why="Neritic's published records did not load. The agencies' own pages still work."
+                  next={
+                    <p className={s.links}>
+                      <Button variant="quiet" href="https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories" external>
+                        CDFW advisories
+                      </Button>
+                      <Button variant="quiet" href="https://www.weather.gov/mtr/" external>
+                        NWS marine forecast
+                      </Button>
+                    </p>
+                  }
+                />
+              </TicketMain>
+            </Ticket>
           </>
         ) : (
-          <Assembled port={port} inputs={inputs} fishery={primary} />
+          <Assembled port={port} inputs={inputs!} fishery={primary!} bands={data.state === "ok" ? data.bands : {}} />
         )}
       </section>
     </MotionConfig>
@@ -108,12 +138,15 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
 
 function PortHeading({ name, fishery }: { name: string; fishery?: FisheryId }) {
   return (
-    <p className={s.scope}>
-      <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
+    <>
+      <Micro as="p">
         {name}
-      </motion.span>
-      {fishery ? <span className={s.scopeFishery}> · {scopeWords(labelOf(fishery))}</span> : null}
-    </p>
+        {fishery ? ` · ${scopeWords(labelOf(fishery))}` : ""}
+      </Micro>
+      <h1 id="nx-today-title" className={s.vh}>
+        Today at {name}
+      </h1>
+    </>
   );
 }
 
@@ -142,210 +175,448 @@ function useOfflineCopy(key: string, name: string, url: string, ready: boolean, 
   return at;
 }
 
-function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["port"]>; inputs: TodayInputs; fishery: FisheryId }) {
+type Tab = "status" | "record" | "fisheries" | "notices";
+const noticesHref = (key: string) => `/notices?place=${encodeURIComponent(key)}`;
+const CDFW_ADVISORIES = "https://wildlife.ca.gov/Fishing/Ocean/Health-Advisories";
+
+function Assembled({ port, inputs, fishery, bands }: { port: NonNullable<TodayProps["port"]>; inputs: TodayInputs; fishery: FisheryId; bands: Record<string, { south: number; north: number }> }) {
   const curl = conditionsUrl(inputs.place.lat, inputs.place.lon);
   const sea = useConditions(curl);
   const v = useMemo(() => buildToday(inputs, { fishery, sea, place: { key: port.key, name: port.name } }), [inputs, fishery, sea, port.key, port.name]);
   const change = useChangeLine(port.key, sea !== null, v.allFacts, v.now);
   const savedAt = useOfflineCopy(port.key, port.name, curl, sea !== null, inputs.now);
   const [open, setOpen] = useState<Provenance | null>(null);
+  const [tab, setTab] = useState<Tab>("status");
+  const [area, setArea] = useState<string | null>(null);
   const tour = useTourState();
   const phone = usePhone();
-  const compact = useMedia(COMPACT);
   const [touring, setTouring] = useState(false);
+  // one follow state with Alerts and the chart's port mark (src/nx/alerts/useFollow)
+  const fol = useFollow(port.key);
+  const following = !!fol.following;
+  const tabsId = `nx-today-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
 
-  // the camera: the port and the water that matters, with room for the soundings
+  // the camera: the port and the water that matters, with room for the readings
   const pts = v.soundings.map((d) => ({ lon: d.lon, lat: d.lat }));
   if (distanceKm(port, canyonHead) < 25) pts.push(canyonHead);
-  const bounds = phone ? phoneBounds(port, pts) : todayBounds(port, pts, compact ? { minHalfKm: 14 } : {});
+  const ramp = RAMP_FISHERIES.has(fishery);
+  const zoneId = ramp ? rampZoneAt(port.lat) : null;
+  const bounds = zoneBounds(port, RAMP_ZONES.find((z) => z.zone === zoneId) ?? null, pts);
   const sceneId = `today:${port.key}`;
   const st = v.statement;
-  const primaryAction = st.state === "ok" && st.source ? { href: st.source.url, external: true, label: `Read ${st.source.agency}’s notice` } : { href: gateHrefs.trip(port.key), external: false, label: "Plan a trip" };
-  // dated items the gates do not already hold: when the notice took effect, later assessments, coming NWS periods
-  const ahead = agendaItems(v).filter((it) => it.id !== "today" && it.id !== "test" && !it.id.startsWith("alert-"));
+  const year = Number(pacificDay(v.now).slice(0, 4));
+  const poster = st.state === "ok" ? posterParts(st.title, year) : null;
+
+  // the whale zone on the water, captioned in the record's words (RAMP readers only)
+  const whale = v.model.whale;
+  const whaleDelay = st.state === "ok" && st.row.cause === "whale_entanglement";
+  const caption = ramp && whale ? zoneCaption(whaleDelay ? st.level : null, whaleMeasures(whale, sectorOf(fishery), { seasonSaysIt: whaleDelay }).short.split(", ")[0]) : null;
+  // an advisory area a Fisheries row put on the chart (rock crab's "do not eat internal organs", for one)
+  const notices = (inputs.notices ?? []).filter((n) => n.action !== "reopening" && n.action !== "advisory_lifted");
+  const areaNotice = area ? notices.find((n) => n.id === area) : null;
+  // hatched on the water from shore to the frame's edge, in the record's words, with its "not verified" stamp
+  const advisory = areaNotice && bands[areaNotice.id] ? { id: areaNotice.id, north: bands[areaNotice.id].north, south: bands[areaNotice.id].south, title: areaNotice.title, note: `${areaNotice.agency} · official, not verified` } : null;
+
+  // the dates on record: the delay from its effective date to the earliest start, today, the next assessment
+  const eff = v.agenda.find((a) => a.id === "notice")?.start ?? null;
+  const dl =
+    st.state === "ok"
+      ? datesLine({
+          today: pacificDay(v.now),
+          effective: eff,
+          earliest: st.level === "delayed" ? (poster?.date ?? null) : null,
+          window: v.decision ? { start: v.decision.start, end: v.decision.end } : null,
+          windowWords: v.decision?.label.replace(/, subject to change$/, "").toLowerCase(),
+        })
+      : null;
+
+  // the sea: NWS's periods, its advisories, the buoy's one point
+  const seaOk = sea && sea !== "error" ? sea : null;
+  const bars = seaOk
+    ? seaBars({
+        lanes: v.model.sea.lanes,
+        now: v.now,
+        alerts: seaOk.alerts.status === "ok" ? seaOk.alerts.data.filter((a) => !a.ends || Date.parse(a.ends) > Date.parse(v.now)) : [],
+        buoy: v.model.sea.buoy,
+      })
+    : null;
+  const tideNext = v.model.sea.state === "ok" ? nextTide(v.model.sea.tides, v.now) : null;
+  const tide = tideNext ? `${tideNext.type === "H" ? "high" : "low"} ${tideNext.ft < 0 ? "−" : ""}${Math.abs(tideNext.ft).toFixed(1)} ft · ${clock(tideNext.at)}` : null;
+  const b = v.model.sea.buoy;
+  const windKt = b?.windKt ?? v.model.sea.windBuoy?.windKt ?? null;
+  const windDir = b?.windKt != null ? b.windDir : (v.model.sea.windBuoy?.windDir ?? null);
+  const water = v.model.sea.water;
+  const extra = {
+    windDeg: compassDeg(windDir),
+    wind: [windKt != null ? `${windDir ? `${windDir} ` : ""}${Math.round(windKt)} kt` : null, water ? `${Math.round((water.c * 9) / 5 + 32)} °F` : null].filter(Boolean).join(" · ") || null,
+  };
+
+  // the fisheries at this port: the one Today leads with, then the others, each with its stamp
+  const fisheries = [
+    ...(st.state === "ok" ? [{ fishery, label: st.fisheryLabel, word: st.row.word, headline: rowHeadline(st.row), flagged: st.tone !== "ink", provenance: st.provenance, lead: true }] : []),
+    ...v.others.map((o) => ({ ...o, lead: false })),
+  ];
+  const areaRows = notices.filter((n) => bands[n.id] && n.action === "consumption_advisory");
+
+  const tabs = [
+    { id: "status" as const, label: "Status" },
+    { id: "record" as const, label: "Record" },
+    { id: "fisheries" as const, label: "Fisheries", count: fisheries.length },
+    { id: "notices" as const, label: "Notices", count: inputs.notices === null ? null : notices.length },
+  ];
+  const cdfw = st.state === "ok" && st.source ? st.source : { agency: "CDFW", url: CDFW_ADVISORIES };
 
   return (
     <>
       <ChartScene scene={{ id: sceneId, view: { bounds }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />
-      <TodaySoundings items={v.soundings} sceneId={sceneId} onOpen={(id) => setOpen(v.soundings.find((d) => d.id === id)?.provenance ?? null)} />
+      <ChartRegulation spec={{ zones: ramp ? { highlight: zoneId, caption } : null, advisory }} />
+      <TodaySoundings items={v.soundings} sceneId={sceneId} extra={extra} onOpen={(id) => setOpen(v.soundings.find((d) => d.id === id)?.provenance ?? null)} />
       {open ? <ProvenanceSheet provenance={open} now={v.now} open onOpenChange={(o) => !o && setOpen(null)} /> : null}
 
-      <div className={s.lead}>
-        {st.state === "ok" ? (
-          <div data-tour="status">
-            <Statement
-              size="md"
-              as="h1"
-              id="nx-today-title"
-              tone={st.tone}
-              rule={st.tone === "regulation" && !phone}
-              scope={
-                <span className={s.scopeInner}>
-                  <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
-                    {port.name}
-                  </motion.span>
-                  <span className={s.scopeFishery}> · {scopeWords(st.fisheryLabel)}</span>
-                </span>
-              }
-              title={st.title}
-              why={st.why}
-            >
+      <Ticket key={port.key} at={{ lon: port.lon, lat: port.lat }} anchorY={170} top={208} width={TICKET_W} labelledBy="nx-today-title" className={s.ticket}>
+        <TicketMain data-tour="status">
+          <Micro as="p" className={s.scope}>
+            {port.name} · {scopeWords(st.fisheryLabel)}
+          </Micro>
+          {st.state === "ok" ? (
+            <>
+              {poster ? (
+                <Statement as="h1" id="nx-today-title" tone={st.tone} lede={poster.lede} hero={poster.hero} className={s.poster} />
+              ) : (
+                <Statement as="h1" id="nx-today-title" size="md" tone={st.tone} title={st.title} className={s.poster} />
+              )}
               {st.provenance ? (
-                <span data-tour="stamp">
-                  <Stamp provenance={st.provenance} now={v.now} />
+                <span data-tour="stamp" className={s.stampWrap}>
+                  <TicketStamp provenance={st.provenance} now={v.now} />
                 </span>
               ) : null}
-            </Statement>
-            {st.conflict ? (
-              <SourcesDiffer
-                className={s.block}
-                subject={st.fisheryLabel}
-                claims={[
-                  { agency: st.conflict.notice.agency, quote: st.conflict.notice.title, reference: "Official notices registry", url: st.conflict.notice.url ?? "https://wildlife.ca.gov" },
-                  { agency: st.conflict.record.source, quote: st.conflict.record.headline, reference: "Neritic's season list", url: st.conflict.record.url },
-                ]}
-                checked={st.conflict.record.checked}
-                now={v.now}
-                next={<>Check {st.conflict.shown === "notice" ? st.conflict.notice.agency : st.conflict.record.source} before you act.</>}
+              {st.conflict ? (
+                <SourcesDiffer
+                  className={s.block}
+                  subject={st.fisheryLabel}
+                  claims={[
+                    { agency: st.conflict.notice.agency, quote: st.conflict.notice.title, reference: "Official notices registry", url: st.conflict.notice.url ?? "https://wildlife.ca.gov" },
+                    { agency: st.conflict.record.source, quote: st.conflict.record.headline, reference: "Neritic's season list", url: st.conflict.record.url },
+                  ]}
+                  checked={st.conflict.record.checked}
+                  now={v.now}
+                  next={<>Check {st.conflict.shown === "notice" ? st.conflict.notice.agency : st.conflict.record.source} before you act.</>}
+                />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <h1 id="nx-today-title" className={s.vh}>
+                Today at {port.name}
+              </h1>
+              <Unavailable
+                what="Season status isn't available"
+                why="Neritic's season list did not load. Not knowing the status is not the same as open."
+                next={
+                  <Button variant="quiet" href="https://wildlife.ca.gov/Fishing/Ocean/Regulations" external>
+                    CDFW ocean regulations
+                  </Button>
+                }
               />
-            ) : null}
-          </div>
-        ) : (
-          <div data-tour="status">
-            <p className={s.scope}>
-              <motion.span layoutId={PORT_NAME_LAYOUT} className={s.portName} transition={pan}>
-                {port.name}
-              </motion.span>
-              <span className={s.scopeFishery}> · {scopeWords(st.fisheryLabel)}</span>
-            </p>
-            <h1 id="nx-today-title" className={s.vh}>
-              Today at {port.name}
-            </h1>
-            <Unavailable
-              what="Season status isn't available"
-              why="Neritic's season list did not load. Not knowing the status is not the same as open."
-              next={
-                <Button variant="text" href="https://wildlife.ca.gov/Fishing/Ocean/Regulations" external>
-                  CDFW ocean regulations
-                </Button>
-              }
-            />
-          </div>
-        )}
-
-        {/* what decides a trip, in three lines, before anything else: the detail of each is the list below */}
-        <h2 className={s.summaryHead} id="nx-gate-summary-head">
-          What decides a trip
-        </h2>
-        <ul className={s.summary} aria-labelledby="nx-gate-summary-head" data-testid="nx-gate-summary">
-          {v.gates.map((g) => (
-            <li key={g.id} data-gate={g.id} data-state={g.state} data-advisory={g.id === "sea" && v.advisories.length ? "1" : undefined}>
-              <strong>{g.id === "whale" ? "Whale" : g.title}</strong>
-              <span>
-                {g.summary}
-                {g.state === "old" ? (
-                  <>
-                    {" "}
-                    <Mark kind="stale" />
-                  </>
-                ) : null}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        {/* NWS advisories in force: under the status, in the first screen at every size (lead decision 6) */}
-        <Advisories label="In force now" items={v.advisories.map((a) => ({ id: a.id, text: a.text, source: a.provenance ? <Stamp provenance={a.provenance} now={v.now} /> : "NWS" }))} />
-
-        {/* what changed since the last visit sits with the status it may have changed */}
-        <Change line={change} />
-
-        {/* the next date that can change the status: said large, once (the whale gate below does not repeat it) */}
-        {v.decision ? (
-          <motion.div className={s.decision} initial={false} animate={{ opacity: 1 }} transition={settle}>
-            <BigDate label={v.decision.label} start={v.decision.start} end={v.decision.end} now={v.now} size="lg">
-              {v.decision.provenance && !v.decision.sameAs ? <Stamp provenance={v.decision.provenance} now={v.now} /> : null}
-            </BigDate>
-          </motion.div>
-        ) : st.state === "ok" ? (
-          <p className={s.quietLine}>No decision date on record for this fishery.</p>
-        ) : null}
-
-        <div className={s.actions}>
-          {/* the one primary action: the agency's own page when the record names one, else planning */}
-          <Button variant="primary" href={primaryAction.href} external={primaryAction.external}>
-            {primaryAction.label}
-          </Button>
-<span className={s.quiet}>
-            <Button variant="text" href={gateHrefs.alerts(port.key)}>
-              Alerts for {port.name}
-            </Button>
-          </span>
-        </div>
-        {/* first-use guidance for alerts: one dismissible line, then a quiet "Following" line (src/nx/alerts) */}
-        <div data-slot="follow-line">
-          <FollowLine port={{ key: port.key, name: port.name }} />
-        </div>
-        {tour === "" ? <TourLink onStart={() => setTouring(true)} /> : null}
-      </div>
-
-      <motion.div className={s.gatesWrap} key={`${port.key}:${fishery}`} initial={registerFrom} animate={registerTo} transition={register} data-tour="gates">
-        <h2 className={s.gatesHead}>In detail</h2>
-        <GateList label={`What decides a trip from ${port.name}`} level={3} gates={v.gates.map((g) => gateItem(g, v.now, !!v.decision))} />
-      </motion.div>
-
-      {ahead.length ? (
-        <div className={s.agendaWrap} data-tour="agenda">
-          <h2 className={s.head}>Dates on record</h2>
-          <Agenda className={s.agenda} label={`Dates at ${port.name}`} now={v.now} items={ahead} />
-        </div>
-      ) : null}
-
-      <MarginRows className={s.rows} label={`More at ${port.name}`}>
-        {v.rows
-          // the gates hold the whale measures, the tests and the sea; what is left is the models
-          .filter((r) => r.id === "models")
-          .map((r) => (r.state === "unavailable" ? <MarginRow key={r.id} label={r.label} state="unavailable" note={r.note} /> : <MarginRow key={r.id} label="Models" value={<Figure text={r.value} />} detail={<Models v={v} />} />))}
-        <NoticesRow notices={inputs.notices} portKey={port.key} portName={port.name} />
-        {v.others.length ? (
-          <MarginRow
-            label="Others"
-            value={<Figure text={othersLine(v.others)} />}
-            detail={
-              <ul className={s.detailList}>
-                {v.others.map((o) => (
-                  <li key={o.fishery}>
-                    <p>
-                      <strong>{o.label}</strong>: {o.word.toLowerCase()}. {o.headline}
-                    </p>
-                    {o.provenance ? <Stamp provenance={o.provenance} now={v.now} /> : null}
-                    <p>
-                      <Button variant="text" onClick={() => chooseFishery(o.fishery)}>
-                        Lead with {o.label.replace(/\s*\(.*\)$/, "").toLowerCase()}
+            </>
+          )}
+          {/* what changed since the last visit sits with the status it may have changed */}
+          <Change line={change} />
+          {/* a phone: the advisories in force above the fold, in the ticket (the dock follows below) */}
+          {phone && v.advisories.length ? (
+            <div className={s.advStrip} data-testid="advisories">
+              {v.advisories.map((a) => {
+                const p = advisoryParts(a);
+                return (
+                  <p key={a.id}>
+                    <Pennant n={pennantsFor(p.event)} />
+                    <span>
+                      <b>{p.event}</b> {p.when}
+                    </span>
+                  </p>
+                );
+              })}
+              {v.advisories[0].provenance ? <Stamp provenance={v.advisories[0].provenance} now={v.now} className={s.advStamp} /> : null}
+            </div>
+          ) : null}
+        </TicketMain>
+        <TicketStub data-tour="gates">
+          <Tabs label="Detail" items={tabs} value={tab} onChange={setTab} idBase={tabsId} className={s.tabs} />
+          <TabPanel idBase={tabsId} id="status" active={tab === "status"} className={s.panel}>
+            <StatusPanel v={v} dl={dl} researchHref={gateHrefs.research(port.key)} />
+          </TabPanel>
+          <TabPanel idBase={tabsId} id="record" active={tab === "record"} className={s.panel}>
+            <RecordPanel v={v} portName={port.name} savedAt={savedAt} />
+          </TabPanel>
+          <TabPanel idBase={tabsId} id="fisheries" active={tab === "fisheries"} className={s.panel}>
+            <Micro as="p" className={s.panelHead}>
+              Fisheries at {port.name} · official, not verified
+            </Micro>
+            <ul className={s.fl}>
+              {fisheries.map((f) => (
+                <li key={f.fishery} data-fishery={f.fishery}>
+                  <Glyph kind={f.provenance ? glyphFor(f.provenance, f.flagged) : "none"} />
+                  <span>
+                    {f.label}
+                    <small className={f.flagged ? s.coral : undefined}>{f.word}</small>
+                    {!f.lead ? (
+                      <Button variant="quiet" onClick={() => chooseFishery(f.fishery)} className={s.lead}>
+                        Lead with {f.label.replace(/\s*\(.*\)$/, "").toLowerCase()}
                       </Button>
-                    </p>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {areaRows.length ? (
+              <ul className={s.areas}>
+                {areaRows.map((n) => (
+                  <li key={n.id}>
+                    {/* design-lint-allow raw-button: a toggle row that puts an advisory's area on the chart (prototype .fish-pick); ds Toggle is a switch, this is the row itself */}
+                    <button
+                      type="button"
+                      className={s.pick}
+                      aria-pressed={area === n.id}
+                      onClick={() => {
+                        const on = area !== n.id;
+                        setArea(on ? n.id : null);
+                        if (on) setMapLayer("regulation", true);
+                      }}
+                    >
+                      <Glyph kind="unverified-coral" />
+                      <span>
+                        {n.title}
+                        <small>
+                          {n.agency} · not verified · <u>{area === n.id ? "on the chart" : "show on the chart"}</u>
+                        </small>
+                      </span>
+                    </button>
                   </li>
                 ))}
-                <li>
-                  <p>
-                    <Button variant="text" href={noticesHref(port.key)}>
-                      Every official notice, here and on the rest of the coast
-                    </Button>
-                  </p>
-                </li>
               </ul>
-            }
-          />
-        ) : null}
-      </MarginRows>
+            ) : null}
+          </TabPanel>
+          <TabPanel idBase={tabsId} id="notices" active={tab === "notices"} className={s.panel}>
+            <NoticesPanel notices={inputs.notices === null ? null : notices} portKey={port.key} portName={port.name} v={v} />
+          </TabPanel>
+          <div className={s.acts}>
+            {following ? (
+              <>
+                {/* design issue 1: a followed port's ticket leads with the next useful action; Following is a quiet toggle */}
+                <Button variant="primary" href={gateHrefs.trip(port.key)}>
+                  Plan a trip
+                </Button>
+                <FollowButton name={port.name} following variant="toggle" onChange={fol.set} data-testid="nx-follow" />
+              </>
+            ) : (
+              <FollowButton name={port.name} following={false} disabled={fol.following === undefined || fol.full} onChange={fol.set} data-testid="nx-follow" />
+            )}
+            <Button variant="quiet" href={cdfw.url} external>
+              {cdfw.agency}
+            </Button>
+          </div>
+          {tour === "" ? <TourLink onStart={() => setTouring(true)} /> : null}
+        </TicketStub>
+      </Ticket>
 
+      <SeaDock state={v.sea} zone={v.model.sea.zone} zoneName={seaOk?.marine.status === "ok" ? seaOk.marine.data.zoneName : null} advisories={v.advisories} bars={bars} tide={tide} now={v.now} phone={phone} tripHref={following ? null : gateHrefs.trip(port.key)} />
+      {touring ? <Tour hasSounding={v.soundings.length > 0} onEnd={() => setTouring(false)} /> : null}
+    </>
+  );
+}
+
+const clock = (at: string) => {
+  const m = /(\d{2}):(\d{2})/.exec(at);
+  if (!m) return at;
+  const h = Number(m[1]);
+  return `${h % 12 || 12}:${m[2]} ${h < 12 ? "AM" : "PM"}`;
+};
+
+/** The ticket's stamp: the data-state glyph, then source · date · verification; it opens where the record comes from. */
+function TicketStamp({ provenance: p, now }: { provenance: Provenance; now: string }) {
+  const [open, setOpen] = useState(false);
+  const text = stampText(p, now).replace(/^[^·]+·\s*/, "");
+  return (
+    <ProvenanceSheet
+      provenance={p}
+      now={now}
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        // design-lint-allow raw-button: the stamp line is the provenance sheet's trigger (ds Stamp, in the synthesis grammar)
+        <button type="button" className={s.stamp} aria-haspopup="dialog" aria-label={`${stampText(p, now)}. Open where this comes from`}>
+          <Glyph kind={glyphFor(p)} />
+          <span>{text}</span>
+        </button>
+      }
+    />
+  );
+}
+
+/** Status: why, the dates on record (drawn), the domoic-acid test or the honest slot. */
+function StatusPanel({ v, dl, researchHref }: { v: View; dl: ReturnType<typeof datesLine>; researchHref: string }) {
+  const st = v.statement;
+  // a short screen (prototype @media max-height 800): the dates line is drawn lower so the ticket's action stays in view
+  const short = useMedia("(max-height: 800px) and (min-width: 641px)");
+  const t = v.test;
+  return (
+    <>
+      {st.state === "ok" && st.why ? (
+        <p className={s.why}>
+          <Micro>Why</Micro>
+          <b>{st.why}</b>
+        </p>
+      ) : null}
+      {v.decision ? (
+        <div className={s.tlFig}>
+          <p className={s.tlCap} data-testid="nx-decision">
+            <Glyph kind="predicted" />
+            <span>
+              {v.decision.label} · <b>{rangeWords(v.decision.start, v.decision.end)}</b>
+            </span>
+          </p>
+          {dl ? <DatesLine {...dl} height={short ? 66 : 82} /> : null}
+        </div>
+      ) : st.state === "ok" ? (
+        <p className={s.quietLine}>No decision date on record for this fishery.</p>
+      ) : null}
+      <div className={s.cell} data-state={t.state === "ok" ? (t.old ? "old" : "ok") : t.state} data-testid="nx-test-cell">
+        <Micro>Domoic acid test</Micro>
+        {t.state === "none" ? (
+          <Slot>No test site for this port</Slot>
+        ) : t.state === "error" ? (
+          <Slot>CDPH tests could not be read just now</Slot>
+        ) : (
+          <div className={s.tox}>
+            <span className={s.toxHead}>
+              <Glyph kind={t.old ? "old" : "measured"} />
+              {t.species}, highest {t.max == null ? "not detected" : `${ppmWords(t.max)}${t.limit != null ? ` of ${t.limit}` : ""} ppm`}
+            </span>
+            {t.max != null && t.limit != null ? <LimitGauge value={t.max} limit={t.limit} label={`${ppmWords(t.max)} against an action level of ${t.limit} ppm`} /> : null}
+            <small>
+              {t.n} sample{t.n === 1 ? "" : "s"} · {t.site} · {t.day} · {t.age}
+              {t.old ? " (old)" : ""}
+            </small>
+          </div>
+        )}
+        {/* the water samples near the port, in Research (the test's own record is CDPH's, linked from Record) */}
+        <Button variant="quiet" href={researchHref} className={s.cellLink}>
+          Samples nearby
+        </Button>
+      </div>
+    </>
+  );
+}
+
+const rangeWords = (a: string, b: string | null) => {
+  const f = (d: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
+  if (!b || b === a) return f(a);
+  return a.slice(0, 7) === b.slice(0, 7) ? `${f(a)}–${Number(b.slice(8))}` : `${f(a)}–${f(b)}`;
+};
+
+/** Record: the source record and the three gates in detail, the dates on record, when the records were published and saved. */
+function RecordPanel({ v, portName, savedAt }: { v: View; portName: string; savedAt: string | null }) {
+  const st = v.statement;
+  const ahead = agendaItems(v).filter((it) => it.id !== "today" && it.id !== "test" && !it.id.startsWith("alert-"));
+  return (
+    <>
+      {st.state === "ok" ? <p className={s.quote}>{rowHeadline(st.row)}</p> : null}
+      <GateList label={`What decides a trip from ${portName}`} level={3} gates={v.gates.map((g) => gateItem(g, v.now, false))} />
+      {ahead.length ? (
+        <div className={s.agendaWrap} data-tour="agenda">
+          <Micro as="h3" className={s.panelHead}>
+            Dates on record
+          </Micro>
+          <Agenda label={`Dates at ${portName}`} now={v.now} items={ahead} />
+        </div>
+      ) : null}
       <Legend className={s.legend} kinds={["measured", "model", "official", "noview", "stale"]} title="Marks on this page" />
-      <p className={s.imprint}>
+      <p className={s.fresh}>
         {v.dataAt ? <>Records published {dayTime(v.dataAt, { ref: v.now })}. </> : null}
         {savedAt ? <>Saved on this device for offline use {dayTime(savedAt, { ref: v.now })}. </> : null}
         Not for navigation.
       </p>
-      {touring ? <Tour hasSounding={v.soundings.length > 0} onEnd={() => setTouring(false)} /> : null}
+    </>
+  );
+}
+
+/** Notices: the official notices the registry ties to this port (not verified), then the models, quietly: not toxin tests. */
+function NoticesPanel({ notices, portKey, portName, v }: { notices: TodayInputs["notices"]; portKey: string; portName: string; v: View }) {
+  const m = v.models;
+  return (
+    <>
+      {notices === null ? (
+        <p className={s.quietLine}>The official notices did not load. Check CDFW and CDPH.</p>
+      ) : (
+        <>
+          <Micro as="p" className={s.panelHead}>
+            {notices.length ? `${notices.length} official notice${notices.length === 1 ? "" : "s"} · not verified` : "Official notices"}
+          </Micro>
+          <ul className={s.nl} data-testid="nx-notices-row">
+            {notices.map((n) => (
+              <li key={n.id}>
+                <Glyph kind="unverified" />
+                <span>
+                  <strong>{n.agency}</strong>: {n.title}
+                </span>
+              </li>
+            ))}
+            {!notices.length ? (
+              <li>
+                <Glyph kind="none" />
+                <span>The registry ties no current notice to {portName}. That does not mean open: check CDFW and CDPH.</span>
+              </li>
+            ) : null}
+          </ul>
+        </>
+      )}
+      <p className={s.more}>
+        <Button variant="quiet" href={noticesHref(portKey)} data-testid="nx-notices-link">
+          All notices, with dates and sources
+        </Button>
+      </p>
+      <Micro as="h3" className={s.panelHead}>
+        Models · not toxin tests
+      </Micro>
+      <p className={s.modelsLine}>{m.value}</p>
+      <ul className={s.nl} data-testid="nx-models">
+        <li>
+          <Glyph kind="predicted" />
+          <span>
+            {m.charm ? (
+              <>
+                <strong>C-HARM{m.charm.past ? ", past run" : ""}</strong>: {m.charm.headline} {m.charm.words}
+                {m.charm.provenance ? (
+                  <>
+                    {" "}
+                    <Stamp provenance={m.charm.provenance} now={v.now} />
+                  </>
+                ) : null}
+              </>
+            ) : (
+              "No C-HARM run is available for these days."
+            )}
+          </span>
+        </li>
+        <li>
+          <Glyph kind="predicted" />
+          <span>
+            {m.outlook ? (
+              <>
+                <strong>Chlorophyll outlook, 8 days</strong>: {m.outlook.headline} {m.outlook.words.join(" ")}
+                {m.outlook.provenance ? (
+                  <>
+                    {" "}
+                    <Stamp provenance={m.outlook.provenance} now={v.now} />
+                  </>
+                ) : null}
+              </>
+            ) : (
+              "No chlorophyll outlook is published for this port."
+            )}
+          </span>
+        </li>
+      </ul>
     </>
   );
 }
@@ -353,8 +624,7 @@ function Assembled({ port, inputs, fishery }: { port: NonNullable<TodayProps["po
 /**
  * A gate of the view model as the ds GateList draws it: every line of fact carries its stamp (which opens where
  * it comes from), a sample is read with its age (T6, T17), the fixed relationship sentences read as one
- * paragraph. The sea gate's headline is its first fact (an advisory when one is in force). The whale gate's
- * next assessment is not repeated when the page already sets that date large.
+ * paragraph. The sea gate's headline is its first fact (an advisory when one is in force).
  */
 function gateItem(g: Gate, now: string, dateShown: boolean): GateItem {
   const lead = g.id === "sea" && g.state === "ok" ? g.facts[0] : null;
@@ -375,53 +645,6 @@ function gateItem(g: Gate, now: string, dateShown: boolean): GateItem {
     relation: g.relation.join(" "),
     actions: g.actions,
   };
-}
-
-const noticesHref = (key: string) => `/notices?place=${encodeURIComponent(key)}`;
-
-/**
- * The notices row: how many official notices the registry ties to this port, their titles, and the way to the
- * full list (every notice here and on the rest of the coast, each with its dates, sources and "not verified").
- */
-function NoticesRow({ notices, portKey, portName }: { notices: TodayInputs["notices"]; portKey: string; portName: string }) {
-  if (notices === null) return <MarginRow label="Notices" state="unavailable" note="The official notices did not load. Check CDFW and CDPH." />;
-  const shown = notices.filter((n) => n.action !== "reopening" && n.action !== "advisory_lifted");
-  return (
-    <MarginRow
-      label="Notices"
-      value={<Figure text={shown.length ? `${shown.length} official, not verified` : "None listed here"} />}
-      detail={
-        <ul className={s.detailList} data-testid="nx-notices-row">
-          {shown.map((n) => (
-            <li key={n.id}>
-              <p>
-                <strong>{n.agency}</strong>: {n.title}
-              </p>
-            </li>
-          ))}
-          {!shown.length ? <li><p>The registry ties no current notice to {portName}. That does not mean open: check CDFW and CDPH.</p></li> : null}
-          <li>
-            <p>
-              <Button variant="text" href={noticesHref(portKey)} data-testid="nx-notices-link">
-                All notices, with dates and sources
-              </Button>
-            </p>
-          </li>
-        </ul>
-      }
-    />
-  );
-}
-
-/** A value that changes settles in (README §8 `settle`); the first one is simply there. */
-function Figure({ text }: { text: string }) {
-  return (
-    <AnimatePresence mode="popLayout" initial={false}>
-      <motion.span key={text} className={s.figure} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={settle}>
-        {text}
-      </motion.span>
-    </AnimatePresence>
-  );
 }
 
 function agendaItems(v: View): AgendaItem[] {
@@ -456,7 +679,7 @@ function Change({ line }: { line: ChangeLine | null | undefined }) {
       <p className={s.changeLine} data-testid="nx-change">
         {line.text}
       </p>
-      <Button variant="text" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)} data-testid="nx-change-more">
+      <Button variant="quiet" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)} data-testid="nx-change-more">
         {open ? "Less" : "What changed"}
       </Button>
       <AnimatePresence initial={false}>
@@ -471,36 +694,6 @@ function Change({ line }: { line: ChangeLine | null | undefined }) {
           </motion.ul>
         ) : null}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function Models({ v }: { v: View }) {
-  const m = v.models;
-  return (
-    <div className={s.models}>
-      {m.charm ? (
-        <div>
-          <h3 className={s.subhead}>C-HARM{m.charm.past ? ", past run" : ""}</h3>
-          <p>{m.charm.headline}</p>
-          <p>{m.charm.words}</p>
-          {m.charm.provenance ? <Stamp provenance={m.charm.provenance} now={v.now} /> : null}
-        </div>
-      ) : (
-        <p>No C-HARM run is available for these days.</p>
-      )}
-      {m.outlook ? (
-        <div>
-          <h3 className={s.subhead}>Chlorophyll outlook, 8 days</h3>
-          <p>{m.outlook.headline}</p>
-          {m.outlook.words.map((w) => (
-            <p key={w}>{w}</p>
-          ))}
-          {m.outlook.provenance ? <Stamp provenance={m.outlook.provenance} now={v.now} /> : null}
-        </div>
-      ) : (
-        <p>No chlorophyll outlook is published for this port.</p>
-      )}
     </div>
   );
 }
