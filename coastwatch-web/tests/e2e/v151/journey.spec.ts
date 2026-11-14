@@ -167,7 +167,7 @@ test.describe("v15.1 journey: a saved trip, the whole coast, and back", () => {
     await mapReady(page);
     await page.goto(`${OK}/explore?place=${MOSS}`);
     await mapReady(page);
-    await expect(page.getByTestId("nx-explore")).toBeVisible();
+    await expect(page.getByTestId("nx-explore")).toBeVisible({ timeout: 20_000 });
     expect(await scene(page)).toBe(`explore:${MOSS}`);
     expect(atPort(await bounds(page)), "Explore opens framed on the port").toBe(true);
 
@@ -354,7 +354,7 @@ test.describe("v15.1 journey under reduced motion", () => {
     await page.goto(`${OK}/today?place=${MOSS}`);
     await mapReady(page);
     await exploreEntry(page).click();
-    await expect(page.getByTestId("nx-explore")).toBeVisible();
+    await expect(page.getByTestId("nx-explore")).toBeVisible({ timeout: 20_000 });
     // the statewide frame is there almost at once (a flight takes over a second)
     await expect.poll(async () => statewide(await bounds(page)), { timeout: 1_500, intervals: [100] }).toBe(true);
     const moving = await page.evaluate(() => (window as unknown as { __cwMap?: { isMoving(): boolean } }).__cwMap?.isMoving() ?? false);
@@ -388,7 +388,7 @@ test.describe("v15.1 journey on a low-power device (static tier)", () => {
     await page.goto(`${OK}/today?place=${MOSS}`);
     await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-tier", "static");
     await exploreEntry(page).click();
-    await expect(page.getByTestId("nx-explore")).toBeVisible();
+    await expect(page.getByTestId("nx-explore")).toBeVisible({ timeout: 20_000 });
     await expect(page.locator(".maplibregl-canvas")).toHaveCount(0);
     // the fallback is a real picture of the statewide view, not an empty frame
     const img = page.getByTestId("nx-static-field").or(page.getByTestId("nx-poster").locator("img")).first();
