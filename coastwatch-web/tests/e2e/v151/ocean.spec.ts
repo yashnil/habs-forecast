@@ -55,7 +55,7 @@ for (const [name, size] of [
     await expect.poll(() => scene(page), { timeout: 15_000 }).toBe("explore:state");
     // the camera leaves once Today's ticket has shrunk away, then lands on the whole coast
     await expect.poll(async () => { const b = await bounds(page); return b.s <= 32.53 && b.n >= 42 && !(await moving(page)); }, { timeout: 15_000 }).toBe(true);
-    await expect(page.getByTestId("nx-explore-heading")).toHaveText("Explore California Waters");
+    await expect(page.getByRole("heading", { level: 1, name: "Explore California Waters: Chlorophyll" })).toBeVisible();
     // the port is kept: one tap back to its water
     await page.getByTestId("nx-back-port").click();
     await expect.poll(() => scene(page), { timeout: 15_000 }).toBe("explore:port-592");
@@ -69,7 +69,7 @@ for (const [name, size] of [
   });
 }
 
-for (const size of [SIZES.phone, SIZES.small]) {
+for (const size of [SIZES.desk, { width: 1280, height: 800 }, { width: 1100, height: 800 }, SIZES.phone, SIZES.small]) {
   test(`statewide at ${size.width}: the Oregon border and the Mexican border are uncovered`, async ({ browser }) => {
     const { ctx, page } = await newContext(browser, size);
     await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
@@ -80,12 +80,15 @@ for (const size of [SIZES.phone, SIZES.small]) {
       .poll(async () => {
         const n = await at(-124.21, 42.0), s = await at(-117.12, 32.53);
         const p = { x: sheet.x + n.x, y: sheet.y + n.y };
-        for (const id of ["nx-bar", "nx-port-control", "nx-menu-button"]) {
-          const r = await page.getByTestId(id).boundingBox();
+        for (const sel of ["[data-testid=nx-bar]", "[data-testid=nx-port-control]", "[data-testid=nx-menu-button]", ".nx-nav", ".nx-bar-end"]) {
+          const id = sel;
+          const r = await page.locator(sel).first().boundingBox();
           if (r && p.x >= r.x - 4 && p.x <= r.x + r.width + 4 && p.y >= r.y - 4 && p.y <= r.y + r.height + 4) return `under ${id}`;
         }
-        const pane = await page.locator(".n12-margin").first().boundingBox();
-        if (pane && sheet.y + s.y > pane.y) return "Mexico under the sheet";
+        // a phone's sheet spans the width; at a desk the time dock runs along the chart's foot
+        const pane = await page.locator(size.width <= 640 ? ".n12-margin" : "[data-testid=nx-time-dock]").first().boundingBox();
+        const m = { x: sheet.x + s.x, y: sheet.y + s.y };
+        if (pane && m.y > pane.y && m.x >= pane.x && m.x <= pane.x + pane.width) return "Mexico under the sheet or dock";
         return "clear";
       }, { timeout: 15_000 })
       .toBe("clear");

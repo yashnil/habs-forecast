@@ -137,17 +137,21 @@ export function Explore({ model }: { model: ExploreModel }) {
   const reduce = useReducedMotion() ?? false;
   const phone = usePhone();
   const narrow = useMedia("(max-width: 340px)");
-  // phone: how far the floating bar and port control reach down over the chart (measured; the statewide fit stays below)
+  // how far the floating bar (brand and port control, the nav pill and menu; on a phone the layers button too) reaches
+  // down over the chart, measured at every width: the statewide fit keeps the Oregon border below it
   const [barPad, setBarPad] = useState(0);
   useEffect(() => {
-    if (!phone) return setBarPad(0);
     const measure = () => {
       const frame = document.querySelector<HTMLElement>("[data-testid=nx-sheet]")?.getBoundingClientRect().top ?? 0;
-      const bottoms = ["[data-testid=nx-bar]", "[data-testid=nx-port-control]", ".nx-bar-end", ".nx-layers"].map((q) => {
+      const small = window.innerWidth < 560;
+      // (at desk widths the layer chips stand over the layer panel, west of the free chart, so they are not counted)
+      const parts = ["[data-testid=nx-bar]", "[data-testid=nx-port-control]", ".nx-nav", ".nx-bar-end", ...(phone ? [".nx-layers"] : [])];
+      const bottoms = parts.map((q) => {
         const r = document.querySelector<HTMLElement>(q)?.getBoundingClientRect();
         return r && r.height ? r.bottom - frame : NaN;
       });
-      setBarPad(barPadTop(bottoms));
+      // the fit's own top padding (ChartHost sceneInsets: 20 px under 560 px, else 44)
+      setBarPad(barPadTop(bottoms, small ? 20 : 44));
     };
     measure();
     window.addEventListener("resize", measure);
@@ -747,7 +751,8 @@ export function Explore({ model }: { model: ExploreModel }) {
       <Ticket at={null} side="west" edge="gutter" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
         <TicketMain>
           <div className={s.head}>
-            <h1 id="nx-explore-title" className={s.title} data-testid="nx-explore-heading">
+            {/* the layer on show is part of the heading's name ("Explore California Waters: C-HARM"); the switch shows it */}
+            <h1 id="nx-explore-title" className={s.title} data-testid="nx-explore-heading" aria-label={`Explore California Waters: ${LAYER_LABEL[product.id]}`}>
               Explore California Waters
             </h1>
             <div className={s.nav} data-testid="nx-explore-nav">
