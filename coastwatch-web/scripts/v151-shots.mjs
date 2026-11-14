@@ -14,6 +14,7 @@
  *   09 About, Privacy and Sources on the new system                10 return to the saved trip
  * A moment whose control is missing in this build is logged as MISSING and not faked. A desk-size video of the flow
  * (Today → statewide → layers → zoom → trip) is recorded with Playwright's recordVideo.
+ * CW_SHOTS_HEADED=1 runs a headed window (GPU compositing for the flight); CW_SHOTS_SIZES=1440,390 limits the sizes.
  * The 1440 and 390 frames and the video are copied to docs/coastwatch/v15.1/qa/ at the repository root.
  */
 import { copyFileSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -333,7 +334,8 @@ async function video(browser) {
 }
 
 mkdirSync(OUT, { recursive: true });
-const browser = await chromium.launch({ channel: CHANNEL });
+// CW_SHOTS_HEADED=1: a headed window, so the GPU composites the flight as a reader sees it
+const browser = await chromium.launch({ channel: CHANNEL, headless: !process.env.CW_SHOTS_HEADED });
 try {
   for (const size of SIZES) {
     try {
