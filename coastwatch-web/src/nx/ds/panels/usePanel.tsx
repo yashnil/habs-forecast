@@ -68,6 +68,7 @@ export function stageArea(el: HTMLElement): Area {
   return { left: g, top, right: W - g, bottom: H - g };
 }
 
+const vpNow = () => ({ w: window.innerWidth, h: window.innerHeight });
 const boxOf = (el: HTMLElement): Box => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
 
 /**
@@ -136,6 +137,15 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
   /** the panel's content fitted its width when the resize began (content that scrolls sideways by design is left be) */
   const fitted = useRef(true);
   const fittedY = useRef(true);
+  /** the size the reader chose (or saved): the live box is clamped to the screen, the intent is kept for a re-grow */
+  const sizeIntent = useRef<{ w: number | null; h: number | null } | null>(null);
+  /**
+   * The screen size at which the reader last arranged this panel. Smaller than that, a panel that finds no free place
+   * is parked at its default place (its saved placement and size kept as intent); back at that size, it returns.
+   */
+  const arrangedAt = useRef<{ w: number; h: number } | null>(null);
+  const parked = useRef(false);
+
   const opts = useRef(o);
   useLayoutEffect(() => {
     opts.current = o;
@@ -221,11 +231,13 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       const lim = opts.current.limits;
       const sz = clampSize({ w: saved.w ?? el.offsetWidth, h: saved.h ?? el.offsetHeight }, lim, area);
       putSize(el, saved.w ? sz.w : null, saved.h && opts.current.resizeHeight ? sz.h : null);
+      sizeIntent.current = { w: saved.w ?? null, h: saved.h && opts.current.resizeHeight ? saved.h : null };
       setResized(true);
     }
     if (saved?.c) setCollapsed(true);
     if (saved?.p) {
       placement.current = saved.p;
+      arrangedAt.current = vpNow();
       markMoved(true);
       replace(true);
     }
@@ -254,6 +266,9 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     setMoved(false);
     setCollapsed(false);
     setResized(false);
+    sizeIntent.current = null;
+    parked.current = false;
+    arrangedAt.current = null;
   }, [on, ref]);
 
   // the screen changes size, or the panel's content does: a moved panel keeps its corner and stays on screen
@@ -273,11 +288,27 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
         // a collapsed panel's box is its header: its kept size waits for it to open again
         if (resized && !el.hasAttribute("data-panel-collapsed")) {
           const lim = opts.current.limits;
-          const sz = clampSize({ w: el.offsetWidth, h: el.offsetHeight }, lim, area);
+          const want = sizeIntent.current;
+          const sz = clampSize({ w: want?.w ?? el.offsetWidth, h: want?.h ?? el.offsetHeight }, lim, area);
           if (el.style.width && sz.w !== el.offsetWidth) el.style.width = `${sz.w}px`;
           if (el.style.height && sz.h !== el.offsetHeight) el.style.height = `${sz.h}px`;
         }
-        replace(panels);
+        const a = arrangedAt.current;
+        const regrown = !a || (window.innerWidth >= a.w && window.innerHeight >= a.h);
+        if (panels && parked.current && placement.current) {
+          // a parked panel tries its saved place again (at its saved size) whenever the screen changes
+          parked.current = false;
+          const want = sizeIntent.current;
+          if (want) {
+            const sz = clampSize({ w: want.w ?? el.offsetWidth, h: want.h ?? el.offsetHeight }, opts.current.limits, area);
+            putSize(el, want.w ? sz.w : null, want.h ? sz.h : null);
+          }
+          markMoved(true);
+          setResized(!!want);
+          setCoverRev((n) => n + 1);
+        }
+        // back at (or above) the size it was arranged at, the reader's layout stands as they left it
+        replace(panels && !regrown);
       });
     };
     window.addEventListener("resize", go);
@@ -288,7 +319,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       ro.disconnect();
       cancelAnimationFrame(raf);
     };
-  }, [on, ref, replace, resized]);
+  }, [on, ref, replace, resized, putSize, markMoved]);
 
   // a reset anywhere on the page: back to the default layout, gliding there unless the reader asked for less motion
   const firstReset = useRef(resets);
@@ -304,6 +335,9 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     setMoved(false);
     setCollapsed(false);
     setResized(false);
+    sizeIntent.current = null;
+    parked.current = false;
+    arrangedAt.current = null;
     setCoverRev((n) => n + 1);
     opts.current.relayout?.();
     if (reduce) return;
@@ -326,11 +360,11 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     fallBack.current = () => {
       const el = ref.current;
       if (!el) return;
+      // parked: at its default place for this screen; the reader's placement and size stay saved as intent
       for (const k of ["left", "top", "right", "bottom", "width", "height", "maxHeight"] as const) el.style[k] = "";
-      placement.current = null;
+      parked.current = true;
       markMoved(false);
       setResized(false);
-      persist({ p: null, w: null, h: null });
       setCoverRev((n) => n + 1);
       opts.current.relayout?.();
     };
@@ -399,6 +433,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       if (!d.live) return;
       const area = stageArea(el);
       placement.current = toPlacement(boxOf(el), area);
+      arrangedAt.current = vpNow();
       persist({ p: placement.current });
       setCoverRev((n) => n + 1);
     },
@@ -423,6 +458,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       const n = avoid(n0, chromeBoxes(el), area);
       put(el, n);
       placement.current = toPlacement(n, area);
+      arrangedAt.current = vpNow();
       persist({ p: placement.current });
       settleCover();
     },
@@ -492,6 +528,8 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       el.removeAttribute("data-panel-dragging");
       const area = stageArea(el);
       placement.current = toPlacement(boxOf(el), area);
+      sizeIntent.current = { w: el.offsetWidth, h: opts.current.resizeHeight ? el.offsetHeight : null };
+      arrangedAt.current = vpNow();
       persist({ p: placement.current, w: el.offsetWidth, h: opts.current.resizeHeight ? el.offsetHeight : null });
       setCoverRev((n) => n + 1);
     },
@@ -511,6 +549,8 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       const sz = applySize(el, b, b.w + dw, b.h + dh, area);
       setResized(true);
       placement.current = toPlacement({ ...b, w: sz.w, h: sz.h }, area);
+      sizeIntent.current = { w: sz.w, h: opts.current.resizeHeight ? sz.h : null };
+      arrangedAt.current = vpNow();
       persist({ p: placement.current, w: sz.w, h: opts.current.resizeHeight ? sz.h : null });
       settleCover();
     },
