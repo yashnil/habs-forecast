@@ -175,6 +175,19 @@ test("Today: the sea dock and the ticket move independently", async ({ browser }
   await ctx.close();
 });
 
+test("My Coast trip view: the pass keeps its width when moved and stays inside the gutters", async ({ browser }) => {
+  const { ctx, page } = await coastContext(browser, { width: 1100, height: 760 });
+  await page.goto(`${OK}/coast?place=${MOSS}&view=trip`);
+  const pass = page.locator('[data-panel="pass"]');
+  const p0 = await settled(pass);
+  await drag(page, pass.locator("[data-panel-grip]"), 40, -120);
+  const p1 = await settled(pass);
+  expect(Math.round(p1.width)).toBe(Math.round(p0.width));
+  expect(p1.x + p1.width).toBeLessThanOrEqual(1100 - 14);
+  expect(Math.round(p0.y - p1.y)).toBe(120);
+  await ctx.close();
+});
+
 for (const width of [390, 320]) {
   test(`phone ${width} px: no floating panels; the sheet reads in order with nothing overlapping`, async ({ browser }) => {
     const { ctx, page } = await coastContext(browser, { width, height: width === 320 ? 640 : 844 });
