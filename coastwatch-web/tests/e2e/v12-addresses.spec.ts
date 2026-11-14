@@ -27,7 +27,8 @@ test("a research-mode My Coast link opens Research near that place", async ({ pa
   await page.goto(`${OK}/coast?mode=research&place=port-592`);
   await expect(page).toHaveURL(/\/research\?place=port-592/);
   await expect(page.getByTestId("nx-research")).toBeVisible();
-  await expect(page.getByTestId("nx-margin")).toContainText("Nearest station to Moss Landing");
+  // v15.1: Research opens on the most useful station near the place and says so ("… stations near Moss Landing")
+  await expect(page.getByTestId("nx-margin")).toContainText(/stations? near Moss Landing/);
 });
 
 test("a campaign tag on / keeps the front door; a reload of Explore stays on Explore", async ({ page }) => {

@@ -135,6 +135,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
   const sizingNow = useRef(false);
   /** the panel's content fitted its width when the resize began (content that scrolls sideways by design is left be) */
   const fitted = useRef(true);
+  const fittedY = useRef(true);
   const opts = useRef(o);
   useLayoutEffect(() => {
     opts.current = o;
@@ -442,6 +443,12 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
         sz.w = Math.min(maxW, sz.w + 8);
         el.style.width = `${sz.w}px`;
       }
+      // nor shorter than what does not scroll inside it (its heading, its one action)
+      const maxH = Math.min(lim.maxH, room.bottom - b.y);
+      for (let i = 0; i < 80 && fittedY.current && opts.current.resizeHeight && sz.h < maxH && el.scrollHeight > el.clientHeight + 1; i++) {
+        sz.h = Math.min(maxH, sz.h + 8);
+        el.style.height = `${sz.h}px`;
+      }
       return sz;
     },
     [putSize],
@@ -457,6 +464,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       sizing.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, b: t.b, area: t.area };
       sizingNow.current = true;
       fitted.current = !overflowsX(el);
+      fittedY.current = el.scrollHeight <= el.clientHeight + 1;
       el.setAttribute("data-panel-dragging", "");
     },
     [ref, takeOver],
@@ -495,6 +503,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       if (!el || !e.key.startsWith("Arrow")) return;
       e.preventDefault();
       fitted.current = !overflowsX(el);
+      fittedY.current = el.scrollHeight <= el.clientHeight + 1;
       const { b, area } = takeOver(el);
       const st = e.shiftKey ? STEP_FAR : STEP;
       const dw = e.key === "ArrowRight" ? st : e.key === "ArrowLeft" ? -st : 0;

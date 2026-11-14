@@ -246,6 +246,7 @@ test("Today: the resize corner keeps the top-left corner still, and a narrow tic
   expect(Math.abs(t2.x - t0.x)).toBeLessThanOrEqual(1);
   const cut = await ticket.evaluate((n) => [...n.children].some((c) => c instanceof HTMLElement && c.offsetParent !== null && c.scrollWidth > c.clientWidth + 1));
   expect(cut, "no child draws past the ticket").toBe(false);
+  expect(await ticket.evaluate((n) => n.scrollHeight <= n.clientHeight + 1), "nothing draws past its foot").toBe(true);
   await ctx.close();
 });
 
@@ -266,6 +267,7 @@ for (const [w, h] of [[1100, 760], [900, 700]]) {
     for (const c of await chromeBoxes(page)) expect(overlap(t, c)).toBe(false);
     expect(t.x + t.width).toBeLessThanOrEqual(w);
     expect(t.y + t.height).toBeLessThanOrEqual(h);
+    expect(await ticket.evaluate((n) => n.scrollHeight <= n.clientHeight + 1), "its content scrolls inside it").toBe(true);
     const entry = page.getByTestId("nx-today-explore");
     if (await entry.isVisible()) {
       await entry.scrollIntoViewIfNeeded();
@@ -281,6 +283,7 @@ for (const [path, key] of [["/today", "ticket"], ["/coast", "ticket"]]) {
     await page.goto(`${OK}${path}?place=${MOSS}`);
     const t = await settled(page.locator(`[data-panel="${key}"]`));
     expect(t.y + t.height).toBeLessThanOrEqual(900);
+    expect(await page.locator(`[data-panel="${key}"]`).evaluate((n) => n.scrollHeight <= n.clientHeight + 1), "its content scrolls inside it").toBe(true);
     await ctx.close();
   });
 }
