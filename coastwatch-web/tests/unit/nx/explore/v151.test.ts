@@ -238,3 +238,26 @@ describe("round 2 (B, D): the live model and estimate layers", () => {
     expect(chlEstimateStateWords(c, true)).toMatch(/^Gap-filled estimate \(NOAA DINEOF\), Nov 2, stale: 12 days old, no newer day published\. Reconstructed .* not observed\.$/);
   });
 });
+
+import { extendAxis, pickServedStep, playableSteps, stepsAxis } from "@/nx/explore/ocean";
+
+describe("round 2: one shared, true axis; served steps only", () => {
+  it("the axis widens to the latest model time and the estimate's day, never narrows", () => {
+    expect(extendAxis(["2026-10-29", "2026-11-14"], ["2026-11-17T03:00:00Z"], ["2026-11-02"])).toEqual(["2026-10-29", "2026-11-16"]);
+    expect(extendAxis(["2026-10-29", "2026-11-14"], [], ["2026-10-20"])).toEqual(["2026-10-20", "2026-11-14"]);
+    expect(stepsAxis([{ valid_time: "2026-11-17T03:00:00Z" }, { valid_time: "2026-11-13T06:00:00Z" }])).toEqual(["2026-11-12", "2026-11-16"]);
+  });
+  it("opens on the served step nearest to now, trying nearest first", async () => {
+    const steps = [{ id: "n003", valid_time: "2026-11-13T06:00:00Z" }, { id: "n024", valid_time: "2026-11-14T03:00:00Z" }, { id: "f006", valid_time: "2026-11-14T09:00:00Z" }];
+    const tried: string[] = [];
+    const st = await pickServedStep(steps, "2026-11-14T08:00:00Z", async (s) => (tried.push(s.id), s.id === "n024"));
+    expect(st?.id).toBe("n024");
+    expect(tried).toEqual(["f006", "n024"]);
+    expect(await pickServedStep(steps, "2026-11-14T08:00:00Z", async () => false)).toBeNull();
+  });
+  it("only forecast steps play, in order, without the unserved ones", () => {
+    const s = [{ id: "f006", kind: "forecast" as const, valid_time: "2026-11-14T09:00:00Z" }, { id: "n024", kind: "nowcast" as const, valid_time: "2026-11-14T03:00:00Z" }, { id: "f003", kind: "forecast" as const, valid_time: "2026-11-14T06:00:00Z" }];
+    expect(playableSteps(s, new Set()).map((x) => x.id)).toEqual(["f003", "f006"]);
+    expect(playableSteps(s, new Set(["f003"])).map((x) => x.id)).toEqual(["f006"]);
+  });
+});

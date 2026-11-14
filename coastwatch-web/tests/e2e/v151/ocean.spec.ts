@@ -313,6 +313,9 @@ test("round 2 (D): WCOFS model temperature and predicted currents, steps on the 
   await expect(sst).toContainText("Model · WCOFS");
   await sst.click();
   await expect(page.getByTestId("nx-explore-lead")).toContainText("not a measurement");
+  // it opens on the served step nearest to now, never on one that cannot be read
+  await expect.poll(async () => (await hook2(page)).oceanStep, { timeout: 15_000 }).toMatch(/^(n024|f024)$/);
+  await expect(page.getByTestId("nx-model-label")).not.toContainText("could not be read");
   // nowcast steps on Analysis / Estimates, forecast steps on Forecasts
   await expect(page.getByTestId("nx-rail-family-est").getByTestId("nx-step-n024")).toBeVisible();
   await expect(page.getByTestId("nx-rail-family-fc").getByTestId("nx-step-f024")).toBeVisible();
@@ -335,5 +338,33 @@ test("round 2 (D): WCOFS model temperature and predicted currents, steps on the 
   await expect(page.getByTestId("nx-currents-key")).toHaveCount(0);
   await page.getByTestId("nx-currents-measured").click();
   await expect(page.getByTestId("nx-currents-predicted-key")).toHaveCount(0);
+  await ctx.close();
+});
+
+
+test("round 2 (E): every row sits on its true times on one shared axis; WCOFS plays only over served steps", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk);
+  await page.goto(`${OK}/explore?rail=1&place=${MOSS}`);
+  await mapReady(page);
+  await expect(page.getByTestId("nx-step-n024")).toBeVisible({ timeout: 15_000 });
+  const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
+  const rail = await box("nx-timerail");
+  const n = await box("nx-step-n024"), f = await box("nx-step-f024"), last = await box("nx-step-f072");
+  // narrow 3-hour ticks at their valid times: the nowcast before the forecast, the last forecast inside the axis
+  expect(n.width).toBeLessThan(12);
+  expect(n.x).toBeLessThan(f.x);
+  expect(last.x + last.width).toBeLessThanOrEqual(rail.x + rail.width + 1);
+  // the estimate's single day sits at its date, left of the model's steps (Nov 2 before Nov 13)
+  const est = await box("nx-rail-chl-estimate-day");
+  expect(est.x + est.width).toBeLessThan(n.x);
+  // nothing stretched: the nowcast row's ticks span about a day, not the whole axis
+  const first = await box("nx-step-n003");
+  expect(n.x - first.x).toBeLessThan(rail.width / 4);
+  // playback over the forecast steps: an unserved step is skipped, never shown as "could not be read"
+  await page.getByTestId("nx-layer-sst-model").click();
+  await expect.poll(async () => (await hook2(page)).oceanStep, { timeout: 15_000 }).toMatch(/^(n024|f024)$/);
+  await page.getByTestId("nx-play").first().click();
+  await expect.poll(async () => (await hook2(page)).oceanStep, { timeout: 30_000 }).toBe("f024");
+  await expect(page.getByTestId("nx-model-label")).not.toContainText("could not be read");
   await ctx.close();
 });

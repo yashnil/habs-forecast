@@ -12,8 +12,8 @@ import { ChartRegulation, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
 import { readPrefs, writePrefs } from "./prefs";
 import { asValueGrid, loadChlEstimateIndex, loadOceanCodes, loadWcofsCurrents, loadWcofsIndex } from "@/lib/ocean/client";
 import { wcofsLabel, type ChlEstimateIndex, type OceanGrid, type WcofsIndex } from "@/lib/ocean/contract";
-import { chlEstimateUsable, maskedCodes, maskedVectors, stepWhen, wcofsTracks, wcofsUsable } from "./ocean";
-import { ChlEstimateLegend, EstimateRow, SstModelLegend, StepRow, WcofsNote } from "./OceanParts";
+import { chlEstimateStateWords, chlEstimateUsable, extendAxis, maskedCodes, maskedVectors, pickServedStep, playableSteps, stepsAxis, stepWhen, wcofsTracks, wcofsUsable } from "./ocean";
+import { ChlEstimateLegend, EstimateRow, SstModelLegend, WcofsNote } from "./OceanParts";
 import { token } from "@/nx/chart/layers/colors";
 import type { FieldGrid } from "@/nx/chart/layers/grid";
 import type { Map as MapLibreMap } from "maplibre-gl";
@@ -158,13 +158,30 @@ export function Explore({ model }: { model: ExploreModel }) {
       if (!live) return;
       const wcofs = w.status === "fulfilled" ? w.value : null;
       setOcean({ wcofs, chl: c.status === "fulfilled" ? c.value : null, loaded: true });
-      if (wcofs?.default_step) setStepId((x) => x ?? wcofs.default_step);
+      // open on the served step nearest to now (live every listed step is served; a fixture serves a few), never on
+      // one that cannot be read; the ones tried and not served are marked
+      if (wcofs && wcofs.status !== "unavailable" && wcofs.steps.length)
+        void pickServedStep(wcofs.steps, model.now, (st) =>
+          loadOceanCodes(st.grids.mask).then(
+            () => true,
+            () => {
+              if (live) setFailedSteps((f) => new Set(f).add(st.id));
+              return false;
+            },
+          ),
+        ).then((st) => live && st && setStepId((x) => x ?? st.id));
     });
     return () => {
       live = false;
     };
+    // once, on arrival (the clock is the page's own)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const wtracks = useMemo(() => wcofsTracks(ocean.wcofs), [ocean.wcofs]);
+  const stepRef = useRef(stepId);
+  stepRef.current = stepId;
+  const failedRef = useRef(failedSteps);
+  failedRef.current = failedSteps;
   const wstep = ocean.wcofs?.steps.find((x) => x.id === stepId) ?? null;
   const predicted = curSource === "predicted" && !!wstep;
   const depthOn = useMapLayer("depth");
@@ -698,9 +715,45 @@ export function Explore({ model }: { model: ExploreModel }) {
   const hours = useMemo(() => (model.currents ? playHours(model.currents.frames) : []), [model.currents]);
   const dayFrames = useMemo(() => (product ? playFrames(product) : []), [product]);
   const playsHours = streaks && !predicted && hours.length > 1 && !currentOld;
-  const canPlay = playsHours || (!chartOnly && !oceanField && dayFrames.length > 1);
+  // the WCOFS forecast steps play when the model is on show: only steps that are served (an unserved one is skipped)
+  const wcofsMode = (oceanField === "sst" || predicted) && playableSteps(ocean.wcofs?.steps ?? [], failedSteps).length > 1;
+  const canPlay = wcofsMode || playsHours || (!chartOnly && !oceanField && dayFrames.length > 1);
+  // a model on show with fewer than two served steps left: playback ends (it never steps a layer that is not shown)
   useEffect(() => {
-    if (!playing) return;
+    if (playing && (oceanField === "sst" || predicted) && !wcofsMode) setPlaying(false);
+  }, [playing, oceanField, predicted, wcofsMode]);
+  useEffect(() => {
+    if (!playing || !wcofsMode) return;
+    let live = true;
+    let t = 0;
+    const advance = async () => {
+      const list = playableSteps(ocean.wcofs?.steps ?? [], failedRef.current);
+      const i = list.findIndex((x) => x.id === stepRef.current);
+      for (let k = 1; k <= list.length; k++) {
+        const next = list[(i + k + list.length) % list.length];
+        // the next step is read before it is shown: playback never stops on one that cannot be read
+        const ok = await loadOceanCodes(oceanField === "sst" ? next.grids.sst : next.grids.u).then(
+          () => true,
+          () => false,
+        );
+        if (!live) return;
+        if (ok) {
+          setStepId(next.id);
+          break;
+        }
+        failedRef.current = new Set(failedRef.current).add(next.id);
+        setFailedSteps(failedRef.current);
+      }
+      if (live) t = window.setTimeout(advance, 1400);
+    };
+    t = window.setTimeout(advance, 400);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+  }, [playing, wcofsMode, ocean.wcofs, oceanField]);
+  useEffect(() => {
+    if (!playing || wcofsMode) return;
     const id = window.setInterval(
       () => {
         if (playsHours) setHourId((h) => nextOf(hours, h)?.id ?? h);
@@ -709,7 +762,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       playsHours ? 900 : 1400,
     );
     return () => window.clearInterval(id);
-  }, [playing, playsHours, hours, dayFrames]);
+  }, [playing, playsHours, hours, dayFrames, wcofsMode]);
 
   // the e2e hook: what is drawn, read from the page
   useEffect(() => {
@@ -970,25 +1023,26 @@ export function Explore({ model }: { model: ExploreModel }) {
   // the live model and estimate rows of the time rail (round 2, D/E): WCOFS nowcast and the estimate on Analysis /
   // Estimates, WCOFS forecast on Forecasts; a source that cannot be read says so on its row
   const wcofsOk = wcofsUsable(ocean.wcofs);
+  const chooseEstimate = () => {
+    setChartOnly(false);
+    if (model.products.some((x) => x.id === "chl")) setProductId("chl");
+    setOceanField("chlest");
+    setAt(null);
+  };
+  // the live model steps and the estimate's day at their true times on the rail's shared axis (round 2, lead's review)
+  const oceanRail = {
+    nowcast: wcofsOk ? wtracks.nowcast : [],
+    forecast: wcofsOk ? wtracks.forecast : [],
+    selected: oceanField === "sst" || predicted ? stepId : null,
+    failed: failedSteps,
+    onStep: chooseStep,
+    estimate: chlEstimateUsable(ocean.chl) && ocean.chl?.date ? { date: ocean.chl.date, words: chlEstimateStateWords(ocean.chl, ocean.loaded), on: oceanField === "chlest", onChoose: chooseEstimate } : null,
+  };
+  // the rail's axis holds everything shown at its true time (WCOFS forecasts run days past today)
+  const railModel: ExploreModel = { ...model, axis: extendAxis(model.axis, wcofsOk ? (ocean.wcofs?.steps ?? []).map((x) => x.valid_time) : [], oceanRail.estimate ? [oceanRail.estimate.date] : []) };
   const oceanExtra = {
-    est: (
-      <>
-        {wcofsOk ? <StepRow label="WCOFS nowcast" steps={wtracks.nowcast} selected={oceanField === "sst" || predicted ? stepId : null} failed={failedSteps} onStep={chooseStep} testid="nx-rail-wcofs-nowcast" /> : null}
-        <EstimateRow
-          ix={ocean.chl}
-          loaded={ocean.loaded}
-          on={oceanField === "chlest"}
-          onChoose={() => {
-            setChartOnly(false);
-            const chl = model.products.find((x) => x.id === "chl");
-            if (chl) setProductId("chl");
-            setOceanField("chlest");
-            setAt(null);
-          }}
-        />
-      </>
-    ),
-    fc: wcofsOk ? <StepRow label="WCOFS forecast" steps={wtracks.forecast} selected={oceanField === "sst" || predicted ? stepId : null} failed={failedSteps} onStep={chooseStep} testid="nx-rail-wcofs-forecast" /> : <WcofsNote ix={ocean.wcofs} loaded={ocean.loaded} />,
+    est: !chlEstimateUsable(ocean.chl) ? <EstimateRow ix={ocean.chl} loaded={ocean.loaded} on={false} onChoose={chooseEstimate} /> : null,
+    fc: wcofsOk ? null : <WcofsNote ix={ocean.wcofs} loaded={ocean.loaded} />,
   };
   const pickAt = pick ? ((pick.kind === "shore" ? model.stations.find((x) => x.id === pick.id) : model.buoys.find((x) => x.id === pick.id)) ?? null) : null;
   const stationSlot =
@@ -1311,11 +1365,14 @@ export function Explore({ model }: { model: ExploreModel }) {
         ) : railShown || phone ? (
         <TimeRail
           head={!phone}
-          model={model}
           product={product}
           frameId={chartOnly || oceanField ? "" : frame.id}
           stamp={oceanField === "sst" && wstep ? `Model sea temperature: valid ${stepWhen(wstep)}` : oceanField === "chlest" && ocean.chl?.date ? `Estimate: ${day(ocean.chl.date)}${ocean.chl.status === "stale" ? " (stale)" : ""}` : predicted && wstep && !(chartOnly || !!oceanField) ? `Predicted currents: valid ${stepWhen(wstep)}` : null}
           extra={oceanExtra}
+          ocean={oceanRail}
+          model={railModel}
+          zoomTo={oceanField === "sst" || predicted ? stepsAxis(ocean.wcofs?.steps ?? []) : null}
+          axisNote={oceanField === "sst" || predicted ? "Axis zoomed to the WCOFS steps" : null}
           onFrame={chooseFrame}
           onProduct={chooseProduct}
           currentsOn={streaks && !predicted}

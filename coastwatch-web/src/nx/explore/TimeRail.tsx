@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { Button, day, Micro, range, sig, useElementWidth } from "@/nx/ds";
+import { Button, day, Micro, range, sig, time, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
-import { axisLabels, axisX, frameCount, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
+import { axisLabels, axisLength, axisX, frameCount, hourX, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
 import { isOld, LAYER_LABEL, layerKindWord, oldMark } from "./words";
 import s from "./explore.module.css";
 
@@ -20,6 +20,8 @@ const LABEL_W = 96;
 const ROW = 36;
 /** a layer that is not the one on show: a thin row, so the three families stay compact (round 2, E) */
 const ROW_QUIET = 20;
+/** a model's step row: two lines of label room ("WCOFS / nowcast") */
+const STEP_ROW = 32;
 const ROW_ACTIVE = 56;
 
 type Props = {
@@ -39,7 +41,95 @@ type Props = {
   extra?: Partial<Record<"obs" | "est" | "fc", ReactNode>>;
   /** what is on show when it is not one of the published frames (a model step, an estimate) */
   stamp?: string | null;
+  /** the live model steps and the estimate's day, drawn at their true times on the shared axis (round 2) */
+  ocean?: OceanRail | null;
+  /** said under the axis when it is zoomed to one family's span */
+  axisNote?: string | null;
+  /** the selected family's own span, used as the axis when the shared one is too narrow for its 3-hour steps */
+  zoomTo?: [string, string] | null;
 };
+
+export type OceanStepLite = { id: string; kind: "nowcast" | "forecast"; valid_time: string };
+export type OceanRail = {
+  nowcast: OceanStepLite[];
+  forecast: OceanStepLite[];
+  selected: string | null;
+  failed: Set<string>;
+  onStep: (id: string) => void;
+  estimate: { date: string; words: string; on: boolean; onChoose: () => void } | null;
+};
+
+/**
+ * A model's steps at their own valid times on the shared day axis: 3-hour ticks, nothing drawn between the first and
+ * last step that is not a step, a step that could not be read drawn as an empty outline.
+ */
+function AxisStepRow({ model, label, steps, selected, failed, onStep, width, testid }: { model: ExploreModel; label: string; steps: OceanStepLite[]; selected: string | null; failed: Set<string>; onStep: (id: string) => void; width: number; testid: string }) {
+  if (!steps.length) return null;
+  const T = Math.max(40, width - LABEL_W);
+  const px = (t: string) => hourX(model.axis, { time: t }) * T;
+  // a 3-hour step's width on this axis (never under 2 px)
+  const tick = Math.max(2, (T / (axisLength(model.axis) * 8)) - 1);
+  const last = steps[steps.length - 1];
+  const lx = px(last.valid_time) + tick / 2;
+  // the "valid to" words stand right of the last step when there is room, else left of the first, else shorter, else
+  // not at all (the time head says the step on show): never over the ticks, never past the row
+  const fx = px(steps[0].valid_time) - tick / 2 - 4;
+  const long = last.kind === "nowcast" ? `to ${day(last.valid_time)}, ${time(last.valid_time)}` : `valid to ${day(last.valid_time)}, ${time(last.valid_time)}`;
+  const short = `to ${day(last.valid_time)}`;
+  const w = (t: string) => t.length * 7.2;
+  const placed = lx + 4 + w(long) < T ? { text: long, x: lx + 4, anchor: "start" as const } : fx - w(long) > 0 ? { text: long, x: fx, anchor: "end" as const } : lx + 4 + w(short) < T ? { text: short, x: lx + 4, anchor: "start" as const } : fx - w(short) > 0 ? { text: short, x: fx, anchor: "end" as const } : null;
+  return (
+    <div className={s.railRow} style={{ height: STEP_ROW }} data-testid={testid}>
+      <span className={s.railLabel}>{label}</span>
+      <div className={s.railTrack} role="radiogroup" aria-label={`${label} steps`} style={{ overflow: "hidden" }}>
+        <svg width={T} height={STEP_ROW} className={s.railSvg} aria-hidden="true">
+          <line x1={0} x2={T} y1={STEP_ROW - 0.5} y2={STEP_ROW - 0.5} className={s.railBase} />
+          <line x1={lx} x2={lx} y1={2} y2={STEP_ROW - 1} className={s.railLatest} />
+          {placed ? (
+            <text x={placed.x} y={14} textAnchor={placed.anchor} className={s.railLatestText}>
+              {placed.text}
+            </text>
+          ) : null}
+        </svg>
+        {steps.map((st) => (
+          // design-lint-allow raw-button: a model step at its valid time on the axis (a radio drawn as a tick), like the rail's frames
+          <button
+            key={st.id}
+            type="button"
+            role="radio"
+            aria-checked={st.id === selected}
+            aria-label={`${st.kind === "nowcast" ? "Nowcast" : "Forecast"}, valid ${day(st.valid_time)}, ${time(st.valid_time)}${failed.has(st.id) ? ", could not be read" : ""}`}
+            className={s.axisStep}
+            data-failed={failed.has(st.id) ? "1" : undefined}
+            style={{ left: px(st.valid_time) - tick / 2, width: tick }}
+            onClick={() => onStep(st.id)}
+            data-testid={`nx-step-${st.id}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** The estimate's one day, at its date on the axis, with its words beside it. */
+function AxisDayRow({ model, label, date, words, on, onChoose, width, testid }: { model: ExploreModel; label: string; date: string; words: string; on: boolean; onChoose: () => void; width: number; testid: string }) {
+  const T = Math.max(40, width - LABEL_W);
+  const a = axisX(model.axis, date) * T, b = axisX(model.axis, date, 1) * T;
+  const right = b + 260 < T;
+  return (
+    <div className={s.railRow} style={{ height: ROW_QUIET + 4 }} data-testid={testid}>
+      <span className={s.railLabel}>{label}</span>
+      <div className={s.railTrack} style={{ overflow: "hidden" }}>
+        {/* design-lint-allow raw-button: the estimate's single day on the axis (a radio drawn as a bar) */}
+        <button type="button" role="radio" aria-checked={on} aria-label={words} className={s.axisDay} style={{ left: a + 1, width: Math.max(4, b - a - 2) }} onClick={onChoose} data-testid={`${testid}-day`} />
+        {/* a day before a zoomed axis: said so from the row's start, never cut mid-sentence */}
+        <span className={s.axisDayWords} style={b < 0 ? { left: 0, right: 0 } : right ? { left: b + 6, right: 0 } : { left: 0, right: T - a + 6 }}>
+          {b < 0 ? `Before this axis: ${words}` : words}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Round 2 (E): the rail in three labelled families, each layer on its own row with its own latest valid point.
@@ -131,7 +221,7 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
             }
             return sel ? <rect key={f.id} x={a + 0.75} y={1} width={Math.max(3, b - a - 1.5)} height={H - 2} className={s.frameSel} fill="none" /> : null;
           })}
-          {last ? (
+          {last && x(last, 1) >= 0 && x(last, 1) <= T ? (
             // the row's own latest valid point: nothing after it is drawn, and it says its date
             <g data-testid={`nx-rail-latest-${track.id}`}>
               <line x1={x(last, 1)} x2={x(last, 1)} y1={2} y2={H - 1} className={s.railLatest} />
@@ -332,8 +422,12 @@ export function TimeHead({ model, product, frameId, currentsOn, currentId, playi
   );
 }
 
-export function TimeRail({ model, product, frameId, onFrame, onProduct, currentsOn, currentId, onCurrent, playing, canPlay, onPlay, head = true, extra, stamp }: Props & { /** false where the page sets the head itself (a phone) */ head?: boolean }) {
+export function TimeRail({ model: model0, product, frameId, onFrame, onProduct, currentsOn, currentId, onCurrent, playing, canPlay, onPlay, head = true, extra, stamp, ocean, axisNote, zoomTo }: Props & { /** false where the page sets the head itself (a phone) */ head?: boolean }) {
   const [ref, width] = useElementWidth<HTMLDivElement>(320);
+  // one shared, true axis; zoomed to the selected family's span only when its 3-hour steps would be under 3 px
+  const dense = !!zoomTo && (Math.max(40, width - LABEL_W) / axisLength(model0.axis)) / 8 < 3;
+  const model: ExploreModel = dense && zoomTo ? { ...model0, axis: zoomTo } : model0;
+  const note = dense && zoomTo ? (axisNote ?? `Axis zoomed to ${range(zoomTo[0], zoomTo[1])}`) : null;
   const uid = useId().replace(/:/g, "");
   const hatchId = `nxh-${uid}`;
   const hatchPastId = `nxhp-${uid}`;
@@ -367,13 +461,18 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
             Today
           </span>
         </div>
+        {note ? (
+          <p className={s.railAxisNote} data-testid="nx-rail-axis-note">
+            {note}
+          </p>
+        ) : null}
         {FAMILIES.map((fam) => {
           const ps = model.products.filter((p) => familyOf(p) === fam.id);
           const showHours = fam.id === "obs" && !!model.currents && currentsOn;
           return (
             <div key={fam.id} className={s.railFamily} data-testid={`nx-rail-family-${fam.id}`}>
               {/* a family with nothing published is one line: its name and why (round 2, E) */}
-              {!ps.length && !showHours && !extra?.[fam.id] ? (
+              {!ps.length && !showHours && !extra?.[fam.id] && !(ocean && fam.id !== "obs") ? (
                 <p className={s.railEmptyLine} data-testid={`nx-rail-empty-${fam.id}`}>
                   <Micro as="span" className={s.railFamilyHead}>{fam.label}</Micro> {fam.empty}
                 </p>
@@ -399,6 +498,13 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
                   </div>
                 );
               })}
+              {ocean && fam.id === "est" ? (
+                <>
+                  <AxisStepRow model={model} label="WCOFS nowcast" steps={ocean.nowcast} selected={ocean.selected} failed={ocean.failed} onStep={ocean.onStep} width={width} testid="nx-rail-wcofs-nowcast" />
+                  {ocean.estimate ? <AxisDayRow model={model} label="Chl estimate" date={ocean.estimate.date} words={ocean.estimate.words} on={ocean.estimate.on} onChoose={ocean.estimate.onChoose} width={width} testid="nx-rail-chl-estimate" /> : null}
+                </>
+              ) : null}
+              {ocean && fam.id === "fc" ? <AxisStepRow model={model} label="WCOFS forecast" steps={ocean.forecast} selected={ocean.selected} failed={ocean.failed} onStep={ocean.onStep} width={width} testid="nx-rail-wcofs-forecast" /> : null}
               {extra?.[fam.id] ?? null}
               {showHours ? (
                 <div className={s.hoursBlock}>

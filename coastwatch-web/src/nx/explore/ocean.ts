@@ -4,7 +4,7 @@
  * is a gap-filled estimate. Near the shore, where the coarse grids are least reliable, nothing is drawn.
  */
 import { cycleName, MASK_WATER, type ChlEstimateIndex, type OceanGrid, type WcofsIndex, type WcofsStep } from "@/lib/ocean/contract";
-import { day, time } from "@/nx/ds/format";
+import { day, pacificYmd, time } from "@/nx/ds/format";
 
 /** A copy of the codes with no value wherever the mask is not open water (land, or within the near-shore band). */
 export function maskedCodes(g: Pick<OceanGrid, "nodata">, codes: Uint16Array, mask: Uint16Array | null): Uint16Array {
@@ -49,3 +49,46 @@ export function chlEstimateStateWords(ix: ChlEstimateIndex | null, loaded: boole
 /** Is the estimate offered at all (a day with grids)? A stale one is offered, said stale. */
 export const chlEstimateUsable = (ix: ChlEstimateIndex | null) => !!ix && ix.status !== "unavailable" && !!ix.grids && !!ix.date;
 export const wcofsUsable = (ix: WcofsIndex | null) => !!ix && ix.status !== "unavailable" && !!ix.cycle && ix.steps.length > 0;
+
+// ---------------------------------------------------------------- one shared, true time axis (lead's review)
+
+const ymd = (iso: string) => pacificYmd(iso);
+
+/**
+ * The rail's day axis widened to hold everything shown at its true time: the published frames' axis, the latest WCOFS
+ * valid time (forecasts run days past today) and the estimate's day. Nothing is stretched to fill a row.
+ */
+export function extendAxis(axis: [string, string], times: (string | null | undefined)[], days: (string | null | undefined)[] = []): [string, string] {
+  let [a, b] = axis;
+  for (const t of times) if (t) {
+    const d = ymd(t);
+    if (d > b) b = d;
+    if (d < a) a = d;
+  }
+  for (const d of days) if (d) {
+    if (d > b) b = d;
+    if (d < a) a = d;
+  }
+  return [a, b];
+}
+
+/** The WCOFS steps' own span as an axis (when the shared axis is too narrow for 3-hour steps). */
+export function stepsAxis(steps: Pick<WcofsStep, "valid_time">[]): [string, string] | null {
+  if (!steps.length) return null;
+  const t = steps.map((s) => s.valid_time).sort();
+  return [ymd(t[0]), ymd(t[t.length - 1])];
+}
+
+/**
+ * The step to open on: the one nearest to now that the route actually serves (`probe`), tried nearest first; null when
+ * none answers. Live every listed step exists, so the first probe answers; a fixture serves only a few.
+ */
+export async function pickServedStep<T extends Pick<WcofsStep, "id" | "valid_time">>(steps: T[], nowIso: string, probe: (s: T) => Promise<boolean>): Promise<T | null> {
+  const now = Date.parse(nowIso);
+  const order = [...steps].sort((a, b) => Math.abs(Date.parse(a.valid_time) - now) - Math.abs(Date.parse(b.valid_time) - now));
+  for (const s of order) if (await probe(s)) return s;
+  return null;
+}
+
+/** The forecast steps that play, in time order, without those known not to be served. */
+export const playableSteps = <T extends Pick<WcofsStep, "id" | "valid_time" | "kind">>(steps: T[], failed: Set<string>) => steps.filter((s) => s.kind === "forecast" && !failed.has(s.id)).sort((a, b) => a.valid_time.localeCompare(b.valid_time));
