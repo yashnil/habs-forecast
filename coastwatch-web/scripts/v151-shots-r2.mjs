@@ -7,7 +7,8 @@
  *
  *   r2a the chart with no chlorophyll (Chart)       r2b observed chlorophyll (one day, gaps kept)
  *   r2c the recent composite (pixel ages)          r2d the gap-filled estimate (DINEOF, labelled)
- *   r2e the latest C-HARM run (expired)            r2f WCOFS model sea temperature and predicted currents
+ *   r2e the latest C-HARM run (expired)            r2f WCOFS model sea temperature and predicted currents, with
+ *                                                     a predicted readout open (a tap off Monterey Bay)
  *   r2g the revised timeline (three families on true times)
  * The device clock is the real one: the moments show the live data as of the run. A control that is missing or
  * disabled is logged (MISSING / DISABLED) with the page's own words for it, and the frame is not faked.
@@ -84,7 +85,23 @@ async function moments(browser, size) {
     if (await choose(page, "nx-layer-charm", `${at} r2e`)) await shot(page, `${at}-r2e-charm-expired`);
     if (await choose(page, "nx-layer-sst-model", `${at} r2f`)) {
       if (await choose(page, "nx-currents-toggle", `${at} r2f currents`)) await choose(page, "nx-currents-predicted", `${at} r2f predicted`);
-      await shot(page, `${at}-r2f-wcofs`, 4500);
+      await settle(page, 3500);
+      // open a predicted readout: a tap on open water off Monterey Bay (36.70 N, 122.20 W), inside the model's grid
+      const pt = await page.evaluate(() => {
+        const m = window.__cwMap;
+        if (!m) return null;
+        const c = m.getCanvas().getBoundingClientRect();
+        const p = m.project([-122.2, 36.7]);
+        return { x: c.left + p.x, y: c.top + p.y };
+      });
+      if (pt) {
+        await page.mouse.click(pt.x, pt.y);
+        await settle(page, 1500);
+        const words = (await page.getByTestId("nx-readout").first().innerText().catch(() => "")).replace(/\s+/g, " ").trim();
+        note(`  ${at} r2f readout: ${words.slice(0, 300) || "(none)"}`);
+        if (/\bmeasured\b/i.test(words)) note(`CHECK ${at} r2f: the model readout says "measured"`);
+      }
+      await shot(page, `${at}-r2f-wcofs`, 1000);
     }
     // the timeline: open it if it is folded, then photograph it with the chlorophyll composite on
     await choose(page, "nx-layer-chl", `${at} r2g`);
