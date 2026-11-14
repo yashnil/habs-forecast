@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, Micro, MapLayers, type Provenance } from "@/nx/ds";
-import { getFrame } from "@/nx/chart/runtime";
+import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, Micro, MapLayers, type Provenance } from "@/nx/ds";
+import { getFrame, onFrame } from "@/nx/chart/runtime";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
 import { openMargin } from "@/nx/shell/Margin";
@@ -21,7 +21,11 @@ import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLaye
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, boxAround } from "./codes";
-import { coversPort, EXPLORE_ZOOM, exploreBounds, withinFor } from "./camera";
+import { COAST_ZOOM, coversPort, EXPLORE_ZOOM, exploreBounds, STATE_BOUNDS, withinFor } from "./camera";
+import { backLink, readFrom, readView, type ExploreView } from "./links";
+import { cellKmOf, chipWords, layerMetas, notPublished, resolutionNote, speedStats, speedWords } from "./layers";
+import { StationPoints, type StationPick } from "./StationPoints";
+import { StationReadout } from "./StationReadout";
 import { gridBounds } from "@/nx/chart/layers/grid";
 import { ExploreLegend } from "./ExploreLegend";
 import { Locator, ReadingOnChart } from "./ChartOverlay";
@@ -104,7 +108,7 @@ function readUrl(model: ExploreModel, sp: URLSearchParams) {
   const hourFrame = model.currents?.frames.find((x) => x.id === hour) ?? null;
   // an explicit ?cur=1 / ?cur=0 wins; otherwise the default for this layer and this hour's freshness
   const currents = !!model.currents && (cur === "1" ? true : cur === "0" ? false : currentsByDefault(p, hourFrame));
-  return { product: p?.id ?? null, frame: f?.id ?? null, currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null };
+  return { product: p?.id ?? null, frame: f?.id ?? null, currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null, view: readView(sp), from: readFrom(sp), stations: sp.get("st") === "1" };
 }
 
 export function Explore({ model }: { model: ExploreModel }) {
@@ -119,6 +123,13 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [currentsOn, setCurrentsOn] = useState(init.currents);
   const [hourId, setHourId] = useState<string | null>(init.hour);
   const [at, setAt] = useState<{ lat: number; lon: number } | null>(init.at);
+  // v15.1: the whole coast (Oregon border to Mexico) or the port's water; where "Back to …" goes
+  const [view, setView] = useState<ExploreView>(init.view);
+  const from = init.from;
+  const [stationsOn, setStationsOn] = useState(init.stations);
+  const [pick, setPick] = useState<StationPick | null>(null);
+  // the camera's zoom and latitude, for the legend's resolution line (rounded, so a pan does not re-render)
+  const [scale, setScale] = useState<{ zoom: number; lat: number } | null>(null);
   const [playing, setPlaying] = useState(false);
   const [hover, setHover] = useState<TransectPoint | null>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -152,9 +163,11 @@ export function Explore({ model }: { model: ExploreModel }) {
     set("cur", model.currents && currentsOn !== byDefault ? (currentsOn ? "1" : "0") : null);
     set("hour", hourId && hourId !== model.currents?.defaultFrame ? hourId : null);
     set("at", at ? `${at.lat.toFixed(4)},${at.lon.toFixed(4)}` : null);
+    set("view", view === "coast" ? "coast" : null);
+    set("st", stationsOn ? "1" : null);
     const next = `${window.location.pathname}${q.toString() ? `?${q}` : ""}`;
     if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(window.history.state, "", next);
-  }, [productId, frame, product, currentsOn, hourId, at, model]);
+  }, [productId, frame, product, currentsOn, hourId, at, model, view, stationsOn]);
 
   // ------------------------------------------------------------- the chart
   useEffect(() => {
@@ -321,6 +334,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     if (!map) return;
     const onClick = (e: { lngLat: { lat: number; lng: number } }) => {
       setAt({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+      setPick(null);
       setPlaying(false);
     };
     map.on("click", onClick);
@@ -328,6 +342,21 @@ export function Explore({ model }: { model: ExploreModel }) {
       map.off("click", onClick);
     };
   }, [map]);
+
+  // the zoom the chart is drawn at, for the legend's resolution line (updated as the camera settles, rounded)
+  useEffect(() => {
+    let last = "";
+    return onFrame((f) => {
+      const z = Math.round(f.camera.zoom * 4) / 4, lat = Math.round(f.camera.center[1]);
+      const k = `${z}|${lat}`;
+      if (k !== last) {
+        last = k;
+        setScale({ zoom: z, lat });
+      }
+    });
+  }, []);
+  // the hour's measured speeds, from the very u/v the streaks are drawn from
+  const speeds = useMemo(() => (field ? speedStats(field.u, field.v) : null), [field]);
 
   // ------------------------------------------------------------- the reading at the tapped point
   const [reading, setReading] = useState<Reading | null>(null);
@@ -451,7 +480,17 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   const extent = model.extent;
   const scene = useMemo(
-    () => ({
+    () =>
+      view === "coast"
+        ? {
+            // the whole coast, Oregon border to Mexico, at every screen shape; the port stays marked, so the way back is in view
+            id: "explore:state",
+            view: { bounds: STATE_BOUNDS },
+            focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
+            zoomRange: COAST_ZOOM,
+            refitLabel: "Whole coast",
+          }
+        : {
       id: `explore:${port?.key ?? "coast"}`,
       // the view stops at the data's own edge rather than showing a sliver of chart past it
       // the data's water fills the free area (the box's longer side cropped) rather than leaving inland hills beside it
@@ -461,9 +500,28 @@ export function Explore({ model }: { model: ExploreModel }) {
       zoomRange: EXPLORE_ZOOM,
       // the chart's own buttons, with a way back to everything the layers hold
       controls: extent ? { fit: { label: "Fit the data", bounds: [[extent[0], extent[1]], [extent[2], extent[3]]] as [[number, number], [number, number]] } } : undefined,
-    }),
-    [port, extent],
+          },
+    [port, extent, view],
   );
+  const back = backLink(from, key);
+  const metas = useMemo(() => layerMetas(model), [model]);
+  const unpublished = useMemo(() => notPublished(model), [model]);
+  const goView = (v: ExploreView) => {
+    setView(v);
+    setPlaying(false);
+  };
+  const toggleStations = () => {
+    setStationsOn((on) => !on);
+    setPick(null);
+  };
+  const choosePick = (p: StationPick) => {
+    setPick(p);
+    setAt(null);
+    setPlaying(false);
+  };
+  // the surface layer is finer than the screen at statewide scale: said in the legend, with the real numbers
+  const cellKm = cellKmOf(frame?.grid);
+  const resNote = scale && cellKm ? resolutionNote(scale.zoom, scale.lat, cellKm) : null;
 
   if (!product || !frame) {
     return (
@@ -630,7 +688,22 @@ export function Explore({ model }: { model: ExploreModel }) {
   const readAt = cell ?? pt;
   const readSide: "east" | "west" = readAt && f && f.project(readAt.lon, readAt.lat).x > f.viewport.width * 0.55 ? "west" : "east";
   const dockH = streaks ? 284 : 204;
-  const readSlot = (
+  const pickAt = pick ? ((pick.kind === "shore" ? model.stations.find((x) => x.id === pick.id) : model.buoys.find((x) => x.id === pick.id)) ?? null) : null;
+  const stationSlot =
+    pick && pickAt ? (
+      <div className={s.readoutSlot} data-open="1" data-testid="nx-station-slot">
+        {phone ? (
+          <StationReadout pick={pick} stations={model.stations} buoys={model.buoys} now={nowIso} place={key} onClose={() => setPick(null)} />
+        ) : (
+          <Ticket at={{ lon: pickAt.lon, lat: pickAt.lat }} side={f && f.project(pickAt.lon, pickAt.lat).x > f.viewport.width * 0.55 ? "west" : "east"} lead={false} anchorY={48} width={340} label="Station" className={s.readTicket}>
+            <TicketMain>
+              <StationReadout pick={pick} stations={model.stations} buoys={model.buoys} now={nowIso} place={key} onClose={() => setPick(null)} />
+            </TicketMain>
+          </Ticket>
+        )}
+      </div>
+    ) : null;
+  const readSlot = stationSlot ?? (
     <div ref={readoutRef} className={s.readoutSlot} data-testid="nx-readout" data-open={readout ? "1" : "0"} data-updating={r?.status === "ready" && r.updating ? "1" : "0"} aria-busy={r?.status === "ready" && r.updating}>
       {readout && readAt ? (
         phone ? (
@@ -651,15 +724,34 @@ export function Explore({ model }: { model: ExploreModel }) {
       {/* the mark sits on the cell that was read (its centre, its outline), not on the tap */}
       {pt ? <ReadingOnChart lat={cell?.lat ?? pt.lat} lon={cell?.lon ?? pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} outline={cell?.outline ?? null} /> : null}
       {phone ? <Locator /> : null}
+      {stationsOn ? <StationPoints stations={model.stations} buoys={model.buoys} selected={pick} onSelect={choosePick} /> : null}
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
 
       {/* the layer group: what this view is, the data layers as chips, the legend (a ticket standing west, with no place) */}
       <Ticket at={null} side="west" edge="gutter" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
         <TicketMain>
-          <Micro as="p">Explore · {LAYER_LABEL[product.id]}</Micro>
-          <h1 id="nx-explore-title" className={s.srOnly}>
-            Explore: {LAYER_LABEL[product.id]}
-          </h1>
+          <div className={s.head}>
+            <Micro as="p">{view === "coast" ? "Oregon to Mexico" : port ? `Near ${port.name}` : "California coast"}</Micro>
+            <h1 id="nx-explore-title" className={s.title} data-testid="nx-explore-heading">
+              Explore California Waters
+            </h1>
+            <div className={s.nav} data-testid="nx-explore-nav">
+              {view === "coast" ? (
+                port ? (
+                  <Button variant="secondary" glyph={null} onClick={() => goView("port")} data-testid="nx-back-port">
+                    Back to {port.name}
+                  </Button>
+                ) : null
+              ) : (
+                <Button variant="secondary" glyph={null} onClick={() => goView("coast")} data-testid="nx-whole-coast">
+                  Whole coast
+                </Button>
+              )}
+              <Button variant="quiet" href={back.href} data-testid="nx-back-from">
+                {back.label}
+              </Button>
+            </div>
+          </div>
           <p className={s.lead} data-testid="nx-explore-lead">
             {leadSentence(product, frame)}
           </p>
@@ -670,14 +762,17 @@ export function Explore({ model }: { model: ExploreModel }) {
             </p>
           ) : null}
           <div ref={switchRef} className={s.switch} role="radiogroup" aria-label="Data layer" data-testid="nx-data-layers">
-            {model.products.map((p) => (
-              // design-lint-allow raw-button: the data layers are one radio group of chips whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Chip is a toggle, not a radio
-              <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`}>
-                <span>{LAYER_LABEL[p.id]}</span>
-                {/* the chip says only "past run"; its date is in the legend and on the rail (critic N8) */}
-                <small>{p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
-              </button>
-            ))}
+            {model.products.map((p) => {
+              const meta = metas.find((m) => m.id === p.id);
+              return (
+                // design-lint-allow raw-button: the data layers are one radio group of chips whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Chip is a toggle, not a radio
+                <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`} data-class={meta?.productClass}>
+                  <span>{LAYER_LABEL[p.id]}</span>
+                  {/* observation or model, then its own dates ("Model · run of Nov 3, valid Nov 2–5 (past run)") */}
+                  <small>{meta ? chipWords(meta) : p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
+                </button>
+              );
+            })}
             {/* a layer this data run does not hold stays in the group, disabled, with the reason (never dropped silently) */}
             {model.missing.map((m) => (
               <button key={m.id} type="button" role="radio" aria-checked={false} disabled className={s.switchItem} data-missing="1" data-testid={`nx-layer-${m.id}`}>
@@ -691,7 +786,19 @@ export function Explore({ model }: { model: ExploreModel }) {
                 <small data-state={currentsState}>{currentsToggleWords(currentsState, current)}</small>
               </button>
             ) : null}
+            {model.stations.length || model.buoys.length ? (
+              // design-lint-allow raw-button: an overlay switch in the same chip row as the layers (see above)
+              <button type="button" role="switch" aria-checked={stationsOn} className={s.switchItem} data-on={stationsOn ? "1" : "0"} onClick={toggleStations} data-testid="nx-stations-toggle">
+                <span>Stations</span>
+                <small>{stationsOn ? `on · ${model.stations.length} piers, ${model.buoys.length} buoys` : "off · piers and buoys"}</small>
+              </button>
+            ) : null}
           </div>
+          {unpublished.length ? (
+            <p className={s.unpublished} data-testid="nx-not-published">
+              Not published yet: {unpublished.join(" and ")}.
+            </p>
+          ) : null}
           {/* phone: what is on show and Play sit with the layers at the top of the sheet (review F-01) */}
           {phone ? (
             <div className={s.timeBar}>
@@ -703,6 +810,22 @@ export function Explore({ model }: { model: ExploreModel }) {
         <TicketStub>
           <div data-testid="nx-legend-sticky">
             <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
+            {currentsState === "on" && speeds ? (
+              <p className={s.speedKey} data-testid="nx-currents-speed">
+                <b>Speed this {current?.mean ? "24 h mean" : "hour"}</b> median {speedWords(speeds.median)}, fastest tenth above {speedWords(speeds.p90)}, top {speedWords(speeds.max)}; {speeds.cells.toLocaleString("en-US")} cells measured. Streaks move faster where the water does.
+              </p>
+            ) : null}
+            {stationsOn ? (
+              <p className={s.stationKey} data-testid="nx-stations-key">
+                <span className={s.stationKeyShore} aria-hidden="true" /> CalHABMAP shore stations, sampled weekly at best
+                <span className={s.stationKeyBuoy} aria-hidden="true" /> NDBC buoys, read live. Tap one for its own dated values.
+              </p>
+            ) : null}
+            {resNote ? (
+              <p className={s.resNote} data-testid="nx-resolution-note">
+                {resNote}
+              </p>
+            ) : null}
           </div>
           {tier === "static" && frame?.grid && product.id !== "sst" ? (
             <StaticField base={model.baseUrl} grid={frame.grid} kind={product.id === "charm" ? "classes" : product.id === "outlook" ? "outlook" : "ramp"} past={product.id === "charm" ? frame.past || !!product.pastRun : undefined} domain={CHL_DOMAIN} />

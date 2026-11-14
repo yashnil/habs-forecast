@@ -53,7 +53,7 @@ function ChartControls() {
       <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(-1)} aria-label="Zoom out" title="Zoom out" data-testid="nx-zoom-out">
         <Icon name="minus" size={18} />
       </button>
-      <button type="button" onClick={refitChart} aria-label={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} title={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} data-testid="nx-refit">
+      <button type="button" onClick={refitChart} aria-label={scene.refitLabel ?? (scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view")} title={scene.refitLabel ?? (scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view")} data-testid="nx-refit">
         <Icon name="recentre" size={18} />
       </button>
       {fit ? (

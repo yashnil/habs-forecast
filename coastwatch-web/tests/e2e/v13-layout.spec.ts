@@ -207,8 +207,8 @@ test("a page change is sequenced: the old page is gone before the new one is dra
   await page.getByTestId("nx-menu-button").click();
   await page.getByRole("navigation", { name: "More" }).getByRole("link", { name: "Explore the water" }).click();
   await expect(page.getByTestId("nx-explore")).toBeVisible();
-  // Explore is Today's own data layers and time: Today stays the current section, its pill drawn once
-  await expect(page.getByTestId("nx-bar").getByRole("link", { name: "Today" })).toHaveAttribute("aria-current", "page");
+  // v15.1: Explore is its own section (Explore California Waters), its pill drawn once
+  await expect(page.getByTestId("nx-bar").getByRole("link", { name: "Explore" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("nx-bar").locator(".n12-dest-on")).toHaveCount(1);
   expect(await page.evaluate(() => (window as unknown as { __both: number }).__both)).toBe(0);
   // a leaving object's copy is inert and named nothing
