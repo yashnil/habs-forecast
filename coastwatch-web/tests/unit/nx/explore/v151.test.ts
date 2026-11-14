@@ -181,7 +181,7 @@ import { expiredWords, familyOf } from "@/nx/explore/TimeRail";
 
 describe("round 2 (A): Explore's choices kept on the device", () => {
   it("a version-1 record is read; anything else gives the defaults", () => {
-    expect(parsePrefs(JSON.stringify({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true }))).toEqual({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true });
+    expect(parsePrefs(JSON.stringify({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true, rail: true }))).toEqual({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true, rail: true });
     expect(parsePrefs(null)).toEqual(DEFAULT_PREFS);
     expect(parsePrefs("{not json")).toEqual(DEFAULT_PREFS);
     expect(parsePrefs(JSON.stringify({ v: 2, base: "chart" }))).toEqual(DEFAULT_PREFS);
@@ -205,5 +205,36 @@ describe("round 2 (E): the time rail's families", () => {
   it("an expired run says its last run, its valid interval and that it is not current", () => {
     const w = expiredWords({ runIssued: "2026-11-03", frames: [{ start: "2026-11-02", end: "2026-11-02" }, { start: "2026-11-05", end: "2026-11-05" }] as never });
     expect(w).toMatch(/^Last run Nov 3, valid Nov 2–5\. Expired: .*not a current forecast\.$/);
+  });
+});
+
+import { chlEstimateStateWords, chlEstimateUsable, maskedCodes, maskedVectors, wcofsStateWords, wcofsTracks, wcofsUsable } from "@/nx/explore/ocean";
+
+describe("round 2 (B, D): the live model and estimate layers", () => {
+  it("near shore and land are left out of a model grid and its vectors (mask: 0 land, 1 water, 2 near shore)", () => {
+    const mask = Uint16Array.from([1, 2, 0, 1]);
+    expect([...maskedCodes({ nodata: 65535 }, Uint16Array.from([5, 6, 7, 8]), mask)]).toEqual([5, 65535, 65535, 8]);
+    const m = maskedVectors(Float32Array.from([1, 1, 1, 1]), Float32Array.from([2, 2, 2, 2]), mask);
+    expect([...m.u].map((x) => (Number.isNaN(x) ? null : x))).toEqual([1, null, null, 1]);
+  });
+  const step = (id: string, kind: "nowcast" | "forecast", t: string) => ({ id, kind, track: kind === "nowcast" ? "estimates" : "forecasts", lead_h: 0, valid_time: t, grids: {} }) as never;
+  const ix = { status: "current", reason: null, source: {}, cycle: { id: "2026111403", issued: "", steps_available: 2, steps_expected: 2 }, valid: { start: "2026-11-13T06:00:00Z", end: "2026-11-17T03:00:00Z" }, fallback: false, default_step: "f006", steps: [step("f006", "forecast", "2026-11-14T09:00:00Z"), step("n024", "nowcast", "2026-11-14T03:00:00Z")], families: {}, near_shore_km: 6, caveats: [], generated_at: "" } as never;
+  it("nowcast steps go to Analysis / Estimates, forecast steps to Forecasts, each in time order", () => {
+    const t = wcofsTracks(ix);
+    expect(t.nowcast.map((x) => x.id)).toEqual(["n024"]);
+    expect(t.forecast.map((x) => x.id)).toEqual(["f006"]);
+    expect(wcofsUsable(ix)).toBe(true);
+    expect(wcofsStateWords(ix, true)).toMatch(/^NOAA WCOFS model guidance \(developmental\) · cycle Nov 14 03z/);
+  });
+  it("an unavailable source says so and is never offered", () => {
+    const u = { status: "unavailable", reason: "upstream did not answer", cycle: null, steps: [] } as never;
+    expect(wcofsUsable(u)).toBe(false);
+    expect(wcofsStateWords(u, true)).toBe("NOAA WCOFS is unavailable: upstream did not answer.");
+    expect(chlEstimateUsable({ status: "unavailable", grids: null, date: null } as never)).toBe(false);
+  });
+  it("a stale estimate is offered, dated and said stale", () => {
+    const c = { status: "stale", date: "2026-11-02", age_days: 12, grids: { chl: {}, mask: {} }, reason: null } as never;
+    expect(chlEstimateUsable(c)).toBe(true);
+    expect(chlEstimateStateWords(c, true)).toMatch(/^Gap-filled estimate \(NOAA DINEOF\), Nov 2, stale: 12 days old, no newer day published\. Reconstructed .* not observed\.$/);
   });
 });

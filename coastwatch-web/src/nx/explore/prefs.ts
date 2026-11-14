@@ -15,9 +15,11 @@ export type ExplorePrefs = {
   regulation: boolean;
   currents: boolean | null;
   stations: boolean;
+  /** the time control opened (true) or kept a slim strip (false); null: not chosen */
+  rail: boolean | null;
 };
 
-export const DEFAULT_PREFS: ExplorePrefs = { v: 1, base: "chl", opacity: 1, depth: true, regulation: false, currents: null, stations: false };
+export const DEFAULT_PREFS: ExplorePrefs = { v: 1, base: "chl", opacity: 1, depth: true, regulation: false, currents: null, stations: false, rail: null };
 
 export const clampOpacity = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? Math.min(1, Math.max(0.2, x)) : 1);
 
@@ -35,6 +37,7 @@ export function parsePrefs(raw: string | null | undefined): ExplorePrefs {
       regulation: typeof o.regulation === "boolean" ? o.regulation : DEFAULT_PREFS.regulation,
       currents: typeof o.currents === "boolean" ? o.currents : null,
       stations: typeof o.stations === "boolean" ? o.stations : DEFAULT_PREFS.stations,
+      rail: typeof o.rail === "boolean" ? o.rail : null,
     };
   } catch {
     return DEFAULT_PREFS;

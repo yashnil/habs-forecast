@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { Button, day, Micro, range, sig, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
 import { axisLabels, axisX, frameCount, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
@@ -35,6 +35,10 @@ type Props = {
   playing: boolean;
   canPlay: boolean;
   onPlay: () => void;
+  /** round 2: rows the page adds to a family (the live model and estimate layers) */
+  extra?: Partial<Record<"obs" | "est" | "fc", ReactNode>>;
+  /** what is on show when it is not one of the published frames (a model step, an estimate) */
+  stamp?: string | null;
 };
 
 /**
@@ -297,7 +301,7 @@ function Availability({ model, product, currentsShown, onProduct }: { model: Exp
  * What is on show and the Play control: the rail's head. On a phone Explore sets it at the top of the sheet,
  * beside the layer switch, so stepping time never needs the sheet raised over the chart (review F-01).
  */
-export function TimeHead({ model, product, frameId, currentsOn, currentId, playing, canPlay, onPlay }: Pick<Props, "model" | "product" | "frameId" | "currentsOn" | "currentId" | "playing" | "canPlay" | "onPlay">) {
+export function TimeHead({ model, product, frameId, currentsOn, currentId, playing, canPlay, onPlay, stamp }: Pick<Props, "model" | "product" | "frameId" | "currentsOn" | "currentId" | "playing" | "canPlay" | "onPlay" | "stamp">) {
   const frame = product.frames.find((f) => f.id === frameId);
   const cur = model.currents?.frames.find((f) => f.id === currentId) ?? null;
   const count = frameCount(product, frameId, currentsOn ? (model.currents?.frames ?? []) : [], currentId);
@@ -305,7 +309,7 @@ export function TimeHead({ model, product, frameId, currentsOn, currentId, playi
     <div className={s.railHead} data-testid="nx-time-head">
       <h2 className={s.railTitle}>Time</h2>
       <p className={s.railNow} data-testid="nx-frame-stamp">
-        {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : "Chart · no data layer"}
+        {stamp ? stamp : frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : "Chart · no data layer"}
         {count ? (
           <span className={s.railCount} data-testid="nx-frame-count">
             {" "}
@@ -328,7 +332,7 @@ export function TimeHead({ model, product, frameId, currentsOn, currentId, playi
   );
 }
 
-export function TimeRail({ model, product, frameId, onFrame, onProduct, currentsOn, currentId, onCurrent, playing, canPlay, onPlay, head = true }: Props & { /** false where the page sets the head itself (a phone) */ head?: boolean }) {
+export function TimeRail({ model, product, frameId, onFrame, onProduct, currentsOn, currentId, onCurrent, playing, canPlay, onPlay, head = true, extra, stamp }: Props & { /** false where the page sets the head itself (a phone) */ head?: boolean }) {
   const [ref, width] = useElementWidth<HTMLDivElement>(320);
   const uid = useId().replace(/:/g, "");
   const hatchId = `nxh-${uid}`;
@@ -344,7 +348,7 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
   const tracks = all ? product.tracks : product.tracks.slice(0, 1);
   return (
     <section className={s.rail} ref={ref} aria-label="Time" data-testid="nx-timerail">
-      {head ? <TimeHead model={model} product={product} frameId={frameId} currentsOn={currentsOn} currentId={currentId} playing={playing} canPlay={canPlay} onPlay={onPlay} /> : null}
+      {head ? <TimeHead model={model} product={product} frameId={frameId} currentsOn={currentsOn} currentId={currentId} playing={playing} canPlay={canPlay} onPlay={onPlay} stamp={stamp} /> : null}
       <div className={s.railBody}>
         <svg width={width} height={0} className={s.defs} aria-hidden="true">
           <defs>
@@ -369,7 +373,7 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
           return (
             <div key={fam.id} className={s.railFamily} data-testid={`nx-rail-family-${fam.id}`}>
               {/* a family with nothing published is one line: its name and why (round 2, E) */}
-              {!ps.length && !showHours ? (
+              {!ps.length && !showHours && !extra?.[fam.id] ? (
                 <p className={s.railEmptyLine} data-testid={`nx-rail-empty-${fam.id}`}>
                   <Micro as="span" className={s.railFamilyHead}>{fam.label}</Micro> {fam.empty}
                 </p>
@@ -395,6 +399,7 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
                   </div>
                 );
               })}
+              {extra?.[fam.id] ?? null}
               {showHours ? (
                 <div className={s.hoursBlock}>
                   <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on={currentsOn} nowAt={nx} />

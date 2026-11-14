@@ -10,6 +10,12 @@ import { shoreLon } from "@/nx/chart/shore";
 import { setMapLayer, useMapLayer } from "@/nx/chart/mapLayers";
 import { ChartRegulation, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
 import { readPrefs, writePrefs } from "./prefs";
+import { asValueGrid, loadChlEstimateIndex, loadOceanCodes, loadWcofsCurrents, loadWcofsIndex } from "@/lib/ocean/client";
+import { wcofsLabel, type ChlEstimateIndex, type OceanGrid, type WcofsIndex } from "@/lib/ocean/contract";
+import { chlEstimateUsable, maskedCodes, maskedVectors, stepWhen, wcofsTracks, wcofsUsable } from "./ocean";
+import { ChlEstimateLegend, EstimateRow, SstModelLegend, StepRow, WcofsNote } from "./OceanParts";
+import { token } from "@/nx/chart/layers/colors";
+import type { FieldGrid } from "@/nx/chart/layers/grid";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, MapLayers, type Provenance } from "@/nx/ds";
 import { getFrame, onFrame } from "@/nx/chart/runtime";
@@ -122,7 +128,7 @@ function readUrl(model: ExploreModel, sp: URLSearchParams) {
   const hourFrame = model.currents?.frames.find((x) => x.id === hour) ?? null;
   // an explicit ?cur=1 / ?cur=0 wins; otherwise the default for this layer and this hour's freshness
   const currents = !!model.currents && (cur === "1" ? true : cur === "0" ? false : currentsByDefault(p, hourFrame));
-  return { product: p?.id ?? null, frame: f?.id ?? null, currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null, view: readView(sp), from: readFrom(sp), stations: sp.get("st") === "1", chart: asked === "chart" };
+  return { product: p?.id ?? null, frame: f?.id ?? null, currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null, view: readView(sp), from: readFrom(sp), stations: sp.get("st") === "1", chart: asked === "chart", rail: sp.get("rail") === "1" };
 }
 
 export function Explore({ model }: { model: ExploreModel }) {
@@ -138,6 +144,29 @@ export function Explore({ model }: { model: ExploreModel }) {
   const chartOnlyRef = useRef(chartOnly);
   chartOnlyRef.current = chartOnly;
   const [opacity, setOpacity] = useState(1);
+  // round 2 (B, D): the live model and estimate layers (lib/ocean), read from the app's own routes after mount
+  const [ocean, setOcean] = useState<{ wcofs: WcofsIndex | null; chl: ChlEstimateIndex | null; loaded: boolean }>({ wcofs: null, chl: null, loaded: false });
+  const [oceanField, setOceanField] = useState<null | "sst" | "chlest">(null);
+  const oceanFieldRef = useRef(oceanField);
+  oceanFieldRef.current = oceanField;
+  const [curSource, setCurSource] = useState<"measured" | "predicted">("measured");
+  const [stepId, setStepId] = useState<string | null>(null);
+  const [failedSteps, setFailedSteps] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    let live = true;
+    Promise.allSettled([loadWcofsIndex(), loadChlEstimateIndex()]).then(([w, c]) => {
+      if (!live) return;
+      const wcofs = w.status === "fulfilled" ? w.value : null;
+      setOcean({ wcofs, chl: c.status === "fulfilled" ? c.value : null, loaded: true });
+      if (wcofs?.default_step) setStepId((x) => x ?? wcofs.default_step);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  const wtracks = useMemo(() => wcofsTracks(ocean.wcofs), [ocean.wcofs]);
+  const wstep = ocean.wcofs?.steps.find((x) => x.id === stepId) ?? null;
+  const predicted = curSource === "predicted" && !!wstep;
   const depthOn = useMapLayer("depth");
   const regOn = useMapLayer("regulation");
   const setChartElement = (id: "depth" | "regulation", on: boolean) => {
@@ -158,7 +187,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [stationsOn, setStationsOn] = useState(init.stations);
   // the timeline: a slim strip statewide until opened, open at a port (null: the view's default)
   const [railOpen, setRailOpen] = useState<boolean | null>(null);
-  const railShown = railOpen ?? view !== "coast";
+  // round 2 (E): the time control is a slim strip until the reader opens it (kept on the device; ?rail=1 opens it)
+  const railShown = railOpen ?? init.rail;
   const [pick, setPick] = useState<StationPick | null>(null);
   // the camera's zoom and latitude, for the legend's resolution line (rounded, so a pan does not re-render)
   const [scale, setScale] = useState<{ zoom: number; lat: number } | null>(null);
@@ -234,6 +264,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       }
     }
     setOpacity(pr.opacity);
+    if (!q.has("rail") && pr.rail !== null) setRailOpen(pr.rail);
     if (!q.has("st") && pr.stations) setStationsOn(true);
     if (!q.has("cur") && pr.currents !== null && model.currents) setCurrentsOn(pr.currents);
     setMapLayer("depth", pr.depth);
@@ -275,7 +306,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [fieldLoad, setFieldLoad] = useState<{ loaded: number; total: number } | null>(null);
   useEffect(() => {
     const layer = fieldRef.current;
-    if (!map || !layer || !product || !frame?.grid || chartOnly) {
+    if (!map || !layer || !product || !frame?.grid || chartOnly || oceanField) {
       layer?.setData(null, { kind: "ramp", domain: CHL_DOMAIN, scale: "log" });
       setIsoLabels([]);
       setFieldLoad(null);
@@ -341,7 +372,49 @@ export function Explore({ model }: { model: ExploreModel }) {
       layer.setFade(1);
       map.off("moveend", onMove);
     };
-  }, [map, product, frame, model.baseUrl, view, reduce, chartOnly]);
+  }, [map, product, frame, model.baseUrl, view, reduce, chartOnly, oceanField]);
+
+  // the live model temperature or the gap-filled estimate in the same field layer, near shore left out (ocean.ts)
+  const oceanCodesRef = useRef<{ grid: OceanGrid; codes: Uint16Array } | null>(null);
+  const [oceanState, setOceanState] = useState<"idle" | "loading" | "ready" | "failed">("idle");
+  useEffect(() => {
+    const layer = fieldRef.current;
+    if (!map || !layer || !oceanField) {
+      oceanCodesRef.current = null;
+      setOceanState("idle");
+      return;
+    }
+    let live = true;
+    const pick = oceanField === "sst" ? (wstep ? { g: wstep.grids.sst, m: wstep.grids.mask } : null) : ocean.chl?.grids ? { g: ocean.chl.grids.chl, m: ocean.chl.grids.mask } : null;
+    const st: FieldStyle = oceanField === "sst" ? { kind: "isolines", ...ISO_F } : { kind: "outlook", domain: CHL_DOMAIN, scale: "log", opacity: 0.9 };
+    layer.setData(null, st);
+    setIsoLabels([]);
+    if (!pick) {
+      setOceanState("failed");
+      return;
+    }
+    setOceanState("loading");
+    layer.setFade(1);
+    Promise.all([loadOceanCodes(pick.g), loadOceanCodes(pick.m).catch(() => null)])
+      .then(([c, m]) => {
+        if (!live) return;
+        const codes = maskedCodes(pick.g, c, m);
+        const grid = asValueGrid(pick.g) as unknown as FieldGrid;
+        layer.setData({ grid, codes }, st);
+        oceanCodesRef.current = { grid: pick.g, codes };
+        setOceanState("ready");
+        if (oceanField === "sst") setIsoLabels(isothermLabels(grid, codes, ISO_F.index));
+        (window as Win).__nxExplore = { ...(window as Win).__nxExplore, ocean: oceanField, oceanStep: oceanField === "sst" ? wstep?.id ?? null : ocean.chl?.date ?? null, fieldDraws: layer.draws };
+      })
+      .catch(() => {
+        if (!live) return;
+        setOceanState("failed");
+        if (oceanField === "sst" && wstep) setFailedSteps((f) => new Set(f).add(wstep.id));
+      });
+    return () => {
+      live = false;
+    };
+  }, [map, oceanField, wstep, ocean.chl]);
   // the reader's opacity for the field: the chart's contours show beneath it
   useEffect(() => {
     fieldRef.current?.setOpacity(opacity);
@@ -350,14 +423,16 @@ export function Explore({ model }: { model: ExploreModel }) {
   // currents: the hour's field, read only while streaks are asked for (never on a still picture, never with the
   // switch off); a failure is a state the switch and the legend say, never streaks promised and not drawn
   useEffect(() => {
-    if (!current || !streaks) {
+    if ((!current && !predicted) || !streaks) {
       setField(null);
       setFieldState({ status: "idle" });
       return;
     }
     let live = true;
     setFieldState({ status: "loading" });
-    loadCurrent(model.baseUrl, current)
+    // measured (HF radar) or predicted (WCOFS, near shore left out): one field for the streak layer
+    const fieldP = predicted && wstep ? Promise.all([loadWcofsCurrents(wstep), loadOceanCodes(wstep.grids.mask).catch(() => null)]).then(([f, m]) => ({ ...f, ...maskedVectors(f.u, f.v, m) })) : loadCurrent(model.baseUrl, current!);
+    fieldP
       .then((f) => {
         if (!live) return;
         let cells = 0;
@@ -367,20 +442,25 @@ export function Explore({ model }: { model: ExploreModel }) {
       })
       .catch(() => {
         if (!live) return;
-        setField(null);
         setFieldState({ status: "failed" });
+        if (predicted && wstep) {
+          // a step that could not be read draws no streaks at all: an empty field, never the last one left in place
+          const n = wstep.grids.u.width * wstep.grids.u.height;
+          setField({ g: asValueGrid(wstep.grids.u) as unknown as CurrentField["g"], u: new Float32Array(n).fill(NaN), v: new Float32Array(n).fill(NaN) });
+          setFailedSteps((f) => new Set(f).add(wstep.id));
+        } else setField(null);
       });
     return () => {
       live = false;
     };
-  }, [current, model.baseUrl, streaks]);
+  }, [current, model.baseUrl, streaks, predicted, wstep]);
 
   // how steadily each cell was measured: a few hours around the one on show, read one after another once the
   // streaks are drawn (never every published hour at once)
   const [quality, setQuality] = useState<Float32Array | null>(null);
   const fieldReady = fieldState.status === "ready";
   useEffect(() => {
-    if (!streaks || !model.currents || quality || !fieldReady) return;
+    if (!streaks || !model.currents || quality || !fieldReady || predicted) return;
     let live = true;
     (async () => {
       const masks: Uint8Array[] = [];
@@ -399,9 +479,9 @@ export function Explore({ model }: { model: ExploreModel }) {
   }, [streaks, model, quality, fieldReady]);
 
   // an hour past the radar's current limit is drawn still and labelled "(old)", never animated as if live (T17)
-  const currentOld = !!current && isOld(current.fresh);
+  const currentOld = !predicted && !!current && isOld(current.fresh);
   // and the 24 h mean is not one moment of the water: drawn still too (lead decision 7)
-  const drawnStill = !!current && currentsStill(current);
+  const drawnStill = !predicted && !!current && currentsStill(current);
   const flowState = useMemo(() => ({ still: reduce || drawnStill, paused: false }), [reduce, drawnStill]);
   // the streak layer is added once while currents are on; a new hour swaps its field (a cut)
   useEffect(() => {
@@ -420,13 +500,18 @@ export function Explore({ model }: { model: ExploreModel }) {
   }, [map, streaks, tier]);
   useEffect(() => {
     const layer = flowRef.current;
-    if (!layer || !field || !current || !streaks) return;
-    layer.setField(current.id, field, quality && quality.length === field.u.length ? quality : null);
-  }, [field, current, quality, streaks, map, tier]);
+    if (!layer || !field || (!current && !predicted) || !streaks) return;
+    layer.setField(predicted && wstep ? `wcofs:${wstep.id}` : current!.id, field, !predicted && quality && quality.length === field.u.length ? quality : null);
+  }, [field, current, quality, streaks, map, tier, predicted, wstep]);
+
+  // predicted currents are drawn in their own colour (the model's ultramarine), never the measured streak ink
+  useEffect(() => {
+    flowRef.current?.setColours(predicted ? { ...modeColours(), streak: token("--ultra") } : modeColours());
+  }, [predicted, streaks, map, tier, field]);
 
   // isotherms and isobaths are both lines: under the temperature the depth lines step back
   useEffect(() => {
-    if (!map || product?.id !== "sst") return;
+    if (!map || (product?.id !== "sst" && oceanField !== "sst")) return;
     const dim: Array<[string, number]> = [
       ["isobaths-minor", 0.14],
       ["isobaths-index", 0.32],
@@ -438,7 +523,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         if (map.style && map.getLayer(id) && was[i] !== undefined) map.setPaintProperty(id, "line-opacity", was[i] as number);
       });
     };
-  }, [map, product?.id]);
+  }, [map, product?.id, oceanField]);
   useEffect(() => {
     flowRef.current?.setState(flowState);
   }, [flowState]);
@@ -477,7 +562,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   // ------------------------------------------------------------- the reading at the tapped point
   const [reading, setReading] = useState<Reading | null>(null);
   useEffect(() => {
-    if (!at || !frame?.grid) return setReading(null);
+    if (!at || !frame?.grid || oceanField) return setReading(null);
     let live = true;
     // the same tap on a new frame (playback, a layer change): the last value stays, dimmed, until the next arrives
     setReading((prev) => (prev?.status === "ready" && prev.at === at && prev.product === frame.product ? { ...prev, updating: true } : { status: "loading" }));
@@ -537,7 +622,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     return () => {
       live = false;
     };
-  }, [at, frame, model]);
+  }, [at, frame, model, oceanField]);
 
   // the nearest measured current to the tapped point, from the hour already on the chart (no second read)
   const nearCurrent = useMemo(() => (at && field && streaks ? nearestCurrent(field.g as unknown as GridSpec, field.u, field.v, at.lat, at.lon) : null), [at, field, streaks]);
@@ -569,11 +654,25 @@ export function Explore({ model }: { model: ExploreModel }) {
   // ------------------------------------------------------------- choosing and playing frames (cuts, never tweens: T26)
   const chooseFrame = useCallback((p: ExploreProduct, f: ExploreFrame) => {
     setChartOnly(false);
+    setOceanField(null);
     setProductId(p.id);
     setFrameId(f.id);
     setPlaying(false);
   }, []);
+  const chooseSstModel = () => {
+    setChartOnly(false);
+    setOceanField("sst");
+    setAt(null);
+    setPlaying(false);
+    if (!stepId && ocean.wcofs?.default_step) setStepId(ocean.wcofs.default_step);
+  };
+  const chooseStep = (id: string) => {
+    setStepId(id);
+    setPlaying(false);
+    if (oceanField !== "sst" && !predicted) setOceanField("sst");
+  };
   const chooseChart = () => {
+    setOceanField(null);
     setChartOnly(true);
     setAt(null);
     setPlaying(false);
@@ -583,6 +682,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     const p = model.products.find((x) => x.id === id);
     if (!p) return;
     setChartOnly(false);
+    setOceanField(null);
     writePrefs({ base: id });
     setProductId(id);
     setFrameId(p.defaultFrame);
@@ -597,8 +697,8 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   const hours = useMemo(() => (model.currents ? playHours(model.currents.frames) : []), [model.currents]);
   const dayFrames = useMemo(() => (product ? playFrames(product) : []), [product]);
-  const playsHours = streaks && hours.length > 1 && !currentOld;
-  const canPlay = playsHours || (!chartOnly && dayFrames.length > 1);
+  const playsHours = streaks && !predicted && hours.length > 1 && !currentOld;
+  const canPlay = playsHours || (!chartOnly && !oceanField && dayFrames.length > 1);
   useEffect(() => {
     if (!playing) return;
     const id = window.setInterval(
@@ -689,7 +789,38 @@ export function Explore({ model }: { model: ExploreModel }) {
   const currentsState: CurrentsState = !currentsOn ? "off" : overModel ? "over-model" : tier === "static" ? "static" : fieldState.status === "failed" ? "failed" : fieldState.status === "ready" ? (fieldState.cells ? "on" : "empty") : "loading";
 
   let readout = null;
-  if (pt && r) {
+  // a tap on a model or estimate layer: the value of its own cell, worded as what it is (never a measurement)
+  if (oceanField && pt) {
+    const oc = oceanCodesRef.current;
+    const pr = oc ? readPoint(asValueGrid(oc.grid) as unknown as FieldGrid, oc.codes, pt.lat, pt.lon) : null;
+    const sst = oceanField === "sst";
+    const title = sst ? "Sea temperature (model) here" : "Chlorophyll estimate here";
+    const onClose = () => setAt(null);
+    if (!oc) readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state={oceanState === "failed" ? "error" : "loading"} message={oceanState === "failed" ? "This layer could not be read." : "Reading…"} onClose={onClose} />;
+    else if (!pr || pr.value === null)
+      readout = <Readout title={title} lat={pt.lat} lon={pt.lon} state="outside" message={`No ${sst ? "model" : "estimate"} value here: land, within ${(sst ? ocean.wcofs?.near_shore_km : ocean.chl?.near_shore_km) ?? 0} km of shore, or outside the grid. No value is not a low value.`} onClose={onClose} />;
+    else {
+      const v = pr.value;
+      const prov: Provenance = sst
+        ? { kind: "prediction", title: "Sea temperature (model)", value: `${fixed(v * 1.8 + 32, 1)} °F`, source: "NOAA WCOFS (developmental)", date: wstep?.valid_time ?? ocean.wcofs?.valid?.start ?? model.now, dateRole: "valid", place: latLon(pt.lat, pt.lon), resolution: "one 4 km model cell", stale: ocean.wcofs?.status === "expired" }
+        : { kind: "estimated", title: "Chlorophyll estimate", value: `${sig(v, 2)} mg/m³`, source: "NOAA DINEOF (gap-filled)", date: ocean.chl?.date ?? model.now, dateRole: "valid", place: latLon(pt.lat, pt.lon), resolution: "one 2.3 km cell", stale: ocean.chl?.status === "stale" };
+      readout = (
+        <Readout
+          title={title}
+          lat={pt.lat}
+          lon={pt.lon}
+          state="value"
+          value={sst ? fixed(v * 1.8 + 32, 1) : sig(v, 2)}
+          unit={sst ? "°F" : "mg/m³"}
+          provenance={prov}
+          now={model.now}
+          note={sst ? `${fixed(v, 1)} °C. A model ${wstep?.kind === "nowcast" ? "nowcast" : "forecast"}, not a measurement.` : `Reconstructed, not observed${ocean.chl?.status === "stale" ? `; stale (${ocean.chl?.date ? day(ocean.chl.date) : ""})` : ""}. Algae, not toxin.`}
+          onClose={onClose}
+        />
+      );
+    }
+  }
+  if (pt && r && !oceanField) {
     // the reading is one cell of the layer's grid: its title says so, with the cell's size once it is known
     const title = readoutTitle(product.id, r.status === "ready" ? r.cell : null);
     const onClose = () => {
@@ -836,6 +967,29 @@ export function Explore({ model }: { model: ExploreModel }) {
   const readAt = cell ?? pt;
   const readSide: "east" | "west" = readAt && f && f.project(readAt.lon, readAt.lat).x > f.viewport.width * 0.55 ? "west" : "east";
   const dockH = !railShown ? 96 : streaks ? 284 : 204;
+  // the live model and estimate rows of the time rail (round 2, D/E): WCOFS nowcast and the estimate on Analysis /
+  // Estimates, WCOFS forecast on Forecasts; a source that cannot be read says so on its row
+  const wcofsOk = wcofsUsable(ocean.wcofs);
+  const oceanExtra = {
+    est: (
+      <>
+        {wcofsOk ? <StepRow label="WCOFS nowcast" steps={wtracks.nowcast} selected={oceanField === "sst" || predicted ? stepId : null} failed={failedSteps} onStep={chooseStep} testid="nx-rail-wcofs-nowcast" /> : null}
+        <EstimateRow
+          ix={ocean.chl}
+          loaded={ocean.loaded}
+          on={oceanField === "chlest"}
+          onChoose={() => {
+            setChartOnly(false);
+            const chl = model.products.find((x) => x.id === "chl");
+            if (chl) setProductId("chl");
+            setOceanField("chlest");
+            setAt(null);
+          }}
+        />
+      </>
+    ),
+    fc: wcofsOk ? <StepRow label="WCOFS forecast" steps={wtracks.forecast} selected={oceanField === "sst" || predicted ? stepId : null} failed={failedSteps} onStep={chooseStep} testid="nx-rail-wcofs-forecast" /> : <WcofsNote ix={ocean.wcofs} loaded={ocean.loaded} />,
+  };
   const pickAt = pick ? ((pick.kind === "shore" ? model.stations.find((x) => x.id === pick.id) : model.buoys.find((x) => x.id === pick.id)) ?? null) : null;
   const stationSlot =
     pick && pickAt ? (
@@ -877,7 +1031,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       {/* the whole coast is its own locator: the inset only at a port */}
       {phone && view !== "coast" ? <Locator /> : null}
       {stationsOn ? <StationPoints stations={model.stations} buoys={model.buoys} selected={pick} onSelect={choosePick} /> : null}
-      {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
+      {(product.id === "sst" || oceanField === "sst") && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
 
       {/* the layer group: what this view is, the data layers as chips, the legend (a ticket standing west, with no place) */}
       <Ticket at={null} side="west" edge="gutter" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
@@ -906,7 +1060,7 @@ export function Explore({ model }: { model: ExploreModel }) {
           </div>
           {/* one short line in view; the full sentence, the method and the caveats are in "About this layer" */}
           <p className={s.lead} data-testid="nx-explore-lead">
-            {chartOnly ? "The chart: depth, the coast and whale zones · no data layer" : shortLine(product)}
+            {chartOnly ? "The chart: depth, the coast and whale zones · no data layer" : oceanField === "sst" ? "Model sea temperature · WCOFS, developmental · not a measurement" : oceanField === "chlest" ? "Gap-filled chlorophyll estimate · not observed · not toxin" : shortLine(product)}
           </p>
           {fieldLoad ? (
             <p className={s.fieldLoading} role="status" data-testid="nx-field-loading">
@@ -935,13 +1089,21 @@ export function Explore({ model }: { model: ExploreModel }) {
               const meta = metas.find((m) => m.id === p.id);
               return (
                 // design-lint-allow raw-button: the data layers are one radio group of chips whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Chip is a toggle, not a radio
-                <button key={p.id} type="button" role="radio" aria-checked={!chartOnly && p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`} data-class={meta?.productClass}>
+                <button key={p.id} type="button" role="radio" aria-checked={!chartOnly && oceanField !== "sst" && p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`} data-class={meta?.productClass}>
                   <span>{LAYER_LABEL[p.id]}</span>
                   {/* observation or model, then its own dates ("Model · run of Nov 3, valid Nov 2–5 (past run)") */}
                   <small>{meta ? chipWords(meta) : p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
                 </button>
               );
             })}
+            {/* round 2 (D): NOAA WCOFS model temperature, read live; a model, never offered when it cannot be read */}
+            {ocean.loaded ? (
+              // design-lint-allow raw-button: one radio of the data-layer group (see above)
+              <button type="button" role="radio" aria-checked={oceanField === "sst"} disabled={!wcofsUsable(ocean.wcofs)} data-missing={wcofsUsable(ocean.wcofs) ? undefined : "1"} className={s.switchItem} onClick={chooseSstModel} data-testid="nx-layer-sst-model" data-class="model">
+                <span>Sea temp</span>
+                <small>{wcofsUsable(ocean.wcofs) ? `Model · WCOFS${ocean.wcofs?.status === "expired" ? " (expired)" : ", developmental"}` : "model unavailable"}</small>
+              </button>
+            ) : null}
             {/* a layer this data run does not hold stays in the group, disabled, with the reason (never dropped silently) */}
             {/* (a layer not published yet is named once, in the line under the switch, never as a chip that looks like a layer) */}
             {model.missing.filter((m) => m.why !== "Not published yet").map((m) => (
@@ -952,16 +1114,26 @@ export function Explore({ model }: { model: ExploreModel }) {
             ))}
           </div>
           {/* chlorophyll's three views (round 2, B): what was seen that day, each pixel's latest clear day, a reconstruction */}
-          {!chartOnly && product.id === "chl" ? (
+          {!chartOnly && product.id === "chl" && oceanField !== "sst" ? (
             <div className={s.views} role="radiogroup" aria-label="Chlorophyll view" data-testid="nx-chl-views">
               {(["observed", "composite", "estimate"] as const).map((v) => {
-                const target = frameForView(product, v, frame.track);
-                const on = v !== "estimate" && chlViewOf(frame) === v;
+                const target = v === "estimate" ? (chlEstimateUsable(ocean.chl) ? "estimate" : null) : frameForView(product, v, frame.track);
+                const on = v === "estimate" ? oceanField === "chlest" : !oceanField && chlViewOf(frame) === v;
                 const label = v === "observed" ? "Observed" : v === "composite" ? "Composite" : "Estimate";
-                const sub = v === "observed" ? "one day, gaps kept" : v === "composite" ? "recent, pixel ages" : "gap-filled · not yet";
+                const sub = v === "observed" ? "one day, gaps kept" : v === "composite" ? "recent, pixel ages" : chlEstimateUsable(ocean.chl) ? `gap-filled · ${ocean.chl?.status === "stale" ? "stale" : "estimate"}` : "not available";
                 return (
                   // design-lint-allow raw-button: one radio of a three-way view switch with a second line per item (as the data-layer chips)
-                  <button key={v} type="button" role="radio" aria-label={v === "observed" ? "Observed: one day, gaps kept" : v === "composite" ? "Recent composite: each pixel's latest clear day, with its age" : "Gap-filled estimate: not available yet"} aria-checked={on} disabled={!target} className={s.viewItem} data-missing={!target ? "1" : undefined} onClick={() => target && setFrameId(target)} data-testid={`nx-chl-${v}`}>
+                  <button key={v} type="button" role="radio" aria-label={v === "observed" ? "Observed: one day, gaps kept" : v === "composite" ? "Recent composite: each pixel's latest clear day, with its age" : chlEstimateUsable(ocean.chl) ? `Gap-filled estimate: reconstructed, not observed${ocean.chl?.status === "stale" ? ", stale" : ""}` : "Gap-filled estimate: not available"} aria-checked={on} disabled={!target} className={s.viewItem} data-missing={!target ? "1" : undefined} onClick={() => {
+                      if (!target) return;
+                      if (v === "estimate") {
+                        setOceanField("chlest");
+                        setAt(null);
+                        setPlaying(false);
+                        return;
+                      }
+                      setOceanField(null);
+                      setFrameId(target);
+                    }} data-testid={`nx-chl-${v}`}>
                     <span>{label}</span>
                     <small>{sub}</small>
                   </button>
@@ -992,6 +1164,18 @@ export function Explore({ model }: { model: ExploreModel }) {
               </button>
             ) : null}
           </div>
+          {currentsOn && model.currents ? (
+            <div className={s.views} role="radiogroup" aria-label="Currents" data-testid="nx-currents-source">
+              {/* design-lint-allow raw-button: one radio of the currents' two sources */}
+              <button type="button" role="radio" aria-checked={curSource === "measured"} className={s.viewItem} onClick={() => setCurSource("measured")} data-testid="nx-currents-measured" aria-label="Measured currents: HF radar">
+                <span>Measured</span>
+              </button>
+              {/* design-lint-allow raw-button: one radio of the currents' two sources */}
+              <button type="button" role="radio" aria-checked={curSource === "predicted"} disabled={!wcofsUsable(ocean.wcofs)} data-missing={wcofsUsable(ocean.wcofs) ? undefined : "1"} className={s.viewItem} onClick={() => setCurSource("predicted")} data-testid="nx-currents-predicted" aria-label="Predicted currents: NOAA WCOFS model, developmental">
+                <span>Predicted (model)</span>
+              </button>
+            </div>
+          ) : null}
           {!chartOnly ? (
             <label className={s.opacity} data-testid="nx-opacity">
               <span>Layer opacity</span>
@@ -1002,7 +1186,7 @@ export function Explore({ model }: { model: ExploreModel }) {
           {/* phone: what is on show and Play sit with the layers at the top of the sheet (review F-01) */}
           {phone ? (
             <div className={s.timeBar}>
-              <TimeHead model={model} product={product} frameId={chartOnly ? "" : frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
+              <TimeHead stamp={oceanField === "sst" && wstep ? `Model sea temperature: valid ${stepWhen(wstep)}` : oceanField === "chlest" && ocean.chl?.date ? `Estimate: ${day(ocean.chl.date)}${ocean.chl.status === "stale" ? " (stale)" : ""}` : predicted && wstep && !(chartOnly || !!oceanField) ? `Predicted currents: valid ${stepWhen(wstep)}` : null} model={model} product={product} frameId={chartOnly ? "" : frame.id} currentsOn={streaks && !predicted} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
             </div>
           ) : null}
           {phone ? readSlot : null}
@@ -1028,11 +1212,15 @@ export function Explore({ model }: { model: ExploreModel }) {
                 </ul>
                 <p className={s.caption}>Depth: NOAA ETOPO 2022 and the Coastal Relief Model. Not for navigation.</p>
               </div>
+            ) : oceanField === "sst" && ocean.wcofs ? (
+              <SstModelLegend ix={ocean.wcofs} step={wstep} failed={oceanState === "failed"} />
+            ) : oceanField === "chlest" && ocean.chl ? (
+              <ChlEstimateLegend ix={ocean.chl} />
             ) : (
             <ExploreLegend
               product={product}
               frame={frame}
-              currents={currentsState === "on" ? current : null}
+              currents={currentsState === "on" && !predicted ? current : null}
               currentsLine={
                 current ? (
                   <>
@@ -1065,6 +1253,19 @@ export function Explore({ model }: { model: ExploreModel }) {
               }
             />
             )}
+            {/* predicted currents: their own key, colour and words (a model, never the measured streaks) */}
+            {predicted && wstep && streaks ? (
+              <p className={s.currentsKey} data-testid="nx-currents-predicted-key">
+                <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+                  <path d="M3,12 C14,11 24,7 37,4" className={s.streakPredicted} />
+                </svg>
+                <span>
+                  Predicted currents · {ocean.wcofs?.cycle ? wcofsLabel(ocean.wcofs.cycle.id, wstep) : stepWhen(wstep)}
+                  {fieldState.status === "failed" ? " · this step could not be read; nothing is drawn" : ""}
+                  {speeds ? ` · median ${speedWords(speeds.median)}` : ""}. Not drawn within {ocean.wcofs?.near_shore_km ?? 0} km of shore.
+                </span>
+              </p>
+            ) : null}
             {stationsOn ? (
               <p className={s.stationKey} data-testid="nx-stations-key">
                 <span className={s.stationKeyShore} aria-hidden="true" /> Piers
@@ -1097,22 +1298,27 @@ export function Explore({ model }: { model: ExploreModel }) {
         {/* statewide, the time is a slim strip (what is on show, Play) until the reader opens the timeline */}
         {!phone ? (
           <div className={s.railToggle}>
-            <Button variant="quiet" aria-expanded={railShown} onClick={() => setRailOpen(!railShown)} data-testid="nx-rail-toggle">
+            <Button variant="quiet" aria-expanded={railShown} onClick={() => {
+                setRailOpen(!railShown);
+                writePrefs({ rail: !railShown });
+              }} data-testid="nx-rail-toggle">
               {railShown ? "Hide timeline" : "Timeline"}
             </Button>
           </div>
         ) : null}
         {!railShown && !phone ? (
-          <TimeHead model={model} product={product} frameId={chartOnly ? "" : frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
+          <TimeHead stamp={oceanField === "sst" && wstep ? `Model sea temperature: valid ${stepWhen(wstep)}` : oceanField === "chlest" && ocean.chl?.date ? `Estimate: ${day(ocean.chl.date)}${ocean.chl.status === "stale" ? " (stale)" : ""}` : predicted && wstep && !(chartOnly || !!oceanField) ? `Predicted currents: valid ${stepWhen(wstep)}` : null} model={model} product={product} frameId={chartOnly ? "" : frame.id} currentsOn={streaks && !predicted} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
         ) : railShown || phone ? (
         <TimeRail
           head={!phone}
           model={model}
           product={product}
-          frameId={chartOnly ? "" : frame.id}
+          frameId={chartOnly || oceanField ? "" : frame.id}
+          stamp={oceanField === "sst" && wstep ? `Model sea temperature: valid ${stepWhen(wstep)}` : oceanField === "chlest" && ocean.chl?.date ? `Estimate: ${day(ocean.chl.date)}${ocean.chl.status === "stale" ? " (stale)" : ""}` : predicted && wstep && !(chartOnly || !!oceanField) ? `Predicted currents: valid ${stepWhen(wstep)}` : null}
+          extra={oceanExtra}
           onFrame={chooseFrame}
           onProduct={chooseProduct}
-          currentsOn={streaks}
+          currentsOn={streaks && !predicted}
           currentId={hourId}
           onCurrent={chooseHour}
           playing={playing}

@@ -317,3 +317,17 @@
 .railFamilyHead { line-height: 1.3; }
 .railEmptyLine { margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
 @media (min-width: 641px) { .chartLayers .switchItem { min-height: var(--s-32); } }
+
+/* round 2 (D): the live model and estimate rows: a strip of steps, the last valid point said */
+.oceanRow { display: flex; align-items: center; min-width: 0; max-width: 100%; min-height: var(--s-24); border-top: var(--hair) solid var(--rule-soft); }
+.oceanSteps { flex: 1; display: flex; gap: 2px; min-width: 0; height: var(--s-18); }
+.oceanStep { flex: 1; min-width: 4px; padding: 0; border: 0; border-radius: var(--r-1); background: var(--ink-3); opacity: 0.5; cursor: pointer; }
+.oceanStep[aria-checked="true"] { background: var(--ultra); opacity: 1; }
+.oceanStep[data-failed="1"] { background: none; outline: 1px dashed var(--ink-3); outline-offset: -1px; }
+.oceanStep:focus-visible { outline: 2px solid var(--focus); }
+.oceanLast { flex: 0 1 auto; min-width: 0; padding-left: var(--s-8); font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink); overflow-wrap: anywhere; }
+.oceanDay { flex: 1; min-width: 0; overflow-wrap: anywhere; min-height: var(--s-24); padding: 0 var(--s-8); border: 0; border-radius: var(--r-sm); background: none; text-align: left; font-size: var(--fs-13); color: var(--ink-2); cursor: pointer; }
+.oceanDay[aria-checked="true"] { background: var(--ultra-wash); color: var(--ultra-deep); }
+.oceanNote { margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.streakPredicted { fill: none; stroke: var(--ultra); stroke-width: 2.2; stroke-linecap: round; }
+.oceanNote { overflow-wrap: anywhere; }
