@@ -6,6 +6,8 @@ import { clearCameraAnchor, setCameraAnchor, ticketMargin } from "@/nx/chart/anc
 import { useChartCover } from "@/nx/chart/cover";
 import { getFrame, onFrame, type ChartFrame } from "@/nx/chart/runtime";
 import { TICKET_FROM, ticketIn, ticketOpacity } from "../motion";
+import { notePanel } from "../panels/store";
+import { usePanel } from "../panels/usePanel";
 import { usePhone } from "../useMedia";
 import { cx } from "../util";
 import { isPhoneNow, useArrival, useLeaveGhost } from "./arrive";
@@ -42,6 +44,11 @@ export interface TicketProps extends Data {
    * flush with the gutter (a panel with no place, such as Explore's layers, that stands at the screen's edge).
    */
   edge?: "margin" | "gutter";
+  /**
+   * On a page whose panels are free (PageLayout `panels`), the ticket is a free panel under this key (default
+   * "ticket"): moved by its grip it stops following its place and stays where the reader put it. false: it stays.
+   */
+  panel?: boolean | string;
   className?: string;
   children: ReactNode;
 }
@@ -71,17 +78,30 @@ function topLimit(el: HTMLElement, left: number, width: number): number {
   return underBar;
 }
 
-export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead: asked = true, inline = false, top: preferTop, edge = "margin", className, children, ...data }: TicketProps) {
+export function Ticket({ at, anchorY = 160, width, side = "east", label, labelledBy, lead: asked = true, inline = false, top: preferTop, edge = "margin", panel: panelOpt = true, className, children, ...data }: TicketProps) {
   const lead = asked && !inline;
   const ref = useRef<HTMLElement>(null);
   const lineRef = useRef<SVGLineElement>(null);
   const reserveRef = useRef<HTMLDivElement>(null);
+  const relayout = useRef<() => void>(() => {});
   const id = useId();
   const phone = usePhone();
   const here = useArrival();
   useLeaveGhost(ref);
+  const panelKey = typeof panelOpt === "string" ? panelOpt : "ticket";
+  const panel = usePanel(ref, {
+    key: panelKey,
+    kind: "ticket",
+    name: label ?? (() => (labelledBy && document.getElementById(labelledBy)?.textContent?.trim()) || "Ticket"),
+    enabled: panelOpt !== false && !inline,
+    limits: { minW: 320, maxW: 600, minH: 160, maxH: 2000 },
+    resizeHeight: true,
+    relayout: () => relayout.current(),
+  });
+  const { movedRef } = panel;
   // the camera keeps the free part of the chart beside the ticket: a reservation the ticket's width wide, on its side
-  useChartCover(`ticket${id}`, reserveRef, side === "east" ? "right" : "left", !phone && lead);
+  // (a moved or collapsed panel covers the chart by itself: ds/panels)
+  useChartCover(`ticket${id}`, reserveRef, side === "east" ? "right" : "left", !phone && lead && !panel.free);
   const lon = at?.lon ?? null, lat = at?.lat ?? null;
 
   useLayoutEffect(() => {
@@ -105,7 +125,10 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       const top0 = Math.max(topLimit(el, sideLeft, w), preferTop ?? 0);
       const overCtrl = (l: number) => !!colX && l < colX[1] && l + w > colX[0];
       const bottomOf = (l: number) => (overCtrl(l) && ctrl ? ctrl.top - 8 : H - g);
-      el.style.maxHeight = overCtrl(sideLeft) ? `${Math.max(240, bottomOf(sideLeft) - top0)}px` : "";
+      // a ticket the reader has moved stands where they put it (ds/panels); its resting place is still worked out,
+      // so the page's other panels keep their default layout around it
+      const free = movedRef.current;
+      if (!free) el.style.maxHeight = overCtrl(sideLeft) ? `${Math.max(240, bottomOf(sideLeft) - top0)}px` : "";
       const h = el.offsetHeight;
       let left: number, top: number;
       const line = lineRef.current;
@@ -113,6 +136,11 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         const p = f.project(lon, lat);
         left = Math.round(Math.max(g, Math.min(W - g - w, side === "east" ? p.x + STUB_GAP : p.x - STUB_GAP - w)));
         top = Math.round(Math.max(Math.max(topLimit(el, left, w), preferTop ?? 0), Math.min(bottomOf(left) - h, p.y - anchorY)));
+        notePanel(panelKey, { rest: { x: left, y: top, w, h } });
+        if (free) {
+          if (line) line.style.visibility = "hidden";
+          return;
+        }
         el.style.transformOrigin = `${Math.round(p.x - left)}px ${Math.round(p.y - top)}px`;
         const py = p.y - top;
         const gap = side === "east" ? left - p.x : p.x - (left + w);
@@ -130,6 +158,8 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         left = sideLeft;
         top = top0;
         if (line) line.style.visibility = "hidden";
+        notePanel(panelKey, { rest: { x: left, y: top, w, h } });
+        if (free) return;
       }
       el.style.left = `${left}px`;
       el.style.top = `${top}px`;
@@ -139,6 +169,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       raf = requestAnimationFrame(() => place(getFrame()));
     };
     place(getFrame());
+    relayout.current = () => place(getFrame());
     const off = onFrame(place);
     const ro = new ResizeObserver(go);
     ro.observe(el);
@@ -149,12 +180,13 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       window.removeEventListener("resize", go);
       cancelAnimationFrame(raf);
     };
-  }, [lon, lat, side, anchorY, phone, inline, preferTop, edge]);
+  }, [lon, lat, side, anchorY, phone, inline, preferTop, edge, movedRef, panelKey]);
 
   // the camera anchor: where the place should stand so the ticket sits beside it
   useEffect(() => {
     const el = ref.current;
-    if (!el || phone || !lead || lon == null || lat == null) return;
+    // a ticket the reader has moved no longer stands beside its place: the camera fits the scene around it instead
+    if (!el || phone || !lead || panel.moved || lon == null || lat == null) return;
     const write = () => {
       const g = read(el, "--gutter", 24), w = el.offsetWidth, W = window.innerWidth;
       const mm = edge === "gutter" ? g : ticketMargin(W, g);
@@ -168,14 +200,15 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       ro.disconnect();
       clearCameraAnchor(id);
     };
-  }, [id, lon, lat, side, anchorY, phone, lead, preferTop, edge]);
+  }, [id, lon, lat, side, anchorY, phone, lead, preferTop, edge, panel.moved]);
 
   const style = width ? ({ "--ticket-w": `${width}px` } as React.CSSProperties) : undefined;
   return (
     <>
       <motion.section
         ref={ref}
-        className={cx(s.ticket, className)}
+        {...panel.attrs}
+        className={cx(s.ticket, className, panel.attrs.className)}
         data-side={side}
         data-edge={edge}
         data-inline={inline || undefined}
@@ -188,10 +221,12 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         data-nx-ticket=""
         {...data}
       >
+        {panel.chrome}
         <svg className={s.leader} aria-hidden="true">
           <line ref={lineRef} />
         </svg>
         {children}
+        {panel.resizer}
       </motion.section>
       {lead ? <div ref={reserveRef} className={s.reserve} data-side={side} data-edge={edge} style={style} aria-hidden="true" /> : null}
     </>

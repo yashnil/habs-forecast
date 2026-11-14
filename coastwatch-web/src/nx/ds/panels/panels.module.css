@@ -1,0 +1,73 @@
+/* Free panels (v15.1): the grip strip along a panel's top, its collapse and reset, the resize corner, the guides.
+   The strip lies in the object's own top padding, so a panel reads as the same ticket, dock or pass it was. */
+
+.panel { touch-action: auto; }
+.panel[data-panel-front] { z-index: 3; }
+.panel[data-panel-dragging] { user-select: none; will-change: left, top; }
+
+/* ------------------------------------------------------------ the strip: grip in the middle, tools at the end */
+.chrome {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 4; height: 26px;
+  display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); padding: 0 var(--s-8);
+  cursor: grab; touch-action: none;
+}
+.panel[data-panel-dragging] .chrome { cursor: grabbing; }
+.grip {
+  position: absolute; left: 50%; top: 0; width: 72px; height: 26px; margin-left: -36px;
+  display: flex; align-items: center; justify-content: center; border-radius: var(--r-pill); cursor: inherit;
+}
+.pill { display: block; width: 36px; height: 4px; border-radius: var(--r-pill); background: var(--perf); }
+.chrome:hover .pill, .grip:focus-visible .pill, .panel[data-panel-dragging] .pill { background: var(--ultra); }
+.grip:focus-visible { outline: 2px solid var(--ultra); outline-offset: -2px; }
+.tools { position: relative; display: flex; align-items: center; gap: var(--s-2); }
+.tool {
+  display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--r-sm);
+  color: var(--ink-2); cursor: pointer;
+}
+.tool svg { width: 16px; height: 16px; }
+.tool:hover { color: var(--ultra); background: var(--ultra-wash); }
+.tool:focus-visible, .reset:focus-visible { outline: 2px solid var(--ultra); outline-offset: -2px; }
+.reset {
+  height: 26px; padding: 0 var(--s-8); border-radius: var(--r-sm);
+  font: var(--w6) var(--fs-13) / 1 var(--font); color: var(--ultra); cursor: pointer; white-space: nowrap;
+}
+.reset:hover { background: var(--ultra-wash); }
+
+/* ------------------------------------------------------------ collapsed: the strip alone, with the panel's name */
+.panel[data-panel-collapsed] {
+  width: auto !important; min-width: 240px; max-width: min(420px, calc(100vw - 2 * var(--gutter)));
+  height: auto !important; max-height: none !important; padding: 0 !important;
+  background: var(--paper); border-radius: var(--r-card);
+}
+.panel[data-panel-collapsed] > :not(.chrome) { display: none !important; }
+.panel[data-panel-collapsed] .chrome { position: relative; height: 48px; padding: 0 var(--s-8) 0 var(--s-16); gap: var(--s-8); }
+.panel[data-panel-collapsed] .grip { position: static; flex: none; width: 26px; height: 32px; margin: 0; order: -1; }
+.panel[data-panel-collapsed] .pill { width: 4px; height: 18px; }
+.title {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: var(--w7) var(--fs-15) / 1.2 var(--font); color: var(--ink);
+}
+
+/* ------------------------------------------------------------ resize: the bottom-right corner */
+.resize {
+  position: absolute; right: 0; bottom: 0; z-index: 4; width: 24px; height: 24px; border-radius: 0 0 var(--r-card) 0;
+  cursor: nwse-resize; touch-action: none;
+}
+.resize[data-axis="x"] { cursor: ew-resize; }
+.resize span {
+  position: absolute; right: 7px; bottom: 7px; width: 10px; height: 10px;
+  border-right: 2px solid var(--perf); border-bottom: 2px solid var(--perf); border-radius: 0 0 var(--r-1) 0;
+}
+.resize:hover span, .resize:focus-visible span { border-color: var(--ultra); }
+.resize:focus-visible { outline: 2px solid var(--ultra); outline-offset: -2px; }
+
+/* ------------------------------------------------------------ guides: where edges line up (they show; nothing pulls) */
+.guides { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+.guide { position: absolute; display: block; }
+.guide[data-axis="x"] { width: 0; border-left: 1.5px dashed var(--ultra); }
+.guide[data-axis="y"] { height: 0; border-top: 1.5px dashed var(--ultra); }
+.guide[data-kind="area"] { opacity: 0.55; }
+
+@media (max-width: 640px) {
+  .chrome, .resize { display: none; }
+}
