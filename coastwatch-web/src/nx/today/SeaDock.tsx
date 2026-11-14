@@ -1,7 +1,5 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
-import { onFrame } from "@/nx/chart/runtime";
 import { Button } from "@/nx/ds/Button";
 import { Dock } from "@/nx/ds/stage/Dock";
 import { Stamp } from "@/nx/ds/Stamp";
@@ -41,46 +39,9 @@ export function advisoryParts(a: GateFact): { event: string; when: string } {
  * (predicted), the buoy's one measured point and the advisories as coral spans. On a phone it is a block in the
  * sheet after the ticket.
  */
-/**
- * The dock stops short of the ticket at every width (the prototype: the dock's width is the port's x − 12): it reads where
- * the page's ticket stands, as the ticket follows its port, and keeps 20 px of chart between them.
- */
-function useClearOfTicket(phone: boolean): number | null {
-  const [w, setW] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    if (phone) return setW(null);
-    let raf = 0;
-    const measure = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const t = document.querySelector<HTMLElement>("[data-nx-ticket]:not([data-inline])");
-        const g = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gutter")) || 24;
-        if (!t) return setW(null);
-        const left = t.getBoundingClientRect().left;
-        // a ticket on the left half (none on Today) leaves the dock its own width
-        setW(left > window.innerWidth / 2 ? Math.max(320, Math.min(840, Math.round(left - g - 20))) : null);
-      });
-    };
-    measure();
-    const off = onFrame(measure);
-    window.addEventListener("resize", measure);
-    const ro = new ResizeObserver(measure);
-    const t = document.querySelector("[data-nx-ticket]");
-    if (t) ro.observe(t);
-    return () => {
-      off();
-      window.removeEventListener("resize", measure);
-      ro.disconnect();
-      cancelAnimationFrame(raf);
-    };
-  }, [phone]);
-  return w;
-}
-
 export function SeaDock({ state, zone, zoneName, advisories, bars, tide, now, phone, tripHref }: SeaDockProps) {
-  const clear = useClearOfTicket(phone);
   return (
-    <Dock label="Sea, next four days" width={clear ?? 840} className={s.seaDock} data-testid="nx-sea-dock">
+    <Dock label="Sea, next four days" width={840} className={s.seaDock} data-testid="nx-sea-dock">
       <div className={s.seaLeft}>
         <Micro as="h2">Sea{zone ? ` · NWS ${zone}` : ""}</Micro>
         {zoneName ? <p className={s.seaZone}>{zoneName}</p> : null}

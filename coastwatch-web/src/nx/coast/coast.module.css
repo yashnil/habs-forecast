@@ -567,7 +567,8 @@
 .toTrip { margin-top: var(--s-8); font-size: var(--fs-13); }
 /* low and wide along the chart's foot, as a dock is: the chart keeps the upper part, beside the ticket */
 .dock.dock {
-  width: min(560px, calc(100% - var(--ticket-w) - 3 * var(--gutter)));
+  /* beside the ticket: the panels' default layout (ds/panels) */
+  width: min(560px, calc(100% - 2 * var(--gutter)));
   max-height: min(44%, calc(100% - var(--stage-top) - var(--gutter)));
   overflow-y: auto; overscroll-behavior: contain;
 }

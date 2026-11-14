@@ -67,6 +67,7 @@ export const KEYS: KeyEntry[] = [
   local("nx-tour-v1", "preference", "\"Show me around\" was dismissed"),
   local("nx-opening-seen-v1", "preference", "The opening has played once"),
   local("nx-currents-view-v1", "preference", "How Explore draws currents"),
+  local("nx-panels-v1:", "preference", "Where you moved, resized or collapsed the floating panels on Today, My Coast and a trip, per page"),
   local("nx-pane-v1", "preference", "How wide you keep the chart beside My Coast, Research and the other desk pages"),
   local("nx-follow-hint-v1", "preference", "The ports where you dismissed the \"Follow this port\" line"),
   local("nx-explore-coach-v1", "preference", "Explore's first hint was dismissed"),

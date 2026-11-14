@@ -313,7 +313,7 @@ export function Workspace({ model }: { model: TripModel }) {
   return (
     <>
       <TripChart trip={trip} snapshot={latest?.mode === "live" ? latest : planning} port={port} />
-      <PageLayout mode="stage" paneKey="trips" chartLabel={port?.name} phoneMap={0.3} />
+      <PageLayout mode="stage" paneKey="trips" chartLabel={port?.name} phoneMap={0.3} panels="trip" />
       <LayoutGroup>
         <Ticket key={trip.id} at={port ? { lon: port.lon, lat: port.lat } : null} anchorY={130} width={440} labelledBy="trip-h" className={s.ticket} data-testid="trip-workspace" data-state={trip.state}>
           <TicketMain className={s.main}>

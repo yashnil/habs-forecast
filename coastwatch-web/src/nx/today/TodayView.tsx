@@ -75,7 +75,7 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
   const scene = <ChartScene scene={{ id: `today:${port.key}`, view: { bounds: portWater(port) }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />;
   return (
     <MotionConfig reducedMotion="user">
-      <PageLayout mode="stage" phoneMap={0.27} />
+      <PageLayout mode="stage" phoneMap={0.27} panels="today" />
       <MapLayers page="today" defaults={{ regulation: true, depth: true, sea: true }} />
       {!assembled ? <ChartRegulation spec={ramp ? { zones: { highlight: rampZoneAt(port.lat) } } : null} /> : null}
       <section className={s.today} data-testid="nx-today" aria-labelledby="nx-today-title">
