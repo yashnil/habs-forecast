@@ -262,7 +262,7 @@
 .fieldLoading { display: grid; gap: var(--s-4); margin: 0; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .fieldBar { display: block; height: 3px; border-radius: var(--r-pill); background: var(--paper-2); overflow: hidden; }
 .fieldBar > span { display: block; height: 100%; background: var(--ultra); transform-origin: 0 50%; transition: transform var(--dur-hover) linear; }
-.swatchArea { fill: var(--paper); fill-opacity: 0.5; stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.swatchArea { fill: var(--depth-5); fill-opacity: 0.6; stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
 /* the timeline's own toggle, top right of the dock, beside Play */
 .railToggle { position: absolute; top: var(--s-10); right: calc(var(--s-20) + 64px); z-index: 1; }
 .timeDock[data-open="0"] .railHead { padding-right: calc(3 * var(--s-64) - var(--s-12)); }

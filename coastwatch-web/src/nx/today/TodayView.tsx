@@ -91,9 +91,8 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
             {!arriving ? scene : null}
             <Ticket key={port.key} at={arriving ? null : at} anchorY={110} width={TICKET_W} labelledBy="nx-today-title">
               <TicketMain>
-                <FisheryChooser port={port} inputs={data.state === "loading" ? undefined : inputs} onChoose={chooseFishery} />
-                {/* v15.1: the way to the whole coast never waits for a fishery */}
-                <ExploreEntry place={port.key} lon={port.lon} lat={port.lat} />
+                {/* v15.1: the way to the whole coast never waits for a fishery, and sits above the list, in view */}
+                <FisheryChooser port={port} inputs={data.state === "loading" ? undefined : inputs} onChoose={chooseFishery} lead={<ExploreEntry place={port.key} lon={port.lon} lat={port.lat} />} />
               </TicketMain>
             </Ticket>
           </>

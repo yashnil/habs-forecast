@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { animate, useReducedMotion } from "motion/react";
 import { layerIn, layerOut } from "@/nx/ds/motion";
 import { markForDisplay, westmostPerRow } from "@/nx/chart/layers/marks";
+import { shoreLon } from "@/nx/chart/shore";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, Micro, MapLayers, type Provenance } from "@/nx/ds";
 import { getFrame, onFrame } from "@/nx/chart/runtime";
@@ -34,7 +35,7 @@ import { Locator, ReadingOnChart } from "./ChartOverlay";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, GridSpec, ProductId } from "./model";
 import { ADJACENT_WORDS, isLandAdjacent, loadAdjacency } from "./adjacency";
 import { markAdjacent } from "@/nx/chart/layers/adjacent";
-import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isothermLabels, KNOTS, NEARBY_KM, nearestCurrent, type CellGeometry, type GapPosition, type IsoLabel, pixelDate, readPoint, researchHref, RESEARCH_VAR, stationFor, transect, type TransectPoint } from "./read";
+import { outsideObservedArea, cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isothermLabels, KNOTS, NEARBY_KM, nearestCurrent, type CellGeometry, type GapPosition, type IsoLabel, pixelDate, readPoint, researchHref, RESEARCH_VAR, stationFor, transect, type TransectPoint } from "./read";
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeHead, TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
@@ -43,6 +44,9 @@ import s from "./explore.module.css";
 
 /** What a layer's nearest pier measurement is called, in a sentence. */
 const MEASURE_WORDS: Record<ProductId, string> = { chl: "chlorophyll", outlook: "chlorophyll", sst: "water temperature", charm: "domoic acid" };
+
+/** A measured cell that is land or beyond the coastal product's water (review j10: never "cloud"). */
+const OUTSIDE_AREA_WORDS = "Outside this layer's area: land, or water the coastal chlorophyll product does not cover. No value is not a low value.";
 
 /** The flight between a port and the whole coast, ms (v15.1 review: a deliberate 1.2–1.8 s, not a 0.4 s zoom). */
 const STATE_FLIGHT_MS = 1500;
@@ -94,6 +98,8 @@ type Reading =
       gap: GapPosition | null;
       /** a measured cell with no value that is the pixel beside land the pipeline leaves out (not cloud) */
       besideLand: boolean;
+      /** a measured cell without a value that is land, or past the coastal product's water (not cloud) */
+      outsideArea: boolean;
       pixel: string | null;
       transect: TransectPoint[];
       /** the next frame's value is being read: the last one stays, dimmed (no "Reading…" flash while playing) */
@@ -454,6 +460,18 @@ export function Explore({ model }: { model: ExploreModel }) {
         const cell = cellGeometry(g, pt.row, pt.col);
         besideLand = !!mask && isLandAdjacent(mask, cell.lat, cell.lon);
       }
+      // no value on land, or past the coastal product's water: outside the layer's area, never "cloud" (review j10)
+      let outsideArea = false;
+      if (pt.value === null && frame.kind === "measured" && !besideLand) {
+        const cell = cellGeometry(g, pt.row, pt.col);
+        const latest = model.products.find((p) => p.id === frame.product)?.frames.find((f) => f.track === frame.track && f.label === "Latest" && f.grid) ?? null;
+        let compositeEmpty = true;
+        if (latest?.grid && latest.id !== frame.id) {
+          const lc = await loadCodes(model.baseUrl, latest.grid, box);
+          compositeEmpty = (readPoint(latest.grid, lc.codes, cell.lat, cell.lon)?.value ?? null) === null;
+        }
+        outsideArea = outsideObservedArea({ lat: cell.lat, lon: cell.lon, row: pt.row, col: pt.col, compositeEmpty, westmost: westRef.current.get(`${frame.product}:${frame.track}`) ?? null, shoreLon });
+      }
       if (!live) return;
       setReading({
         status: "ready",
@@ -465,6 +483,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         cell: cellGeometry(g, pt.row, pt.col),
         gap: pt.value === null && frame.kind !== "measured" ? gapPosition(g, c.codes, pt.row, pt.col) : null,
         besideLand,
+        outsideArea,
         pixel,
         transect: transect(g, c.codes, at.lat, at.lon),
         updating: false,
@@ -716,10 +735,10 @@ export function Explore({ model }: { model: ExploreModel }) {
             title={title}
             lat={r.cell.lat}
             lon={r.cell.lon}
-            state={rf.kind === "measured" && !r.besideLand ? "noview" : "outside"}
+            state={rf.kind === "measured" && !r.besideLand && !r.outsideArea ? "noview" : "outside"}
             subtitle={subtitle}
             actions={action}
-            message={r.besideLand ? ADJACENT_WORDS : rf.kind === "measured" ? `No view here (${rf.label === "Latest" ? `latest view, ${rf.stamp}` : rf.stamp}): cloud, fog or no pass. No value is not a low value.` : noValueWords(product, r.gap ?? "inside")}
+            message={r.besideLand ? ADJACENT_WORDS : r.outsideArea ? OUTSIDE_AREA_WORDS : rf.kind === "measured" ? `No view here (${rf.label === "Latest" ? `latest view, ${rf.stamp}` : rf.stamp}): cloud, fog or no pass. No value is not a low value.` : noValueWords(product, r.gap ?? "inside")}
             onClose={onClose}
           >
             {tr}
@@ -942,7 +961,7 @@ export function Explore({ model }: { model: ExploreModel }) {
               </p>
             )
           ) : null}
-          {!readout ? <p className={s.prompt}>Tap the water to read one cell.</p> : null}
+          {!readout && tier !== "static" ? <p className={s.prompt}>Tap the water to read one cell.</p> : null}
         </TicketStub>
       </Ticket>
 

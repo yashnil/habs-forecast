@@ -126,12 +126,15 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
   );
 }
 
-function HoursStrip({ model, currentId, onCurrent, width, on }: { model: ExploreModel; currentId: string | null; onCurrent: (f: CurrentFrame) => void; width: number; on: boolean }) {
+function HoursStrip({ model, currentId, onCurrent, width, on, nowAt }: { model: ExploreModel; currentId: string | null; onCurrent: (f: CurrentFrame) => void; width: number; on: boolean; /** the days' Now line, px into the track: the hours end visibly before it */ nowAt?: number }) {
   const hours = (model.currents?.frames ?? []).filter((f) => !f.mean);
   const mean = model.currents?.frames.find((f) => f.mean) ?? null;
   const T = Math.max(40, width - LABEL_W);
   const meanW = mean ? 64 : 0;
-  const HT = T - meanW;
+  // v15.1 review: the hours' own axis ends a clear gap before the days' Now line, so no hour (the selected one least
+  // of all) ever reads as "now"
+  const limit = nowAt != null && nowAt > T * 0.5 ? Math.min(T, nowAt - 32) : T;
+  const HT = limit - meanW;
   const step = hours.length > 1 ? HT / hours.length : HT;
   const maxVol = Math.max(0.0001, ...hours.map((h) => h.volume ?? 0));
   const old = hours.length > 0 && isOld(hours[hours.length - 1].fresh);
@@ -334,7 +337,7 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
         {/* below the days and their "Now" line: the radar's hours on their own dated axis */}
         {model.currents && currentsOn ? (
           <div className={s.hoursBlock}>
-            <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on />
+            <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on nowAt={nx} />
           </div>
         ) : null}
       </div>

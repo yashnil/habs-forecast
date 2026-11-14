@@ -125,8 +125,9 @@ float rampT(float v) {
 void field();
 // the whole layer fades in once, whole (v15.1: never chunk by chunk)
 void main() { field(); o *= u_fade; }
-// v15.1 "outside this layer's area": a plain quiet tint, neither the cloud hatch nor a value
-vec4 outsideArea() { return pm(u_paper, 0.16); }
+// v15.1 "outside this layer's area": the chart's own water, untouched (neither the cloud hatch nor a value). No
+// tint at all, so no edge of a tint can ever draw a seam across the sea (review: a seam beside the panel)
+vec4 outsideArea() { return vec4(0.0); }
 
 void field() {
   vec2 f = cellf();

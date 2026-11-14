@@ -60,7 +60,7 @@ export function ExploreLegend({ product, frame, currents, currentsLine, about }:
             <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
               <rect x="0.5" y="0.5" width="39" height="15" className={s.swatchArea} />
             </svg>
-            <span>Plain: outside this layer&rsquo;s area</span>
+            <span>Plain water: outside this layer&rsquo;s area</span>
           </li>
         </ul>
         {frame.besideLandLeftOut ? (
