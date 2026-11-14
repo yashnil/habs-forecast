@@ -7,8 +7,11 @@ import { animate, useReducedMotion } from "motion/react";
 import { layerIn, layerOut } from "@/nx/ds/motion";
 import { markForDisplay, westmostPerRow } from "@/nx/chart/layers/marks";
 import { shoreLon } from "@/nx/chart/shore";
+import { setMapLayer, useMapLayer } from "@/nx/chart/mapLayers";
+import { ChartRegulation, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
+import { readPrefs, writePrefs } from "./prefs";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, Micro, MapLayers, type Provenance } from "@/nx/ds";
+import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, MapLayers, type Provenance } from "@/nx/ds";
 import { getFrame, onFrame } from "@/nx/chart/runtime";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
@@ -26,7 +29,7 @@ import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, loadedChunks, boxAround } from "./codes";
 import { barPadTop, COAST_ZOOM, coversPort, EXPLORE_ZOOM, exploreBounds, STATE_BOUNDS, withinFor } from "./camera";
 import { backLink, readFrom, readView, type ExploreView } from "./links";
-import { cellKmOf, chipWords, layerMetas, notPublished, resolutionNote, speedStats, speedWords } from "./layers";
+import { cellKmOf, chlViewOf, frameForView, chipWords, layerMetas, notPublished, resolutionNote, speedStats, speedWords } from "./layers";
 import { StationPoints, type StationPick } from "./StationPoints";
 import { StationReadout } from "./StationReadout";
 import { gridBounds } from "@/nx/chart/layers/grid";
@@ -39,7 +42,7 @@ import { outsideObservedArea, cellGeometry, cellSizeWords, coastHref, compassWor
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeHead, TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark as oldWord, shortLine, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
+import { aboutWords, CHL_DOMAIN, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, charmStalledWords, OUTLOOK_NOT_AVAILABLE, oldMark as oldWord, shortLine, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
 
 /** What a layer's nearest pier measurement is called, in a sentence. */
@@ -119,7 +122,7 @@ function readUrl(model: ExploreModel, sp: URLSearchParams) {
   const hourFrame = model.currents?.frames.find((x) => x.id === hour) ?? null;
   // an explicit ?cur=1 / ?cur=0 wins; otherwise the default for this layer and this hour's freshness
   const currents = !!model.currents && (cur === "1" ? true : cur === "0" ? false : currentsByDefault(p, hourFrame));
-  return { product: p?.id ?? null, frame: f?.id ?? null, currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null, view: readView(sp), from: readFrom(sp), stations: sp.get("st") === "1" };
+  return { product: p?.id ?? null, frame: f?.id ?? null, currents, hour, at: m ? { lat: Number(m[1]), lon: Number(m[2]) } : null, view: readView(sp), from: readFrom(sp), stations: sp.get("st") === "1", chart: asked === "chart" };
 }
 
 export function Explore({ model }: { model: ExploreModel }) {
@@ -130,6 +133,21 @@ export function Explore({ model }: { model: ExploreModel }) {
   }, [fromUrl, key]);
   const init = useMemo(() => readUrl(model, new URLSearchParams(sp.toString())), [model]); // eslint-disable-line react-hooks/exhaustive-deps
   const [productId, setProductId] = useState<ProductId | null>(init.product);
+  // round 2 (A): the plain bathymetric chart, no data layer (the switch's first option, kept on this device)
+  const [chartOnly, setChartOnly] = useState(init.chart);
+  const chartOnlyRef = useRef(chartOnly);
+  chartOnlyRef.current = chartOnly;
+  const [opacity, setOpacity] = useState(1);
+  const depthOn = useMapLayer("depth");
+  const regOn = useMapLayer("regulation");
+  const setChartElement = (id: "depth" | "regulation", on: boolean) => {
+    setMapLayer(id, on);
+    writePrefs({ [id]: on });
+  };
+  const changeOpacity = (v: number) => {
+    setOpacity(v);
+    writePrefs({ opacity: v });
+  };
   const [frameId, setFrameId] = useState<string | null>(init.frame);
   const [currentsOn, setCurrentsOn] = useState(init.currents);
   const [hourId, setHourId] = useState<string | null>(init.hour);
@@ -191,7 +209,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const set = (k: string, v: string | null) => (v === null ? q.delete(k) : q.set(k, v));
-    set("layer", productId && productId !== model.products[0]?.id ? productId : null);
+    set("layer", chartOnly ? "chart" : productId && productId !== model.products[0]?.id ? productId : null);
     set("frame", frame && product && frame.id !== product.defaultFrame ? frame.id : null);
     const byDefault = currentsByDefault(product, model.currents?.frames.find((x) => x.id === model.currents?.defaultFrame) ?? null);
     set("cur", model.currents && currentsOn !== byDefault ? (currentsOn ? "1" : "0") : null);
@@ -201,7 +219,28 @@ export function Explore({ model }: { model: ExploreModel }) {
     set("st", stationsOn ? "1" : null);
     const next = `${window.location.pathname}${q.toString() ? `?${q}` : ""}`;
     if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(window.history.state, "", next);
-  }, [productId, frame, product, currentsOn, hourId, at, model, view, stationsOn]);
+  }, [productId, frame, product, currentsOn, hourId, at, model, view, stationsOn, chartOnly]);
+
+  // the reader's own choices from an earlier visit, where the address does not name them (prefs.ts)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const pr = readPrefs();
+    if (!q.has("layer")) {
+      if (pr.base === "chart") setChartOnly(true);
+      else if (model.products.some((p) => p.id === pr.base) && pr.base !== productId) {
+        const p = model.products.find((x) => x.id === pr.base)!;
+        setProductId(p.id);
+        setFrameId(p.defaultFrame);
+      }
+    }
+    setOpacity(pr.opacity);
+    if (!q.has("st") && pr.stations) setStationsOn(true);
+    if (!q.has("cur") && pr.currents !== null && model.currents) setCurrentsOn(pr.currents);
+    setMapLayer("depth", pr.depth);
+    setMapLayer("regulation", pr.regulation);
+    // once, on arrival
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ------------------------------------------------------------- the chart
   useEffect(() => {
@@ -236,7 +275,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [fieldLoad, setFieldLoad] = useState<{ loaded: number; total: number } | null>(null);
   useEffect(() => {
     const layer = fieldRef.current;
-    if (!map || !layer || !product || !frame?.grid) {
+    if (!map || !layer || !product || !frame?.grid || chartOnly) {
       layer?.setData(null, { kind: "ramp", domain: CHL_DOMAIN, scale: "log" });
       setIsoLabels([]);
       setFieldLoad(null);
@@ -302,7 +341,11 @@ export function Explore({ model }: { model: ExploreModel }) {
       layer.setFade(1);
       map.off("moveend", onMove);
     };
-  }, [map, product, frame, model.baseUrl, view, reduce]);
+  }, [map, product, frame, model.baseUrl, view, reduce, chartOnly]);
+  // the reader's opacity for the field: the chart's contours show beneath it
+  useEffect(() => {
+    fieldRef.current?.setOpacity(opacity);
+  }, [opacity, map]);
 
   // currents: the hour's field, read only while streaks are asked for (never on a still picture, never with the
   // switch off); a failure is a state the switch and the legend say, never streaks promised and not drawn
@@ -404,8 +447,10 @@ export function Explore({ model }: { model: ExploreModel }) {
   useEffect(() => {
     if (!map) return;
     const onClick = (e: { lngLat: { lat: number; lng: number } }) => {
-      setAt({ lat: e.lngLat.lat, lon: e.lngLat.lng });
       setPick(null);
+      // the plain chart has no data layer to read
+      if (chartOnlyRef.current) return;
+      setAt({ lat: e.lngLat.lat, lon: e.lngLat.lng });
       setPlaying(false);
     };
     map.on("click", onClick);
@@ -523,13 +568,22 @@ export function Explore({ model }: { model: ExploreModel }) {
 
   // ------------------------------------------------------------- choosing and playing frames (cuts, never tweens: T26)
   const chooseFrame = useCallback((p: ExploreProduct, f: ExploreFrame) => {
+    setChartOnly(false);
     setProductId(p.id);
     setFrameId(f.id);
     setPlaying(false);
   }, []);
+  const chooseChart = () => {
+    setChartOnly(true);
+    setAt(null);
+    setPlaying(false);
+    writePrefs({ base: "chart" });
+  };
   const chooseProduct = (id: ProductId) => {
     const p = model.products.find((x) => x.id === id);
     if (!p) return;
+    setChartOnly(false);
+    writePrefs({ base: id });
     setProductId(id);
     setFrameId(p.defaultFrame);
     setPlaying(false);
@@ -544,7 +598,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const hours = useMemo(() => (model.currents ? playHours(model.currents.frames) : []), [model.currents]);
   const dayFrames = useMemo(() => (product ? playFrames(product) : []), [product]);
   const playsHours = streaks && hours.length > 1 && !currentOld;
-  const canPlay = playsHours || dayFrames.length > 1;
+  const canPlay = playsHours || (!chartOnly && dayFrames.length > 1);
   useEffect(() => {
     if (!playing) return;
     const id = window.setInterval(
@@ -602,7 +656,10 @@ export function Explore({ model }: { model: ExploreModel }) {
     setPlaying(false);
   };
   const toggleStations = () => {
-    setStationsOn((on) => !on);
+    setStationsOn((on) => {
+      writePrefs({ stations: !on });
+      return !on;
+    });
     setPick(null);
   };
   const choosePick = (p: StationPick) => {
@@ -808,10 +865,12 @@ export function Explore({ model }: { model: ExploreModel }) {
     </div>
   );
   return (
-    <section className={s.explore} data-testid="nx-explore" data-nx-explore-field="1" data-product={product.id} data-frame={frame.id} style={{ "--explore-dock": `${dockH}px` } as React.CSSProperties}>
+    <section className={s.explore} data-testid="nx-explore" data-nx-explore-field={chartOnly ? "0" : "1"} data-base={chartOnly ? "chart" : product.id} data-product={product.id} data-frame={frame.id} style={{ "--explore-dock": `${dockH}px` } as React.CSSProperties}>
       {/* statewide on a phone, the sheet rests lower so most of the coast shows; it still rises to read */}
       <PageLayout mode="stage" phoneMap={view === "coast" ? 0.64 : 0.5} />
-      <MapLayers page="explore" defaults={{ depth: true }} />
+      {/* the base chart's own elements, switched in Explore's panel (one set of layer controls) */}
+      <MapLayers page="explore" defaults={{ depth: true, regulation: false }} />
+      <ChartRegulation spec={port && RAMP_ZONES.length ? { zones: { highlight: rampZoneAt(port.lat) } } : null} />
       <ChartScene scene={scene} />
       {/* the mark sits on the cell that was read (its centre, its outline), not on the tap */}
       {pt ? <ReadingOnChart lat={cell?.lat ?? pt.lat} lon={cell?.lon ?? pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} outline={cell?.outline ?? null} /> : null}
@@ -847,7 +906,7 @@ export function Explore({ model }: { model: ExploreModel }) {
           </div>
           {/* one short line in view; the full sentence, the method and the caveats are in "About this layer" */}
           <p className={s.lead} data-testid="nx-explore-lead">
-            {shortLine(product)}
+            {chartOnly ? "The chart: depth, the coast and whale zones · no data layer" : shortLine(product)}
           </p>
           {fieldLoad ? (
             <p className={s.fieldLoading} role="status" data-testid="nx-field-loading">
@@ -860,17 +919,23 @@ export function Explore({ model }: { model: ExploreModel }) {
             </p>
           ) : null}
           {/* the layer has no cells at the reader's port: said in words, with where it does have them */}
-          {port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
+          {!chartOnly && port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
             <p className={s.coverage} data-testid="nx-coverage-note">
               {coverageNote(LAYER_LABEL[product.id], port.name, gridBounds(frame.grid))}
             </p>
           ) : null}
           <div ref={switchRef} className={s.switch} role="radiogroup" aria-label="Data layer" data-testid="nx-data-layers">
+            {/* round 2 (A): the plain bathymetric chart first, one tap from any layer */}
+            {/* design-lint-allow raw-button: one radio of the data-layer group (see below) */}
+            <button type="button" role="radio" aria-checked={chartOnly} className={s.switchItem} onClick={chooseChart} data-testid="nx-layer-chart">
+              <span>Chart</span>
+              <small>no data layer</small>
+            </button>
             {model.products.map((p) => {
               const meta = metas.find((m) => m.id === p.id);
               return (
                 // design-lint-allow raw-button: the data layers are one radio group of chips whose items carry a second line (the layer's kind) and per-layer test hooks, with a switch (currents) in the same row; ds Chip is a toggle, not a radio
-                <button key={p.id} type="button" role="radio" aria-checked={p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`} data-class={meta?.productClass}>
+                <button key={p.id} type="button" role="radio" aria-checked={!chartOnly && p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`} data-class={meta?.productClass}>
                   <span>{LAYER_LABEL[p.id]}</span>
                   {/* observation or model, then its own dates ("Model · run of Nov 3, valid Nov 2–5 (past run)") */}
                   <small>{meta ? chipWords(meta) : p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
@@ -885,8 +950,37 @@ export function Explore({ model }: { model: ExploreModel }) {
                 <small>{m.why.toLowerCase()}</small>
               </button>
             ))}
+          </div>
+          {/* chlorophyll's three views (round 2, B): what was seen that day, each pixel's latest clear day, a reconstruction */}
+          {!chartOnly && product.id === "chl" ? (
+            <div className={s.views} role="radiogroup" aria-label="Chlorophyll view" data-testid="nx-chl-views">
+              {(["observed", "composite", "estimate"] as const).map((v) => {
+                const target = frameForView(product, v, frame.track);
+                const on = v !== "estimate" && chlViewOf(frame) === v;
+                const label = v === "observed" ? "Observed" : v === "composite" ? "Composite" : "Estimate";
+                const sub = v === "observed" ? "one day, gaps kept" : v === "composite" ? "recent, pixel ages" : "gap-filled · not yet";
+                return (
+                  // design-lint-allow raw-button: one radio of a three-way view switch with a second line per item (as the data-layer chips)
+                  <button key={v} type="button" role="radio" aria-label={v === "observed" ? "Observed: one day, gaps kept" : v === "composite" ? "Recent composite: each pixel's latest clear day, with its age" : "Gap-filled estimate: not available yet"} aria-checked={on} disabled={!target} className={s.viewItem} data-missing={!target ? "1" : undefined} onClick={() => target && setFrameId(target)} data-testid={`nx-chl-${v}`}>
+                    <span>{label}</span>
+                    <small>{sub}</small>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {/* the chart's own elements and the overlays, switched on and off over any base (one place, not two systems) */}
+          <div className={`${s.switch} ${s.chartLayers}`} role="group" aria-label="On the chart" data-testid="nx-chart-layers">
+            {/* design-lint-allow raw-button: a switch in the same chip row as the layers */}
+            <button type="button" role="switch" aria-checked={depthOn} className={s.switchItem} data-on={depthOn ? "1" : "0"} onClick={() => setChartElement("depth", !depthOn)} data-testid="nx-depth-toggle">
+              <span>Depth</span>
+            </button>
+            {/* design-lint-allow raw-button: a switch in the same chip row as the layers */}
+            <button type="button" role="switch" aria-checked={regOn} className={s.switchItem} data-on={regOn ? "1" : "0"} onClick={() => setChartElement("regulation", !regOn)} data-testid="nx-regulation-toggle">
+              <span>Whale zones</span>
+            </button>
             {model.currents ? (
-              <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => !v)} data-testid="nx-currents-toggle">
+              <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => { writePrefs({ currents: !v }); return !v; })} data-testid="nx-currents-toggle">
                 <span>Currents</span>
                 <small data-state={currentsState}>{currentsToggleWords(currentsState, current)}</small>
               </button>
@@ -895,20 +989,46 @@ export function Explore({ model }: { model: ExploreModel }) {
               // design-lint-allow raw-button: an overlay switch in the same chip row as the layers (see above)
               <button type="button" role="switch" aria-checked={stationsOn} className={s.switchItem} data-on={stationsOn ? "1" : "0"} onClick={toggleStations} data-testid="nx-stations-toggle">
                 <span>Stations</span>
-                <small>{stationsOn ? `on · ${model.stations.length} piers, ${model.buoys.length} buoys` : "off · piers and buoys"}</small>
               </button>
             ) : null}
           </div>
+          {!chartOnly ? (
+            <label className={s.opacity} data-testid="nx-opacity">
+              <span>Layer opacity</span>
+              <input type="range" min={20} max={100} step={5} value={Math.round(opacity * 100)} onChange={(e) => changeOpacity(Number(e.target.value) / 100)} aria-valuetext={`${Math.round(opacity * 100)} percent`} />
+              <b>{Math.round(opacity * 100)} %</b>
+            </label>
+          ) : null}
           {/* phone: what is on show and Play sit with the layers at the top of the sheet (review F-01) */}
           {phone ? (
             <div className={s.timeBar}>
-              <TimeHead model={model} product={product} frameId={frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
+              <TimeHead model={model} product={product} frameId={chartOnly ? "" : frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
             </div>
           ) : null}
           {phone ? readSlot : null}
         </TicketMain>
         <TicketStub>
           <div data-testid="nx-legend-sticky">
+            {chartOnly ? (
+              <div className={s.legendBlock} data-testid="nx-legend" data-product="chart">
+                <p className={s.chartTitle}>Chart</p>
+                <ul className={s.keys} aria-label="Marks">
+                  <li>
+                    <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+                      <path d="M0,11 C10,6 22,13 40,7" className={s.swatchDepth} />
+                    </svg>
+                    <span>Depth contours, fathoms</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+                      <path d="M0,8 H40" className={s.swatchReg} />
+                    </svg>
+                    <span>Whale-zone limits</span>
+                  </li>
+                </ul>
+                <p className={s.caption}>Depth: NOAA ETOPO 2022 and the Coastal Relief Model. Not for navigation.</p>
+              </div>
+            ) : (
             <ExploreLegend
               product={product}
               frame={frame}
@@ -938,10 +1058,13 @@ export function Explore({ model }: { model: ExploreModel }) {
                     </p>
                   ) : null}
                   {resNote ? <p data-testid="nx-resolution-note">{resNote}</p> : null}
+                  {charmStalledWords(product) ? <p data-testid="nx-charm-stalled">{charmStalledWords(product)}</p> : null}
+                  {product.id === "chl" && !model.products.some((x) => x.id === "outlook") ? <p data-testid="nx-outlook-na">{OUTLOOK_NOT_AVAILABLE}</p> : null}
                   {unpublished.length ? <p data-testid="nx-not-published">Not published yet: {unpublished.join(" and ")}.</p> : null}
                 </>
               }
             />
+            )}
             {stationsOn ? (
               <p className={s.stationKey} data-testid="nx-stations-key">
                 <span className={s.stationKeyShore} aria-hidden="true" /> Piers
@@ -980,13 +1103,13 @@ export function Explore({ model }: { model: ExploreModel }) {
           </div>
         ) : null}
         {!railShown && !phone ? (
-          <TimeHead model={model} product={product} frameId={frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
+          <TimeHead model={model} product={product} frameId={chartOnly ? "" : frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
         ) : railShown || phone ? (
         <TimeRail
           head={!phone}
           model={model}
           product={product}
-          frameId={frame.id}
+          frameId={chartOnly ? "" : frame.id}
           onFrame={chooseFrame}
           onProduct={chooseProduct}
           currentsOn={streaks}

@@ -127,11 +127,13 @@ test("every live layer shows its legend, units and dates; what is not live is ne
   // C-HARM: a model probability with its run and valid dates
   await page.getByTestId("nx-layer-charm").click();
   await expect(page.getByTestId("nx-layer-charm")).toHaveAttribute("data-class", "model");
-  await expect(page.getByTestId("nx-layer-charm")).toContainText(/Model · run of .+, valid/);
+  // the run's issue date is inferred in the data, so it is dated by its valid days only (round 2, C)
+  await expect(page.getByTestId("nx-layer-charm")).toContainText(/Model · valid .+ \(expired\)/);
+  await expect(page.getByTestId("nx-layer-charm")).not.toContainText("run of");
   await expect(legend).toHaveAttribute("data-product", "charm");
   await expect(page.getByTestId("nx-explore-lead")).toContainText("not measured toxin");
   await expect(legend).toContainText("P(pDA > 500 ng/L)");
-  await expect(legend).toContainText(/valid Oct \d+, run of Oct \d+/);
+  await expect(legend).toContainText(/valid Oct \d+, last run available/);
   await expect(legend).toContainText("not toxin in seafood");
   // currents: measured HF radar, its hour, and the hour's real speeds in kn and cm/s
   await page.getByTestId("nx-layer-chl").click();
@@ -182,8 +184,10 @@ test("a tap on the water reads the real published cell", async ({ browser }) => 
   expect(expected).not.toBeNull();
   const shown = await readout.locator("p").filter({ hasText: "mg/m³" }).first().innerText();
   expect(Number(/([\d.]+)\s*mg/.exec(shown)![1])).toBeCloseTo(Number(expected!.toPrecision(2)), 6);
-  // land inside the grid's box (inland of Seaside) is outside the layer's area, never "cloud" (review j10)
-  await tapWater(page, 36.6, -121.77);
+  // land inside the grid's box (inland, by Castroville) is outside the layer's area, never "cloud" (review j10)
+  // (the first reading's ticket is closed first, so it cannot stand over the next point)
+  await readout.getByRole("button", { name: "Close the reading" }).click();
+  await tapWater(page, 36.72, -121.76);
   await expect(readout).toContainText("Outside this layer's area: land");
   await expect(readout).not.toContainText("cloud, fog or no pass");
   await ctx.close();
@@ -199,5 +203,82 @@ test("from a saved trip: Back to your trip returns to that trip", async ({ brows
   await back.click();
   await expect(page).toHaveURL(new RegExp(`/coast/trips\\?id=${seeded.trip.id}`));
   await expect(page.getByTestId("trip-workspace")).toBeVisible();
+  await ctx.close();
+});
+
+test("round 2 (A): the plain chart is the first option, its elements switch independently, and the choice is kept", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk);
+  await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+  await mapReady(page);
+  const first = page.getByTestId("nx-data-layers").getByRole("radio").first();
+  await expect(first).toHaveAttribute("data-testid", "nx-layer-chart");
+  await first.click();
+  await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-base", "chart");
+  await expect(page.getByTestId("nx-legend")).toHaveAttribute("data-product", "chart");
+  await expect(page.getByTestId("nx-explore-lead")).toContainText("no data layer");
+  await expect(page.getByTestId("nx-opacity")).toHaveCount(0);
+  await expect(page).toHaveURL(/layer=chart/);
+  // the chart's own elements, in Explore's one set of controls (Today's chips step aside)
+  await expect(page.getByTestId("nx-layers")).toBeHidden();
+  const depth = page.getByTestId("nx-depth-toggle"), reg = page.getByTestId("nx-regulation-toggle");
+  await expect(depth).toHaveAttribute("aria-checked", "true");
+  await reg.click();
+  await expect(reg).toHaveAttribute("aria-checked", "true");
+  await depth.click();
+  await expect(depth).toHaveAttribute("aria-checked", "false");
+  // overlays over the plain chart
+  await page.getByTestId("nx-stations-toggle").click();
+  await expect(page.locator('[data-testid^="nx-station-shore-"]').first()).toBeVisible();
+  // kept on this device: a bare address opens the plain chart with the same elements
+  await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+  await mapReady(page);
+  await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-base", "chart");
+  await expect(page.getByTestId("nx-depth-toggle")).toHaveAttribute("aria-checked", "false");
+  await expect(page.getByTestId("nx-regulation-toggle")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("nx-stations-toggle")).toHaveAttribute("aria-checked", "true");
+  // a data layer, its opacity kept too
+  await page.getByTestId("nx-layer-chl").click();
+  const slider = page.getByTestId("nx-opacity").locator("input");
+  await slider.fill("60");
+  await expect(page.getByTestId("nx-opacity")).toContainText("60 %");
+  await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+  await mapReady(page);
+  await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-base", "chl");
+  await expect(page.getByTestId("nx-opacity")).toContainText("60 %");
+  await ctx.close();
+});
+
+test("round 2 (E): the time rail in three families, each layer with its own latest point; an expired run says so", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk);
+  await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+  await mapReady(page);
+  await page.getByTestId("nx-rail-toggle").click();
+  const rail = page.getByTestId("nx-timerail");
+  for (const [id, label] of [["obs", "Observations"], ["est", "Analysis / Estimates"], ["fc", "Forecasts"]]) await expect(page.getByTestId(`nx-rail-family-${id}`)).toContainText(label);
+  await expect(rail).not.toContainText(/\bNow\b/);
+  await expect(page.getByTestId("nx-rail-latest-olci")).toContainText(/latest Oct \d+/);
+  await expect(page.getByTestId("nx-rail-latest-charm")).toContainText(/valid to Oct \d+/);
+  await expect(page.getByTestId("nx-rail-expired-charm")).toContainText(/Last run available: valid .+ · expired · .*not a current forecast/);
+  // choosing a forecast frame from its own row makes C-HARM the layer on show
+  await page.locator('[data-testid^="nx-frame-charm:"]').first().click();
+  await expect(page.getByTestId("nx-legend")).toHaveAttribute("data-product", "charm");
+  await ctx.close();
+});
+
+test("round 2 (B): chlorophyll's views: Observed (one day), Recent composite (pixel ages); the estimate is not offered until its source is wired", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk);
+  await page.goto(`${OK}/explore?place=${MOSS}`);
+  await mapReady(page);
+  const views = page.getByTestId("nx-chl-views");
+  await expect(page.getByTestId("nx-chl-composite")).toHaveAttribute("aria-checked", "true");
+  await page.getByTestId("nx-chl-observed").click();
+  await expect(page.getByTestId("nx-chl-observed")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-frame", /^olci:\d{4}-\d{2}-\d{2}$/);
+  await page.getByTestId("nx-chl-composite").click();
+  await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-frame", "olci:latest");
+  await expect(page.getByTestId("nx-chl-estimate")).toBeDisabled();
+  await expect(views).toContainText("Estimate");
+  // About this layer says what is never offered
+  await expect(page.getByTestId("nx-outlook-na")).toHaveCount(0); // the fixture holds an outlook (derived on locally)
   await ctx.close();
 });

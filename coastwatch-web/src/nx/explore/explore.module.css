@@ -269,7 +269,7 @@
 
 /* v15.1 review: in Explore its own switch is the one set of layer controls (Today's chips step aside), and with a
    field on the chart the water's names never sit on the data */
-:global(html:has([data-nx-explore-field="1"])) :global(.nx-layers),
+:global(html:has([data-nx-explore-field])) :global(.nx-layers),
 :global(html:has([data-nx-explore-field="1"])) :global(.n12-water-name),
 :global(html:has([data-nx-explore-field="1"])) :global(.n12-water-name-svg) { display: none; }
 /* the radar's hours: their own dated axis, set apart from the days and their Now; old hours step back */
@@ -277,3 +277,43 @@
 .railRow[data-old="1"] .barMeasured { opacity: 0.38; }
 .railOld { font-weight: var(--w7); color: var(--coral-ink); }
 .zoomHint { font-weight: var(--w7); color: var(--ink); }
+
+/* round 2 (A): the plain chart's legend, and the field's opacity */
+.chartTitle { margin: 0; font: 500 var(--t-28) / 1.1 var(--font-serif); letter-spacing: -0.01em; }
+.swatchDepth { fill: none; stroke: var(--contour); stroke-width: 1.6; }
+.swatchReg { fill: none; stroke: var(--coral); stroke-width: 2; }
+.opacity { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s-10); font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); }
+.opacity input { width: 100%; min-height: var(--s-28); accent-color: var(--ultra); }
+.opacity b { font-variant-numeric: tabular-nums; color: var(--ink); min-width: 3.5em; text-align: right; }
+
+/* round 2 (E): the rail's three families, each row with its own latest point; "Today" is a quiet reference */
+.railFamily { display: grid; gap: var(--s-2); margin-top: var(--s-8); }
+.railFamilyHead { margin: 0; color: var(--ink-2); }
+.railEmpty, .railExpired { margin: 0 0 0 calc(2 * var(--s-48)); font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.railExpired { color: var(--coral-ink); }
+.railTodayLabel { position: absolute; top: 0; transform: translateX(-50%); color: var(--ink-3); padding: 0 var(--s-4); line-height: 1.2; }
+.railLatest { stroke: var(--ink); stroke-width: 1.5; }
+.railLatestText { font: 600 var(--t-14) / 1 var(--font-sans); fill: var(--ink); }
+/* phone: the chart's elements and the overlays follow the layer switch, Play and an open reading (F-01) */
+@media (max-width: 640px) {
+  .switch.chartLayers { order: 0; }
+}
+.railFamily { margin-top: var(--s-4); }
+.railFamilyHead { margin-bottom: 0; }
+
+/* round 2 (B): chlorophyll's three views, a quiet segmented row under the layer switch */
+.views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; padding: var(--s-2); border-radius: var(--r-sm); background: var(--paper-2); }
+.viewItem { display: grid; gap: 0; min-height: var(--target); padding: var(--s-4) var(--s-6); border: 0; border-radius: var(--r-sm); background: none; text-align: left; color: var(--ink-2); cursor: pointer; }
+.viewItem span { font-size: var(--fs-13); font-weight: var(--w7); line-height: 1.15; }
+.viewItem small { font-size: var(--fs-11); line-height: 1.2; }
+.viewItem[aria-checked="true"] { background: var(--paper); color: var(--ultra-deep); box-shadow: var(--shadow-sm); }
+.viewItem:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 1px; }
+.viewItem[data-missing="1"] { color: var(--ink-3); cursor: default; }
+/* phone: the views follow the switch, Play and an open reading (F-01), one line each */
+@media (max-width: 640px) { .views { order: 0; } }
+/* one line each: the words of each view are its accessible name and in About this layer */
+.viewItem small { display: none; }
+.railFamily { gap: 0; margin-top: var(--s-2); }
+.railFamilyHead { line-height: 1.3; }
+.railEmptyLine { margin: 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+@media (min-width: 641px) { .chartLayers .switchItem { min-height: var(--s-32); } }

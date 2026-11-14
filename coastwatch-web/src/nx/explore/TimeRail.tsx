@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Button, day, range, sig, useElementWidth } from "@/nx/ds";
+import { Button, day, Micro, range, sig, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
 import { axisLabels, axisX, frameCount, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
 import { isOld, LAYER_LABEL, layerKindWord, oldMark } from "./words";
@@ -18,6 +18,8 @@ import s from "./explore.module.css";
 // the label column, as the stylesheet sets it (.railLabel is 96 px): the track, the axis and the now line share it
 const LABEL_W = 96;
 const ROW = 36;
+/** a layer that is not the one on show: a thin row, so the three families stay compact (round 2, E) */
+const ROW_QUIET = 20;
 const ROW_ACTIVE = 56;
 
 type Props = {
@@ -34,6 +36,28 @@ type Props = {
   canPlay: boolean;
   onPlay: () => void;
 };
+
+/**
+ * Round 2 (E): the rail in three labelled families, each layer on its own row with its own latest valid point.
+ * Observations are measured (satellite days, radar hours); Analysis / Estimates are blends and reconstructions; Forecasts
+ * are model runs and outlooks. A family with nothing published says so; nothing is drawn after a layer's last frame.
+ */
+type FamilyId = "obs" | "est" | "fc";
+const FAMILIES: Array<{ id: FamilyId; label: string; empty: string }> = [
+  { id: "obs", label: "Observations", empty: "No observation is published in this data run." },
+  { id: "est", label: "Analysis / Estimates", empty: "Not available yet: gap-filled chlorophyll and sea-temperature analysis are not published." },
+  { id: "fc", label: "Forecasts", empty: "No forecast is published in this data run." },
+];
+export const familyOf = (p: Pick<ExploreProduct, "kind">): FamilyId => (p.kind === "measured" ? "obs" : p.kind === "analysis" ? "est" : "fc");
+
+/** An expired run in one line: its last run, its valid interval, and why it is shown. */
+export function expiredWords(p: Pick<ExploreProduct, "runIssued" | "frames">): string {
+  const v = p.frames.map((f) => [f.start, f.end]).flat().sort();
+  const valid = v.length ? range(v[0], v[v.length - 1]) : "unknown";
+  // a run whose issue date is not published is dated by its valid days alone (round 2, C)
+  if (!p.runIssued) return `Last run available: valid ${valid} · expired · no newer run has been published, so this is not a current forecast.`;
+  return `Last run ${day(p.runIssued)}, valid ${valid}. Expired: no newer run has been published, so this is not a current forecast.`;
+}
 
 function Hatch({ id, dense }: { id: string; dense?: boolean }) {
   return (
@@ -69,6 +93,7 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
     if (f) onFrame(product, f);
   };
   const measured = product.kind === "measured";
+  const last = frames.map((f) => f.end).filter(Boolean).sort().pop() ?? null;
   // with the sources folded away, the row is named for what it shows, not the satellite
   const name = plain ? LAYER_LABEL[product.id] : track.id === "viirs" ? "VIIRS" : track.id === "olci" ? "OLCI" : product.id === "chl" ? "Chlorophyll" : product.id === "sst" ? "Temperature" : product.id === "charm" ? "C-HARM" : "Outlook";
   const pastRun = product.pastRun && (track.id === "charm" || track.id === "outlook");
@@ -76,7 +101,7 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
     <div className={s.railRow} data-active={active ? "1" : "0"} style={{ height: H }} data-testid={`nx-rail-${track.id}`}>
       <span className={s.railLabel}>
         {name}
-        {pastRun ? <small className={s.railNote}>past run</small> : null}
+        {pastRun && height > ROW_QUIET ? <small className={s.railNote}>past run</small> : null}
       </span>
       <div className={s.railTrack} onPointerDown={pick} onKeyDown={keys} role="radiogroup" aria-label={`${name} frames`}>
         <svg width={T} height={H} className={s.railSvg} aria-hidden="true">
@@ -102,6 +127,15 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
             }
             return sel ? <rect key={f.id} x={a + 0.75} y={1} width={Math.max(3, b - a - 1.5)} height={H - 2} className={s.frameSel} fill="none" /> : null;
           })}
+          {last ? (
+            // the row's own latest valid point: nothing after it is drawn, and it says its date
+            <g data-testid={`nx-rail-latest-${track.id}`}>
+              <line x1={x(last, 1)} x2={x(last, 1)} y1={2} y2={H - 1} className={s.railLatest} />
+              <text x={x(last, 1) + (x(last, 1) + 104 < T ? 4 : -4)} y={12} textAnchor={x(last, 1) + 104 < T ? "start" : "end"} className={s.railLatestText}>
+                {measured || product.kind === "analysis" ? `latest ${day(last)}` : `valid to ${day(last)}`}
+              </text>
+            </g>
+          ) : null}
         </svg>
         {frames.map((f) => {
           const a = x(f.start), b = x(f.end, 1);
@@ -271,7 +305,7 @@ export function TimeHead({ model, product, frameId, currentsOn, currentId, playi
     <div className={s.railHead} data-testid="nx-time-head">
       <h2 className={s.railTitle}>Time</h2>
       <p className={s.railNow} data-testid="nx-frame-stamp">
-        {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : ""}
+        {frame ? (frame.label === "Latest" ? `Latest view: ${frame.stamp}` : frame.stamp.charAt(0).toUpperCase() + frame.stamp.slice(1)) : "Chart · no data layer"}
         {count ? (
           <span className={s.railCount} data-testid="nx-frame-count">
             {" "}
@@ -324,22 +358,52 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
               {l.text}
             </span>
           ))}
-          <span className={s.railNowLabel} style={{ left: Math.min(Math.max(nx, 20), T - 20) }}>
-            Now
+          {/* a quiet reference for today; each row says its own latest valid point (round 2, E: no generic "Now") */}
+          <span className={s.railTodayLabel} style={{ left: Math.min(Math.max(nx, 24), T - 24) }}>
+            Today
           </span>
         </div>
-        <div className={s.railRows}>
-          <span className={s.nowLine} style={{ left: LABEL_W + nx }} aria-hidden="true" />
-          {tracks.map((t, i) => (
-            <TrackRow key={t.id} model={model} product={product} track={t} active height={i === 0 ? ROW_ACTIVE : ROW} frameId={frameId} onFrame={onFrame} width={width} hatchId={hatchId} hatchPastId={hatchPastId} plain={!all} />
-          ))}
-        </div>
-        {/* below the days and their "Now" line: the radar's hours on their own dated axis */}
-        {model.currents && currentsOn ? (
-          <div className={s.hoursBlock}>
-            <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on nowAt={nx} />
-          </div>
-        ) : null}
+        {FAMILIES.map((fam) => {
+          const ps = model.products.filter((p) => familyOf(p) === fam.id);
+          const showHours = fam.id === "obs" && !!model.currents && currentsOn;
+          return (
+            <div key={fam.id} className={s.railFamily} data-testid={`nx-rail-family-${fam.id}`}>
+              {/* a family with nothing published is one line: its name and why (round 2, E) */}
+              {!ps.length && !showHours ? (
+                <p className={s.railEmptyLine} data-testid={`nx-rail-empty-${fam.id}`}>
+                  <Micro as="span" className={s.railFamilyHead}>{fam.label}</Micro> {fam.empty}
+                </p>
+              ) : (
+                <Micro as="p" className={s.railFamilyHead}>{fam.label}</Micro>
+              )}
+              {ps.map((p) => {
+                // the active layer's rows at full height; every other layer one thin row
+                const isActive = p.id === product.id && frameId !== "";
+                const ts = isActive ? tracks : p.tracks.slice(0, 1);
+                return (
+                  <div key={p.id}>
+                    <div className={s.railRows}>
+                      {ts.map((t, i) => (
+                        <TrackRow key={t.id} model={model} product={p} track={t} active={isActive} height={isActive ? (i === 0 ? ROW_ACTIVE : ROW) : ROW_QUIET} frameId={frameId} onFrame={onFrame} width={width} hatchId={hatchId} hatchPastId={hatchPastId} plain={!all || !isActive} />
+                      ))}
+                    </div>
+                    {p.pastRun && (p.kind === "model" || p.kind === "outlook") ? (
+                      <p className={s.railExpired} data-testid={`nx-rail-expired-${p.id}`}>
+                        {expiredWords(p)}
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
+              {showHours ? (
+                <div className={s.hoursBlock}>
+                  <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on={currentsOn} nowAt={nx} />
+                </div>
+              ) : null}
+
+            </div>
+          );
+        })}
       </div>
       <div className={s.railMore}>
         <Button variant="text" aria-expanded={more} aria-controls={moreId} onClick={() => setMore((v) => !v)} data-testid="nx-rail-more">

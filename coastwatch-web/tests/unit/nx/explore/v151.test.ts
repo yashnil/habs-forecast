@@ -52,12 +52,13 @@ describe("layer metadata", () => {
     expect(m("chl")).toMatchObject({ productClass: "observation", units: "mg/m³", role: "surface" });
     expect(m("chl").when).toMatch(/Oct/);
     expect(m("charm")).toMatchObject({ productClass: "model", units: "probability (%)" });
-    expect(m("charm").when).toMatch(/^run of .+, valid .+\(past run\)$/);
+    // an inferred issue date is never shown: the run is dated by its valid days (round 2, C)
+    expect(m("charm").when).toMatch(/^valid .+ \(expired\)$/);
     expect(m("charm").note).toMatch(/not a measured toxin/);
     expect(m("currents")).toMatchObject({ productClass: "observation", units: "kn · cm/s", role: "overlay" });
     expect(m("currents").when).toMatch(/\d+ hours to /);
     expect(m("stations").when).toMatch(/1 shore stations, newest sample Oct 6; 1 buoys read live/);
-    expect(chipWords(m("charm"))).toMatch(/^Model · run of/);
+    expect(chipWords(m("charm"))).toMatch(/^Model · valid /);
     expect(chipWords(m("chl"))).toMatch(/^Observation · /);
   });
   it("chlorophyll is never called toxin", () => {
@@ -75,7 +76,7 @@ describe("missing and unpublished data", () => {
   it("gated: SST and the outlook are not live; they are named as not published yet", () => {
     expect(gated.products.map((p) => p.id)).toEqual(["chl", "charm"]);
     expect(gated.missing.filter((x) => x.id === "sst" || x.id === "outlook").every((x) => x.why === "Not published yet")).toBe(true);
-    expect(notPublished(gated)).toEqual(["sea temperature", "the 8-day chlorophyll outlook"]);
+    expect(notPublished(gated)).toEqual(["sea temperature", "the experimental chlorophyll outlook (not validated)"]);
     expect(layerMetas(gated).some((x) => x.id === "sst" || x.id === "outlook")).toBe(false);
     expect(notPublished(full)).toEqual([]);
   });
@@ -172,5 +173,37 @@ describe("land and the open ocean read as outside the layer's area, never cloud 
   });
   it("north or south of California, an unseen cell is outside", () => {
     expect(outsideObservedArea({ lat: 43, lon: -124.5, row: 0, col: 10, compositeEmpty: true, westmost: null, shoreLon })).toBe(true);
+  });
+});
+
+import { DEFAULT_PREFS, parsePrefs } from "@/nx/explore/prefs";
+import { expiredWords, familyOf } from "@/nx/explore/TimeRail";
+
+describe("round 2 (A): Explore's choices kept on the device", () => {
+  it("a version-1 record is read; anything else gives the defaults", () => {
+    expect(parsePrefs(JSON.stringify({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true }))).toEqual({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true });
+    expect(parsePrefs(null)).toEqual(DEFAULT_PREFS);
+    expect(parsePrefs("{not json")).toEqual(DEFAULT_PREFS);
+    expect(parsePrefs(JSON.stringify({ v: 2, base: "chart" }))).toEqual(DEFAULT_PREFS);
+  });
+  it("odd values are clamped or dropped, never trusted", () => {
+    const p = parsePrefs(JSON.stringify({ v: 1, base: "<script>", opacity: 7, depth: "yes" }));
+    expect(p.base).toBe("chl");
+    expect(p.opacity).toBe(1);
+    expect(p.depth).toBe(true);
+    expect(parsePrefs(JSON.stringify({ v: 1, opacity: 0.01 })).opacity).toBe(0.2);
+  });
+});
+
+describe("round 2 (E): the time rail's families", () => {
+  it("measured layers are observations, analyses estimates, models and outlooks forecasts", () => {
+    expect(familyOf({ kind: "measured" })).toBe("obs");
+    expect(familyOf({ kind: "analysis" })).toBe("est");
+    expect(familyOf({ kind: "model" })).toBe("fc");
+    expect(familyOf({ kind: "outlook" })).toBe("fc");
+  });
+  it("an expired run says its last run, its valid interval and that it is not current", () => {
+    const w = expiredWords({ runIssued: "2026-11-03", frames: [{ start: "2026-11-02", end: "2026-11-02" }, { start: "2026-11-05", end: "2026-11-05" }] as never });
+    expect(w).toMatch(/^Last run Nov 3, valid Nov 2–5\. Expired: .*not a current forecast\.$/);
   });
 });
