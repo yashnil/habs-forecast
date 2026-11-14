@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 import { CHART_MODE_KEY, type ChartMode } from "./entry";
 import { openPortFinder } from "./finder";
@@ -13,6 +13,7 @@ import { alertsHref } from "./unread";
 import { useUnread } from "@/nx/alerts/useInbox";
 import { Icon } from "@/nx/ds/Icon";
 import { navPill } from "@/nx/ds/motion";
+import { getPanelsPage, layoutChanged, loadLayout, panelsRev, resetLayout, subscribePanels } from "@/nx/ds/panels/store";
 import { LayerChips } from "@/nx/ds/synth/Chips";
 import { usePortLabel } from "./portLabel";
 
@@ -104,6 +105,7 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
               </label>
             ))}
           </fieldset>
+          <ResetLayout onDone={() => setOpen(false)} />
           <FieldPack port={port ? { key: port.key, name: port.name, lat: port.lat, lon: port.lon } : null} />
           <p className="n12-menu-note">
             Chart: depth from NOAA ETOPO 2022 and the Coastal Relief Model; coast © OpenStreetMap contributors, OpenMapTiles. Not for navigation.
@@ -111,6 +113,26 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Menu > Reset layout: shown only on a page whose panels the reader has moved, resized or collapsed (ds/panels). */
+function ResetLayout({ onDone }: { onDone: () => void }) {
+  useSyncExternalStore(subscribePanels, panelsRev, () => 0);
+  const page = getPanelsPage();
+  if (!page || !layoutChanged(loadLayout(page))) return null;
+  return (
+    <button
+      type="button"
+      className="n12-menu-reset"
+      data-testid="nx-menu-reset-layout"
+      onClick={() => {
+        resetLayout(page);
+        onDone();
+      }}
+    >
+      Reset layout <small>Put this page&rsquo;s panels back</small>
+    </button>
   );
 }
 
