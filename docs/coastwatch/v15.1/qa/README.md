@@ -108,6 +108,58 @@ The screenshots use the e2e fixture, which keeps the derived layers (Temperature
 them still run. On deployed data without the flag those layers show as "Not published yet". The fixture's chlorophyll
 and C-HARM grids cover Monterey Bay only, so the statewide frames show a small field.
 
+## Round 2 (DIRECTION-2, 2026-11-14): the plain chart, chlorophyll views, WCOFS, the timeline
+
+### Counts
+
+| Head | Run | Result |
+|---|---|---|
+| cca9c6728 (round 2 merged) | full e2e, 8 shards × 3 workers, 545 tests | 501 passed, 38 skipped, 4 failed: v13/v14 G2 guards, "Explore at 320/390 px" (timeline buttons covering each other; owner A). `test:offline` failed: Explore requested /explore/model/* offline. Both fixed in f5dbfea36 |
+| f5dbfea36 (A's fix) | full e2e, 8 shards × 3 workers, 551 tests | **513 passed, 38 skipped, 0 failed** |
+| f5dbfea36 | unit (`npm test`) | **1970 passed, 74 skipped** (144 files) |
+| f5dbfea36 | `test:offline` | **exit 0, 57 PASS, 0 FAIL** |
+| f5dbfea36 | typecheck / lint / lint:design | clean / 0 errors, 13 warnings / clean |
+| **c64a827ed (final product head)** | Explore-touching specs: v151 ocean + journey, v13 and v14 guards, v13 explore, journeys explore, v12-honesty, v12-addresses (194 tests) | **192 passed, 2 skipped, 0 failed** |
+
+The statewide-fit change in c64a827ed touches only Explore, so the whole suite was not rerun at that head.
+
+axe (WCAG 2.1 A/AA, serious or critical) found nothing at 1440 or 390 for chart only, the chlorophyll composite, the
+gap-filled estimate, WCOFS model temperature with predicted currents, and the timeline open. These checks are in
+`journey.spec.ts`, and the test records which states it actually selected.
+
+### The seven round-2 moments (staging data, WCOFS and DINEOF read live; headed Chrome; at c64a827ed)
+
+Script: `coastwatch-web/scripts/v151-shots-r2.mjs`. The server ran with
+`CW_DATA_BASE_URL=https://raw.githubusercontent.com/yashnil/habs-forecast/coastwatch-data-staging/v1`, with no fixture
+and the real clock (2026-11-14). Frames are in [round2/](round2/), named `<width>-<coast|port>-<moment>.png`.
+
+| Moment | 1440 statewide | 1440 port | 390 statewide | 390 port |
+|---|---|---|---|---|
+| a. Chart only, no chlorophyll | [frame](round2/1440-coast-r2a-chart-only.png) | [frame](round2/1440-port-r2a-chart-only.png) | [frame](round2/390-coast-r2a-chart-only.png) | [frame](round2/390-port-r2a-chart-only.png) |
+| b. Observed chlorophyll (one day, gaps kept) | [frame](round2/1440-coast-r2b-observed.png) | [frame](round2/1440-port-r2b-observed.png) | [frame](round2/390-coast-r2b-observed.png) | [frame](round2/390-port-r2b-observed.png) |
+| c. Recent composite (pixel ages) | [frame](round2/1440-coast-r2c-composite.png) | [frame](round2/1440-port-r2c-composite.png) | [frame](round2/390-coast-r2c-composite.png) | [frame](round2/390-port-r2c-composite.png) |
+| d. Gap-filled estimate (NOAA DINEOF, stale) | [frame](round2/1440-coast-r2d-estimate.png) | [frame](round2/1440-port-r2d-estimate.png) | [frame](round2/390-coast-r2d-estimate.png) | [frame](round2/390-port-r2d-estimate.png) |
+| e. Latest C-HARM (expired) | [frame](round2/1440-coast-r2e-charm-expired.png) | [frame](round2/1440-port-r2e-charm-expired.png) | [frame](round2/390-coast-r2e-charm-expired.png) | [frame](round2/390-port-r2e-charm-expired.png) |
+| f. WCOFS model temperature with a model reading open | [frame](round2/1440-coast-r2f-wcofs.png) | [frame](round2/1440-port-r2f-wcofs.png) | [frame](round2/390-coast-r2f-wcofs.png) | [frame](round2/390-port-r2f-wcofs.png) |
+| g. The timeline (Observations / Analysis and estimates / Forecasts), predicted currents on | [frame](round2/1440-coast-r2g-timeline.png) | [frame](round2/1440-port-r2g-timeline.png) | [frame](round2/390-coast-r2g-timeline.png) | [frame](round2/390-port-r2g-timeline.png) |
+
+What the live run showed (2026-11-14):
+
+- **WCOFS** (`/explore/model/wcofs`): status `current`, nowcast steps to Nov 13 7:00 PM PT and forecast steps to
+  Nov 16 7:00 PM PT. A reading off Monterey Bay (36.70 N, 122.20 W) says "Sea temperature (model) 67.1 °F ·
+  Prediction · NOAA WCOFS (developmental) · valid Nov 14, 4:00 AM PT · 19.5 °C. A model forecast, not a
+  measurement." The word "measured" appears in none of the four model readings.
+- **Predicted currents** are drawn over chlorophyll (frame g, labelled "Currents · on, predicted (model)"). Over the
+  model temperature the currents switch reads "not over a model", so frame f shows the temperature isotherms without
+  current streaks. This is by design: a model field never carries a second model's vectors.
+- **DINEOF estimate** (`/explore/model/chlorophyll`): status `stale`. "The newest NOAA DINEOF day is 2026-11-03,
+  11 days old; no newer day has been published." It is labelled "Gap-filled estimate · not observed" and drawn
+  hatched.
+- **C-HARM**: the last run available is valid Nov 2–5, marked expired: "no newer run has been published, so this is
+  not a current forecast".
+- **Observed chlorophyll on staging** ends Nov 7, because staging still runs the old S-NPP VIIRS code (see A's
+  audit). Production has OLCI to Nov 10 and VIIRS NOAA-20/21 to Nov 11.
+
 ## Known limits
 
 1. Everything was verified with installed Chrome on macOS under heavy shared load. It has not yet run in a Linux
@@ -121,5 +173,8 @@ and C-HARM grids cover Monterey Bay only, so the statewide frames show a small f
 4. The statewide view on phones gives the map about the top half of the screen, under the sheet, so the coast
    reads small at 390 and 320.
 5. The trips page can show "Reading the trips kept on this device…" for a moment after a navigation (V15 limit 2).
-6. Not verified: the staging data channel (`CW_DATA_BASE_URL=<staging>`), the protected preview, real devices,
-   Safari and Firefox, and the derived layers with `CW_DERIVED_LAYERS=1` on deployed data.
+6. Not verified: the protected preview, real devices, Safari and Firefox, and the derived layers with
+   `CW_DERIVED_LAYERS=1` on deployed data. The staging channel was exercised only through the round-2 shots, not by
+   the e2e suite, which runs on fixtures.
+7. Round 2: the WCOFS fixture serves recorded steps dated Nov 12–15, while the fixture server's clock is Oct 13, so
+   in fixture runs the WCOFS rows sit a month ahead of "now". The live run has no such offset.

@@ -103,8 +103,10 @@ async function moments(browser, size) {
       }
       await shot(page, `${at}-r2f-wcofs`, 1000);
     }
-    // the timeline: open it if it is folded, then photograph it with the chlorophyll composite on
+    // the timeline: open it if it is folded, then photograph it with the chlorophyll composite on (the reading closed)
     await choose(page, "nx-layer-chl", `${at} r2g`);
+    const close = page.getByRole("button", { name: "Close the reading" }).first();
+    if (await close.isVisible().catch(() => false)) await close.click();
     const toggle = page.getByTestId("nx-rail-toggle").first();
     if ((await toggle.count()) && /^Timeline$/.test((await toggle.innerText()).trim())) await toggle.click();
     const rail = page.getByTestId("nx-timerail").first();
