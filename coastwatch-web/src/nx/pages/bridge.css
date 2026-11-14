@@ -36,3 +36,7 @@
 .nxp-bridge :where(button) { font-size: revert-layer; font-weight: revert-layer; color: revert-layer; background: revert-layer; border: revert-layer; padding: revert-layer; }
 .nxp-bridge :where(a) { color: revert-layer; }
 .nxp-bridge :where(input[type="checkbox"]) { appearance: revert-layer; width: revert-layer; height: revert-layer; border: revert-layer; background: revert-layer; }
+/* inside the sheet, the older pages' own outer padding would double the sheet's */
+.nxp-bridge :is([data-testid="fisheries-page"], [data-testid="fisheries-coastal"]) { padding-top: 0; padding-left: 0; padding-right: 0; }
+/* rows that bled to the old page's 16 px edge (the species chips) stay inside the sheet's narrower phone gutter */
+.nxp-bridge [class*="-mx-4"] { margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; }

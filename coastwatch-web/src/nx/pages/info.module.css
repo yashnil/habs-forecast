@@ -15,7 +15,7 @@
 
 /* ---------------------------------------------------------------- head */
 .head {
-  padding: var(--s-48) 0 0;
+  padding: var(--s-32) 0 0;
 }
 .kicker {
   margin: 0 0 var(--s-12);
@@ -45,9 +45,9 @@
   margin-top: var(--s-12);
 }
 
-/* the registry line, under the head, above the neatline */
+/* the registry line, first in the head */
 .reg {
-  margin-top: var(--s-24);
+  margin: 0 0 var(--s-20);
 }
 
 /* the neatline: a chart's double border with its minute ticks, closing the head */
@@ -300,7 +300,7 @@
 
 @media (max-width: 640px) {
   .head {
-    padding-top: var(--s-24);
+    padding-top: var(--s-12);
   }
   .title {
     font-size: var(--fs-25);
@@ -356,5 +356,17 @@
   padding-top: var(--s-16);
 }
 .headBare .reg {
-  margin-top: 0;
+  margin-bottom: 0;
+}
+/* a page that brings its own head (Fisheries): on a phone the registry line opens it and the body follows at once */
+@media (max-width: 640px) {
+  .headBare {
+    padding-top: var(--s-4);
+  }
+  .headBare .neat {
+    display: none;
+  }
+  .headBare + .body {
+    padding-top: 0;
+  }
 }
