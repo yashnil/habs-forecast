@@ -9,9 +9,12 @@
 .chrome {
   position: absolute; left: 0; right: 0; top: 0; z-index: 4; height: 26px;
   display: flex; align-items: center; justify-content: flex-end; gap: var(--s-4); padding: 0 var(--s-8);
-  cursor: grab; touch-action: none;
+  pointer-events: none;
 }
-.panel[data-panel-dragging] .chrome { cursor: grabbing; }
+/* only the grip and the tools take the pointer: the strip never stands over the panel's own controls */
+.grip, .tools { pointer-events: auto; }
+.grip { cursor: grab; touch-action: none; }
+.panel[data-panel-dragging] .grip { cursor: grabbing; }
 .grip {
   position: absolute; left: 50%; top: 0; width: 72px; height: 26px; margin-left: -36px;
   display: flex; align-items: center; justify-content: center; border-radius: var(--r-pill); cursor: inherit;
@@ -40,7 +43,7 @@
   background: var(--paper); border-radius: var(--r-card);
 }
 .panel[data-panel-collapsed] > :not(.chrome) { display: none !important; }
-.panel[data-panel-collapsed] .chrome { position: relative; height: 48px; padding: 0 var(--s-8) 0 var(--s-16); gap: var(--s-8); }
+.panel[data-panel-collapsed] .chrome { pointer-events: auto; cursor: grab; touch-action: none; position: relative; height: 48px; padding: 0 var(--s-8) 0 var(--s-16); gap: var(--s-8); }
 .panel[data-panel-collapsed] .grip { position: static; flex: none; width: 26px; height: 32px; margin: 0; order: -1; }
 .panel[data-panel-collapsed] .pill { width: 4px; height: 18px; }
 .title {

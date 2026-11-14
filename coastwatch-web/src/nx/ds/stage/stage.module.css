@@ -78,7 +78,7 @@
 /* free panels (ds/panels): the grip strip lies in the object's top padding, which grows by the strip's breath */
 .ticket[data-panel] > .main { padding-top: var(--s-28); }
 .dock[data-panel] { padding-top: var(--s-24); }
-.pass[data-panel] > .passMain, .pass[data-panel] > .passStub { padding-top: var(--s-6); }
+.pass[data-panel] > .passMain { padding-top: var(--s-24); }
 .pass[data-panel] > .passStub { padding-top: var(--s-28); }
 
 /* inline (the catalog, a page's own column): the same object in the flow of its container */

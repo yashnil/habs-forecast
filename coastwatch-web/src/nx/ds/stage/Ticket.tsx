@@ -100,8 +100,8 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
   });
   const { movedRef } = panel;
   // the camera keeps the free part of the chart beside the ticket: a reservation the ticket's width wide, on its side
-  // (a moved or collapsed panel covers the chart by itself: ds/panels)
-  useChartCover(`ticket${id}`, reserveRef, side === "east" ? "right" : "left", !phone && lead && !panel.free);
+  // (kept while the reader has moved or collapsed it, so moving a panel never moves the chart: ds/panels)
+  useChartCover(`ticket${id}`, reserveRef, side === "east" ? "right" : "left", !phone && lead);
   const lon = at?.lon ?? null, lat = at?.lat ?? null;
 
   useLayoutEffect(() => {
@@ -185,8 +185,9 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
   // the camera anchor: where the place should stand so the ticket sits beside it
   useEffect(() => {
     const el = ref.current;
-    // a ticket the reader has moved no longer stands beside its place: the camera fits the scene around it instead
-    if (!el || phone || !lead || panel.moved || lon == null || lat == null) return;
+    // kept when the reader moves the ticket (ds/panels): moving a panel never moves the chart, so the place stays
+    // where the ticket's resting place put it (the moved ticket's own cover keeps names out from under it)
+    if (!el || phone || !lead || lon == null || lat == null) return;
     const write = () => {
       const g = read(el, "--gutter", 24), w = el.offsetWidth, W = window.innerWidth;
       const mm = edge === "gutter" ? g : ticketMargin(W, g);
@@ -200,7 +201,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       ro.disconnect();
       clearCameraAnchor(id);
     };
-  }, [id, lon, lat, side, anchorY, phone, lead, preferTop, edge, panel.moved]);
+  }, [id, lon, lat, side, anchorY, phone, lead, preferTop, edge]);
 
   const style = width ? ({ "--ticket-w": `${width}px` } as React.CSSProperties) : undefined;
   return (

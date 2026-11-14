@@ -86,7 +86,7 @@ export function Dock({ label, align = "left", width, cover = true, inline = fals
   const here = useArrival(0);
   useLeaveGhost(ref, 0.97);
   const key = typeof panelOpt === "string" ? panelOpt : slug(label);
-  const panel = usePanel(ref, { key, kind: "dock", name: label, enabled: panelOpt !== false && !inline, limits: { minW: 320, maxW: 1200, minH: 120, maxH: 2000 }, resizeHeight: true });
+  const panel = usePanel(ref, { key, kind: "dock", name: label, enabled: panelOpt !== false && !inline, limits: { minW: 320, maxW: 1200, minH: 120, maxH: 2000 }, resizeHeight: true, restCover: cover ? "bottom" : undefined });
   useChartCover(`dock${id}`, ref, "bottom", !phone && cover && !inline && !panel.free);
   useRestingFit(ref, key, panel.on && !panel.moved && !panel.resized && !panel.collapsed && align === "left", width ?? 840);
   const style = width ? ({ "--dock-w": `${width}px` } as React.CSSProperties) : undefined;
@@ -143,7 +143,7 @@ export function Pass({ label, at, stub, stubWidth = 320, inline = false, panel: 
   const phone = usePhone();
   const here = useArrival(0);
   useLeaveGhost(ref, 0.97);
-  const panel = usePanel(ref, { key: typeof panelOpt === "string" ? panelOpt : "pass", kind: "pass", name: label, enabled: panelOpt !== false && !inline, limits: { minW: 640, maxW: 4000, minH: 160, maxH: 2000 }, resizeHeight: true });
+  const panel = usePanel(ref, { key: typeof panelOpt === "string" ? panelOpt : "pass", kind: "pass", name: label, enabled: panelOpt !== false && !inline, limits: { minW: 640, maxW: 4000, minH: 160, maxH: 2000 }, resizeHeight: true, restCover: "bottom" });
   useChartCover(`pass${id}`, ref, "bottom", !phone && !inline && !panel.free);
   const lon = at?.lon ?? null, lat = at?.lat ?? null;
   useLayoutEffect(() => {
