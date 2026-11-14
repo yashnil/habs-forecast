@@ -33,6 +33,7 @@ import type { ChangeLine } from "./change";
 import { useChangeLine } from "./useChangeLine";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
+import { ExploreEntry } from "./ExploreEntry";
 import { GateList, type GateItem } from "@/nx/ds/GateList";
 import { gateHrefs, type Gate } from "./gates";
 import { buildToday, ppmWords, scopeWords, type TodayInputs, type TodayView as View } from "./model";
@@ -322,6 +323,7 @@ function Assembled({ port, inputs, fishery, bands }: { port: NonNullable<TodayPr
           )}
           {/* what changed since the last visit sits with the status it may have changed */}
           <Change line={change} />
+          <ExploreEntry place={port.key} lon={port.lon} lat={port.lat} />
           {/* a phone: the advisories in force above the fold, in the ticket (the dock follows below) */}
           {phone && v.advisories.length ? (
             <div className={s.advStrip} data-testid="advisories">

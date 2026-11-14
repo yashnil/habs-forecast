@@ -190,9 +190,9 @@
 
 /* ---------------------------------------------------------------- v15.1: Explore California Waters */
 /* the panel's head: where this is, the name, and the two ways back (the port's water, the page the reader came from) */
-.head { display: grid; gap: var(--s-6); }
-.title { margin: 0; font: 500 var(--fs-25) / 1.1 var(--font-serif); letter-spacing: -0.01em; color: var(--ink); }
-.nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-12); margin-top: var(--s-2); }
+.head { display: grid; gap: var(--s-2); }
+.title { margin: 0; font: 500 var(--t-22) / 1.15 var(--font-serif); letter-spacing: -0.01em; color: var(--ink); }
+.nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s-16); margin: calc(-1 * var(--s-6)) 0; }
 /* what is not published: one quiet line under the switch, never a disabled chip that looks live */
 .unpublished { margin: calc(-1 * var(--s-4)) 0 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
 .switchItem[data-on="1"] { color: var(--ultra-deep); background: var(--ultra-wash); }
