@@ -1,0 +1,9 @@
+/* The global error page: its own document in the tokens. */
+.body { margin: 0; min-height: 100dvh; background: var(--depth-1); color: var(--ink); font-family: var(--font); }
+.page { box-sizing: border-box; max-width: 640px; margin: var(--s-64) auto; padding: var(--pad-obj) var(--pad-obj-x); background: var(--paper); border-radius: var(--r-card); box-shadow: var(--shadow); }
+.brand { margin: 0 0 var(--s-16); font-weight: var(--w7); font-size: var(--fs-18); }
+.title { margin: 0; font-size: var(--fs-25); font-weight: var(--w7); line-height: 1.15; }
+.lede { margin: var(--s-12) 0 0; font-size: var(--fs-15); line-height: 1.55; color: var(--ink-2); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-12) var(--s-24); margin: var(--s-24) 0 0; }
+.retry { min-height: var(--target); padding: 0 var(--s-20); border: 0; border-radius: var(--r-ctl); background: var(--primary-bg); color: var(--primary-fg); font: var(--w6) var(--fs-15) / 1 var(--font); cursor: pointer; }
+.link { color: var(--ultra); font-weight: var(--w6); }

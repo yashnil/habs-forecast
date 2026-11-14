@@ -53,7 +53,7 @@ function ChartControls() {
       <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(-1)} aria-label="Zoom out" title="Zoom out" data-testid="nx-zoom-out">
         <Icon name="minus" size={18} />
       </button>
-      <button type="button" onClick={refitChart} aria-label={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} title={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} data-testid="nx-refit">
+      <button type="button" onClick={refitChart} aria-label={scene.refitLabel ?? (scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view")} title={scene.refitLabel ?? (scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view")} data-testid="nx-refit">
         <Icon name="recentre" size={18} />
       </button>
       {fit ? (
@@ -168,7 +168,12 @@ function writeFoot(frame: HTMLElement) {
   const c = frame.querySelector<HTMLElement>(".n12-controls")?.getBoundingClientRect();
   const x0 = c && c.width ? c.left - 6 : fr.right - 96, x1 = c && c.width ? c.right + 6 : fr.right;
   let foot = 0;
-  document.querySelectorAll<HTMLElement>("[data-nx-dock], [data-nx-pass], .n12-dock-slot").forEach((el) => {
+  document.querySelectorAll<HTMLElement>("[data-nx-dock], [data-nx-pass], .n12-dock-slot").forEach((live) => {
+    // a dock or pass the reader moved (ds/panels) counts where it rests, not where it was dragged: its hidden
+    // stand-in holds that box, so the zoom buttons keep their corner instead of following the panel
+    const key = live.hasAttribute("data-panel-moved") ? live.getAttribute("data-panel") : null;
+    const el = key ? document.querySelector<HTMLElement>(`[data-panel-rest="${CSS.escape(key)}"]`) : live;
+    if (!el) return;
     const r = el.getBoundingClientRect();
     // where it stands at rest: an arriving dock is still sliding up (a transform) when this runs
     const tf = getComputedStyle(el).transform;

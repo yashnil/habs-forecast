@@ -288,3 +288,22 @@ export async function loadConditions(lat: number, lon: number, periods = 4): Pro
   const [[marine, alerts], buoys, tides, harbor, shore] = await Promise.all([marineParts(lat, lon, clampPeriods(periods)), buoyParts(lat, lon), tidePart(lat, lon), harborPart(lat, lon), shorePart(lat, lon)]);
   return { lat, lon, marine, alerts, buoy: buoys.buoy, ...(buoys.wind ? { buoyWind: buoys.wind } : {}), tides, harbor, shore };
 }
+
+/**
+ * One NDBC station's newest observations (Explore California Waters' buoy points): that station only, never a
+ * neighbour standing in for it. `none` when it has reported nothing in the last 6 h; `unavailable` when NDBC did not
+ * answer. Same fetch, cache and test recordings as every other part here.
+ */
+export async function buoyObservation(id: string): Promise<Conditions["buoy"]> {
+  const source = "NOAA National Data Buoy Center";
+  const s = BUOYS.find((b) => b.id === id);
+  if (!s) return { status: "none", reason: "Not an NDBC station Neritic knows.", source };
+  const url = `https://www.ndbc.noaa.gov/data/realtime2/${s.id}.txt`;
+  try {
+    const obs = parseNdbc((await get(url, "text", 8192)) as string, now());
+    if (!Object.keys(obs).length) return { status: "none", reason: `Station ${s.id} has reported nothing in the last 6 hours.`, source };
+    return { status: "ok", data: obs, source, url: `https://www.ndbc.noaa.gov/station_page.php?station=${s.id}`, fetchedAt: now().toISOString(), station: { id: s.id, name: s.name, km: 0, lat: s.lat, lon: s.lon } };
+  } catch (e) {
+    return { status: "unavailable", reason: `NDBC did not answer for station ${s.id} (${msg(e)}).`, source };
+  }
+}

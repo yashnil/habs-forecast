@@ -173,7 +173,7 @@ export function CoastPage() {
   return (
     <MotionConfig reducedMotion="user">
       <CoastMap port={port} fishery={fishery} gates={gates} sea={sea} />
-      <PageLayout mode="stage" paneKey="coast" chartLabel={port?.name} phoneMap={trip ? 0.42 : 0.4} />
+      <PageLayout mode="stage" paneKey="coast" chartLabel={port?.name} phoneMap={trip ? 0.42 : 0.4} panels="coast" />
       <article className={s.page} data-testid="nx-coast" data-view={view}>
         {trip ? (
           <TripWorkspace

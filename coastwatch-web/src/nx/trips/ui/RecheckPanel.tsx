@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Button, dayTime, Glyph, Micro } from "@/nx/ds";
 import { groupUnchecked } from "../feed";
 import type { Recheck } from "../types";
@@ -45,7 +45,6 @@ export function RecheckPanel({ recheck: r, checking, onRecheck, now, actionVaria
           </Button>
         ) : null}
       </div>
-      <AnimatePresence initial={false}>
         {r ? (
           <motion.div key={r.snapshotId} className={s.parts} initial={reduce ? false : { y: 4 }} animate={{ y: 0 }} transition={reduce ? { duration: 0 } : { duration: 0.16, ease: [0.2, 0, 0, 1] }}>
             <Part id="changed" label="Changed" n={r.changed.length}>
@@ -118,7 +117,6 @@ export function RecheckPanel({ recheck: r, checking, onRecheck, now, actionVaria
             </Part>
           </motion.div>
         ) : null}
-      </AnimatePresence>
     </section>
   );
 }

@@ -27,6 +27,7 @@ import { RecheckPanel } from "./RecheckPanel";
 import { SnapshotView } from "./SnapshotView";
 import { timelineOf } from "../feed";
 import { tripsStore } from "../useTripsData";
+import { exploreHref } from "@/nx/explore/links";
 import s from "./trips.module.css";
 
 type Sheet = null | "changes" | "snapshot" | "edit" | "outcome" | "money";
@@ -245,6 +246,10 @@ export function Workspace({ model }: { model: TripModel }) {
       <Button variant="quiet" className={s.inline} href={`/coast/trips?id=${encodeURIComponent(trip.id)}&view=briefing`} data-testid="trip-open-briefing">
         Briefing
       </Button>
+      {/* the coast's ocean science, coming back to this trip ("Back to your trip" in Explore) */}
+      <Button variant="quiet" className={s.inline} href={exploreHref({ view: "coast", place: trip.placeKey, from: "trip", trip: trip.id })} data-testid="trip-open-explore">
+        Explore the water
+      </Button>
       {phone ? (
         rare(() => {})
       ) : (
@@ -313,7 +318,7 @@ export function Workspace({ model }: { model: TripModel }) {
   return (
     <>
       <TripChart trip={trip} snapshot={latest?.mode === "live" ? latest : planning} port={port} />
-      <PageLayout mode="stage" paneKey="trips" chartLabel={port?.name} phoneMap={0.3} />
+      <PageLayout mode="stage" paneKey="trips" chartLabel={port?.name} phoneMap={0.3} panels="trip" />
       <LayoutGroup>
         <Ticket key={trip.id} at={port ? { lon: port.lon, lat: port.lat } : null} anchorY={130} width={440} labelledBy="trip-h" className={s.ticket} data-testid="trip-workspace" data-state={trip.state}>
           <TicketMain className={s.main}>

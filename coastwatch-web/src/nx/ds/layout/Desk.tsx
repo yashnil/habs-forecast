@@ -5,6 +5,7 @@ import { cx } from "../util";
 import { SCROLL_CONDENSE } from "../motion";
 import { usePageLayoutEffect, type PageMode, type PaneDetent } from "./pane";
 import { Sheet } from "../stage/Sheet";
+import { setPanelsPage } from "../panels/store";
 import s from "./Desk.module.css";
 
 type Data = { [key: `data-${string}`]: string | number | boolean | undefined };
@@ -22,14 +23,25 @@ export interface PageLayoutProps {
   chartLabel?: string;
   /** v14 stage pages: the share of a phone's screen the chart strip keeps over the resting sheet (ds Sheet `map`). */
   phoneMap?: number;
+  /**
+   * v15.1: the page's floating objects (its ticket, docks and pass) become free panels on a wide screen, remembered on
+   * this device under this name ("coast", "trip", "today"): moved by their grips, resized, collapsed, reset together
+   * (src/nx/ds/panels). Omit it and they stand where the page puts them.
+   */
+  panels?: string;
 }
 
 /**
  * Declares the page's layout (as <ChartScene> declares its view). Renders only a hidden marker, which is what
  * the stylesheet reads, so the server's HTML is already laid out as a desk.
  */
-export function PageLayout({ mode, paneKey, defaultPane = "context", chartLabel, phoneMap }: PageLayoutProps) {
+export function PageLayout({ mode, paneKey, defaultPane = "context", chartLabel, phoneMap, panels }: PageLayoutProps) {
   usePageLayoutEffect(mode, paneKey ?? null, defaultPane, chartLabel ?? null);
+  useLayoutEffect(() => {
+    if (!panels) return;
+    setPanelsPage(panels);
+    return () => setPanelsPage(null);
+  }, [panels]);
   return (
     <>
       <span hidden data-nx-layout={mode} />

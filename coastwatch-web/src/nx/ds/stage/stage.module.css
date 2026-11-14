@@ -75,6 +75,12 @@
   .pass { grid-template-columns: minmax(0, 1fr) min(var(--stub-w, 320px), 312px); }
 }
 
+/* free panels (ds/panels): the grip strip lies in the object's top padding, which grows by the strip's breath */
+.ticket[data-panel] > .main { padding-top: var(--s-28); }
+.dock[data-panel] { padding-top: var(--s-24); }
+.pass[data-panel] > .passMain { padding-top: var(--s-24); }
+.pass[data-panel] > .passStub { padding-top: var(--s-28); }
+
 /* inline (the catalog, a page's own column): the same object in the flow of its container */
 .ticket[data-inline], .dock[data-inline], .pass[data-inline] { position: relative; left: auto; top: auto; right: auto; bottom: auto; max-height: none; }
 .dock[data-inline] { width: 100%; }

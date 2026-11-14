@@ -55,6 +55,11 @@ export type ChartScene = {
    * reader may pan; `fit` adds one more that fits a box of data ("Whole layer")
    */
   controls?: false | { fit?: { label: string; bounds: Bounds } };
+  /**
+   * the words on the chart's "back to the page's view" button when the view is not the focus's own (Explore's
+   * statewide view keeps the port marked, but its view is the whole coast: "Whole coast", not "Back to Moss Landing")
+   */
+  refitLabel?: string;
 };
 
 let current: ChartScene | null = null;

@@ -1,0 +1,85 @@
+/* About's parts: the four kinds, the publication, the providers. Tokens only. */
+
+.kinds {
+  display: grid;
+  gap: var(--s-24);
+  margin: 0;
+}
+.kind dt {
+  display: grid;
+  gap: var(--s-4);
+}
+.kindName {
+  font-size: var(--fs-18);
+  font-weight: var(--w7);
+  line-height: 1.3;
+}
+.kind dd {
+  margin: var(--s-6) 0 0;
+  color: var(--ink-2);
+}
+.kindLink {
+  color: var(--ultra);
+  font-weight: var(--w6);
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.pub {
+  margin: 0 0 var(--s-24);
+  padding: var(--pad-obj) var(--pad-obj-x);
+  border-radius: var(--r-card);
+  background: var(--paper-2);
+}
+.pubTitle {
+  margin: var(--s-8) 0 0;
+  font-size: var(--fs-18);
+  font-weight: var(--w7);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.pubMeta {
+  margin: var(--s-8) 0 0;
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.pubAct {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-12) var(--s-16);
+  margin: var(--s-16) 0 0;
+}
+.doi {
+  font-size: var(--fs-13);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.providers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+}
+.providers li {
+  display: grid;
+  gap: var(--s-2) var(--s-24);
+  padding: var(--s-10) 0;
+  border-bottom: var(--hair) solid var(--line);
+}
+@container nxp-page (min-width: 640px) {
+  .providers li {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+}
+.provName {
+  font-weight: var(--w6);
+}
+.provWhat {
+  color: var(--ink-2);
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Micro } from "@/nx/ds";
 import { audienceOf, tripFishery } from "@/nx/coast/fisheries";
@@ -51,11 +51,9 @@ export function TripHeading({ trip, port, now, onRename, id }: { trip: Trip; por
   return (
     <header className={s.heading} data-nx-desk-header="" data-testid="trip-heading">
       <Micro className={s.stamp} data-state={trip.state}>
-        <AnimatePresence initial={false}>
           <motion.span key={trip.state} className={s.stampState} initial={reduce ? false : { y: 3 }} animate={{ y: 0 }} transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }} data-testid="trip-lifecycle">
             {STATE_WORDS[trip.state]}
           </motion.span>
-        </AnimatePresence>
         <span data-testid="trip-when">&nbsp;·&nbsp;{when}</span>
         {extra.length ? <span>&nbsp;·&nbsp;{extra.join(" · ")}</span> : null}
       </Micro>

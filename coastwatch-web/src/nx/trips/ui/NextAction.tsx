@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/nx/ds";
 import type { NextAction as Next } from "../lifecycle";
@@ -35,7 +35,6 @@ export function NextAction({ next, onAct, busy, pinned }: { next: Next | null; o
   }, [pinned]);
   return (
     <div ref={ref} className={s.next} data-pinned={pinned || undefined} data-testid="trip-next-action" data-action={next?.id ?? "none"}>
-      <AnimatePresence initial={false}>
         {next ? (
           <motion.div key={next.id} className={s.nextInner} initial={reduce ? false : { y: 3 }} animate={{ y: 0 }} transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}>
             <Button variant="primary" full onClick={() => onAct(next)} busy={busy} busyLabel="Rechecking the sources" data-testid="trip-next">
@@ -44,7 +43,6 @@ export function NextAction({ next, onAct, busy, pinned }: { next: Next | null; o
             <p className={s.why}>{next.why}</p>
           </motion.div>
         ) : null}
-      </AnimatePresence>
     </div>
   );
 }

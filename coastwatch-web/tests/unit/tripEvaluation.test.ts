@@ -443,7 +443,7 @@ describe("robustness", () => {
         if (e.netToBoat.status === "value" && s.crew.kind !== "none") expect(computeTrip(s as TripInputs).netUsd).toBe(e.netToBoat.value);
       }
     }
-  });
+  }, 30_000); // 400 engine runs: about 0.5 s alone, but a loaded machine (parallel builds and browsers) can pass 5 s
 
   it("garbage values are cleaned like computeTrip does", () => {
     const e = evaluateTrip({ fuelGal: -5, fuelUsdPerGal: Number.NaN, catch: [{ species: "x", lb: Infinity, usdPerLb: 3 }], crew: { kind: "bogus" as never } });

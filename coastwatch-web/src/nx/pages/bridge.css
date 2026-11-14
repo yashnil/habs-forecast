@@ -1,0 +1,42 @@
+/* The token bridge (v15.1): an older component set inside an informational page (Fisheries' charts and tables, the
+   pilot's account form) takes the v14 design system's colours and type through its own variable names. The v2 names
+   (--cw-*) and the v4 names (--nx-*) are pointed at the ds tokens, so every chart mode (Day, Dusk, Night) applies.
+   Family meanings hold: official is coral (regulation), models are dashed ink, measurements ink, history ink-2. */
+.nxp-bridge {
+  color-scheme: inherit;
+  --cw-page: var(--paper); --cw-surface: var(--paper); --cw-surface-2: var(--paper-2); --cw-surface-3: var(--wash);
+  --cw-hairline: var(--line); --cw-hairline-strong: var(--ink-3);
+  --cw-ink: var(--ink); --cw-ink-2: var(--ink-2); --cw-ink-3: var(--ink-2);
+  --cw-accent: var(--ultra);
+  --cw-official: var(--coral-ink); --cw-official-ink: var(--coral-ink); --cw-official-bg: var(--coral-wash); --cw-official-line: var(--coral);
+  --cw-forecast: var(--ultra-deep); --cw-model-ink: var(--ultra-deep); --cw-model-bg: var(--ultra-wash); --cw-model-line: var(--ultra);
+  --cw-chl: var(--ink); --cw-measured-bg: var(--paper-2); --cw-measured-line: var(--ink-3);
+  --cw-history: var(--ink-2); --cw-history-bg: var(--paper-2); --cw-history-line: var(--ink-3);
+  --cw-good: var(--ink); --cw-warning: var(--coral-ink); --cw-serious: var(--coral-ink); --cw-critical: var(--coral-ink); --cw-neutral: var(--ink-2);
+  --cw-gap: var(--ink-3);
+  --cw-series-toxin: var(--ink); --cw-series-cells: var(--ultra); --cw-series-temp: var(--ink-2); --cw-series-bar: var(--depth-6);
+  --cw-navy-950: var(--ink); --cw-navy-900: var(--ink); --cw-navy-800: var(--ink-2); --cw-on-navy: var(--paper); --cw-on-navy-2: var(--paper-2);
+  --nx-bg: var(--paper); --nx-surface: var(--paper); --nx-surface-2: var(--paper-2); --nx-surface-3: var(--wash);
+  --nx-line: var(--line); --nx-line-strong: var(--ink-3);
+  --nx-ink: var(--ink); --nx-ink-2: var(--ink-2); --nx-ink-3: var(--ink-2);
+  --nx-accent: var(--ultra); --nx-accent-bg: var(--ultra-wash); --nx-on-accent: var(--paper); --nx-link: var(--ultra);
+  --nx-official: var(--coral-ink); --nx-official-bg: var(--coral-wash); --nx-official-line: var(--coral);
+  --nx-model: var(--ultra-deep); --nx-model-bg: var(--ultra-wash); --nx-model-line: var(--ultra);
+  --nx-measured: var(--ink); --nx-measured-bg: var(--paper-2); --nx-measured-line: var(--ink-3);
+  --nx-conditions: var(--ink-2); --nx-conditions-bg: var(--paper-2);
+  --nx-ok: var(--ink); --nx-partial: var(--ink-2); --nx-stale: var(--coral-ink); --nx-offline: var(--ink-2); --nx-down: var(--coral-ink); --nx-gap: var(--ink-3);
+  --nx-deck: var(--paper); --nx-shadow: var(--shadow-sm);
+  --font-plex-sans: var(--nx-figtree); --font-newsreader: var(--nx-figtree);
+  --nx-font-ui: var(--font); --nx-font-display: var(--font); --nx-font-data: var(--font);
+  color: var(--ink);
+  font-family: var(--font);
+}
+/* The shell's unlayered resets (shell.css: buttons, checkboxes, links) outrank the older components' Tailwind utilities,
+   which live in a cascade layer; inside the bridge they step back to the layer's values. */
+.nxp-bridge :where(button) { font-size: revert-layer; font-weight: revert-layer; color: revert-layer; background: revert-layer; border: revert-layer; padding: revert-layer; }
+.nxp-bridge :where(a) { color: revert-layer; }
+.nxp-bridge :where(input[type="checkbox"]) { appearance: revert-layer; width: revert-layer; height: revert-layer; border: revert-layer; background: revert-layer; }
+/* inside the sheet, the older pages' own outer padding would double the sheet's */
+.nxp-bridge :is([data-testid="fisheries-page"], [data-testid="fisheries-coastal"]) { padding-top: 0; padding-left: 0; padding-right: 0; }
+/* rows that bled to the old page's 16 px edge (the species chips) stay inside the sheet's narrower phone gutter */
+.nxp-bridge [class*="-mx-4"] { margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 0; }
