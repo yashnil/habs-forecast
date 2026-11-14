@@ -182,6 +182,10 @@ test("a tap on the water reads the real published cell", async ({ browser }) => 
   expect(expected).not.toBeNull();
   const shown = await readout.locator("p").filter({ hasText: "mg/m³" }).first().innerText();
   expect(Number(/([\d.]+)\s*mg/.exec(shown)![1])).toBeCloseTo(Number(expected!.toPrecision(2)), 6);
+  // land inside the grid's box (inland of Seaside) is outside the layer's area, never "cloud" (review j10)
+  await tapWater(page, 36.6, -121.77);
+  await expect(readout).toContainText("Outside this layer's area: land");
+  await expect(readout).not.toContainText("cloud, fog or no pass");
   await ctx.close();
 });
 

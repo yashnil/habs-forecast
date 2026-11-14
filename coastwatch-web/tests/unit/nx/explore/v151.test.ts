@@ -154,3 +154,23 @@ describe("the day axis thins on a regular beat (review: labels dropped at 1100)"
     expect(gaps.size).toBe(1);
   });
 });
+
+import { outsideObservedArea } from "@/nx/explore/read";
+
+describe("land and the open ocean read as outside the layer's area, never cloud (review j10)", () => {
+  const shoreLon = (lat: number) => (lat > 32 && lat < 42.1 ? -122 + (lat - 37) * -0.5 : null);
+  it("a cell in the Sierra the week never saw is outside", () => {
+    expect(outsideObservedArea({ lat: 37.46, lon: -118.7, row: 10, col: 900, compositeEmpty: true, westmost: null, shoreLon })).toBe(true);
+  });
+  it("a cell at sea the week never saw stays cloud (no view)", () => {
+    expect(outsideObservedArea({ lat: 37, lon: -123, row: 10, col: 100, compositeEmpty: true, westmost: null, shoreLon })).toBe(false);
+  });
+  it("west of the week's westernmost pixel is outside; east of it a gap is cloud", () => {
+    const westmost = Int32Array.from([50]);
+    expect(outsideObservedArea({ lat: 37, lon: -125, row: 0, col: 10, compositeEmpty: false, westmost, shoreLon })).toBe(true);
+    expect(outsideObservedArea({ lat: 37, lon: -123, row: 0, col: 60, compositeEmpty: false, westmost, shoreLon })).toBe(false);
+  });
+  it("north or south of California, an unseen cell is outside", () => {
+    expect(outsideObservedArea({ lat: 43, lon: -124.5, row: 0, col: 10, compositeEmpty: true, westmost: null, shoreLon })).toBe(true);
+  });
+});
