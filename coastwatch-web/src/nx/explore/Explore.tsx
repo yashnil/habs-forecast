@@ -8,6 +8,7 @@ import { layerIn, layerOut } from "@/nx/ds/motion";
 import { markForDisplay, westmostPerRow } from "@/nx/chart/layers/marks";
 import { shoreLon } from "@/nx/chart/shore";
 import { setMapLayer, useMapLayer } from "@/nx/chart/mapLayers";
+import { registerCover } from "@/nx/chart/cover";
 import { ChartRegulation, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
 import { readPrefs, writePrefs } from "./prefs";
 import { useOnline, useSavedMark } from "@/nx/offline/useOffline";
@@ -39,7 +40,7 @@ import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLaye
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, loadedChunks, boxAround } from "./codes";
-import { barPadTop, COAST_ZOOM, coversPort, EXPLORE_ZOOM, exploreBounds, STATE_BOUNDS, withinFor } from "./camera";
+import { COAST_ZOOM, coversPort, EXPLORE_ZOOM, exploreBounds, STATE_BOUNDS, withinFor } from "./camera";
 import { backLink, readFrom, readView, type ExploreView } from "./links";
 import { cellKmOf, chlViewOf, frameForView, chipWords, layerMetas, notPublished, resolutionNote, speedStats, speedWords } from "./layers";
 import { StationPoints, type StationPick } from "./StationPoints";
@@ -232,26 +233,16 @@ export function Explore({ model }: { model: ExploreModel }) {
   const reduce = useReducedMotion() ?? false;
   const phone = usePhone();
   const narrow = useMedia("(max-width: 340px)");
-  // how far the floating bar (brand and port control, the nav pill and menu; on a phone the layers button too) reaches
-  // down over the chart, measured at every width: the statewide fit keeps the Oregon border below it
-  const [barPad, setBarPad] = useState(0);
+  // round 3: the statewide fit measures what floats over the chart live. The shell's bar is registered as a top cover
+  // while the whole coast is on show, so the camera's padding AND the chart's frame both make room for it (a padding
+  // alone could not move the view north past the frame's edge once the open timeline took the foot); the time dock,
+  // the panel and the phone sheet are covers already, and every change of their size refits (ResizeObserver)
   useEffect(() => {
-    const measure = () => {
-      const frame = document.querySelector<HTMLElement>("[data-testid=nx-sheet]")?.getBoundingClientRect().top ?? 0;
-      const small = window.innerWidth < 560;
-      // (at desk widths the layer chips stand over the layer panel, west of the free chart, so they are not counted)
-      const parts = ["[data-testid=nx-bar]", "[data-testid=nx-port-control]", ".nx-nav", ".nx-bar-end", ...(phone ? [".nx-layers"] : [])];
-      const bottoms = parts.map((q) => {
-        const r = document.querySelector<HTMLElement>(q)?.getBoundingClientRect();
-        return r && r.height ? r.bottom - frame : NaN;
-      });
-      // the fit's own top padding (ChartHost sceneInsets: 20 px under 560 px, else 44)
-      setBarPad(barPadTop(bottoms, small ? 20 : 44));
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [phone]);
+    if (view !== "coast") return;
+    const el = document.querySelector<HTMLElement>("[data-testid=nx-bar]");
+    if (!el) return;
+    return registerCover("explore-statewide-bar", el, "top");
+  }, [view]);
   const product = model.products.find((p) => p.id === productId) ?? null;
   const frame = product?.frames.find((f) => f.id === frameId) ?? null;
   const current = model.currents?.frames.find((f) => f.id === hourId) ?? null;
@@ -806,7 +797,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         ? {
             // the whole coast, Oregon border to Mexico, at every screen shape; the port stays marked, so the way back is in view
             id: "explore:state",
-            view: { bounds: STATE_BOUNDS, ...(barPad ? { padTop: barPad } : {}) },
+            view: { bounds: STATE_BOUNDS },
             focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
             zoomRange: COAST_ZOOM,
             refitLabel: "Whole coast",
@@ -826,7 +817,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       // the chart's own buttons, with a way back to everything the layers hold
       controls: extent ? { fit: { label: "Fit the data", bounds: [[extent[0], extent[1]], [extent[2], extent[3]]] as [[number, number], [number, number]] } } : undefined,
           },
-    [port, extent, view, barPad],
+    [port, extent, view],
   );
   const back = backLink(from, key);
   const metas = useMemo(() => layerMetas(model), [model]);
@@ -1392,7 +1383,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       {!phone ? readSlot : null}
 
       {/* the time rail: a dock along the chart's foot, full width; on a phone it reads in the sheet */}
-      <Dock label="Time" align="full" className={s.timeDock} data-testid="nx-time-dock" data-open={railShown ? "1" : "0"}>
+      <Dock label="Time" align="full" className={s.timeDock} data-testid="nx-time-dock" data-open={railShown ? "1" : "0"} data-view={view}>
         {/* statewide, the time is a slim strip (what is on show, Play) until the reader opens the timeline */}
         {!phone ? (
           <div className={s.railToggle}>

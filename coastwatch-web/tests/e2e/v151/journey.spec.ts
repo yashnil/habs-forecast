@@ -272,6 +272,23 @@ test.describe("v15.1 journey: a saved trip, the whole coast, and back", () => {
     });
   }
 
+  // round 3: with the timeline open the camera refits into the room left above it, and closing it refits again
+  for (const size of [SIZES.desk, { width: 1280, height: 800 }, { width: 1100, height: 800 }]) {
+    test(`v15.1: the statewide view keeps Oregon to Mexico uncovered with the timeline open at ${size.width} px`, async ({ browser }) => {
+      const { ctx, page } = await runningContext(browser, size);
+      await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+      await mapReady(page);
+      await expect.poll(async () => statewide(await bounds(page)), { timeout: 15_000 }).toBe(true);
+      await page.getByTestId("nx-rail-toggle").click();
+      await expect(page.getByTestId("nx-time-dock")).toHaveAttribute("data-open", "1");
+      await expect.poll(async () => coastUncovered(page), { timeout: 15_000, message: "timeline open: Oregon to Mexico above the time dock" }).toEqual([]);
+      await page.getByTestId("nx-rail-toggle").click();
+      await expect(page.getByTestId("nx-time-dock")).toHaveAttribute("data-open", "0");
+      await expect.poll(async () => coastUncovered(page), { timeout: 15_000, message: "timeline closed again" }).toEqual([]);
+      await ctx.close();
+    });
+  }
+
   test("offline: the trip saved before exploring reopens after a browser restart with no network", async () => {
     test.setTimeout(150_000);
     const channel = process.env.CI ? undefined : "chrome";

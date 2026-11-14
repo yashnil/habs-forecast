@@ -358,3 +358,6 @@
 .meanHit[aria-checked="true"] { color: var(--ultra-deep); text-decoration-style: solid; }
 /* the open timeline never covers half the chart: it scrolls inside a capped height (the camera fits the rest) */
 .timeDock[data-open="1"] .railBody { max-height: min(17.5rem, 32vh); overflow-y: auto; overscroll-behavior: contain; }
+/* statewide the open timeline is shorter still (it scrolls inside): the whole coast keeps room above it at 1440 x 900,
+   where the chart's own frame stops the camera from zooming out any further */
+.timeDock[data-open="1"][data-view="coast"] .railBody { max-height: min(10rem, 20vh); }
