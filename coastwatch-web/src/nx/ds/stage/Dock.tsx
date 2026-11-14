@@ -1,10 +1,13 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import { useChartCover } from "@/nx/chart/cover";
 import { getFrame, onFrame, type ChartFrame } from "@/nx/chart/runtime";
 import { dockIn, ticketOpacity } from "../motion";
+import { fitBeside } from "../panels/geometry";
+import { notePanel } from "../panels/store";
+import { restingOthers, stageArea, usePanel } from "../panels/usePanel";
 import { usePhone } from "../useMedia";
 import { cx } from "../util";
 import { isPhoneNow, useArrival, useLeaveGhost } from "./arrive";
@@ -24,8 +27,51 @@ export interface DockProps extends Data {
   cover?: boolean;
   /** Stand in the flow of its container instead of floating on the chart (the catalog). */
   inline?: boolean;
+  /** On a page whose panels are free (PageLayout `panels`), its key there (default: from the label). false: it stays put. */
+  panel?: boolean | string;
   className?: string;
   children: ReactNode;
+}
+
+const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "dock";
+
+/**
+ * The default layout of a resting dock on a page of free panels: along the foot it gives up width to stop short of a
+ * resting ticket beside it (never a moved one, so moving the ticket never moves the dock), down to 320 px.
+ */
+function useRestingFit(ref: React.RefObject<HTMLElement | null>, key: string, active: boolean, natural: number) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (!active) {
+      notePanel(key, { rest: null });
+      return;
+    }
+    let raf = 0;
+    const fit = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const area = stageArea(el);
+        const g = area.left;
+        const want = Math.min(natural, area.right - area.left);
+        const w = fitBeside({ x: el.offsetLeft, y: el.offsetTop, w: want, h: el.offsetHeight }, restingOthers(key), g, 320);
+        el.style.width = w < want ? `${w}px` : "";
+        notePanel(key, { rest: { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight } });
+      });
+    };
+    fit();
+    const off = onFrame(fit);
+    window.addEventListener("resize", fit);
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => {
+      off();
+      window.removeEventListener("resize", fit);
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+      if (el.isConnected && !el.hasAttribute("data-panel-moved")) el.style.width = "";
+    };
+  }, [ref, key, active, natural]);
 }
 
 /**
@@ -33,18 +79,22 @@ export interface DockProps extends Data {
  * delivery, Explore's time). It springs up 70 ms after the page's ticket and the camera keeps the place above it. On a
  * phone it is a block in the sheet after the ticket, ruled off above.
  */
-export function Dock({ label, align = "left", width, cover = true, inline = false, className, children, ...data }: DockProps) {
+export function Dock({ label, align = "left", width, cover = true, inline = false, panel: panelOpt = true, className, children, ...data }: DockProps) {
   const ref = useRef<HTMLElement>(null);
   const id = useId();
   const phone = usePhone();
   const here = useArrival(0);
   useLeaveGhost(ref, 0.97);
-  useChartCover(`dock${id}`, ref, "bottom", !phone && cover && !inline);
+  const key = typeof panelOpt === "string" ? panelOpt : slug(label);
+  const panel = usePanel(ref, { key, kind: "dock", name: label, enabled: panelOpt !== false && !inline, limits: { minW: 320, maxW: 1200, minH: 120, maxH: 2000 }, resizeHeight: true, restCover: cover ? "bottom" : undefined });
+  useChartCover(`dock${id}`, ref, "bottom", !phone && cover && !inline && !panel.free);
+  useRestingFit(ref, key, panel.on && !panel.moved && !panel.resized && !panel.collapsed && align === "left", width ?? 840);
   const style = width ? ({ "--dock-w": `${width}px` } as React.CSSProperties) : undefined;
   return (
     <motion.section
       ref={ref}
-      className={cx(s.dock, className)}
+      {...panel.attrs}
+      className={cx(s.dock, className, panel.attrs.className)}
       data-align={align}
       data-inline={inline || undefined}
       style={style}
@@ -55,6 +105,9 @@ export function Dock({ label, align = "left", width, cover = true, inline = fals
       data-nx-dock=""
       {...data}
     >
+      {panel.chrome}
+      {/* the resize corner before the content, so the content's last part stays :last-child (it scrolls) */}
+      {panel.resizer}
       {children}
     </motion.section>
   );
@@ -71,6 +124,11 @@ export interface PassProps extends Data {
   stubWidth?: number;
   /** Stand in the flow of its container instead of floating on the chart (the catalog). */
   inline?: boolean;
+  /**
+   * A pass spans the chart's foot from gutter to gutter, so it stays put by default even on a page whose panels are
+   * free; pass a key (or true) to make it a free panel.
+   */
+  panel?: boolean | string;
   className?: string;
   stubClassName?: string;
   /** The main part: the equation and the figures, or the plot. */
@@ -82,14 +140,15 @@ export interface PassProps extends Data {
  * part holds the work, its perforated stub on the right the one result and the one filled action; a notch on its top
  * edge sits under its place. Springs up with the camera; on a phone the stub comes first and the main follows.
  */
-export function Pass({ label, at, stub, stubWidth = 320, inline = false, className, stubClassName, children, ...data }: PassProps) {
+export function Pass({ label, at, stub, stubWidth = 320, inline = false, panel: panelOpt = false, className, stubClassName, children, ...data }: PassProps) {
   const ref = useRef<HTMLElement>(null);
   const caretRef = useRef<HTMLSpanElement>(null);
   const id = useId();
   const phone = usePhone();
   const here = useArrival(0);
   useLeaveGhost(ref, 0.97);
-  useChartCover(`pass${id}`, ref, "bottom", !phone && !inline);
+  const panel = usePanel(ref, { key: typeof panelOpt === "string" ? panelOpt : "pass", kind: "pass", name: label, enabled: panelOpt !== false && !inline, limits: { minW: 640, maxW: 4000, minH: 160, maxH: 2000 }, resizeHeight: true, restCover: "bottom" });
+  useChartCover(`pass${id}`, ref, "bottom", !phone && !inline && !panel.free);
   const lon = at?.lon ?? null, lat = at?.lat ?? null;
   useLayoutEffect(() => {
     const el = ref.current, c = caretRef.current;
@@ -113,7 +172,8 @@ export function Pass({ label, at, stub, stubWidth = 320, inline = false, classNa
   return (
     <motion.section
       ref={ref}
-      className={cx(s.pass, className)}
+      {...panel.attrs}
+      className={cx(s.pass, className, panel.attrs.className)}
       style={{ "--stub-w": `${stubWidth}px` } as React.CSSProperties}
       data-inline={inline || undefined}
       aria-label={label}
@@ -123,6 +183,9 @@ export function Pass({ label, at, stub, stubWidth = 320, inline = false, classNa
       data-nx-pass=""
       {...data}
     >
+      {panel.chrome}
+      {/* the resize corner before the content, so the content's last part stays :last-child (it scrolls) */}
+      {panel.resizer}
       <span ref={caretRef} className={s.caret} aria-hidden="true" />
       <div className={s.passMain}>{children}</div>
       <div className={cx(s.passStub, stubClassName)}>{stub}</div>
