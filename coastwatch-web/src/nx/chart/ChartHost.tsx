@@ -198,6 +198,9 @@ const openingHidesMarks = () => {
 /** How long after the map's "load" it counts as ready when "idle" has not come (ms). */
 const READY_AFTER_LOAD_MS = 1500;
 
+/** A refit after a cover change (a dock opening, the sheet moving): a short ease, ms. */
+const REFIT_MS = 350;
+
 /** The chart's own zoom limits; a scene may narrow them (ChartScene.zoomRange). */
 const CHART_ZOOM = [4, 13.5] as const;
 
@@ -560,7 +563,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
 
   // ---------------------------------------------------------------- scenes
   const applyScene = useCallback(
-    (animate: boolean) => {
+    (animate: boolean, refit = false) => {
       const scene = getScene();
       const el = frameRef.current;
       if (!scene || !el || !vp) return;
@@ -608,6 +611,13 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         if (still) {
           noteFlight(0, 0);
           m.jumpTo({ center: target.center, zoom: target.zoom });
+        } else if (refit && !glide && !waiting) {
+          // the same view, refitted because what covers the sheet changed (a dock opened, a panel resized, the sheet
+          // moved): a short ease, never the flight between places (v15.1 final pass). A flight still under way is
+          // re-aimed by the glide/wait paths instead (the cover change passes animate=false then)
+          noteFlight(0, REFIT_MS);
+          panUntil.current = performance.now() + REFIT_MS;
+          m.easeTo({ center: target.center, zoom: target.zoom, duration: REFIT_MS, easing: bezier, essential: false });
         } else if (glide) {
           m.easeTo({ center: target.center, zoom: target.zoom, duration: left, easing: (t: number) => 1 - (1 - t) ** 2, essential: false });
         } else {
@@ -802,7 +812,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         coverObstacles.current = c.obstacles;
         writeFoot(el);
         if (sameInsets(c.insets, coverRef.current)) return schedule();
-        applyScene(true);
+        // during a flight the camera carries on to the refitted view (glide); otherwise a short refit ease
+        applyScene(panUntil.current - performance.now() <= 60, true);
       }),
     [applyScene, schedule],
   );

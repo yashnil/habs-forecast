@@ -416,3 +416,23 @@ test("round 2 review: an explicit layer link wins over the saved preference", as
   await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-base", "chl");
   await ctx.close();
 });
+
+test("final pass: opening or closing the timeline refits with a short ease, never the 1.5 s flight", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk);
+  await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+  await mapReady(page);
+  await expect.poll(() => moving(page), { timeout: 10_000 }).toBe(false);
+  await page.waitForTimeout(800);
+  const refit = () =>
+    page.evaluate(async () => {
+      const m = (window as unknown as { __cwMap: { once: (e: string, f: () => void) => void } }).__cwMap;
+      const t0 = performance.now();
+      const done = new Promise<number>((r) => m.once("moveend", () => r(performance.now() - t0)));
+      (document.querySelector("[data-testid=nx-rail-toggle]") as HTMLElement).click();
+      return Promise.race([done, new Promise<number>((r) => setTimeout(() => r(9999), 3000))]);
+    });
+  expect(await refit()).toBeLessThan(600);
+  await page.waitForTimeout(500);
+  expect(await refit()).toBeLessThan(600);
+  await ctx.close();
+});

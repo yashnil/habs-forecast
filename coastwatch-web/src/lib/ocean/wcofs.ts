@@ -2,7 +2,7 @@ import { PromiseLru } from "@/lib/ocean/cache";
 import { cycleName, wcofsLabel, type OceanSource, type WcofsIndex, type WcofsStep, type WcofsVar } from "@/lib/ocean/contract";
 import { decodeDods } from "@/lib/ocean/dap";
 import { gridRecord, gzipCodes, isFill, packCodes, PACK_MASK, PACK_TEMPERATURE, PACK_VELOCITY, shoreMask } from "@/lib/ocean/pack";
-import { errMsg, getBytes, getText, oceanNow, recorded } from "@/lib/ocean/upstream";
+import { errMsg, fixtureDir, getBytes, getText, oceanNow, recorded } from "@/lib/ocean/upstream";
 
 /**
  * NOAA WCOFS (West Coast Operational Forecast System) surface currents and temperature, read live from the CO-OPS
@@ -193,7 +193,12 @@ export async function wcofsIndex(): Promise<WcofsIndex> {
       indexCache = { at: wall, ttl: 300e3, c: null, err: errMsg(e) };
     }
   }
-  if (indexCache.c) return buildIndex(indexCache.c, now, null);
+  // a recorded fixture is said to be one, plainly, wherever the index's reason is shown: its cycle is the recorded
+  // one, with its real times (live, nothing is said: the cycle is the current one)
+  if (indexCache.c) {
+    const ix = buildIndex(indexCache.c, now, null);
+    return fixtureDir() ? { ...ix, reason: `Recorded test data: NOAA WCOFS cycle ${cycleName(indexCache.c.cycleId)} replayed, not a current forecast.` } : ix;
+  }
   if (indexCache.err && lastGood) return buildIndex(lastGood, now, indexCache.err);
   return unavailableIndex(indexCache.err ? `WCOFS could not be read: ${indexCache.err}` : "No WCOFS cycle was published in the last three days.", now);
 }
