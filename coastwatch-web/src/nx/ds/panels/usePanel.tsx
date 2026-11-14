@@ -7,7 +7,7 @@ import { registerCover } from "@/nx/chart/cover";
 import { Icon } from "../Icon";
 import { settle } from "../motion";
 import { usePhone } from "../useMedia";
-import { clampBox, clampSize, fromPlacement, guidesFor, nudge, toPlacement, type Area, type Box, type Guide, type Limits, type Placement } from "./geometry";
+import { avoid, clampSize, fromPlacement, guidesFor, hitsAny, nudge, toPlacement, type Area, type Box, type Guide, type Limits, type Placement } from "./geometry";
 import { getPanelsPage, layoutChanged, livePanels, loadLayout, notePanel, registerPanel, resetCount, resetLayout, savePanel, subscribePanels } from "./store";
 import p from "./panels.module.css";
 
@@ -70,6 +70,27 @@ export function stageArea(el: HTMLElement): Area {
 
 const boxOf = (el: HTMLElement): Box => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
 
+/**
+ * The floating chrome a panel may never slide under (its grip would be out of reach): the bar's brand, port control,
+ * nav pill and menu, the layer chips, the chart's zoom buttons, and anything marked `data-nx-chrome`. Measured live,
+ * in the panel's offset parent's px.
+ */
+export const CHROME_SELECTOR = ".n12-bar > *, .nx-layers, .n12-controls, [data-nx-chrome]";
+export function chromeBoxes(el: HTMLElement): Box[] {
+  const o = ((el.offsetParent as HTMLElement | null) ?? document.documentElement).getBoundingClientRect();
+  const out: Box[] = [];
+  document.querySelectorAll<HTMLElement>(CHROME_SELECTOR).forEach((c) => {
+    if (el.contains(c) || c.contains(el)) return;
+    const r = c.getBoundingClientRect();
+    if (!r.width || !r.height || getComputedStyle(c).visibility === "hidden") return;
+    out.push({ x: Math.round(r.left - o.left), y: Math.round(r.top - o.top), w: Math.round(r.width), h: Math.round(r.height) });
+  });
+  return out;
+}
+
+/** True when a child of the panel draws wider than its box (a big date cut at a narrow width). */
+const overflowsX = (el: HTMLElement) => [...el.children].some((c) => c instanceof HTMLElement && !c.hasAttribute("data-panel-chrome") && c.offsetParent !== null && c.scrollWidth > c.clientWidth + 1);
+
 function usePanelsPage(): string | null {
   return useSyncExternalStore(subscribePanels, getPanelsPage, () => null);
 }
@@ -110,6 +131,10 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
   const placement = useRef<Placement | null>(null);
   /** where the object stood at rest (its page's layout), for the camera's reservation while it is moved */
   const restBox = useRef<Box | null>(null);
+  /** a corner resize is under way: the panel's top-left stays where it is until it ends */
+  const sizingNow = useRef(false);
+  /** the panel's content fitted its width when the resize began (content that scrolls sideways by design is left be) */
+  const fitted = useRef(true);
   const opts = useRef(o);
   useLayoutEffect(() => {
     opts.current = o;
@@ -144,16 +169,37 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     el.style.maxHeight = h ? "none" : "";
   }, []);
 
-  /** The moved panel at its placement for its present size, kept on screen. */
-  const replace = useCallback(() => {
-    const el = ref.current, pl = placement.current;
-    if (!el || !pl || !movedRef.current) return;
-    const area = stageArea(el);
-    // a panel taller than the screen now gives up height (its content scrolls), never its header
-    const maxH = area.bottom - area.top;
-    if (el.offsetHeight > maxH) el.style.maxHeight = `${maxH}px`;
-    put(el, fromPlacement(pl, { w: el.offsetWidth, h: el.offsetHeight }, area));
-  }, [ref, put]);
+  /** The other panels on the page, where they stand. */
+  const otherBoxes = useCallback((): Box[] => livePanels().filter((x) => x.key !== key && x.el.isConnected).map((x) => boxOf(x.el)), [key]);
+
+  /** Back to the page's own layout for this panel alone (it found no free place after the screen changed). */
+  const fallBack = useRef<() => void>(() => {});
+
+  /**
+   * The moved panel at its placement for its present size, kept on screen and clear of the floating chrome. With
+   * `panels` (a new screen size, a load), also clear of the other panels: nudged to the nearest free place, or back to
+   * its default layout when there is none.
+   */
+  const replace = useCallback(
+    (panels = false) => {
+      const el = ref.current, pl = placement.current;
+      if (!el || !pl || !movedRef.current || sizingNow.current) return;
+      const area = stageArea(el);
+      // a panel taller than the screen now gives up height (its content scrolls), never its header
+      const maxH = area.bottom - area.top;
+      if (el.offsetHeight > maxH) el.style.maxHeight = `${maxH}px`;
+      const chrome = chromeBoxes(el);
+      const others = panels ? otherBoxes() : [];
+      const b = avoid(fromPlacement(pl, { w: el.offsetWidth, h: el.offsetHeight }, area), [...chrome, ...others], area);
+      if (hitsAny(b, chrome) || (panels && hitsAny(b, others))) {
+        fallBack.current();
+        return;
+      }
+      if (b.h < el.offsetHeight) el.style.maxHeight = `${b.h}px`;
+      put(el, b);
+    },
+    [ref, put, otherBoxes],
+  );
 
   // register on the stage; restore what the reader left on this page
   useLayoutEffect(() => {
@@ -180,7 +226,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     if (saved?.p) {
       placement.current = saved.p;
       markMoved(true);
-      replace();
+      replace(true);
     }
     return () => {
       off();
@@ -189,6 +235,13 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       el.removeAttribute("data-panel-front");
     };
   }, [on, page, key, ref, putSize, markMoved, replace]);
+
+  // an object that does not take part on a page of free panels (a pass) keeps nothing there: an old entry for it
+  // would offer a "Reset layout" with no effect
+  const optedOut = !!page && o.enabled === false;
+  useEffect(() => {
+    if (optedOut && page && loadLayout(page).panels[key]) savePanel(page, key, { p: null, w: null, h: null, c: false });
+  }, [optedOut, page, key]);
 
   // leaving the free state (a phone, a page without free panels): the element is the page's again
   useLayoutEffect(() => {
@@ -207,9 +260,13 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     const el = ref.current;
     if (!on || !el) return;
     let raf = 0;
-    const go = () => {
+    let screen = false;
+    const go = (e?: Event) => {
+      if (e?.type === "resize") screen = true;
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
+        const panels = screen;
+        screen = false;
         const area = stageArea(el);
         if (!movedRef.current && !el.hasAttribute("data-panel-collapsed")) restBox.current = boxOf(el);
         // a collapsed panel's box is its header: its kept size waits for it to open again
@@ -219,11 +276,11 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
           if (el.style.width && sz.w !== el.offsetWidth) el.style.width = `${sz.w}px`;
           if (el.style.height && sz.h !== el.offsetHeight) el.style.height = `${sz.h}px`;
         }
-        replace();
+        replace(panels);
       });
     };
     window.addEventListener("resize", go);
-    const ro = new ResizeObserver(go);
+    const ro = new ResizeObserver(() => go());
     ro.observe(el);
     return () => {
       window.removeEventListener("resize", go);
@@ -264,18 +321,33 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     [page, key],
   );
 
+  useLayoutEffect(() => {
+    fallBack.current = () => {
+      const el = ref.current;
+      if (!el) return;
+      for (const k of ["left", "top", "right", "bottom", "width", "height", "maxHeight"] as const) el.style[k] = "";
+      placement.current = null;
+      markMoved(false);
+      setResized(false);
+      persist({ p: null, w: null, h: null });
+      setCoverRev((n) => n + 1);
+      opts.current.relayout?.();
+    };
+  });
+
   /** Freezes a panel where it stands now (the first move): from here on it is the reader's. */
   const takeOver = useCallback((el: HTMLElement) => {
     const area = stageArea(el);
     if (!movedRef.current && !el.hasAttribute("data-panel-collapsed")) restBox.current = boxOf(el);
-    const b = clampBox(boxOf(el), area);
+    const b = avoid(boxOf(el), chromeBoxes(el), area);
+    if (b.h < el.offsetHeight) el.style.maxHeight = `${b.h}px`;
     put(el, b);
     if (!movedRef.current) markMoved(true);
     placement.current = toPlacement(b, area);
     return { b, area };
   }, [put, markMoved]);
 
-  const others = useCallback((): Box[] => livePanels().filter((x) => x.key !== key && x.el.isConnected).map((x) => boxOf(x.el)), [key]);
+  const others = otherBoxes;
 
   // ---------------------------------------------------------------- drag
   const drag = useRef<{ id: number; x0: number; y0: number; b: Box; area: Area; live: boolean } | null>(null);
@@ -302,7 +374,9 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
         d.area = t.area;
         el.setAttribute("data-panel-dragging", "");
       }
-      const b = clampBox({ ...d.b, x: d.b.x + dx, y: d.b.y + dy }, d.area);
+      // the grip never slides under the bar, the chips or the zoom buttons: the panel stops beside them
+      const b = avoid({ ...d.b, x: d.b.x + dx, y: d.b.y + dy, h: el.offsetHeight }, chromeBoxes(el), d.area);
+      if (b.h < el.offsetHeight) el.style.maxHeight = `${b.h}px`;
       put(el, b);
       const o0 = ((el.offsetParent as HTMLElement | null) ?? document.documentElement).getBoundingClientRect();
       setGuides(guidesFor(b, others(), d.area).map((g) => (g.axis === "x" ? { ...g, at: g.at + o0.left, from: g.from + o0.top, to: g.to + o0.top } : { ...g, at: g.at + o0.top, from: g.from + o0.left, to: g.to + o0.left })));
@@ -343,8 +417,9 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       if (!el || !e.key.startsWith("Arrow")) return;
       e.preventDefault();
       const { b, area } = takeOver(el);
-      const n = nudge(b, e.key, e.shiftKey ? STEP_FAR : STEP, area);
-      if (!n) return;
+      const n0 = nudge(b, e.key, e.shiftKey ? STEP_FAR : STEP, area);
+      if (!n0) return;
+      const n = avoid(n0, chromeBoxes(el), area);
       put(el, n);
       placement.current = toPlacement(n, area);
       persist({ p: placement.current });
@@ -361,6 +436,12 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       const room: Area = { ...area, right: area.right, bottom: area.bottom };
       const sz = clampSize({ w: Math.min(w, room.right - b.x), h: Math.min(h, room.bottom - b.y) }, { ...lim, maxW: Math.min(lim.maxW, room.right - b.x), maxH: Math.min(lim.maxH, room.bottom - b.y) }, area);
       putSize(el, sz.w, opts.current.resizeHeight ? sz.h : null);
+      // never narrower than its content: a big date or a long word is not cut
+      const maxW = Math.min(lim.maxW, room.right - b.x);
+      for (let i = 0; i < 60 && fitted.current && sz.w < maxW && overflowsX(el); i++) {
+        sz.w = Math.min(maxW, sz.w + 8);
+        el.style.width = `${sz.w}px`;
+      }
       return sz;
     },
     [putSize],
@@ -374,6 +455,8 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       e.currentTarget.setPointerCapture(e.pointerId);
       const t = takeOver(el);
       sizing.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, b: t.b, area: t.area };
+      sizingNow.current = true;
+      fitted.current = !overflowsX(el);
       el.setAttribute("data-panel-dragging", "");
     },
     [ref, takeOver],
@@ -391,6 +474,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     (e: ReactPointerEvent<HTMLElement>) => {
       const s = sizing.current, el = ref.current;
       sizing.current = null;
+      sizingNow.current = false;
       if (!s || !el) return;
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -410,6 +494,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       const el = ref.current;
       if (!el || !e.key.startsWith("Arrow")) return;
       e.preventDefault();
+      fitted.current = !overflowsX(el);
       const { b, area } = takeOver(el);
       const st = e.shiftKey ? STEP_FAR : STEP;
       const dw = e.key === "ArrowRight" ? st : e.key === "ArrowLeft" ? -st : 0;
