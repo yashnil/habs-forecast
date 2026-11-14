@@ -130,6 +130,8 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
 
   /** Stands the element at `b` (its own left/top; a dock's or pass's bottom/right let go). */
   const put = useCallback((el: HTMLElement, b: Box) => {
+    // a pass or full dock is sized by its left and right: its width is held before the right lets go
+    if (!el.style.width) el.style.width = `${el.offsetWidth}px`;
     el.style.left = `${b.x}px`;
     el.style.top = `${b.y}px`;
     el.style.right = "auto";
