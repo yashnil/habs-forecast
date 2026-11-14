@@ -109,6 +109,9 @@ test.describe("the disclosures are still there", () => {
     await expect(page.getByTestId("legal-attribution")).toContainText("CC BY 4.0");
     await expect(privacy).toContainText("where you placed, sized or collapsed the panels");
     await expect(privacy).toContainText("Trips you save on My Coast");
+    await expect(privacy).toContainText("your saved ports, trips and alerts are kept on your device only");
+    await expect(privacy).toContainText("are not offered on the public site");
+    await expect(page.getByTestId("legal-effective")).toContainText("Effective November 14, 2026 · version 2026-11-14");
     await expect(privacy).toContainText("they carry nothing about you, your ports or your trips");
     await expect(page.getByTestId("nx-info-page")).toContainText("Neritic research preview · legal");
     await settle(page, "/terms");

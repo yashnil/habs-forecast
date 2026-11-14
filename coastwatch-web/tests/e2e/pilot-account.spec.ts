@@ -38,7 +38,7 @@ test.describe("legal pages", () => {
   test("privacy: draft banner, effective date and the CalOPPA elements", async ({ page }) => {
     await page.goto(`${OK}/privacy`);
     await expect(page.getByTestId("legal-draft-banner")).toContainText("Draft — pending owner/legal review");
-    await expect(page.getByTestId("legal-effective")).toContainText("Effective November 8, 2026");
+    await expect(page.getByTestId("legal-effective")).toContainText("Effective November 14, 2026");
     const body = page.getByTestId("privacy-page");
     for (const t of ["What we collect", "How we use it", "Who we share it with", "How long we keep it", "Seeing, changing and deleting", "Do Not Track", "Children", "Changes to this policy", "We do not sell personal information", "never shared with or sold to third parties", "[OWNER: add a contact email before launch]"])
       await expect(body).toContainText(t);

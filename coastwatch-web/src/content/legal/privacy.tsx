@@ -20,9 +20,10 @@ export function PrivacyBody() {
   return (
     <>
     <p>
-      Neritic is an independent research preview that summarises California coastal and fisheries information for fishermen. This policy explains what we collect when you use the Neritic website and its
-      pilot features (saved ports, alerts, notifications, text alerts, feedback, trip logs and Ask Neritic), why, who it is shared with, how long we keep it, and how you can see or delete it. &ldquo;We&rdquo; means
-      the people who run Neritic. Contact: <strong>{OWNER_CONTACT}</strong>.
+      Neritic is an independent research preview that summarises California coastal and fisheries information for fishermen. This policy explains what we collect when you use the Neritic website, why, who it
+      is shared with, how long we keep it, and how you can see or delete it. On the public site, your saved ports, trips and alerts are kept on your device only. Accounts, text alerts, notifications sent to an
+      account and account feedback belong to a private pilot and are not offered on the public site; this policy also covers them for the people in that pilot. Ask Neritic, where it is offered, sends your
+      question to our server (see Ask Neritic below). &ldquo;We&rdquo; means the people who run Neritic. Contact: <strong>{OWNER_CONTACT}</strong>.
     </p>
     <p>
       <strong>The short version:</strong> you can use Neritic without an account. Without one, your choices stay in your own browser and we never see them. If you create an account, we keep only what the pilot needs,
