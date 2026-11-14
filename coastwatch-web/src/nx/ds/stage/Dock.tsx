@@ -123,7 +123,10 @@ export interface PassProps extends Data {
   stubWidth?: number;
   /** Stand in the flow of its container instead of floating on the chart (the catalog). */
   inline?: boolean;
-  /** On a page whose panels are free (PageLayout `panels`), its key there (default "pass"). false: it stays put. */
+  /**
+   * A pass spans the chart's foot from gutter to gutter, so it stays put by default even on a page whose panels are
+   * free; pass a key (or true) to make it a free panel.
+   */
   panel?: boolean | string;
   className?: string;
   stubClassName?: string;
@@ -136,7 +139,7 @@ export interface PassProps extends Data {
  * part holds the work, its perforated stub on the right the one result and the one filled action; a notch on its top
  * edge sits under its place. Springs up with the camera; on a phone the stub comes first and the main follows.
  */
-export function Pass({ label, at, stub, stubWidth = 320, inline = false, panel: panelOpt = true, className, stubClassName, children, ...data }: PassProps) {
+export function Pass({ label, at, stub, stubWidth = 320, inline = false, panel: panelOpt = false, className, stubClassName, children, ...data }: PassProps) {
   const ref = useRef<HTMLElement>(null);
   const caretRef = useRef<HTMLSpanElement>(null);
   const id = useId();
