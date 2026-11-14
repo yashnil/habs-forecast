@@ -110,7 +110,7 @@ export function PrivacyBody() {
       <li>The <Link href="/account">account page</Link> shows and lets you change everything you have given us.</li>
       <li>&ldquo;Delete my account&rdquo; on that page deletes your account and every record linked to it immediately (backups as above). &ldquo;Delete everything on this device&rdquo; removes everything Neritic keeps in your browser: ports, fisheries, follows, alerts, saved trips, visit history and offline copies. If you are signed in, it does not sign you out or delete your account.</li>
       <li>To stop texts, reply STOP. To stop notifications, turn them off on the account page or in your browser settings.</li>
-      <li>You can also email <strong>{OWNER_CONTACT}</strong> to ask for a copy of your information, a correction, or deletion. We will answer within 30 days.</li>
+      <li>You can also contact us through <strong>{OWNER_CONTACT}</strong> to ask for a copy of your information, a correction, or deletion. We will answer within 30 days.</li>
       <li>California residents have rights under the California Consumer Privacy Act where it applies; we honour access and deletion requests from anyone, wherever they live.</li>
     </ul>
 
