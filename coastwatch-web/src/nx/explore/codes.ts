@@ -79,6 +79,11 @@ export async function loadCodes(base: string, g: GridSpec, box: [number, number,
   return { codes: a.codes, complete: (g.chunks?.present ?? []).every((k) => a.loaded.has(k)) };
 }
 
+/** The chunk keys of a chunked grid already here (null for a single-file grid). */
+export function loadedChunks(base: string, g: GridSpec): Set<string> | null {
+  return g.chunks ? new Set(assembly(base, g).loaded) : null;
+}
+
 /** A small box around a point, for reading one cell or one row. */
 export function boxAround(lon: number, lat: number, dLon: number, dLat = dLon): [number, number, number, number] {
   return [lon - dLon, lat - dLat, lon + dLon, lat + dLat];
