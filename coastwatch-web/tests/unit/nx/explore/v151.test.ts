@@ -292,3 +292,32 @@ describe("isotherms traced on the CPU: nothing along a mask or the grid's edge, 
     expect(labels.every((l) => /^\d+°$/.test(l.text) && Number(l.text.replace("°", "")) % 2 === 0)).toBe(true);
   });
 });
+
+import { expiredWords as railExpired } from "@/nx/explore/TimeRail";
+import { leadSentence, legendCaption, layerKindWord, shortLine } from "@/nx/explore/words";
+
+describe("final pass: nothing expired, stale or old ever reads as current", () => {
+  const m = layerMetas(full);
+  const charm = full.products.find((p) => p.id === "charm")!;
+  const chl = full.products.find((p) => p.id === "chl")!;
+  it("an expired C-HARM run says expired or past run in its chip, kind word, lead, legend and rail", () => {
+    const meta = m.find((x) => x.id === "charm")!;
+    expect(meta.when).toMatch(/\(expired\)$/);
+    expect(meta.fresh).toBe("historical");
+    expect(chipWords(meta)).toMatch(/^Model · .*\(expired\)$/);
+    expect(layerKindWord(charm)).toMatch(/^past run/);
+    expect(leadSentence(charm, charm.frames[0])).toMatch(/expired/);
+    expect(shortLine(charm)).toMatch(/expired/);
+    expect(legendCaption(charm, charm.frames[0])).toMatch(/Past run: every day it covers is before today/);
+    expect(railExpired(charm)).toMatch(/expired .*not a current forecast/);
+  });
+  it("old satellite days are marked (old) wherever their dates are shown", () => {
+    const meta = m.find((x) => x.id === "chl")!;
+    expect(meta.when).toMatch(/\(old\)$/);
+    expect(legendCaption(chl, chl.frames[0])).toMatch(/\(old\)/);
+  });
+  it("the stale estimate says stale and its age", () => {
+    const c = { status: "stale", date: "2026-11-02", age_days: 12, grids: { chl: {}, mask: {} }, reason: null } as never;
+    expect(chlEstimateStateWords(c, true)).toMatch(/stale: 12 days old/);
+  });
+});
