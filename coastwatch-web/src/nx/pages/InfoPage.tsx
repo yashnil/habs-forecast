@@ -110,10 +110,22 @@ export function InfoPage({ id, testId, kicker, title, titleProps, lede, head, tr
   return (
     <>
       <PageLayout mode="desk" />
-      <span hidden data-nx-info={id} />
+      <span hidden data-nx-info={id} data-width={width} />
       <article className={cx(s.page, width === "wide" && s.wide)} data-testid="nx-info-page" data-page={id}>
         <div data-testid={testId} className={s.inner}>
           <header className={cx(s.head, !title && s.headBare)}>
+            {/* the registry line opens every informational page: what Neritic is and that its copies of official
+                notices are not verified, in view on arrival at every width */}
+            {trust !== undefined ? (
+              <div className={s.reg}>
+                {trust && !trust.generatedAt ? (
+                  <p role="alert" className={cx(s.note, s.noteReg)} data-testid="data-unavailable">
+                    {DATA_UNAVAILABLE}
+                  </p>
+                ) : null}
+                <RegistryNote trust={trust} />
+              </div>
+            ) : null}
             {kicker ? (
               <Micro as="p" className={s.kicker}>
                 {kicker}
@@ -126,16 +138,6 @@ export function InfoPage({ id, testId, kicker, title, titleProps, lede, head, tr
             ) : null}
             {lede ? <p className={s.lede}>{lede}</p> : null}
             {head ? <div className={s.headMore}>{head}</div> : null}
-            {trust !== undefined ? (
-              <div className={s.reg}>
-                {trust && !trust.generatedAt ? (
-                  <p role="alert" className={cx(s.note, s.noteReg)} data-testid="data-unavailable">
-                    {DATA_UNAVAILABLE}
-                  </p>
-                ) : null}
-                <RegistryNote trust={trust} />
-              </div>
-            ) : null}
             <Neatline />
           </header>
           <div className={cx(s.body, toc && s.withToc)}>
