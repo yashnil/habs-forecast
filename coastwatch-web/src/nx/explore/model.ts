@@ -99,10 +99,13 @@ export type CurrentFrame = {
  * reads (src/lib/observations.ts). The slim list knows particulate domoic acid and the two Pseudo-nitzschia
  * groups only; for any other variable a station is "not known to measure it", never assumed to.
  */
-export type ExploreStation = { id: string; name: string; lat: number; lon: number; last: string | null; latest: { variable: string; value: number | null; date: string; n_last_365d: number }[] };
+export type ExploreStation = { id: string; name: string; lat: number; lon: number; last: string | null; latest: { variable: string; value: number | null; date: string; n_last_365d: number; label?: string; units?: string; qualifier?: string | null }[] };
 
 /** A layer the product offers but this data run does not hold: it stays in the switch, disabled, with the reason. */
 export type MissingLayer = { id: ProductId; label: string; why: string };
+
+/** An NDBC station (buoy or C-MAN) from the bundled list: where it is; its readings are read live when it is opened. */
+export type ExploreBuoy = { id: string; name: string; lat: number; lon: number; owner: string | null; type: string | null };
 
 export type ExploreModel = {
   now: string;
@@ -113,6 +116,13 @@ export type ExploreModel = {
   missing: MissingLayer[];
   currents: { frames: CurrentFrame[]; defaultFrame: string; source: string; sourceUrl: string | null; days: { date: string; volume: number; hours: number }[] } | null;
   stations: ExploreStation[];
+  /** NDBC buoys and C-MAN stations (positions only; each is read live from NDBC when opened) */
+  buoys: ExploreBuoy[];
+  /**
+   * whether the derived products (sea temperature, the 8-day outlook) were read: "off" on deployed data until the
+   * owner publishes them (docs/coastwatch/v15.1/science/datasets.md); they are then listed as not published yet
+   */
+  derived: "on" | "off";
   /** the rail's span, Pacific days [first, last] */
   axis: [string, string];
   /** where the observed chlorophyll has values: [west, south, east, north] */
@@ -306,11 +316,13 @@ function currentsModel(m: Manifest, now: Date): ExploreModel["currents"] {
 const LAYER_ORDER: ProductId[] = ["chl", "sst", "charm", "outlook"];
 const MISSING_LABEL: Record<ProductId, string> = { chl: "Chlorophyll", sst: "Temperature", charm: "C-HARM", outlook: "Outlook" };
 
-export function buildExploreModel({ manifest, derived, stations, baseUrl, now }: { manifest: Manifest; derived: DerivedIndex | null; stations: StationLite[] | null; baseUrl: string; now: Date }): ExploreModel {
+export function buildExploreModel({ manifest, derived, stations, baseUrl, now, buoys = [], derivedOn = true }: { manifest: Manifest; derived: DerivedIndex | null; stations: StationLite[] | null; baseUrl: string; now: Date; buoys?: ExploreBuoy[]; derivedOn?: boolean }): ExploreModel {
   const today = pacificYmd(now);
-  const built: Record<ProductId, ExploreProduct | null> = { chl: chlProduct(manifest, now), sst: sstProduct(derived, now), charm: charmProduct(manifest, today, now), outlook: outlookProduct(derived, today) };
+  const d = derivedOn ? derived : null;
+  const built: Record<ProductId, ExploreProduct | null> = { chl: chlProduct(manifest, now), sst: sstProduct(d, now), charm: charmProduct(manifest, today, now), outlook: outlookProduct(d, today) };
   const products = LAYER_ORDER.map((id) => built[id]).filter((p): p is ExploreProduct => !!p);
-  const missing: MissingLayer[] = LAYER_ORDER.filter((id) => !built[id]).map((id) => ({ id, label: MISSING_LABEL[id], why: "Not in this data run" }));
+  // the derived products are not published to the public data yet: said so, never "not in this data run"
+  const missing: MissingLayer[] = LAYER_ORDER.filter((id) => !built[id]).map((id) => ({ id, label: MISSING_LABEL[id], why: !derivedOn && (id === "sst" || id === "outlook") ? "Not published yet" : "Not in this data run" }));
   const currents = currentsModel(manifest, now);
   const dates = [...products.flatMap((p) => p.frames.flatMap((f) => [f.start, f.end])), ...products.flatMap((p) => p.tracks.flatMap((t) => t.days.map((d) => d.date))), ...(currents?.frames.map((f) => f.date) ?? [])].filter(Boolean).sort();
   const floor = addDays(today, -16);
@@ -325,7 +337,9 @@ export function buildExploreModel({ manifest, derived, stations, baseUrl, now }:
     products,
     missing,
     currents,
-    stations: (stations ?? []).map((s) => ({ id: s.station_id, name: s.name, lat: s.lat, lon: s.lon, last: s.latest.map((x) => x.date).sort().pop() ?? null, latest: s.latest.map((x) => ({ variable: x.variable, value: x.value, date: x.date, n_last_365d: x.n_last_365d })) })),
+    buoys,
+    derived: derivedOn ? "on" : "off",
+    stations: (stations ?? []).map((s) => ({ id: s.station_id, name: s.name, lat: s.lat, lon: s.lon, last: s.latest.map((x) => x.date).sort().pop() ?? null, latest: s.latest.map((x) => ({ variable: x.variable, value: x.value, date: x.date, n_last_365d: x.n_last_365d, label: x.label, units: x.units, qualifier: x.qualifier })) })),
     axis: [first, addDays(last, 1)],
     extent: g ? gridBounds(g) : null,
   };
