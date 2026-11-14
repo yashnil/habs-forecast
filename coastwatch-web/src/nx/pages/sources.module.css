@@ -104,13 +104,19 @@
   gap: var(--s-6) var(--s-16);
 }
 .rowHead h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   font-size: var(--fs-18);
   font-weight: var(--w7);
   line-height: 1.3;
 }
+/* the state keeps to its own line when the title takes the width, and wraps inside a narrow screen (320 px with wider
+   Linux fonts) instead of pushing the page sideways */
 .rowState {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 .kind {
   margin-top: var(--s-6);
@@ -118,6 +124,8 @@
 .fresh,
 .verify {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: center;
   gap: var(--s-6);
   font-size: var(--fs-13);
