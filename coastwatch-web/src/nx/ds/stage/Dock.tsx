@@ -106,8 +106,9 @@ export function Dock({ label, align = "left", width, cover = true, inline = fals
       {...data}
     >
       {panel.chrome}
-      {children}
+      {/* the resize corner before the content, so the content's last part stays :last-child (it scrolls) */}
       {panel.resizer}
+      {children}
     </motion.section>
   );
 }
@@ -183,10 +184,11 @@ export function Pass({ label, at, stub, stubWidth = 320, inline = false, panel: 
       {...data}
     >
       {panel.chrome}
+      {/* the resize corner before the content, so the content's last part stays :last-child (it scrolls) */}
+      {panel.resizer}
       <span ref={caretRef} className={s.caret} aria-hidden="true" />
       <div className={s.passMain}>{children}</div>
       <div className={cx(s.passStub, stubClassName)}>{stub}</div>
-      {panel.resizer}
     </motion.section>
   );
 }
