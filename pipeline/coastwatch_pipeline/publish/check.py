@@ -332,9 +332,11 @@ def check_pilot_sidecars(base: str, record) -> None:
         record(rel, rel.split("/")[0], f, ok, detail)
 
 
-def guard_publish_tree(root: Path, allowed_top: str = "v1") -> list[str]:
+def guard_publish_tree(root: Path, allowed_top: str = "v1", forbid: tuple[str, ...] = ()) -> list[str]:
     """Return offending paths if the tree about to be published contains anything other
-    than pipeline artifacts. Used by the data workflow before it commits."""
+    than pipeline artifacts, or anything under a forbidden prefix (production forbids
+    v1/derived/: the experimental derived layers are staging-only). Used by the data workflow
+    before it commits."""
     allowed_suffixes = (".json", ".geojson", ".png", ".u16.gz")
     bad = []
     for p in root.rglob("*"):
@@ -343,13 +345,15 @@ def guard_publish_tree(root: Path, allowed_top: str = "v1") -> list[str]:
         rel = p.relative_to(root).as_posix()
         if not rel.startswith(f"{allowed_top}/") or not rel.endswith(allowed_suffixes):
             bad.append(rel)
+        elif forbid and rel.startswith(forbid):
+            bad.append(f"{rel} (forbidden in this channel)")
         elif p.stat().st_size > 20_000_000:
             bad.append(f"{rel} (too large)")
     return bad
 
 
-def main_guard(root: str) -> int:
-    bad = guard_publish_tree(Path(root))
+def main_guard(root: str, forbid: tuple[str, ...] = ()) -> int:
+    bad = guard_publish_tree(Path(root), forbid=forbid)
     if bad:
         print(json.dumps({"refusing_to_publish": bad}, indent=2))
         return 1

@@ -53,7 +53,7 @@ function ChartControls() {
       <button type="button" className="n12-controls-zoom" onClick={() => zoomChart(-1)} aria-label="Zoom out" title="Zoom out" data-testid="nx-zoom-out">
         <Icon name="minus" size={18} />
       </button>
-      <button type="button" onClick={refitChart} aria-label={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} title={scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view"} data-testid="nx-refit">
+      <button type="button" onClick={refitChart} aria-label={scene.refitLabel ?? (scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view")} title={scene.refitLabel ?? (scene.focus ? `Back to ${scene.focus.name}` : "Back to this page's view")} data-testid="nx-refit">
         <Icon name="recentre" size={18} />
       </button>
       {fit ? (
@@ -121,6 +121,7 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets, anchor
     return { center: unproject(c, free, free.width / 2, free.height / 2 + cover.bottom / 2), zoom: c.zoom };
   }
   const ins = sceneInsets(vp, cover);
+  if (scene.view.padTop) ins.top += scene.view.padTop;
   // a tall, narrow free area (a desk page's chart pane) takes the view's own box for that shape when it has one
   const freeW = vp.width - ins.left - ins.right, freeH = vp.height - ins.top - ins.bottom;
   const box = scene.view.tall && freeH >= freeW * 1.25 ? scene.view.tall : scene.view.bounds;
@@ -168,7 +169,12 @@ function writeFoot(frame: HTMLElement) {
   const c = frame.querySelector<HTMLElement>(".n12-controls")?.getBoundingClientRect();
   const x0 = c && c.width ? c.left - 6 : fr.right - 96, x1 = c && c.width ? c.right + 6 : fr.right;
   let foot = 0;
-  document.querySelectorAll<HTMLElement>("[data-nx-dock], [data-nx-pass], .n12-dock-slot").forEach((el) => {
+  document.querySelectorAll<HTMLElement>("[data-nx-dock], [data-nx-pass], .n12-dock-slot").forEach((live) => {
+    // a dock or pass the reader moved (ds/panels) counts where it rests, not where it was dragged: its hidden
+    // stand-in holds that box, so the zoom buttons keep their corner instead of following the panel
+    const key = live.hasAttribute("data-panel-moved") ? live.getAttribute("data-panel") : null;
+    const el = key ? document.querySelector<HTMLElement>(`[data-panel-rest="${CSS.escape(key)}"]`) : live;
+    if (!el) return;
     const r = el.getBoundingClientRect();
     // where it stands at rest: an arriving dock is still sliding up (a transform) when this runs
     const tf = getComputedStyle(el).transform;
@@ -191,6 +197,9 @@ const openingHidesMarks = () => {
 
 /** How long after the map's "load" it counts as ready when "idle" has not come (ms). */
 const READY_AFTER_LOAD_MS = 1500;
+
+/** A refit after a cover change (a dock opening, the sheet moving): a short ease, ms. */
+const REFIT_MS = 350;
 
 /** The chart's own zoom limits; a scene may narrow them (ChartScene.zoomRange). */
 const CHART_ZOOM = [4, 13.5] as const;
@@ -554,7 +563,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
 
   // ---------------------------------------------------------------- scenes
   const applyScene = useCallback(
-    (animate: boolean) => {
+    (animate: boolean, refit = false) => {
       const scene = getScene();
       const el = frameRef.current;
       if (!scene || !el || !vp) return;
@@ -602,6 +611,13 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         if (still) {
           noteFlight(0, 0);
           m.jumpTo({ center: target.center, zoom: target.zoom });
+        } else if (refit && !glide && !waiting) {
+          // the same view, refitted because what covers the sheet changed (a dock opened, a panel resized, the sheet
+          // moved): a short ease, never the flight between places (v15.1 final pass). A flight still under way is
+          // re-aimed by the glide/wait paths instead (the cover change passes animate=false then)
+          noteFlight(0, REFIT_MS);
+          panUntil.current = performance.now() + REFIT_MS;
+          m.easeTo({ center: target.center, zoom: target.zoom, duration: REFIT_MS, easing: bezier, essential: false });
         } else if (glide) {
           m.easeTo({ center: target.center, zoom: target.zoom, duration: left, easing: (t: number) => 1 - (1 - t) ** 2, essential: false });
         } else {
@@ -610,7 +626,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           const from = m.getCenter();
           const ws = worldSize(Math.min(m.getZoom(), target.zoom));
           const dist = Math.hypot((lngX(target.center[0]) - lngX(from.lng)) * ws, (latY(target.center[1]) - latY(from.lat)) * ws) + Math.abs(target.zoom - m.getZoom()) * 160;
-          const duration = tier === "reduced" ? 300 : flightSeconds(dist) * 1000;
+          const duration = tier === "reduced" ? 300 : (scene.flightMs ?? flightSeconds(dist) * 1000);
           const delay = flightDelay();
           noteFlight(delay, duration);
           panUntil.current = performance.now() + delay + duration;
@@ -796,7 +812,8 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
         coverObstacles.current = c.obstacles;
         writeFoot(el);
         if (sameInsets(c.insets, coverRef.current)) return schedule();
-        applyScene(true);
+        // during a flight the camera carries on to the refitted view (glide); otherwise a short refit ease
+        applyScene(panUntil.current - performance.now() <= 60, true);
       }),
     [applyScene, schedule],
   );

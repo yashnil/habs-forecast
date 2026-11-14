@@ -1,0 +1,2 @@
+time,station,latitude[unit="degrees_north"],longitude[unit="degrees_east"],temp[unit="Celsius"],u_eastward[unit="meters second-1"],v_northward[unit="meters second-1"]
+2026-11-15T03:00:00Z,GridPointRequestedAt[36.700N_122.100W],36.700,-122.100,19.707567,0.049112022,0.093635924

@@ -22,6 +22,11 @@ export type SceneView =
        * centred by default). The coast runs down the sheet's east side, so [1, 0.5] gives the spare room to the sea.
        */
       align?: [number, number];
+      /**
+       * extra room at the top of the free area, px: what floats over the chart's top edge without being a measured
+       * cover (the phone's bar and port control), so a statewide view's north edge is never under them
+       */
+      padTop?: number;
       /** fill the free area with the box, cropping its longer side (CSS `cover`), instead of fitting it whole */
       fill?: boolean;
       /**
@@ -55,6 +60,17 @@ export type ChartScene = {
    * reader may pan; `fit` adds one more that fits a box of data ("Whole layer")
    */
   controls?: false | { fit?: { label: string; bounds: Bounds } };
+  /**
+   * the words on the chart's "back to the page's view" button when the view is not the focus's own (Explore's
+   * statewide view keeps the port marked, but its view is the whole coast: "Whole coast", not "Back to Moss Landing")
+   */
+  refitLabel?: string;
+  /**
+   * how long the camera's flight to this view lasts, ms, instead of the distance-based 0.5–1.15 s: a deliberate
+   * flight for a change of scale (Explore California Waters: a port to the whole coast and back). Reduced motion
+   * still cuts.
+   */
+  flightMs?: number;
 };
 
 let current: ChartScene | null = null;

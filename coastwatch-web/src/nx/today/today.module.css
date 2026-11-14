@@ -183,3 +183,19 @@
   .fl { grid-template-columns: 1fr; }
   .why { flex-wrap: wrap; }
 }
+
+/* v15.1: the way into Explore California Waters, one clear row in the ticket */
+.exploreEntry {
+  display: flex; align-items: center; gap: var(--s-12); margin: var(--s-14) 0 0; padding: var(--s-10) var(--s-14) var(--s-10) var(--s-10);
+  border-radius: var(--r-ctl); background: var(--ultra-wash); color: var(--ultra-deep); text-decoration: none;
+  transition: background-color var(--dur-hover) linear;
+}
+.exploreEntry:hover { background: var(--paper-2); }
+.exploreEntry:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; }
+.exploreMap { flex: none; }
+.exploreMap path { fill: none; stroke: var(--ultra-deep); stroke-width: 1.4; stroke-linejoin: round; }
+.exploreMap circle { fill: var(--ultra-deep); }
+.exploreWords { display: grid; gap: var(--s-2); flex: 1; min-width: 0; }
+.exploreWords b { font-size: var(--fs-15); font-weight: var(--w7); line-height: 1.25; }
+.exploreWords small { font-size: var(--fs-13); line-height: 1.35; color: var(--ink-2); }
+.exploreGo { flex: none; font-size: var(--fs-18); font-weight: var(--w7); }

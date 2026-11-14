@@ -159,7 +159,7 @@ export function leadSentence(p: ExploreProduct, f: ExploreFrame): string {
     case "sst":
       return `Sea surface temperature for ${day(f.end)}${f.kind === "analysis" ? ", an analysis blended from satellites and buoys" : ""}.`;
     case "charm":
-      return `NOAA's model chance of conditions for domoic acid in the water${p.pastRun ? `, from a past run (${p.runIssued ? day(p.runIssued) : "date unknown"}) whose days are all before today` : `, ${frameSpanWords(f)}`}. Not toxin in seafood.`;
+      return `NOAA's model chance of conditions for domoic acid in the water${p.pastRun ? `, from ${p.runIssued ? `a past run (${day(p.runIssued)})` : "the last run available"} whose days are all before today: expired` : `, ${frameSpanWords(f)}`}. Not toxin in seafood.`;
     case "outlook":
       return `Neritic's chlorophyll outlook: one average for ${range(f.start, f.end)}${p.pastRun ? `, a past run (${p.runIssued ? day(p.runIssued) : "date unknown"}) whose days are all before today` : ""}. Algae, not toxin.`;
   }
@@ -194,3 +194,37 @@ const latWords = (lat: number) => `${Math.floor(Math.abs(lat))}°${String(Math.r
 export function coverageNote(layer: string, portName: string, box: [number, number, number, number]): string {
   return `${layer} is not published for the water at ${portName} in this data run: its cells run from ${latWords(box[1])} to ${latWords(box[3])}. The chart is on ${portName}; "Fit the data" on the chart goes to where the layer is.`;
 }
+
+/**
+ * v15.1: the one short line a layer keeps in view (the owner's "evidence on demand": the method, the dates' detail
+ * and the caveats wait behind "About this layer"). Each carries its truth rule's words: chlorophyll is not toxin;
+ * C-HARM is a model, not measured toxin, and a low probability is not open or safe (T37).
+ */
+export function shortLine(p: Pick<ExploreProduct, "id" | "kind" | "pastRun">): string {
+  switch (p.id) {
+    case "chl":
+      return "Algae seen from space · not toxin";
+    case "charm":
+      // design-lint-allow forbidden-word: T37 requires "does not mean open or safe" within one glance of a low probability
+      return `Model, not measured toxin${p.pastRun ? " · expired" : ""}; lower does not mean open or safe`;
+    case "sst":
+      return p.kind === "analysis" ? "Sea temperature, an analysis · not a point measurement" : "Sea temperature, measured";
+    case "outlook":
+      return "Experimental chlorophyll outlook · a model, not toxin";
+  }
+}
+
+/**
+ * Round 2 (C, the freshness audit): why the newest C-HARM run is old, when it is the run that stopped. NOAA's own
+ * notice is about S-NPP products, not C-HARM, so the words say only what was announced and what followed.
+ */
+const SNPP_LAST_RUN_UTC = Date.UTC(2026, 10, 5);
+export function charmStalledWords(p: Pick<ExploreProduct, "id" | "pastRun" | "frames">): string | null {
+  if (p.id !== "charm" || !p.pastRun) return null;
+  const last = p.frames.map((f) => f.end).sort().pop();
+  if (!last || Date.parse(`${last}T00:00:00Z`) > SNPP_LAST_RUN_UTC) return null;
+  return "NOAA announced S-NPP products ended Nov 2; C-HARM has not been updated since.";
+}
+
+/** Never shown as a layer: the staging outlook failed validation (round 2, the gap-fill audit). */
+export const OUTLOOK_NOT_AVAILABLE = "Experimental chlorophyll outlook: not available (not validated).";

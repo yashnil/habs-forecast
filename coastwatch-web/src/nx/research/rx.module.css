@@ -304,3 +304,24 @@
   .title { flex-basis: 100%; }
   .segArea { flex: 1; }
 }
+
+/* ------------------------------------------------------------ v15.1: the stations near the place */
+.nearbyLink {
+  margin-left: var(--s-10); padding: 0; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ultra-deep); white-space: nowrap;
+  text-decoration: underline dashed; text-underline-offset: 4px; text-decoration-thickness: 1.5px;
+}
+.nearbyLink:hover { color: var(--ultra); }
+.nearbyPanel { padding-top: var(--s-14); }
+@media (max-width: 640px) {
+  .nearbyLink { display: none; }
+  .nearbyPanel { order: 5; }
+  .nearbyPanel[data-first] { order: 2; margin-top: var(--s-4); padding-top: var(--s-10); }
+}
+.statewideLink { margin-left: var(--s-14); font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); white-space: nowrap; text-decoration: underline dotted; text-underline-offset: 4px; }
+.statewideLink:hover { color: var(--ultra-deep); }
+@media (max-width: 640px) { .statewideLink { margin-left: 0; display: inline-block; min-height: 32px; padding-top: var(--s-6); } }
+/* a long state ("reported 0, not quantified") wraps inside the stub instead of running past its edge */
+@media (min-width: 641px) {
+  .visit dd { white-space: normal; min-width: 0; flex: 0 1 auto; }
+  .visit dt { flex: 0 0 auto; max-width: 62%; }
+}

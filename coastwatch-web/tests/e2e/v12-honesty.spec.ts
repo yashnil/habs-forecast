@@ -111,14 +111,17 @@ test("sources differ: an agency release that appears to end a registry notice is
 
 test.describe("Explore", () => {
   test("chlorophyll: kind, source, the range of observation dates, 'no view' and 'algae, not toxin' beside its ramp (T1, T5, T18, T19)", async ({ page }) => {
-    await page.goto(`${OK}/explore?place=port-592`);
+    await page.goto(`${OK}/explore?rail=1&place=port-592`);
     const m = margin(page);
-    await expect(m).toContainText("Explore: Chlorophyll");
+    // v15.1: Explore California Waters, the layer named in its switch
+    await expect(m.getByRole("heading", { level: 1, name: "Explore California Waters: Chlorophyll" })).toBeVisible();
     await expect(m).toContainText("No view");
     // the newest pixel is Oct 6, past OLCI's 3-day limit on Oct 12: "(old)" beside the dates (T17)
     await expect(m).toContainText("Measured · Sentinel-3 OLCI, 300 m · latest view, pixels Oct 1–6, each its own latest day seen (old). Algae, not toxin.");
     // the first line says what the view is, before any instrument (5-second test)
-    await expect(m.getByTestId("nx-explore-lead")).toHaveText("Algae seen from space, Oct 1–6: each spot shows its latest clear view. Not toxin.");
+    // v15.1: one short line in view; the full sentence is in "About this layer"
+    await expect(m.getByTestId("nx-explore-lead")).toHaveText("Algae seen from space · not toxin");
+    await expect(m.getByTestId("nx-lead-full")).toHaveText("Algae seen from space, Oct 1–6: each spot shows its latest clear view. Not toxin.");
     await expect(m.getByTestId("nx-rail-also")).toBeHidden();
   });
 
@@ -136,7 +139,7 @@ test.describe("Explore", () => {
   });
 
   test("C-HARM: the event and threshold, its mandatory words, classes that are not risk levels, a past run said so (T3, T9, T10, T12)", async ({ page }) => {
-    await page.goto(`${OK}/explore?place=port-592&layer=charm`);
+    await page.goto(`${OK}/explore?rail=1&place=port-592&layer=charm`);
     const m = margin(page);
     await expect(m.getByTestId("nx-legend")).toContainText("C-HARM");
     await expect(m.getByTestId("nx-legend")).toContainText("P(pDA > 500 ng/L)");

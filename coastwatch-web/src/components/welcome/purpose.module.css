@@ -1,0 +1,9 @@
+/* Set up for (PurposeSwitch), in the v14 tokens: a label, the select, and the reset as a quiet text action. */
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-8) var(--s-16); padding: var(--s-12) var(--s-16); border-radius: var(--r-ctl); background: var(--paper-2); font-size: var(--fs-15); }
+.compact { padding: 0; background: none; }
+.label { color: var(--ink-2); font-weight: var(--w6); }
+.select { min-height: var(--target); min-width: 200px; padding: 0 var(--s-12); border: 1.5px solid var(--ink-3); border-radius: var(--r-ctl); background: var(--paper); color: var(--ink); font: var(--w5) var(--fs-15) / 1.2 var(--font); }
+.select:focus-visible { outline: 2px solid var(--ultra); outline-offset: 2px; border-color: var(--ink); }
+.reset { min-height: var(--target); padding: 0; border: 0; background: none; color: var(--ultra); font: var(--w6) var(--fs-15) / 1.2 var(--font); text-decoration: underline dashed; text-decoration-thickness: 1px; text-underline-offset: 4px; cursor: pointer; }
+.reset:hover { color: var(--ultra-deep); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

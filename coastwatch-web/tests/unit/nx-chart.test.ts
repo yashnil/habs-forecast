@@ -147,7 +147,7 @@ describe("the shell", () => {
     expect(activeDestination("/", "port-592")).toBe("/today");
     expect(activeDestination("/", null)).toBeNull();
     // v14: Explore is Today's data layers and time; Today stays the current section
-    expect(activeDestination("/explore", null)).toBe("/today");
+    expect(activeDestination("/explore", null)).toBe("/explore");
     expect(activeDestination("/alerts", null)).toBe("/alerts");
     expect(activeDestination("/about", "port-592")).toBeNull();
   });

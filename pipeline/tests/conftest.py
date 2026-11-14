@@ -31,6 +31,7 @@ def make_nc(
     version: str = "3.1",
     drop: tuple[str, ...] = (),
     fill: float = -99999.0,
+    attrs: dict[str, str] | None = None,
 ) -> bytes:
     """Build a small ERDDAP-like NetCDF-3 file for malformed-input tests."""
     lat = np.round(36.01 + 0.03 * np.arange(10), 4) if lat is None else np.asarray(lat)
@@ -43,6 +44,8 @@ def make_nc(
     f = netcdf_file(buf, "w", version=1)
     f.product_version = version
     f.history = "test fixture"
+    for k, v in (attrs or {}).items():
+        setattr(f, k, v)
     f.createDimension("time", 1)
     f.createDimension("latitude", lat.size)
     f.createDimension("longitude", lon.size)
