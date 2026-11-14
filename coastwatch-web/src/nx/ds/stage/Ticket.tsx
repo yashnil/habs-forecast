@@ -227,11 +227,12 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         {...data}
       >
         {panel.chrome}
+        {/* the resize corner before the content, so the content's last part stays :last-child (it scrolls) */}
+        {panel.resizer}
         <svg className={s.leader} aria-hidden="true">
           <line ref={lineRef} />
         </svg>
         {children}
-        {panel.resizer}
       </motion.section>
       {lead ? <div ref={reserveRef} className={s.reserve} data-side={side} data-edge={edge} style={style} aria-hidden="true" /> : null}
     </>
