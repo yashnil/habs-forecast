@@ -22,7 +22,7 @@ def cmd_run(a: argparse.Namespace) -> int:
     if unknown:
         print(f"unknown sources: {sorted(unknown)}", file=sys.stderr)
         return 2
-    m = run_pipeline(RunContext(out_dir=Path(a.out)), only)
+    m = run_pipeline(RunContext(out_dir=Path(a.out)), only, derived=True if a.derived else None)
     print(manifest_summary(m))
     failed = [s.source_id for s in m.sources if s.outcome == "failed" and s.source_id in only]
     # Exit non-zero so CI makes the failure visible; artifacts for healthy sources were still written.
@@ -198,7 +198,7 @@ def cmd_check(a: argparse.Namespace) -> int:
 def cmd_guard(a: argparse.Namespace) -> int:
     from .publish.check import main_guard
 
-    return main_guard(a.root)
+    return main_guard(a.root, tuple(a.forbid))
 
 
 def cmd_watch(a: argparse.Namespace) -> int:
@@ -241,6 +241,11 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--out", default=str(DEFAULT_OUT))
     r.add_argument("--only", help=f"comma list of {','.join(ALL_SOURCES + PILOT_SIDECARS)}")
     r.add_argument("--strict", action="store_true", help="exit 1 if any selected source failed")
+    r.add_argument(
+        "--derived",
+        action="store_true",
+        help="also build the experimental derived layers into v1/derived/ (staging only; also CWP_DERIVED=1). Off by default: production never writes v1/derived/",
+    )
     r.set_defaults(fn=cmd_run)
     dv = sub.add_parser("derive", help="build derived chlorophyll layers (estimate, 8-day outlook) into v1/derived/ from the published OLCI layers")
     dv.add_argument("--out", default=str(DEFAULT_OUT))
@@ -303,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
     c.set_defaults(fn=cmd_check)
     g = sub.add_parser("guard-publish", help="refuse to publish anything except v1/ pipeline artifacts")
     g.add_argument("--root", required=True)
+    g.add_argument("--forbid", action="append", default=[], help="refuse any file under this path prefix (repeatable), e.g. v1/derived/ for production")
     g.set_defaults(fn=cmd_guard)
     reg_default = str(REPO / "data" / "curated" / "official_notices.json")
     w = sub.add_parser("watch-official", help="check official pages for changes since the last review (never edits records)")

@@ -12,7 +12,7 @@ uv run cwp run --out /tmp/cw --only charm
 uv run cwp verify-charm                  # compare published C-HARM with ERDDAP at 13 points
 uv run cwp fixture --out /tmp/cw-fixture # deterministic dataset from recorded fixtures, no network
 uv run cwp schema                        # re-export ../schemas/v1/*.schema.json after model changes
-uv run cwp derive --out /tmp/cw/v1       # derived chlorophyll layers only (also run by `cwp run` after satellite_chl)
+uv run cwp derive --out /tmp/cw/v1       # derived chlorophyll layers only (also run by `cwp run --derived` / CWP_DERIVED=1 after satellite_chl; staging only, never production)
 uv run pytest                            # offline tests (fixtures)
 uv run pytest -m live                    # live end-to-end check against ERDDAP
 ```
