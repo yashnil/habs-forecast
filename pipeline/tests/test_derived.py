@@ -238,7 +238,7 @@ def test_parse_composite_reads_the_recorded_fixture():
 @pytest.fixture(scope="module")
 def dataset(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("derived") / "v1"
-    run_pipeline(fixture_context(out))
+    run_pipeline(fixture_context(out), derived=True)  # opt-in: the staging channel
     return out
 
 

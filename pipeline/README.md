@@ -12,7 +12,7 @@ uv run cwp run --out /tmp/cw --only charm
 uv run cwp verify-charm                  # compare published C-HARM with ERDDAP at 13 points
 uv run cwp fixture --out /tmp/cw-fixture # deterministic dataset from recorded fixtures, no network
 uv run cwp schema                        # re-export ../schemas/v1/*.schema.json after model changes
-uv run cwp derive --out /tmp/cw/v1       # derived chlorophyll layers only (also run by `cwp run` after satellite_chl)
+uv run cwp derive --out /tmp/cw/v1       # derived chlorophyll layers only (also run by `cwp run --derived` / CWP_DERIVED=1 after satellite_chl; staging only, never production)
 uv run pytest                            # offline tests (fixtures)
 uv run pytest -m live                    # live end-to-end check against ERDDAP
 ```
@@ -82,7 +82,7 @@ validates the index and its chunks when present.
 ## Rules the code enforces
 
 - **Validation before publish.** C-HARM: NetCDF signature, required variables, product version 3.1, one time step equal to the probed valid time at 12:00Z, regular 0.03° grid inside the published domain, probabilities in [0, 1], at least 10% valid cells. Fill values (−99999) become "no value", never zero.
-- **Issue time is derived and labelled.** C-HARM publishes valid days only; issue date = nowcast valid day + 1 (`issued_date_derived: true`).
+- **Issue date comes from NOAA when it says so.** C-HARM's `time` is the valid day. The issue date is NOAA's processing date, the date that opens the NC_GLOBAL `history` of the response (used only when the same response's `time_coverage_end` is the valid time fetched, so the dataset-level history describes that file; `issued_date_derived: false`). Runs are typically released about 3 days after their nowcast day (run valid 2026-11-02..05: history `2026-11-05:`, ERDDAP file timestamps 2026-11-05 17:05Z). Otherwise it falls back to nowcast valid day + 1, labelled `issued_date_derived: true`.
 - **No mixing runs, no back-fill.** A lead whose newest valid day belongs to an older run is reported missing, not shown.
 - **Failures stay visible.** Each source runs in isolation. On failure the previous artifacts stay published with their real dates, and `sources[].outcome = "failed"` with the error. The browser decides current / stale / historical from those dates, so a dead pipeline cannot make old data look current.
 - **Correct georeferencing.** Rasters are resampled (nearest neighbour) onto pixels uniform in Web-Mercator y, so placing them by their corners is exact. Value grids stay on the source grid.
