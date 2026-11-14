@@ -144,6 +144,21 @@ def test_fetch_failures_keep_the_previous_file(tmp_path):
     assert (out / "biotoxin" / "index.json").read_text() == before
 
 
+def test_crab_pdf_failure_alone_keeps_the_previous_file(tmp_path):
+    """Seafood still reads but the crab PDF does not: the crab results must not vanish."""
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))
+    before = (out / "biotoxin" / "index.json").read_text()
+    down = lambda url: (_ for _ in ()).throw(FetchError(f"HTTP 503 for {url}"))  # noqa: E731
+    run_pipeline(fixture_context(out, fetcher=FixtureFetcher(overrides={r"CrabDAResults\.pdf": down})))
+    assert (out / "biotoxin" / "index.json").read_text() == before
+    # with no previous file, the seafood-only index is still published (with the error stated)
+    fresh = tmp_path / "fresh"
+    run_pipeline(fixture_context(fresh, fetcher=FixtureFetcher(overrides={r"CrabDAResults\.pdf": down})))
+    data = json.loads((fresh / "biotoxin" / "index.json").read_text())
+    assert data["source"]["name"].endswith("Seafood") and any("crab PDF" in e for e in data["errors"])
+
+
 def test_check_published_validates_the_sidecars(tmp_path):
     from coastwatch_pipeline.publish.check import check_published
 
