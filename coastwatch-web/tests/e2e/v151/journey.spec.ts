@@ -202,7 +202,10 @@ test.describe("v15.1 journey: a saved trip, the whole coast, and back", () => {
         return statewide(b);
       }, { timeout: 15_000, intervals: [100], message: "statewide: Oregon border to Mexico" })
       .toBe(true);
-    expect(seen.some(Boolean), "the camera flies from the port to the coast (intermediate frames)").toBe(true);
+    // on the full (GPU) tier the camera flies (≈1.5 s, intermediate frames); a software-rendered chart (the reduced tier,
+    // as on CI) takes a 300 ms glide that a slow machine may draw in one or two frames, and the static tier cuts by design
+    const tier = await page.getByTestId("nx-sheet").getAttribute("data-tier");
+    if (tier === "full") expect(seen.some(Boolean), "the camera flies from the port to the coast (intermediate frames)").toBe(true);
     await expect(page).toHaveURL(/\/explore\?view=coast&place=port-592/);
     await expect(page.getByTestId("nx-explore-heading")).toHaveText("Explore California Waters");
     await onScreen(page, "nx-explore-panel");

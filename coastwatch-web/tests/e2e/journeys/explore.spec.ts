@@ -39,7 +39,7 @@ async function tapWater(page: Page, lat: number, lon: number) {
 }
 
 async function journey(page: Page) {
-  await page.goto(`${OK}/explore?place=port-592`);
+  await page.goto(`${OK}/explore?rail=1&place=port-592`);
   await mapReady(page);
   const legend = page.getByTestId("nx-legend");
   await expect(legend).toHaveAttribute("data-product", "chl");

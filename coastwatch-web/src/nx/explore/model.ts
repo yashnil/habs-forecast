@@ -206,6 +206,10 @@ function charmProduct(m: Manifest, today: string, now: Date): ExploreProduct | n
   const layers = CHARM_LEADS.map((l) => charmLayer(m, variable, l));
   const run = charmRun(m);
   const frames: ExploreFrame[] = [];
+  // round 2 (C): C-HARM publishes no issue time; an issue date the pipeline inferred ("nowcast + 1 day") is never shown
+  // as fact (NOAA's releases come about 3 days after the nowcast): the run is then dated by its valid days only
+  const derived = (run as { issued_date_derived?: boolean } | null)?.issued_date_derived === true || layers.some((l) => (l?.time as { issued_date_derived?: boolean } | undefined)?.issued_date_derived === true);
+  const issuedOf = (l: (typeof layers)[number]) => (derived ? null : (run?.issued_date ?? l?.time.issued_date ?? null));
   layers.forEach((l, lead) => {
     const valid = l?.time.valid_date;
     if (!l?.grid || !valid) return;
@@ -214,7 +218,7 @@ function charmProduct(m: Manifest, today: string, now: Date): ExploreProduct | n
       product: "charm",
       track: "charm",
       label: day(valid),
-      stamp: `valid ${day(valid)}, run of ${day(run?.issued_date ?? l.time.issued_date ?? valid)}`,
+      stamp: issuedOf(l) ? `valid ${day(valid)}, run of ${day(issuedOf(l)!)}` : `valid ${day(valid)}, last run available`,
       start: valid,
       end: valid,
       kind: "model",
@@ -222,7 +226,7 @@ function charmProduct(m: Manifest, today: string, now: Date): ExploreProduct | n
       volume: 1,
       fresh: freshOf(l.freshness, l.time.issued_date ?? null, now),
       grid: gridSpec(l.grid),
-      issued: run?.issued_date ?? l.time.issued_date ?? null,
+      issued: issuedOf(l),
       sensor: "C-HARM v3.1",
     });
   });
@@ -242,7 +246,7 @@ function charmProduct(m: Manifest, today: string, now: Date): ExploreProduct | n
     tracks: [{ id: "charm", product: "charm", label: "C-HARM", days: frames.map((f) => ({ date: f.start, volume: 1 })) }],
     defaultFrame: pick.id,
     pastRun,
-    runIssued: run?.issued_date ?? l0.time.issued_date ?? null,
+    runIssued: issuedOf(l0),
   };
 }
 

@@ -60,7 +60,7 @@ export function layerMetas(model: ExploreModel): LayerMeta[] {
         label: PRODUCT_LABEL.charm,
         productClass: "model",
         units: "probability (%)",
-        when: `run of ${p.runIssued ? day(p.runIssued) : "unknown date"}, valid ${valid.length > 1 ? range(valid[0], valid[valid.length - 1]) : day(valid[0])}${p.pastRun ? " (past run)" : ""}`,
+        when: `${p.runIssued ? `run of ${day(p.runIssued)}, ` : ""}valid ${valid.length > 1 ? range(valid[0], valid[valid.length - 1]) : day(valid[0])}${p.pastRun ? " (expired)" : ""}`,
         fresh: p.pastRun ? "historical" : f.fresh,
         source: p.source,
         resolution: "3 km cells, 4 daily leads",
@@ -112,7 +112,7 @@ export function layerMetas(model: ExploreModel): LayerMeta[] {
 export function notPublished(model: ExploreModel): string[] {
   const out: string[] = [];
   if (!model.products.some((p) => p.id === "sst")) out.push("sea temperature");
-  if (!model.products.some((p) => p.id === "outlook")) out.push("the 8-day chlorophyll outlook");
+  if (!model.products.some((p) => p.id === "outlook")) out.push("the experimental chlorophyll outlook (not validated)");
   return out;
 }
 
@@ -162,3 +162,21 @@ export function resolutionNote(zoom: number, lat: number, cellKm: number): strin
 
 /** A surface frame's cell size in km, from its grid's step (0.0025° → 0.28 km). */
 export const cellKmOf = (g: { lat_step: number } | null | undefined) => (g ? Math.abs(g.lat_step) * 111.32 : null);
+
+// ---------------------------------------------------------------- chlorophyll's three views (round 2, B)
+
+/**
+ * Chlorophyll is shown three ways, never mixed up: Observed (one day's pixels, gaps kept), Recent composite (each
+ * pixel its own latest clear day within the week, with its age), and a Gap-filled estimate (a reconstruction, drawn
+ * and worded as one). The estimate is offered only when its source is wired; until then it is "not available".
+ */
+export type ChlView = "observed" | "composite" | "estimate";
+export const chlViewOf = (f: { id: string; start: string; end: string }): ChlView => (f.id.endsWith(":latest") ? "composite" : "observed");
+
+/** The frame a view opens on: the newest single day for Observed, the latest view of the first sensor for Composite. */
+export function frameForView(p: { frames: { id: string; track: string; start: string; end: string }[] }, v: ChlView, track?: string): string | null {
+  const fs = p.frames.filter((f) => !track || f.track === track);
+  if (v === "composite") return (fs.find((f) => f.id.endsWith(":latest")) ?? p.frames.find((f) => f.id.endsWith(":latest")))?.id ?? null;
+  if (v === "observed") return fs.filter((f) => !f.id.endsWith(":latest") && f.start === f.end).sort((a, b) => a.start.localeCompare(b.start)).pop()?.id ?? null;
+  return null;
+}
