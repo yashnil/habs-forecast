@@ -117,7 +117,7 @@ export function AskPage({ initialPlace, uncovered, preferSaved, meta, suggestion
       <article className={s.page} data-testid="ask-chat">
         <Desk>
           <DeskHeader
-            context="Ask Neritic · private pilot"
+            context="Ask Neritic · research preview"
             title="Ask Neritic"
             status={waiting ? "A plain question about a pilot port, answered only from the records on its Today page." : `A plain question about ${label}, answered only from the records on its Today page. Every line names its source and its date.`}
             actions={<ChartToggle />}

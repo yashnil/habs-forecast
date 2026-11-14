@@ -7,7 +7,7 @@ export const TERMS_CONTENTS = [
   { id: "responsibility", label: "Your decisions are yours" },
   { id: "accounts", label: "Accounts" },
   { id: "use", label: "Acceptable use" },
-  { id: "pilot", label: "A pilot, and it may change" },
+  { id: "pilot", label: "A research preview, and it may change" },
   { id: "warranty", label: "No warranty" },
   { id: "liability", label: "Limitation of liability" },
   { id: "law", label: "Governing law" },
@@ -36,8 +36,10 @@ export function TermsBody() {
         dial 911.
       </li>
       <li>
-        <strong>Not a seafood-safety service.</strong> Satellite chlorophyll is not toxin: it shows algae, and it cannot tell you whether seafood can be eaten. Model forecasts (such as NOAA C-HARM bloom probabilities and
-        Neritic&rsquo;s chlorophyll outlook) are estimates, and observations show the past, not the future. Only CDPH advisories and laboratory tests say whether seafood is safe.
+        <strong>Not a seafood-safety service.</strong> Satellite chlorophyll is not toxin: it shows algae, and it cannot tell you whether seafood can be eaten. Neritic shows satellite chlorophyll observations, a 7-day
+        composite of them, and NOAA&rsquo;s gap-filled chlorophyll estimate (DINEOF), which is labelled as an estimate and is not an observation. Model output (NOAA C-HARM bloom and domoic acid probabilities, and
+        NOAA WCOFS ocean model guidance, which NOAA labels developmental) is an estimate, not a measurement, and observations show the past, not the future. None of it is a safety, legal or navigation
+        determination. Only CDPH advisories and laboratory tests say whether seafood is safe.
       </li>
       <li>
         <strong>AI answers may be wrong.</strong> Ask Neritic uses an AI model to answer from Neritic&rsquo;s published data. It can misread data or be out of date. Check its cited sources, and never rely on it for
@@ -61,7 +63,7 @@ export function TermsBody() {
     <h2 id="use">Acceptable use</h2>
     <p>Do not misuse Neritic: no attempts to break or overload it, to access other people&rsquo;s data, to scrape it in a way that harms the service, or to present Neritic&rsquo;s information as an official notice. Neritic&rsquo;s data comes from public sources whose own terms also apply.</p>
 
-    <h2 id="pilot">A pilot, and it may change</h2>
+    <h2 id="pilot">A research preview, and it may change</h2>
     <p>Neritic is free, experimental and may change, pause or stop at any time, with or without notice. Features labelled &ldquo;Pilot demo&rdquo; or &ldquo;Not yet connected&rdquo; may not work.</p>
 
     <h2 id="warranty">No warranty</h2>

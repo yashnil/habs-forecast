@@ -107,9 +107,14 @@ test.describe("the disclosures are still there", () => {
       await expect(privacy).toContainText(t);
     await expect(page.getByTestId("legal-draft-banner")).toContainText("Draft — pending owner/legal review");
     await expect(page.getByTestId("legal-attribution")).toContainText("CC BY 4.0");
+    await expect(privacy).toContainText("where you placed, sized or collapsed the panels");
+    await expect(privacy).toContainText("Trips you save on My Coast");
+    await expect(privacy).toContainText("they carry nothing about you, your ports or your trips");
+    await expect(page.getByTestId("nx-info-page")).toContainText("Neritic research preview · legal");
     await settle(page, "/terms");
     const terms = page.getByTestId("terms-page");
-    for (const t of ["Not an official source", "Not for navigation", "Satellite chlorophyll is not toxin", "AI answers may be wrong", "marked “Not verified” until a person has checked them", "VHF channel 16"]) await expect(terms).toContainText(t);
+    await expect(terms).not.toContainText("chlorophyll outlook");
+    for (const t of ["gap-filled chlorophyll estimate (DINEOF), which is labelled as an estimate", "NOAA WCOFS ocean model guidance, which NOAA labels developmental", "None of it is a safety, legal or navigation", "AS IS", "Not an official source", "Not for navigation", "Satellite chlorophyll is not toxin", "AI answers may be wrong", "marked “Not verified” until a person has checked them", "VHF channel 16"]) await expect(terms).toContainText(t);
     await settle(page, "/sms-terms");
     await expect(page.getByTestId("sms-status")).toContainText("not being sent yet");
     await expect(page.getByTestId("sms-terms-page")).toContainText("Consent is not a condition");
@@ -128,6 +133,20 @@ test.describe("the disclosures are still there", () => {
     await expect(official.locator('a[target="_blank"]')).toHaveCount(4);
     await expect(official).toContainText("(800) 553-4133");
     await expect(page.getByTestId("research")).toContainText("Neritic does not run those research models");
+    // the live sources, each with its attribution and links
+    for (const [id, text, host] of [
+      ["wcofs", "WCOFS", "opendap.co-ops.nos.noaa.gov"],
+      ["dineof", "Liu, X. & Wang, M. (2023)", "coastwatch.noaa.gov"],
+      ["ndbc", "National Data Buoy Center", "www.ndbc.noaa.gov"],
+      ["nws", "National Weather Service", "tgftp.nws.noaa.gov"],
+      ["coops", "Tides and Currents", "tidesandcurrents.noaa.gov"],
+    ] as const) {
+      const row = page.getByTestId(`live-source-${id}`);
+      await expect(row).toContainText(text);
+      await expect(row.locator(`a[href*="${host}"]`).first()).toBeVisible();
+    }
+    await expect(page.getByTestId("live-source-wcofs")).toContainText("Developmental");
+    await expect(page.getByTestId("live-source-dineof")).toContainText("CC0");
   });
 
   test("About keeps the four kinds, what it cannot tell you, the research, the providers and the review status", async ({ page }) => {
@@ -136,7 +155,13 @@ test.describe("the disclosures are still there", () => {
     await expect(page.getByTestId("about-cannot")).toContainText("satellites measure chlorophyll, which is algae, not toxin");
     await expect(page.getByTestId("research-relation")).toContainText("Neritic does not run those research models");
     await expect(page.getByTestId("research")).toContainText("matches, but does not beat, a standard ConvLSTM baseline");
-    await expect(page.getByTestId("about-providers").locator("li")).toHaveCount(7);
+    await expect(page.getByTestId("about-providers").locator("li")).toHaveCount(10);
+    // the kinds name today's destinations, never the v4 names
+    const kinds = page.getByTestId("about-kinds");
+    for (const [name, href] of [["Official notices", "/notices"], ["Explore California Waters", "/explore"], ["Research", "/research"], ["Fisheries", "/fisheries"]] as const)
+      await expect(kinds.getByRole("link", { name: new RegExp(`^${name}`) })).toHaveAttribute("href", href);
+    await expect(page.getByTestId("about-page")).not.toContainText(/Ocean Map|Bloom Intelligence|four colours/);
+    await expect(page.getByTestId("about-page")).toContainText("a ring is an official record not yet checked by a person");
     await expect(page.getByTestId("about-review")).toContainText("have not been checked by a person");
     await expect(page.getByTestId("about-independence")).toContainText("was called CoastWatch until October 2026");
   });

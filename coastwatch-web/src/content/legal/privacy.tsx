@@ -37,7 +37,7 @@ export function PrivacyBody() {
       <li>What Today showed at each port on your last visit, so it can say what changed since.</li>
       <li>Trips you save on My Coast: your vessels, costs, prices, catch and crew shares. These never leave your browser.</li>
       <li>Pages, records and chart pictures you save for offline use.</li>
-      <li>Display choices (day, dusk or night chart; introductions you dismissed).</li>
+      <li>Display choices (day, dusk or night chart; introductions you dismissed; where you placed, sized or collapsed the panels on a page).</li>
       <li>In the pilot account page: role, saved ports, feedback answers and trip feedback, and any confirmation or consent you gave there, with the time and the words shown.</li>
     </ul>
     <p>
@@ -61,6 +61,11 @@ export function PrivacyBody() {
       <li>Our hosting provider records standard server logs (IP address, browser type, page requested, time) to run and secure the service.</li>
       <li>We do not use advertising or cross-site tracking cookies. Signing in sets a cookie that keeps you signed in. Any product analytics we add will be first-party and cookieless.</li>
     </ul>
+    <h3>Ocean data Neritic fetches</h3>
+    <p>
+      Neritic&rsquo;s server fetches the live ocean data a page shows (NOAA WCOFS model guidance, NOAA CoastWatch’s gap-filled chlorophyll estimate, NDBC buoys, CO-OPS tides and National Weather
+      Service marine forecasts) directly from NOAA. Those requests name only the data and the area of the coast; they carry nothing about you, your ports or your trips, and your browser does not contact NOAA.
+    </p>
     <h3>Ask Neritic</h3>
     <p>If you use Ask Neritic, your question is sent to our AI provider to produce an answer from Neritic&rsquo;s published data. We keep questions and answers only if you agree, for up to 90 days, to check accuracy.</p>
 

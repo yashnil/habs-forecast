@@ -4,6 +4,7 @@ import { DISCLAIMER, RESEARCH } from "@/content/copy";
 import { loadData } from "@/lib/data";
 import { charmRun } from "@/lib/layers";
 import { InfoPage, InfoSection, infoStyles as s } from "@/nx/pages/InfoPage";
+import { LiveSources } from "@/nx/pages/LiveSources";
 import { OfficialSources } from "@/nx/pages/OfficialSources";
 import { registryTrust } from "@/nx/pages/registry.server";
 import { SourceRows } from "@/nx/pages/SourceRows";
@@ -15,6 +16,7 @@ const CONTENTS = [
   { id: "official-status-h", label: "Official closures and advisories" },
   { id: "research-h", label: "The research" },
   { id: "src-h", label: "Source status" },
+  { id: "live-h", label: "Live sources" },
   { id: "freshness-h", label: "How freshness is decided" },
 ];
 
@@ -69,6 +71,9 @@ export default async function SourcesPage() {
         ) : (
           <p className={s.note}>Source status cannot be shown because the data manifest is unavailable.</p>
         )}
+      </div>
+      <div className={s.section}>
+        <LiveSources />
       </div>
       <InfoSection id="freshness-h" title="How freshness is decided">
         <div className={s.prose}>
