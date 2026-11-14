@@ -731,19 +731,18 @@ export function Explore({ model }: { model: ExploreModel }) {
       <Ticket at={null} side="west" edge="gutter" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
         <TicketMain>
           <div className={s.head}>
-            <Micro as="p">{view === "coast" ? "Oregon to Mexico" : port ? `Near ${port.name}` : "California coast"}</Micro>
             <h1 id="nx-explore-title" className={s.title} data-testid="nx-explore-heading">
               Explore California Waters
             </h1>
             <div className={s.nav} data-testid="nx-explore-nav">
               {view === "coast" ? (
                 port ? (
-                  <Button variant="secondary" glyph={null} onClick={() => goView("port")} data-testid="nx-back-port">
+                  <Button variant="quiet" onClick={() => goView("port")} data-testid="nx-back-port">
                     Back to {port.name}
                   </Button>
                 ) : null
               ) : (
-                <Button variant="secondary" glyph={null} onClick={() => goView("coast")} data-testid="nx-whole-coast">
+                <Button variant="quiet" onClick={() => goView("coast")} data-testid="nx-whole-coast">
                   Whole coast
                 </Button>
               )}
@@ -774,7 +773,8 @@ export function Explore({ model }: { model: ExploreModel }) {
               );
             })}
             {/* a layer this data run does not hold stays in the group, disabled, with the reason (never dropped silently) */}
-            {model.missing.map((m) => (
+            {/* (a layer not published yet is named once, in the line under the switch, never as a chip that looks like a layer) */}
+            {model.missing.filter((m) => m.why !== "Not published yet").map((m) => (
               <button key={m.id} type="button" role="radio" aria-checked={false} disabled className={s.switchItem} data-missing="1" data-testid={`nx-layer-${m.id}`}>
                 <span>{m.label}</span>
                 <small>{m.why.toLowerCase()}</small>
