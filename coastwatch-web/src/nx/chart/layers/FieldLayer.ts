@@ -247,6 +247,8 @@ export type FieldController = CustomLayerInterface & {
   setColours: (c: ModeColours) => void;
   /** the whole layer's opacity, 0..1 (a fade in once the frame is whole) */
   setFade: (a: number) => void;
+  /** the reader's opacity for the field, 0..1 (contours show beneath it); multiplies the fade */
+  setOpacity: (a: number) => void;
   /** frames drawn since added (the e2e hook) */
   draws: () => number;
 };
@@ -268,6 +270,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
   let dirty = true;
   let drawn = 0;
   let fade = 1;
+  let alpha = 1;
   const mat = new Float32Array(16);
 
   const upload = (g: WebGL2RenderingContext, t: WebGLTexture, codes: Uint16Array, w: number, h: number) => {
@@ -320,6 +323,10 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
     },
     setFade(a) {
       fade = Math.max(0, Math.min(1, a));
+      map?.triggerRepaint();
+    },
+    setOpacity(a) {
+      alpha = Math.max(0, Math.min(1, a));
       map?.triggerRepaint();
     },
     onAdd(m, ctx) {
@@ -403,7 +410,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       g.uniform1f(u.u_adj, style.kind === "ramp" && data.adjacentCode != null ? data.adjacentCode : -1);
       g.uniform1f(u.u_out, style.kind === "ramp" && data.outCode != null ? data.outCode : -1);
       g.uniform1f(u.u_loading, style.kind === "ramp" && data.loadingCode != null ? data.loadingCode : -1);
-      g.uniform1f(u.u_fade, fade);
+      g.uniform1f(u.u_fade, fade * alpha);
       g.uniform2f(u.u_iso, style.kind === "isolines" ? (style.scale ?? 1) : 1, style.kind === "isolines" ? (style.offset ?? 0) : 0);
       g.bindVertexArray(vao);
       g.drawArrays(g.TRIANGLE_STRIP, 0, 4);

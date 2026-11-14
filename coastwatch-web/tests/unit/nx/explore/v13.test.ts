@@ -125,7 +125,8 @@ describe("E-5: what a readout's stamp says the date is", () => {
   it("the fixture's outlook and C-HARM frames carry their issue dates", () => {
     const m = build("2026-10-13T06:00:00Z");
     expect(m.products.find((p) => p.id === "outlook")!.frames[0].issued).toBe("2026-10-12");
-    expect(m.products.find((p) => p.id === "charm")!.frames.every((x) => x.issued === "2026-10-08")).toBe(true);
+    // round 2 (C): C-HARM's issue date is inferred in the fixture (issued_date_derived): no frame claims one
+    expect(m.products.find((p) => p.id === "charm")!.frames.every((x) => x.issued === null)).toBe(true);
   });
 });
 

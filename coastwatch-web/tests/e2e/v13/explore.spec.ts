@@ -42,7 +42,8 @@ test("C-HARM reads a whole percent with one sign, titled as one cell of the mode
   const figure = (await readout(page).locator("p").filter({ hasText: "%" }).first().innerText()).replace(/\s+/g, " ").trim();
   expect(figure).toMatch(/^\d{1,3} ?%$/);
   expect(await readout(page).innerText()).not.toContain("%%");
-  await expect(readout(page)).toContainText("Model · C-HARM v3.1, run of Oct 8 · valid Oct 10");
+  // round 2 (C): the fixture's issue date is inferred (issued_date_derived), so the stamp names no run date
+  await expect(readout(page)).toContainText("Model · C-HARM v3.1 · valid Oct 10");
 });
 
 test("water outside a model's cells is ruled 'outside the model', keyed in the legend, and its reason is where the gap is", async ({ page }) => {
@@ -128,7 +129,9 @@ test("the reading is the cell that was read: its centre in the header, its outli
   // the legend (its ramp, unit and date) stays whole at the head of the margin while the reading is scrolled through
   await readout(page).getByTestId("nx-coast-link").scrollIntoViewIfNeeded();
   const legend = page.getByTestId("nx-legend");
-  await expect(legend).toBeInViewport({ ratio: 1 });
+  // round 2: the legend's scale (its title, ramp and unit) stays whole; the dates and caveats are one tap away in
+  // "About this layer" below it
+  await expect(legend.locator("figure").first()).toBeInViewport({ ratio: 1 });
   await expect(legend).toContainText("P(pDA > 500 ng/L)");
   const lb = (await legend.boundingBox())!, mb = (await page.getByTestId("nx-margin").boundingBox())!;
   expect(lb.y).toBeGreaterThanOrEqual(mb.y - 1);
@@ -140,7 +143,7 @@ test("the reading is the cell that was read: its centre in the header, its outli
   await readout(page).getByTestId("nx-coast-link").scrollIntoViewIfNeeded();
   const ramp = page.getByTestId("nx-legend-sticky");
   await expect(ramp).toContainText("mg/m³");
-  await expect(page.getByTestId("nx-legend")).toBeInViewport({ ratio: 1 });
+  await expect(page.getByTestId("nx-legend").locator("figure").first()).toBeInViewport({ ratio: 1 });
   const bar = (await page.locator(".n12-bar, [data-testid=nx-bar]").first().boundingBox()) ?? { y: 0, height: 0 };
   expect((await page.getByTestId("nx-legend").boundingBox())!.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
 });
@@ -160,7 +163,7 @@ test("a reading moves into My Coast with the port, the cell and its date", async
 });
 
 test("playing the days with a reading open never flashes 'Reading…'; the count says which day is on show", async ({ page }) => {
-  await page.goto(`${OK}/explore?place=port-592&at=36.8700,-122.0200`);
+  await page.goto(`${OK}/explore?rail=1&place=port-592&at=36.8700,-122.0200`);
   await mapReady(page);
   await expect(readout(page)).toContainText("Chlorophyll in this 300 m cell");
   await page.evaluate(() => {
@@ -190,7 +193,7 @@ test("playing the days with a reading open never flashes 'Reading…'; the count
 });
 
 test("the time rail runs along the foot of the chart at desktop, and reads in the sheet on a phone", async ({ page }) => {
-  await page.goto(`${OK}/explore?place=port-592`);
+  await page.goto(`${OK}/explore?rail=1&place=port-592`);
   await mapReady(page);
   const rail = page.getByTestId("nx-timerail");
   await expect(rail).toBeVisible();
@@ -415,7 +418,7 @@ test("OLCI chlorophyll: the two pixels beside land are 'left out', in words and 
 test("phone: with a reading open, the layer switch and Play are in reach at the sheet's lowest height, the chart still in view (F-01)", async ({ page }) => {
   for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
     await page.setViewportSize(size);
-    await page.goto(`${OK}/explore?place=port-592`);
+    await page.goto(`${OK}/explore?rail=1&place=port-592`);
     await mapReady(page);
     await fieldDrawn(page, "olci:latest");
     const sheet = page.getByTestId("nx-margin");
@@ -521,7 +524,7 @@ test("the time rail fits what holds it: Play inside the dock at every pane width
   };
   for (const w of [1440, 1280, 1100, 900]) {
     await page.setViewportSize({ width: w, height: 900 });
-    await page.goto(`${OK}/explore?place=port-592`);
+    await page.goto(`${OK}/explore?rail=1&place=port-592`);
     await mapReady(page);
     await page.waitForTimeout(500);
     await fits(`${w}`);
@@ -533,7 +536,7 @@ test("the time rail fits what holds it: Play inside the dock at every pane width
   }
   for (const size of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
     await page.setViewportSize(size);
-    await page.goto(`${OK}/explore?place=port-592`);
+    await page.goto(`${OK}/explore?rail=1&place=port-592`);
     await mapReady(page);
     await page.getByTestId("nx-timerail").scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);

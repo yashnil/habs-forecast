@@ -23,7 +23,7 @@ app's server at request time from the agency (nothing published by our pipeline)
 |---|---|---|---|---|---|---|---|---|---|
 | Satellite chlorophyll-a, Sentinel-3 OLCI 300 m, latest clear view (`olci300_chl_latest`) | Near-surface algae biomass (chlorophyll-a concentration). Not toxin, not Pseudo-nitzschia, not fish. | mg m⁻³ (log10-encoded u16) | 125.5–117.0 °W, 32.4–42.1 °N; 3400 × 3880 cells at 0.0025° (≈ 280 m), chunked 512²; coastal ocean only (bays within ≈ 12 km kept, lakes out); 80 % of C-HARM ocean cells observed in the 7-day window | Pipeline every 6 h; one satellite pass per day per platform (S-3A, S-3B) | Composite: each pixel its own newest clear day within 7 days (per-pixel age grid); clouds and fog are gaps, never filled | NOAA CoastWatch ERDDAP `noaacwS3[A/B]OLCIchlaSector[CI/DI]Daily` (Copernicus/EUMETSAT) | pixels 2026-11-05 … **2026-11-10** (ref. 2026-11-12) / pixels … 2026-11-07 | **live** | yes: Chlorophyll, frame "Latest" |
 | Same sensor, single days (`olci300_chl_YYYY-MM-DD`, 6 per run) | One day's clear pixels | mg m⁻³ | Same grid; day coverage varies 0–100 % by region (e.g. Nov 8: S. California 0 %) | as above | One calendar day | as above | 2026-11-05 … **2026-11-10** / 2026-11-02 … 2026-11-07 | **live** | yes: day frames on the time rail, playable |
-| Satellite chlorophyll-a, VIIRS 750 m, latest clear view (`viirs750_chl_latest`) | as above, coarser sensor, different algorithm | mg m⁻³ | 1133 × 1293 at 0.0075° (≈ 830 m); 95 % of C-HARM ocean cells | daily composite | 7-day latest clear view, per-pixel age | NOAA CoastWatch West Coast `erdVHNchla1day` (Suomi-NPP; fallback while NOAA-20/21 are unavailable) | pixels 2026-11-05 … **2026-11-07** / … 2026-11-07 | **live** | yes: second track "VIIRS 750 m" |
+| Satellite chlorophyll-a, VIIRS 750 m, latest clear view (`viirs750_chl_latest`) | as above, coarser sensor, different algorithm | mg m⁻³ | 1133 × 1293 at 0.0075° (≈ 830 m); 95 % of C-HARM ocean cells | daily composite | 7-day latest clear view, per-pixel age | NOAA CoastWatch VIIRS: production now reads the NOAA-21/NOAA-20 merges (`noaacwN21VIIRSchlaSectorUSDaily`, `noaacwN20…`); staging still runs older code on S-NPP `erdVHNchla1day`, which ended (NOAA announced S-NPP products ceased Nov 2, 2026; last day 11-07) | production 11-11 (14 Nov audit) / staging 11-07 (S-NPP) | **live** | yes: second track "VIIRS 750 m" |
 | Multi-sensor chlorophyll display (`multisensor_chl_latest`) | OLCI where present, VIIRS elsewhere; display only | mg m⁻³ | Tiles z5–11 over 125.5–117.0 °W, 32.4–42.1 °N; no value grid | daily | 7-day latest | Rendered by Neritic from the two above | 2026-11-10 / 2026-11-07 | **live** (tiles only) | no (Explore reads values; this has none) |
 | NASA GIBS VIIRS NOAA-20 chlorophyll (`gibs_viirs_noaa20_chl`) | Browse imagery for visual context | mg m⁻³ (NASA legend; values not readable) | Global WMTS, native z7 (≈ 1 km) | daily | One day | NASA GIBS `VIIRS_NOAA20_Chlorophyll_a` | **2026-11-10** / 2026-11-07 | **live** (browse tiles) | no (no values: cannot carry a readout) |
 | NASA GIBS PACE OCI chlorophyll (`gibs_pace_oci_chl`) | as above | as above | as above | daily | One day | NASA GIBS `OCI_PACE_Chlorophyll_a` | **2026-11-11** / 2026-11-08 | **live** (browse tiles) | no |
@@ -80,3 +80,25 @@ Nothing in v15.1 publishes data or changes the pipeline.
 - Monterey Wharf's last pDA is 2022-08-31 although temperature is sampled weekly: a variable not collected, not a
   pipeline gap (owned by the Research coverage audit).
 - HF radar has no cells north of Cape Mendocino in either channel (radar coverage, not a pipeline fault).
+
+## Round 2 (2026-11-14): freshness, the estimate and the model layers
+
+From the freshness and gap-fill audits (S/v151/audit-freshness.md, audit-gapfill.md; read-only):
+
+- **C-HARM v3.1 stopped upstream.** The newest run anywhere was written 2026-11-05 (nowcast valid 11-02, leads 11-03 to
+  11-05); no official endpoint has anything newer. NOAA announced S-NPP products ended Nov 2; C-HARM takes S-NPP VIIRS as
+  input and has not been updated since (the link is inferred, not a NOAA statement about C-HARM). The manifest's
+  issue date is inferred (`issued_date_derived`, nowcast + 1 day; NOAA releases come about 3 days after the nowcast),
+  so Explore never shows it: the run is labelled by its valid days, "last run available, expired".
+- **OLCI** in production runs about 2 days behind upstream (ERDDAP index lag); **VIIRS** is current from NOAA-20/21;
+  **HF radar** is current (2–9 h). Staging is about 5 days behind and still on S-NPP.
+- **Gap-filled chlorophyll estimate**: NOAA DINEOF (2.3 km), read live at `/explore/model/chlorophyll` (Agent F). It is
+  stale (newest day 2026-11-02; it stopped with S-NPP), has no per-pixel uncertainty, and reads about 3 times low near
+  shore. Explore offers it as "Estimate" under Chlorophyll, hatched as an estimate, not drawn within 2 km of shore, on
+  the Analysis / Estimates track, labelled with its day and "stale".
+- **NOAA WCOFS** (developmental model guidance, 0.04°, 3-hourly): predicted surface currents and model sea temperature,
+  read live at `/explore/model/wcofs`. Nowcast steps sit on Analysis / Estimates, forecast steps on Forecasts; nothing is
+  drawn within the model's near-shore distance; a step that cannot be read is marked and nothing is drawn in its place.
+  Predicted currents are drawn in their own colour beside the measured HF radar, never as a HAB prediction.
+- **Not exposed**: PR #74's gap-fill estimate and 8-day outlook (failed validation): "Experimental chlorophyll
+  outlook: not available (not validated)".

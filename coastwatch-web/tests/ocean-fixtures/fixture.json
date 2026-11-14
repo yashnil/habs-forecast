@@ -1,0 +1,11 @@
+{
+  "recorded_at": "2026-11-14T10:20:00Z",
+  "note": "Recorded upstream responses for the ocean model routes (src/lib/ocean/upstream.ts fixture mode), recorded 2026-11-14: WCOFS 2026-11-14 t03z cycle (n024 and f024 only; other steps answer as not recorded) and NOAA DINEOF chlorophyll 2026-11-02 (the newest day then).",
+  "files": {
+    "https://opendap.co-ops.nos.noaa.gov/thredds/catalog/NOAA/WCOFS/MODELS/2026/11/14/catalog.xml": "wcofs-catalog-20261114.xml.gz",
+    "https://opendap.co-ops.nos.noaa.gov/thredds/dodsC/NOAA/WCOFS/MODELS/2026/11/14/wcofs.t03z.20261114.regulargrid.n024.nc.dods?u_eastward%5B0%5D%5B0%5D%5B349:1:592%5D%5B509:1:709%5D,v_northward%5B0%5D%5B0%5D%5B349:1:592%5D%5B509:1:709%5D,temp%5B0%5D%5B0%5D%5B349:1:592%5D%5B509:1:709%5D,time": "wcofs-20261114-n024.dods.gz",
+    "https://opendap.co-ops.nos.noaa.gov/thredds/dodsC/NOAA/WCOFS/MODELS/2026/11/14/wcofs.t03z.20261114.regulargrid.f024.nc.dods?u_eastward%5B0%5D%5B0%5D%5B349:1:592%5D%5B509:1:709%5D,v_northward%5B0%5D%5B0%5D%5B349:1:592%5D%5B509:1:709%5D,temp%5B0%5D%5B0%5D%5B349:1:592%5D%5B509:1:709%5D,time": "wcofs-20261114-f024.dods.gz",
+    "https://coastwatch.noaa.gov/erddap/griddap/noaacwNPPN20S3ASCIDINEOF2kmDaily.csv?time%5B(last)%5D": "dineof-latest.csv",
+    "https://coastwatch.noaa.gov/erddap/griddap/noaacwNPPN20S3ASCIDINEOF2kmDaily.dods?chlor_a%5B(2026-11-02T12:00:00Z)%5D%5B(0.0)%5D%5B(42.1):1:(32.4)%5D%5B(-125.5):1:(-117.0)%5D": "dineof-20261102.dods.gz"
+  }
+}

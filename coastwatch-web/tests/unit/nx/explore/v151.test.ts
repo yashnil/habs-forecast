@@ -52,12 +52,13 @@ describe("layer metadata", () => {
     expect(m("chl")).toMatchObject({ productClass: "observation", units: "mg/m³", role: "surface" });
     expect(m("chl").when).toMatch(/Oct/);
     expect(m("charm")).toMatchObject({ productClass: "model", units: "probability (%)" });
-    expect(m("charm").when).toMatch(/^run of .+, valid .+\(past run\)$/);
+    // an inferred issue date is never shown: the run is dated by its valid days (round 2, C)
+    expect(m("charm").when).toMatch(/^valid .+ \(expired\)$/);
     expect(m("charm").note).toMatch(/not a measured toxin/);
     expect(m("currents")).toMatchObject({ productClass: "observation", units: "kn · cm/s", role: "overlay" });
     expect(m("currents").when).toMatch(/\d+ hours to /);
     expect(m("stations").when).toMatch(/1 shore stations, newest sample Oct 6; 1 buoys read live/);
-    expect(chipWords(m("charm"))).toMatch(/^Model · run of/);
+    expect(chipWords(m("charm"))).toMatch(/^Model · valid /);
     expect(chipWords(m("chl"))).toMatch(/^Observation · /);
   });
   it("chlorophyll is never called toxin", () => {
@@ -75,7 +76,7 @@ describe("missing and unpublished data", () => {
   it("gated: SST and the outlook are not live; they are named as not published yet", () => {
     expect(gated.products.map((p) => p.id)).toEqual(["chl", "charm"]);
     expect(gated.missing.filter((x) => x.id === "sst" || x.id === "outlook").every((x) => x.why === "Not published yet")).toBe(true);
-    expect(notPublished(gated)).toEqual(["sea temperature", "the 8-day chlorophyll outlook"]);
+    expect(notPublished(gated)).toEqual(["sea temperature", "the experimental chlorophyll outlook (not validated)"]);
     expect(layerMetas(gated).some((x) => x.id === "sst" || x.id === "outlook")).toBe(false);
     expect(notPublished(full)).toEqual([]);
   });
@@ -172,5 +173,122 @@ describe("land and the open ocean read as outside the layer's area, never cloud 
   });
   it("north or south of California, an unseen cell is outside", () => {
     expect(outsideObservedArea({ lat: 43, lon: -124.5, row: 0, col: 10, compositeEmpty: true, westmost: null, shoreLon })).toBe(true);
+  });
+});
+
+import { DEFAULT_PREFS, parsePrefs } from "@/nx/explore/prefs";
+import { expiredWords, familyOf } from "@/nx/explore/TimeRail";
+
+describe("round 2 (A): Explore's choices kept on the device", () => {
+  it("a version-1 record is read; anything else gives the defaults", () => {
+    expect(parsePrefs(JSON.stringify({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true, rail: true }))).toEqual({ v: 1, base: "chart", opacity: 0.5, depth: false, regulation: true, currents: true, stations: true, rail: true });
+    expect(parsePrefs(null)).toEqual(DEFAULT_PREFS);
+    expect(parsePrefs("{not json")).toEqual(DEFAULT_PREFS);
+    expect(parsePrefs(JSON.stringify({ v: 2, base: "chart" }))).toEqual(DEFAULT_PREFS);
+  });
+  it("odd values are clamped or dropped, never trusted", () => {
+    const p = parsePrefs(JSON.stringify({ v: 1, base: "<script>", opacity: 7, depth: "yes" }));
+    expect(p.base).toBe("chl");
+    expect(p.opacity).toBe(1);
+    expect(p.depth).toBe(true);
+    expect(parsePrefs(JSON.stringify({ v: 1, opacity: 0.01 })).opacity).toBe(0.2);
+  });
+});
+
+describe("round 2 (E): the time rail's families", () => {
+  it("measured layers are observations, analyses estimates, models and outlooks forecasts", () => {
+    expect(familyOf({ kind: "measured" })).toBe("obs");
+    expect(familyOf({ kind: "analysis" })).toBe("est");
+    expect(familyOf({ kind: "model" })).toBe("fc");
+    expect(familyOf({ kind: "outlook" })).toBe("fc");
+  });
+  it("an expired run says its last run, its valid interval and that it is not current", () => {
+    const w = expiredWords({ runIssued: "2026-11-03", frames: [{ start: "2026-11-02", end: "2026-11-02" }, { start: "2026-11-05", end: "2026-11-05" }] as never });
+    expect(w).toMatch(/^Last run Nov 3, valid Nov 2–5\. Expired: .*not a current forecast\.$/);
+  });
+});
+
+import { chlEstimateStateWords, chlEstimateUsable, maskedCodes, maskedVectors, wcofsStateWords, wcofsTracks, wcofsUsable } from "@/nx/explore/ocean";
+
+describe("round 2 (B, D): the live model and estimate layers", () => {
+  it("near shore and land are left out of a model grid and its vectors (mask: 0 land, 1 water, 2 near shore)", () => {
+    const mask = Uint16Array.from([1, 2, 0, 1]);
+    expect([...maskedCodes({ nodata: 65535 }, Uint16Array.from([5, 6, 7, 8]), mask)]).toEqual([5, 65535, 65535, 8]);
+    const m = maskedVectors(Float32Array.from([1, 1, 1, 1]), Float32Array.from([2, 2, 2, 2]), mask);
+    expect([...m.u].map((x) => (Number.isNaN(x) ? null : x))).toEqual([1, null, null, 1]);
+  });
+  const step = (id: string, kind: "nowcast" | "forecast", t: string) => ({ id, kind, track: kind === "nowcast" ? "estimates" : "forecasts", lead_h: 0, valid_time: t, grids: {} }) as never;
+  const ix = { status: "current", reason: null, source: {}, cycle: { id: "2026111403", issued: "", steps_available: 2, steps_expected: 2 }, valid: { start: "2026-11-13T06:00:00Z", end: "2026-11-17T03:00:00Z" }, fallback: false, default_step: "f006", steps: [step("f006", "forecast", "2026-11-14T09:00:00Z"), step("n024", "nowcast", "2026-11-14T03:00:00Z")], families: {}, near_shore_km: 6, caveats: [], generated_at: "" } as never;
+  it("nowcast steps go to Analysis / Estimates, forecast steps to Forecasts, each in time order", () => {
+    const t = wcofsTracks(ix);
+    expect(t.nowcast.map((x) => x.id)).toEqual(["n024"]);
+    expect(t.forecast.map((x) => x.id)).toEqual(["f006"]);
+    expect(wcofsUsable(ix)).toBe(true);
+    expect(wcofsStateWords(ix, true)).toMatch(/^NOAA WCOFS model guidance \(developmental\) · cycle Nov 14 03z/);
+  });
+  it("an unavailable source says so and is never offered", () => {
+    const u = { status: "unavailable", reason: "upstream did not answer", cycle: null, steps: [] } as never;
+    expect(wcofsUsable(u)).toBe(false);
+    expect(wcofsStateWords(u, true)).toBe("NOAA WCOFS is unavailable: upstream did not answer.");
+    expect(chlEstimateUsable({ status: "unavailable", grids: null, date: null } as never)).toBe(false);
+  });
+  it("a stale estimate is offered, dated and said stale", () => {
+    const c = { status: "stale", date: "2026-11-02", age_days: 12, grids: { chl: {}, mask: {} }, reason: null } as never;
+    expect(chlEstimateUsable(c)).toBe(true);
+    expect(chlEstimateStateWords(c, true)).toMatch(/^Gap-filled estimate \(NOAA DINEOF\), Nov 2, stale: 12 days old, no newer day published\. Reconstructed .* not observed\.$/);
+  });
+});
+
+import { extendAxis, pickServedStep, playableSteps, stepsAxis } from "@/nx/explore/ocean";
+
+describe("round 2: one shared, true axis; served steps only", () => {
+  it("the axis widens to the latest model time and the estimate's day, never narrows", () => {
+    expect(extendAxis(["2026-10-29", "2026-11-14"], ["2026-11-17T03:00:00Z"], ["2026-11-02"])).toEqual(["2026-10-29", "2026-11-16"]);
+    expect(extendAxis(["2026-10-29", "2026-11-14"], [], ["2026-10-20"])).toEqual(["2026-10-20", "2026-11-14"]);
+    expect(stepsAxis([{ valid_time: "2026-11-17T03:00:00Z" }, { valid_time: "2026-11-13T06:00:00Z" }])).toEqual(["2026-11-12", "2026-11-16"]);
+  });
+  it("opens on the served step nearest to now, trying nearest first", async () => {
+    const steps = [{ id: "n003", valid_time: "2026-11-13T06:00:00Z" }, { id: "n024", valid_time: "2026-11-14T03:00:00Z" }, { id: "f006", valid_time: "2026-11-14T09:00:00Z" }];
+    const tried: string[] = [];
+    const st = await pickServedStep(steps, "2026-11-14T08:00:00Z", async (s) => (tried.push(s.id), s.id === "n024"));
+    expect(st?.id).toBe("n024");
+    expect(tried).toEqual(["f006", "n024"]);
+    expect(await pickServedStep(steps, "2026-11-14T08:00:00Z", async () => false)).toBeNull();
+  });
+  it("only forecast steps play, in order, without the unserved ones", () => {
+    const s = [{ id: "f006", kind: "forecast" as const, valid_time: "2026-11-14T09:00:00Z" }, { id: "n024", kind: "nowcast" as const, valid_time: "2026-11-14T03:00:00Z" }, { id: "f003", kind: "forecast" as const, valid_time: "2026-11-14T06:00:00Z" }];
+    expect(playableSteps(s, new Set()).map((x) => x.id)).toEqual(["f003", "f006"]);
+    expect(playableSteps(s, new Set(["f003"])).map((x) => x.id)).toEqual(["f006"]);
+  });
+});
+
+import { isolineLabels, traceIsolines } from "@/nx/chart/layers/contours";
+
+describe("isotherms traced on the CPU: nothing along a mask or the grid's edge, no tiny rings", () => {
+  const N = 65535;
+  const grid = (w: number, h: number) => ({ width: w, height: h, lat_first: 36, lat_step: 0.04, lon_first: -123, lon_step: 0.04, scale_factor: 1, add_offset: 0, nodata: N, transform: "none" as const });
+  it("a cell with a missing corner emits no segment", () => {
+    // a west-east gradient 0..4 with the middle column masked: no line may cross the masked column
+    const w = 5, h = 5;
+    const codes = new Uint16Array(w * h);
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) codes[r * w + c] = c === 2 ? N : c;
+    const lines = traceIsolines(grid(w, h), codes, { step: 1, index: 2, toValue: (k) => k });
+    for (const l of lines) for (const [lon] of l.coords) expect(Math.abs(lon - (-123 + 2 * 0.04))).toBeGreaterThan(0.039);
+    expect(lines.some((l) => l.level === 0.5 || l.level === 1)).toBe(true);
+  });
+  it("a tiny closed ring is dropped below the minimum length", () => {
+    const w = 6, h = 6;
+    const codes = new Uint16Array(w * h).fill(10);
+    codes[2 * w + 2] = 20; // one warm cell: a ring of about one cell
+    expect(traceIsolines(grid(w, h), codes, { step: 5, index: 2, toValue: (k) => k }).length).toBeGreaterThan(0);
+    expect(traceIsolines(grid(w, h), codes, { step: 5, index: 2, toValue: (k) => k, minKm: 12 }).length).toBe(0);
+  });
+  it("labels the longest line of a few major levels in degrees", () => {
+    const w = 8, h = 8;
+    const codes = new Uint16Array(w * h);
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) codes[r * w + c] = 60 + c;
+    const labels = isolineLabels(traceIsolines(grid(w, h), codes, { step: 1, index: 2, toValue: (k) => k }));
+    expect(labels.length).toBeGreaterThan(0);
+    expect(labels.every((l) => /^\d+°$/.test(l.text) && Number(l.text.replace("°", "")) % 2 === 0)).toBe(true);
   });
 });
