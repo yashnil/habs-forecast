@@ -616,7 +616,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           const from = m.getCenter();
           const ws = worldSize(Math.min(m.getZoom(), target.zoom));
           const dist = Math.hypot((lngX(target.center[0]) - lngX(from.lng)) * ws, (latY(target.center[1]) - latY(from.lat)) * ws) + Math.abs(target.zoom - m.getZoom()) * 160;
-          const duration = tier === "reduced" ? 300 : flightSeconds(dist) * 1000;
+          const duration = tier === "reduced" ? 300 : (scene.flightMs ?? flightSeconds(dist) * 1000);
           const delay = flightDelay();
           noteFlight(delay, duration);
           panUntil.current = performance.now() + delay + duration;

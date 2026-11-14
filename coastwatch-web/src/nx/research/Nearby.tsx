@@ -170,7 +170,7 @@ export function Nearby({
               </ul>
               {not.length ? (
                 <p className={n.not} data-testid={`nearby-not-${r.station.station_id}`}>
-                  <Glyph kind="none" /> Not collected here: {not.map((c) => ROW[c.v].toLowerCase()).join(", ")}
+                  <Glyph kind="none" /> Not collected here: {not.map((c) => NEARBY_SHORT[c.v]).join(", ")}
                 </p>
               ) : null}
             </li>

@@ -128,7 +128,10 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
       // a ticket the reader has moved stands where they put it (ds/panels); its resting place is still worked out,
       // so the page's other panels keep their default layout around it
       const free = movedRef.current;
-      if (!free) el.style.maxHeight = overCtrl(sideLeft) ? `${Math.max(240, bottomOf(sideLeft) - top0)}px` : "";
+      // never past the stage's foot (or the chart's buttons): the ticket's own scroller takes what does not fit
+      // (and no taller than the design's own cap, the screen less the stage's top and a gutter)
+      const cap = H - read(el, "--stage-top", 136) - g;
+      if (!free) el.style.maxHeight = `${Math.max(240, Math.min(cap, bottomOf(sideLeft) - top0))}px`;
       const h = el.offsetHeight;
       let left: number, top: number;
       const line = lineRef.current;
@@ -136,6 +139,7 @@ export function Ticket({ at, anchorY = 160, width, side = "east", label, labelle
         const p = f.project(lon, lat);
         left = Math.round(Math.max(g, Math.min(W - g - w, side === "east" ? p.x + STUB_GAP : p.x - STUB_GAP - w)));
         top = Math.round(Math.max(Math.max(topLimit(el, left, w), preferTop ?? 0), Math.min(bottomOf(left) - h, p.y - anchorY)));
+        if (!free && top + h > bottomOf(left)) el.style.maxHeight = `${Math.max(240, Math.min(cap, bottomOf(left) - top))}px`;
         notePanel(panelKey, { rest: { x: left, y: top, w, h } });
         if (free) {
           if (line) line.style.visibility = "hidden";

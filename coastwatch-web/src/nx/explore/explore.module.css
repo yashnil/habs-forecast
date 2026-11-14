@@ -149,7 +149,8 @@
 /* with the cell outlined, the ring steps back to the dot at its centre */
 .chartPoint[data-cell="outlined"] .chartPointRing { display: none; }
 /* top right: inland, clear of the water and the coastal town names the bottom corner covered (critic 12) */
-.locator { position: absolute; top: calc(var(--nx-cover-top, 0px) + var(--s-8)); right: calc(var(--nx-cover-right, 0px) + var(--s-8)); display: block; pointer-events: none; }
+/* below the floating bar and its menu (v15.1 review: it collided with Menu at 320) */
+.locator { position: absolute; top: calc(var(--nx-cover-top, 0px) + var(--s-64) + var(--s-8)); right: calc(var(--nx-cover-right, 0px) + var(--s-8)); display: block; pointer-events: none; }
 .locatorGround { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
 .locatorCoast { fill: none; stroke: var(--ink-2); stroke-width: 1; stroke-linejoin: round; }
 .locatorView { fill: none; stroke: var(--ink); stroke-width: 1.5; }
@@ -256,3 +257,23 @@
 .about > summary:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; border-radius: var(--r-sm); }
 .aboutBody { display: grid; gap: var(--s-8); padding-bottom: var(--s-4); }
 .aboutBody p { margin: 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
+
+/* the whole coast arriving: words and a thin bar, nothing hatched meanwhile */
+.fieldLoading { display: grid; gap: var(--s-4); margin: 0; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.fieldBar { display: block; height: 3px; border-radius: var(--r-pill); background: var(--paper-2); overflow: hidden; }
+.fieldBar > span { display: block; height: 100%; background: var(--ultra); transform-origin: 0 50%; transition: transform var(--dur-hover) linear; }
+.swatchArea { fill: var(--paper); fill-opacity: 0.5; stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+/* the timeline's own toggle, top right of the dock, beside Play */
+.railToggle { position: absolute; top: var(--s-10); right: calc(var(--s-20) + 64px); z-index: 1; }
+.timeDock[data-open="0"] .railHead { padding-right: calc(3 * var(--s-64) - var(--s-12)); }
+
+/* v15.1 review: in Explore its own switch is the one set of layer controls (Today's chips step aside), and with a
+   field on the chart the water's names never sit on the data */
+:global(html:has([data-nx-explore-field="1"])) :global(.nx-layers),
+:global(html:has([data-nx-explore-field="1"])) :global(.n12-water-name),
+:global(html:has([data-nx-explore-field="1"])) :global(.n12-water-name-svg) { display: none; }
+/* the radar's hours: their own dated axis, set apart from the days and their Now; old hours step back */
+.hoursBlock { margin-top: var(--s-10); }
+.railRow[data-old="1"] .barMeasured { opacity: 0.38; }
+.railOld { font-weight: var(--w7); color: var(--coral-ink); }
+.zoomHint { font-weight: var(--w7); color: var(--ink); }

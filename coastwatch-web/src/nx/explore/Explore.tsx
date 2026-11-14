@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
+import { animate, useReducedMotion } from "motion/react";
+import { layerIn, layerOut } from "@/nx/ds/motion";
+import { markForDisplay, westmostPerRow } from "@/nx/chart/layers/marks";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, Micro, MapLayers, type Provenance } from "@/nx/ds";
 import { getFrame, onFrame } from "@/nx/chart/runtime";
@@ -20,7 +22,7 @@ import { createFieldLayer, type FieldController, type FieldStyle } from "@/nx/ch
 import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLayer";
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
-import { loadCodes, boxAround } from "./codes";
+import { loadCodes, loadedChunks, boxAround } from "./codes";
 import { barPadTop, COAST_ZOOM, coversPort, EXPLORE_ZOOM, exploreBounds, STATE_BOUNDS, withinFor } from "./camera";
 import { backLink, readFrom, readView, type ExploreView } from "./links";
 import { cellKmOf, chipWords, layerMetas, notPublished, resolutionNote, speedStats, speedWords } from "./layers";
@@ -41,6 +43,9 @@ import s from "./explore.module.css";
 
 /** What a layer's nearest pier measurement is called, in a sentence. */
 const MEASURE_WORDS: Record<ProductId, string> = { chl: "chlorophyll", outlook: "chlorophyll", sst: "water temperature", charm: "domoic acid" };
+
+/** The flight between a port and the whole coast, ms (v15.1 review: a deliberate 1.2–1.8 s, not a 0.4 s zoom). */
+const STATE_FLIGHT_MS = 1500;
 
 type Win = Window & { __nxExplore?: Record<string, unknown> };
 
@@ -127,6 +132,9 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [view, setView] = useState<ExploreView>(init.view);
   const from = init.from;
   const [stationsOn, setStationsOn] = useState(init.stations);
+  // the timeline: a slim strip statewide until opened, open at a port (null: the view's default)
+  const [railOpen, setRailOpen] = useState<boolean | null>(null);
+  const railShown = railOpen ?? view !== "coast";
   const [pick, setPick] = useState<StationPick | null>(null);
   // the camera's zoom and latitude, for the legend's resolution line (rounded, so a pan does not re-render)
   const [scale, setScale] = useState<{ zoom: number; lat: number } | null>(null);
@@ -215,43 +223,80 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
   }, [map]);
 
+  // each track's westernmost pixel per row, from its fully loaded latest view: west of it is outside the layer's
+  // area (a plain tint), not cloud (the hatch) (chart/layers/marks.ts)
+  const westRef = useRef(new Map<string, Int32Array>());
+  // the statewide frame's progress while it loads (the field is drawn once, whole, then fades in)
+  const [fieldLoad, setFieldLoad] = useState<{ loaded: number; total: number } | null>(null);
   useEffect(() => {
     const layer = fieldRef.current;
     if (!map || !layer || !product || !frame?.grid) {
       layer?.setData(null, { kind: "ramp", domain: CHL_DOMAIN, scale: "log" });
       setIsoLabels([]);
+      setFieldLoad(null);
       return;
     }
     let live = true;
     const g = frame.grid;
     const st = styleFor(product, frame);
     const aux = frame.typicalGrid ?? null;
+    const coast = view === "coast";
+    const trackKey = `${product.id}:${frame.track}`;
     // the band the pipeline left out beside land is drawn as its own mark, not as cloud (adjacency.ts); the
     // reference is read only for a frame whose QC says the rule was applied, and without it nothing changes
     const maskP = frame.besideLandLeftOut ? loadAdjacency() : Promise.resolve(null);
-    const marked = async (codes: Uint16Array) => {
+    const marked = async (codes: Uint16Array, complete: boolean) => {
       const mask = await maskP;
-      return mask ? markAdjacent(g, codes, mask) : { codes, adjacentCode: null };
+      const d = mask ? markAdjacent(g, codes, mask) : { codes, adjacentCode: null };
+      if (st.kind !== "ramp") return { ...d, outCode: null, loadingCode: null };
+      if (complete && frame.label === "Latest" && !westRef.current.has(trackKey)) westRef.current.set(trackKey, westmostPerRow(g, codes, d.adjacentCode != null ? [d.adjacentCode] : []));
+      const m = markForDisplay(g, d.codes, { westmost: westRef.current.get(trackKey) ?? null, loaded: complete ? null : loadedChunks(model.baseUrl, g) });
+      return { codes: m.codes, adjacentCode: d.adjacentCode, outCode: m.outCode, loadingCode: m.loadingCode };
+    };
+    const total = g.chunks ? g.chunks.present.length : 1;
+    const already = (loadedChunks(model.baseUrl, g)?.size ?? 0) >= total;
+    // statewide: nothing half-drawn while it arrives (no chunk-by-chunk, no stale port picture under the flight)
+    if (coast && !already) {
+      layer.setData(null, st);
+      layer.setFade(0);
+      setFieldLoad({ loaded: loadedChunks(model.baseUrl, g)?.size ?? 0, total });
+    } else {
+      layer.setFade(1);
+      setFieldLoad(null);
+    }
+    let reveal: { stop: () => void } | null = null;
+    const onPart = (c: { codes: Uint16Array }) => {
+      if (!live) return;
+      if (coast) setFieldLoad({ loaded: loadedChunks(model.baseUrl, g)?.size ?? 0, total });
+      else void marked(c.codes, false).then((d) => live && layer.setData({ grid: g, ...d }, st));
     };
     const load = () =>
-      Promise.all([loadCodes(model.baseUrl, g, viewBox(map), (c) => void marked(c.codes).then((d) => live && layer.setData({ grid: g, ...d }, st))), aux ? loadCodes(model.baseUrl, aux).catch(() => null) : Promise.resolve(null)])
+      Promise.all([loadCodes(model.baseUrl, g, coast ? null : viewBox(map), onPart), aux ? loadCodes(model.baseUrl, aux).catch(() => null) : Promise.resolve(null)])
         .then(async ([c, a]) => {
-          const d = await marked(c.codes);
+          const d = await marked(c.codes, c.complete);
           if (!live) return;
           layer.setData({ grid: g, ...d, aux: a && aux ? { grid: aux, codes: a.codes } : null }, st);
+          if (coast && !already) {
+            // the whole coast arrives at once: a fade in (motion.dev), a brief one under reduced motion
+            setFieldLoad(null);
+            reveal?.stop();
+            reveal = animate(0, 1, { ...(reduce ? layerOut : layerIn), onUpdate: (v) => layer.setFade(v) });
+          }
           setIsoLabels(st.kind === "isolines" ? isothermLabels(g, c.codes, ISO_F.index) : []);
-          (window as Win).__nxExplore = { ...(window as Win).__nxExplore, field: frame.id, fieldDraws: layer.draws, adjacentCode: d.adjacentCode };
+          (window as Win).__nxExplore = { ...(window as Win).__nxExplore, field: frame.id, fieldDraws: layer.draws, adjacentCode: d.adjacentCode, fieldComplete: c.complete };
         })
-        .catch(() => undefined);
+        .catch(() => live && setFieldLoad(null));
     load();
-    // a large chunked grid: the chunks for wherever the reader pans
+    // a large chunked grid at a port: the chunks for wherever the reader pans (statewide holds them all)
     const onMove = () => load();
-    if (g.chunks) map.on("moveend", onMove);
+    if (g.chunks && !coast) map.on("moveend", onMove);
     return () => {
       live = false;
+      reveal?.stop();
+      layer.setFade(1);
       map.off("moveend", onMove);
     };
-  }, [map, product, frame, model.baseUrl]);
+  }, [map, product, frame, model.baseUrl, view, reduce]);
 
   // currents: the hour's field, read only while streaks are asked for (never on a still picture, never with the
   // switch off); a failure is a state the switch and the legend say, never streaks promised and not drawn
@@ -499,6 +544,9 @@ export function Explore({ model }: { model: ExploreModel }) {
   }, [productId, frameId, hourId, streaks, at, reading]);
 
   const extent = model.extent;
+  // was the statewide view on show this visit (the flight back to the port is the same deliberate one)
+  const wasCoast = useRef(view === "coast");
+  if (view === "coast") wasCoast.current = true;
   const scene = useMemo(
     () =>
       view === "coast"
@@ -509,6 +557,8 @@ export function Explore({ model }: { model: ExploreModel }) {
             focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
             zoomRange: COAST_ZOOM,
             refitLabel: "Whole coast",
+            // a deliberate flight out to the state (the whole frame is fetched meanwhile and fades in once, whole)
+            flightMs: STATE_FLIGHT_MS,
           }
         : {
       id: `explore:${port?.key ?? "coast"}`,
@@ -518,6 +568,8 @@ export function Explore({ model }: { model: ExploreModel }) {
       view: { bounds: exploreBounds(port ? { lon: port.lon, lat: port.lat } : null, extent), within: withinFor(extent, port ? { lon: port.lon, lat: port.lat } : null), fill: !!extent && coversPort(extent, port ? { lon: port.lon, lat: port.lat } : null) },
       focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
       zoomRange: EXPLORE_ZOOM,
+      // back down from the whole coast to the port: the same deliberate flight
+      ...(wasCoast.current ? { flightMs: STATE_FLIGHT_MS } : {}),
       // the chart's own buttons, with a way back to everything the layers hold
       controls: extent ? { fit: { label: "Fit the data", bounds: [[extent[0], extent[1]], [extent[2], extent[3]]] as [[number, number], [number, number]] } } : undefined,
           },
@@ -707,7 +759,7 @@ export function Explore({ model }: { model: ExploreModel }) {
   const f = getFrame();
   const readAt = cell ?? pt;
   const readSide: "east" | "west" = readAt && f && f.project(readAt.lon, readAt.lat).x > f.viewport.width * 0.55 ? "west" : "east";
-  const dockH = streaks ? 284 : 204;
+  const dockH = !railShown ? 96 : streaks ? 284 : 204;
   const pickAt = pick ? ((pick.kind === "shore" ? model.stations.find((x) => x.id === pick.id) : model.buoys.find((x) => x.id === pick.id)) ?? null) : null;
   const stationSlot =
     pick && pickAt ? (
@@ -737,13 +789,15 @@ export function Explore({ model }: { model: ExploreModel }) {
     </div>
   );
   return (
-    <section className={s.explore} data-testid="nx-explore" data-product={product.id} data-frame={frame.id} style={{ "--explore-dock": `${dockH}px` } as React.CSSProperties}>
-      <PageLayout mode="stage" phoneMap={0.5} />
+    <section className={s.explore} data-testid="nx-explore" data-nx-explore-field="1" data-product={product.id} data-frame={frame.id} style={{ "--explore-dock": `${dockH}px` } as React.CSSProperties}>
+      {/* statewide on a phone, the sheet rests lower so most of the coast shows; it still rises to read */}
+      <PageLayout mode="stage" phoneMap={view === "coast" ? 0.64 : 0.5} />
       <MapLayers page="explore" defaults={{ depth: true }} />
       <ChartScene scene={scene} />
       {/* the mark sits on the cell that was read (its centre, its outline), not on the tap */}
       {pt ? <ReadingOnChart lat={cell?.lat ?? pt.lat} lon={cell?.lon ?? pt.lon} lon0={tStart} lon1={tEnd} hoverLon={hover?.lon ?? null} outline={cell?.outline ?? null} /> : null}
-      {phone ? <Locator /> : null}
+      {/* the whole coast is its own locator: the inset only at a port */}
+      {phone && view !== "coast" ? <Locator /> : null}
       {stationsOn ? <StationPoints stations={model.stations} buoys={model.buoys} selected={pick} onSelect={choosePick} /> : null}
       {product.id === "sst" && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
 
@@ -776,6 +830,16 @@ export function Explore({ model }: { model: ExploreModel }) {
           <p className={s.lead} data-testid="nx-explore-lead">
             {shortLine(product)}
           </p>
+          {fieldLoad ? (
+            <p className={s.fieldLoading} role="status" data-testid="nx-field-loading">
+              <span>
+                Loading the whole coast · {fieldLoad.loaded} of {fieldLoad.total}
+              </span>
+              <span className={s.fieldBar} aria-hidden="true">
+                <span style={{ transform: `scaleX(${fieldLoad.total ? fieldLoad.loaded / fieldLoad.total : 0})` }} />
+              </span>
+            </p>
+          ) : null}
           {/* the layer has no cells at the reader's port: said in words, with where it does have them */}
           {port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
             <p className={s.coverage} data-testid="nx-coverage-note">
@@ -841,6 +905,8 @@ export function Explore({ model }: { model: ExploreModel }) {
                         · median {speedWords(speeds.median)}, top {sig(speeds.max * KNOTS, 2)} kn
                       </span>
                     ) : null}
+                    {/* a streak is at most one 2 km cell long (T27): statewide that is a speck, so the reader is told where they show */}
+                    {scale && scale.zoom < 7 ? <b className={s.zoomHint}> · zoom in toward the coast to see the streaks</b> : null}
                   </>
                 ) : undefined
               }
@@ -885,7 +951,18 @@ export function Explore({ model }: { model: ExploreModel }) {
       {!phone ? readSlot : null}
 
       {/* the time rail: a dock along the chart's foot, full width; on a phone it reads in the sheet */}
-      <Dock label="Time" align="full" className={s.timeDock} data-testid="nx-time-dock">
+      <Dock label="Time" align="full" className={s.timeDock} data-testid="nx-time-dock" data-open={railShown ? "1" : "0"}>
+        {/* statewide, the time is a slim strip (what is on show, Play) until the reader opens the timeline */}
+        {!phone ? (
+          <div className={s.railToggle}>
+            <Button variant="quiet" aria-expanded={railShown} onClick={() => setRailOpen(!railShown)} data-testid="nx-rail-toggle">
+              {railShown ? "Hide timeline" : "Timeline"}
+            </Button>
+          </div>
+        ) : null}
+        {!railShown && !phone ? (
+          <TimeHead model={model} product={product} frameId={frame.id} currentsOn={streaks} currentId={hourId} playing={playing} canPlay={canPlay} onPlay={() => setPlaying((p) => !p)} />
+        ) : railShown || phone ? (
         <TimeRail
           head={!phone}
           model={model}
@@ -900,6 +977,7 @@ export function Explore({ model }: { model: ExploreModel }) {
           canPlay={canPlay}
           onPlay={() => setPlaying((p) => !p)}
         />
+        ) : null}
       </Dock>
     </section>
   );
