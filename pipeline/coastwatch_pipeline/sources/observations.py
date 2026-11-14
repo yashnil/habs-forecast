@@ -50,7 +50,7 @@ from . import port_intel
 
 SOURCE_ID = "calhabmap"
 SERVER = "https://erddap.sccoos.org/erddap"
-WINDOW_START = "2014-01-01"
+WINDOW_START = "2005-01-01"  # CalHABMAP shore sampling at these piers begins in 2005 (pDA later); earlier rows, if any, stay at the source
 CHARM_HISTORY_DAYS = 180
 RETRY_ATTEMPTS = 3
 RETRY_SLEEP_S = 20.0  # SCCOOS ERDDAP briefly answers 404/502 while it reloads datasets
@@ -348,6 +348,10 @@ def _fetch_retry(ctx: RunContext, url: str):
             return ctx.fetcher(url)
         except FetchError as e:
             last = e
+            # a used-up time budget cannot recover by waiting: staging run 42565307093 (2026-11-09)
+            # slept 20 s per retry for every station after SCCOOS hung, ~11 minutes of the job
+            if getattr(e, "budget", False):
+                break
             if attempt < RETRY_ATTEMPTS - 1 and RETRY_SLEEP_S:
                 _time.sleep(RETRY_SLEEP_S)
     assert last is not None

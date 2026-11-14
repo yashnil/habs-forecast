@@ -1,0 +1,96 @@
+.statement {
+  color: var(--ink);
+}
+
+.scope {
+  margin: 0 0 var(--s-8);
+  font: 600 var(--type-lead) / 1.3 var(--font-sans);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
+  line-height: 1.04;
+  text-wrap: balance;
+  font-variant-numeric: lining-nums;
+}
+.xl .title {
+  font-size: var(--t-64);
+  max-width: 11em;
+}
+.lg .title {
+  font-size: var(--t-48);
+  line-height: 1.06;
+  max-width: 12em;
+}
+.md .title {
+  font-size: var(--t-36);
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+  max-width: 14em;
+}
+
+[data-tone="regulation"] > .title {
+  color: var(--reg-text);
+}
+[data-tone="closure"] > .title {
+  color: var(--closure);
+}
+
+.why {
+  max-width: 30em;
+  margin: var(--s-8) 0 0;
+  font: 400 var(--t-22) / 1.25 var(--font-serif);
+  font-optical-sizing: auto;
+}
+
+.rule {
+  display: block;
+  max-width: 34em;
+  margin-top: var(--s-12);
+  fill: var(--reg);
+}
+
+.body {
+  margin-top: var(--s-12);
+  max-width: 52ch;
+  font-size: var(--type-body);
+}
+.body > * + * {
+  margin-top: var(--s-4);
+}
+
+@media (max-width: 720px) {
+  .xl .title {
+    font-size: var(--t-40);
+  }
+  .lg .title {
+    font-size: var(--t-32);
+  }
+  .md .title {
+    font-size: var(--t-28);
+  }
+  .why {
+    font-size: var(--type-lead);
+  }
+  .scope {
+    font-size: var(--type-body);
+  }
+}
+
+/* v14 poster: the date is the hero (synthesis .statement .lede / .hero-date) */
+.poster .scope { font: var(--w6) var(--fs-11) / 1.25 var(--font-sans); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--ink-2); margin: 0; }
+.posterTitle { margin: var(--s-10) 0 var(--s-12); font-weight: var(--w7); }
+.lede { display: block; font-size: var(--fs-25); line-height: 1.12; font-weight: var(--w6); letter-spacing: -0.02em; color: var(--ink); }
+.hero { display: block; font-size: var(--type-display); line-height: 0.98; letter-spacing: -0.045em; color: var(--ink); margin: var(--s-4) 0 0 -3px; white-space: nowrap; font-variant-numeric: lining-nums; }
+[data-tone="regulation"] .hero { color: var(--coral-ink); }
+[data-tone="closure"] .hero { color: var(--closure); }
+@media (max-width: 640px) {
+  .lede { font-size: var(--fs-18); }
+}
+@media (max-height: 800px) and (min-width: 641px) {
+  .posterTitle { margin: var(--s-6) 0 var(--s-8); }
+}

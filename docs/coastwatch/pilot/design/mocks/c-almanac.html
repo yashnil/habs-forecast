@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>C almanac</title>
+<link rel="stylesheet" href="base.css"><style>
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--nx-line); background: radial-gradient(120% 90% at 80% 0%, #0c2232 0%, var(--nx-bg) 60%); }
+.day .hero { background: linear-gradient(180deg, #e6f0f8, var(--nx-bg)); }
+.hero svg.iso { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .55; }
+.hero .in { position: relative; max-width: 1120px; margin: 0 auto; padding: 26px 16px 18px; }
+.hero h1 { font: 500 52px/0.98 var(--serif); letter-spacing: -.02em; margin: 8px 0 10px; }
+.hero .lede { font: 400 19px/1.4 var(--serif); max-width: 36ch; color: var(--nx-ink); margin: 0 0 14px; }
+.hero .lede b { color: var(--red); font-weight: 600; }
+.meta { display: flex; gap: 8px 16px; flex-wrap: wrap; font-size: 13.5px; color: var(--nx-ink-2); }
+.meta i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--nx-measured); margin-right: 6px; }
+main { max-width: 1120px; margin: 0 auto; padding: 8px 16px 96px; }
+@media (min-width: 1024px) { .hero h1 { font-size: 80px; } .hero .lede { font-size: 24px; } .two { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; } }
+h2 { display: flex; align-items: baseline; justify-content: space-between; font: 500 11px var(--caps); letter-spacing: .14em; text-transform: uppercase; color: var(--nx-ink-3); margin: 26px 0 6px; }
+.st { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--nx-line); }
+.st:last-child { border-bottom: 1px solid var(--nx-line); }
+.ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--sans); color: var(--nx-bg); margin-top: 1px; }
+.st .t { font: 500 17px/1.3 var(--sans); }
+.st .t em { font-style: normal; color: var(--nx-ink-2); font-weight: 400; }
+.st .s { font-size: 13px; color: var(--nx-ink-3); margin-top: 3px; }
+.nv { color: var(--nx-official); }
+.lanes { border-top: 1px solid var(--nx-line); }
+.lane { display: grid; grid-template-columns: 54px 1fr; align-items: center; border-bottom: 1px solid var(--nx-line); min-height: 52px; }
+.lane .lab { font: 500 10.5px var(--caps); letter-spacing: .12em; text-transform: uppercase; color: var(--nx-ink-3); }
+.cells { display: grid; grid-template-columns: repeat(10, 1fr); height: 100%; }
+.cells > div { border-left: 1px solid var(--nx-line); display: flex; align-items: center; justify-content: center; font: 400 12.5px var(--mono); position: relative; }
+.hd .cells > div { font: 600 12px var(--sans); color: var(--nx-ink-2); }
+.wind .cells > div { color: var(--nx-ink); }
+.wind .cells > div::before { content: ""; position: absolute; left: 3px; right: 3px; bottom: 4px; height: var(--h); background: color-mix(in srgb, var(--nx-conditions) 28%, transparent); border-radius: 2px; }
+.wind .cells > div span { position: relative; }
+.now3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 14px; }
+.now3 > div { padding: 2px 12px 2px 0; }
+.now3 > div + div { border-left: 1px solid var(--nx-line); padding-left: 12px; }
+.v { font: 300 30px/1 var(--mono); } .v small { font-size: 12px; color: var(--nx-ink-2); margin-left: 2px; }
+.u { font-size: 12px; color: var(--nx-ink-3); margin-top: 4px; }
+</style></head><body>
+<div class="bar"><svg width="30" height="30" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#134a6e"/><path d="M6 46C10 30 14 20 24 18C34 20 38 30 42 46" stroke="#7fe3f5" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M-2 40C4 20 12 6 24 5C36 6 44 20 50 40" stroke="#bfe4ec" stroke-width="3.4" fill="none"/></svg>
+<nav><b>Today</b><span>Explore</span><span>My Coast</span><span>Research</span></nav><span class="caps">Research preview</span></div>
+<section class="hero"><svg class="iso" viewBox="0 0 400 220" preserveAspectRatio="none"><g fill="none" stroke="var(--nx-line-strong)"><path d="M0 170 C80 150 120 190 200 160 S330 120 400 140"/><path d="M0 190 C90 170 140 205 220 182 S340 150 400 165"/><path d="M0 150 C70 128 130 165 190 138 S320 96 400 112"/><path d="M0 128 C60 106 120 140 180 116 S310 72 400 86" stroke="var(--nx-conditions)" stroke-opacity=".6" stroke-width="1.5"/></g></svg>
+<div class="in"><div class="caps">Sunday, Nov 8 · 5:12 AM · Today at your port</div><h1>Moss Landing</h1>
+<p class="lede">Commercial Dungeness is <b>delayed to at least Jan 1</b> for whale entanglements. Northwest 10–15 kt this morning, building Monday.</p>
+<div class="meta"><span><i></i>Checked 2 h ago</span><span>Research preview · not an official source</span><span style="text-decoration:underline">Change port</span></div></div></section>
+<main><div class="two"><div>
+<h2>Your fisheries <span>official status first</span></h2>
+<div class="st"><span class="ic" style="background:var(--red)">!</span><div><div class="t">Dungeness <em>— delayed to ≥ Jan 1, whale entanglement</em></div><div class="s">Next assessment Dec 15–18 · CDFW, checked Nov 7 · <span class="nv">Not verified</span></div></div></div>
+<div class="st"><span class="ic" style="background:var(--amber)">–</span><div><div class="t">Anchovy &amp; sardine <em>— not for human consumption</em></div><div class="s">Domoic acid, Pigeon Pt–Pt Lobos since Sep 11 · CDPH · <span class="nv">Not verified</span></div></div></div>
+<div class="st"><span class="ic" style="background:var(--amber)">–</span><div><div class="t">Salmon <em>— open with trip limits</em></div><div class="s">CDFW, checked Nov 7</div></div></div>
+<div class="st"><span class="ic" style="background:var(--none)">○</span><div><div class="t">Rock crab <em>— no restriction on record</em></div><div class="s">CDFW, checked Nov 7</div></div></div>
+<div class="st"><span class="ic" style="background:var(--none)">○</span><div><div class="t">Groundfish <em>— no restriction on record</em></div><div class="s">CDFW, checked Nov 7</div></div></div>
+</div><div>
+<h2>Sea &amp; weather <span>NWS PZZ535 · 3:15 AM</span></h2>
+<div class="lanes">
+<div class="lane hd"><span class="lab"></span><div class="cells"><div>Tdy</div><div>Tnt</div><div>Mon</div><div>Mn·n</div><div>Tue</div><div>Tu·n</div><div>Wed</div><div>We·n</div><div>Thu</div><div>Th·n</div></div></div>
+<div class="lane wind"><span class="lab">Wind</span><div class="cells"><div style="--h:22px"><span>12</span></div><div style="--h:12px"><span>8</span></div><div style="--h:28px"><span>18</span></div><div style="--h:24px"><span>15</span></div><div style="--h:12px"><span>8</span></div><div style="--h:8px"><span>5</span></div><div style="--h:12px"><span>8</span></div><div style="--h:12px"><span>8</span></div><div style="--h:16px"><span>10</span></div><div style="--h:12px"><span>8</span></div></div></div>
+<div class="lane"><span class="lab">Seas</span><div class="cells"><div>4</div><div>4</div><div>6</div><div>6</div><div>5</div><div>4</div><div>3</div><div>3</div><div>3</div><div>3</div></div></div>
+</div>
+<div class="now3"><div><div class="caps">Buoy wind</div><div class="v">12<small>kt NW</small></div><div class="u">46042 · 4 min ago</div></div><div><div class="caps">Waves</div><div class="v">5.2<small>ft</small></div><div class="u">12 s</div></div><div><div class="caps">Water</div><div class="v">57<small>°F</small></div><div class="u">harbour</div></div></div>
+</div></div></main>
+<div class="dock"><b>Today</b><span>Explore</span><span>My Coast</span><span>Research</span></div>
+</body></html>

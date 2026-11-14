@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { CustomLayerInterface, Map as MLMap } from "maplibre-gl";
 import type { CurrentField } from "@/lib/currents";
 import { FlowSim, HIST, HIST_MS, SEG, mercX, mercY } from "@/lib/flowSim";
+import { lowPowerDevice, noteSlowFrames } from "@/lib/capability";
 import { FLOW_SLOW_EVENT, flowTooSlow, markFlowTooSlow } from "./flowSlow";
 
 /**
@@ -50,7 +51,8 @@ void main() {
 const FS_LINE = `#version 300 es
 precision mediump float;
 in float v_alpha; in float v_side; in vec3 v_color; out vec4 o;
-void main() { float e = 1.0 - smoothstep(0.55, 1.0, abs(v_side)); o = vec4(v_color, 1.0) * v_alpha * e; }`;
+uniform float u_casing;
+void main() { float e = 1.0 - smoothstep(0.55, 1.0, abs(v_side)); vec3 c = u_casing > 0.0 ? vec3(0.02, 0.06, 0.11) : v_color; o = vec4(c, 1.0) * v_alpha * e * (u_casing > 0.0 ? u_casing : 1.0); }`;
 const VS_FOOT = `#version 300 es
 uniform mat4 u_matrix;
 in vec2 a_corner; in vec4 a_box;
@@ -89,12 +91,11 @@ const SLOW_FRAME_MS = 125;
 /** 30 fps on a low-power device: few cores or little memory, or map frames measured over budget. */
 const forcedFps = () => (window as unknown as { __cwFlowFps?: number }).__cwFlowFps;
 export function flowFps(): number {
-  const n = navigator as Navigator & { deviceMemory?: number };
   // a measuring script may fix the rate (then nothing is measured)
   const forced = forcedFps();
   if (forced) return forced;
   if (measuredLowPower) return 30;
-  if ((n.hardwareConcurrency && n.hardwareConcurrency <= 4) || (n.deviceMemory && n.deviceMemory <= 4)) return 30;
+  if (lowPowerDevice()) return 30;
   return 60;
 }
 
@@ -208,6 +209,7 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
         stats.frameCostMs = costSum / costN;
         if (stats.frameCostMs > FRAME_BUDGET_MS) {
           measuredLowPower = true;
+          noteSlowFrames();
           fps = 30;
           // and the low-power particle budget
           recomputeView();
@@ -295,7 +297,7 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
       gl = ctx as WebGL2RenderingContext;
       pLine = program(gl, VS_LINE, FS_LINE);
       pFoot = program(gl, VS_FOOT, FS_FOOT);
-      uLine = { m: gl.getUniformLocation(pLine, "u_matrix"), vp: gl.getUniformLocation(pLine, "u_viewport"), w: gl.getUniformLocation(pLine, "u_width") };
+      uLine = { m: gl.getUniformLocation(pLine, "u_matrix"), vp: gl.getUniformLocation(pLine, "u_viewport"), w: gl.getUniformLocation(pLine, "u_width"), casing: gl.getUniformLocation(pLine, "u_casing") };
       uFoot = { m: gl.getUniformLocation(pFoot, "u_matrix"), c: gl.getUniformLocation(pFoot, "u_color") };
       // particles: one instanced quad per trail segment
       vaoLine = gl.createVertexArray()!;
@@ -364,16 +366,23 @@ export function createFlowLayer(initial: CurrentField, opts0: FlowOptions): Flow
         g.bindVertexArray(vaoFoot);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, footCount);
       }
-      const n = sim.build(inst, { colour: opts.colour, alpha: opts.coarser ? 0.7 : 1 });
+      const n = sim.build(inst, { colour: opts.colour, alpha: opts.coarser ? 0.92 : 1 });
       stats.segments = n;
       if (n) {
         g.useProgram(pLine);
         g.uniformMatrix4fv(uLine.m, false, mat);
         g.uniform2f(uLine.vp, g.drawingBufferWidth, g.drawingBufferHeight);
-        g.uniform1f(uLine.w, 1.8 * Math.min(2, window.devicePixelRatio || 1));
         g.bindVertexArray(vaoLine);
         g.bindBuffer(g.ARRAY_BUFFER, instBuf);
         g.bufferSubData(g.ARRAY_BUFFER, 0, inst, 0, n * SEG);
+        // a dark casing under each streak, so sky-blue streaks hold their edge over a chlorophyll field
+        // (FLOW_SKY stays the data colour; the casing carries no value); a no-cost invisibility over dark sea
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        g.uniform1f(uLine.casing, 0.5);
+        g.uniform1f(uLine.w, 3.6 * dpr);
+        g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
+        g.uniform1f(uLine.casing, 0);
+        g.uniform1f(uLine.w, 1.8 * dpr);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
       }
       g.bindVertexArray(null);
@@ -423,8 +432,17 @@ export default function FlowLayer({ map, id, field, options, beforeId }: { map: 
       const i = order.indexOf(FLOW_LAYER_ID);
       if (i >= 0 && order[i + 1] !== beforeId) map.moveLayer(FLOW_LAYER_ID, beforeId);
     };
-    map.addLayer(layer, map.getLayer(beforeId) ? beforeId : undefined);
+    const add = () => map.addLayer(layer, map.getLayer(beforeId) ? beforeId : undefined);
+    add();
     map.on("styledata", placed);
+    // A lost WebGL context takes this layer's programs and buffers with it. MapLibre rebuilds its own
+    // style from a snapshot that leaves custom layers out (the style is null until then, and loads
+    // after "webglcontextrestored"), so the layer stops here and is added anew once the style is back.
+    // The particles start over; the field and the options are kept.
+    const onLost = () => layer.onRemove?.(map, undefined as never);
+    const onRestored = () => map.once("style.load", add);
+    map.on("webglcontextlost", onLost);
+    map.on("webglcontextrestored", onRestored);
     const dbg: FlowDebug = {
       running: layer.running,
       slow: layer.slow,
@@ -445,7 +463,10 @@ export default function FlowLayer({ map, id, field, options, beforeId }: { map: 
     (window as unknown as { __cwFlow?: FlowDebug }).__cwFlow = dbg;
     return () => {
       map.off("styledata", placed);
-      if (map.getLayer(FLOW_LAYER_ID)) map.removeLayer(FLOW_LAYER_ID);
+      map.off("webglcontextlost", onLost);
+      map.off("webglcontextrestored", onRestored);
+      map.off("style.load", add);
+      if (map.style && map.getLayer(FLOW_LAYER_ID)) map.removeLayer(FLOW_LAYER_ID);
       ref.current = null;
       const w = window as unknown as { __cwFlow?: FlowDebug };
       if (w.__cwFlow === dbg) delete w.__cwFlow;

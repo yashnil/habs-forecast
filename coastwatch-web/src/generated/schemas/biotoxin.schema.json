@@ -1,0 +1,431 @@
+{
+  "$defs": {
+    "ActionLevel": {
+      "additionalProperties": false,
+      "properties": {
+        "ppm": {
+          "title": "Ppm",
+          "type": "number"
+        },
+        "quoted": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quoted"
+        },
+        "species": {
+          "title": "Species",
+          "type": "string"
+        },
+        "tissue": {
+          "title": "Tissue",
+          "type": "string"
+        }
+      },
+      "required": [
+        "species",
+        "tissue",
+        "ppm"
+      ],
+      "title": "ActionLevel",
+      "type": "object"
+    },
+    "BiotoxinSet": {
+      "additionalProperties": false,
+      "properties": {
+        "action_level_ppm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Action Level Ppm"
+        },
+        "avg_ppm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Avg Ppm"
+        },
+        "composite_of": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "seafood: number of fish in the composite sample",
+          "title": "Composite Of"
+        },
+        "date": {
+          "description": "collection date (Pacific), YYYY-MM-DD",
+          "title": "Date",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "routine",
+            "retest",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "max_ppm": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max Ppm"
+        },
+        "meat_values_ppm": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "crab: the meat value of a paired 'viscera | meat' result, aligned with values_ppm; null where not printed",
+          "title": "Meat Values Ppm"
+        },
+        "nd_count": {
+          "description": "samples reported ND (not detected) or below a reporting limit ('<2.5')",
+          "minimum": 0,
+          "title": "Nd Count",
+          "type": "integer"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "annotation printed with the row, e.g. 'RT 1-1st set'",
+          "title": "Note"
+        },
+        "pct_over_action": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pct Over Action"
+        },
+        "tissue": {
+          "enum": [
+            "viscera",
+            "meat",
+            "whole",
+            "unknown"
+          ],
+          "title": "Tissue",
+          "type": "string"
+        },
+        "values_ppm": {
+          "description": "individual samples as published; null = ND, below the reporting limit, or unreadable",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Values Ppm",
+          "type": "array"
+        },
+        "values_raw": {
+          "description": "each sample exactly as printed, e.g. '37 | 6.6', 'ND', '<2.5'",
+          "items": {
+            "type": "string"
+          },
+          "title": "Values Raw",
+          "type": "array"
+        }
+      },
+      "required": [
+        "date",
+        "kind",
+        "tissue",
+        "values_ppm",
+        "nd_count",
+        "avg_ppm",
+        "max_ppm",
+        "pct_over_action",
+        "action_level_ppm"
+      ],
+      "title": "BiotoxinSet",
+      "type": "object"
+    },
+    "BiotoxinSite": {
+      "additionalProperties": false,
+      "properties": {
+        "bma": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bma"
+        },
+        "bma_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bma Label"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "informs_places": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Informs Places",
+          "type": "array"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lat"
+        },
+        "lon": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lon"
+        },
+        "port_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Port Label"
+        },
+        "sets": {
+          "items": {
+            "$ref": "#/$defs/BiotoxinSet"
+          },
+          "title": "Sets",
+          "type": "array"
+        },
+        "site_label": {
+          "title": "Site Label",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "species": {
+          "title": "Species",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "bma",
+        "bma_label",
+        "port_label",
+        "site_label",
+        "species",
+        "lat",
+        "lon",
+        "informs_places",
+        "sets"
+      ],
+      "title": "BiotoxinSite",
+      "type": "object"
+    },
+    "BiotoxinSource": {
+      "additionalProperties": false,
+      "properties": {
+        "as_of": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "the 'As of' date printed on the PDF, YYYY-MM-DD; null if unreadable",
+          "title": "As Of"
+        },
+        "fetched_at": {
+          "title": "Fetched At",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "period": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "url",
+        "as_of",
+        "fetched_at",
+        "sha256"
+      ],
+      "title": "BiotoxinSource",
+      "type": "object"
+    }
+  },
+  "$id": "https://coastwatch/schemas/v1/biotoxin.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "action_levels": {
+      "items": {
+        "$ref": "#/$defs/ActionLevel"
+      },
+      "title": "Action Levels",
+      "type": "array"
+    },
+    "additional_sources": {
+      "items": {
+        "$ref": "#/$defs/BiotoxinSource"
+      },
+      "title": "Additional Sources",
+      "type": "array"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "parse_warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Parse Warnings",
+      "type": "array"
+    },
+    "sites": {
+      "items": {
+        "$ref": "#/$defs/BiotoxinSite"
+      },
+      "title": "Sites",
+      "type": "array"
+    },
+    "source": {
+      "$ref": "#/$defs/BiotoxinSource"
+    },
+    "version": {
+      "const": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "generated_at",
+    "source",
+    "action_levels",
+    "sites",
+    "parse_warnings"
+  ],
+  "title": "BiotoxinIndex",
+  "type": "object"
+}

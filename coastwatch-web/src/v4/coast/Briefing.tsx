@@ -1,9 +1,11 @@
 "use client";
 
+import { stableFormat } from "@/lib/time";
 import { toast } from "@/v4/ui/toast";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import type { Manifest, PortsCollection } from "@/generated/schema";
 import type { OfficialDataset } from "@/generated/official";
 import type { PortIntelCollection } from "@/generated/port_intel";
@@ -18,9 +20,8 @@ import type { FieldKey } from "@/lib/tripEvaluation";
 import { encodeSelection, type Selection } from "@/v4/state/selection";
 import { useReportSource } from "@/v4/readiness/store";
 import { modelEntry, satelliteEntry } from "@/v4/readiness/shown";
-import { TopBar, NavTabs } from "@/v4/shell/TopBar";
-import { NoticesButton, type LocalNotices } from "@/v4/shell/Notices";
-import { RegistryDisclosure } from "@/v4/shell/Disclosure";
+import { TopBar, Dock } from "@/v4/shell/TopBar";
+import type { LocalNotices } from "@/v4/shell/Notices";
 import { checklistKey } from "@/lib/trip";
 import { SkipLink } from "@/v4/shell/SkipLink";
 import type { Step } from "@/lib/nextSteps";
@@ -28,7 +29,7 @@ import { Icon } from "@/v4/ui/Icon";
 import { clockLabel, dayLabel, dayYearLabel, kmLabel, relTime } from "@/v4/ui/time";
 import { nodeSelection } from "@/v4/explore/Inspect";
 import { Matters } from "./Matters";
-import { TripGlance, TripWorksheet, hasSharedScenario } from "@/v4/coast/economics";
+import { TripLedger, TripWorksheet, hasSharedScenario } from "@/v4/coast/economics";
 import { SinceLastCheck } from "@/components/coast/SinceLastCheck";
 import { useBriefing } from "./useBriefing";
 import { PACKS, packForPort } from "@/v4/offline/packs";
@@ -41,15 +42,21 @@ import { savedSearch, savedSnapshot } from "@/v4/offline/snapshot";
 import { homeHref, readHome, writeHome, type HomePort } from "./home";
 import { Fold } from "./Fold";
 import { Landing } from "./Landing";
-import { OfficialContext, SeasonLinks } from "./Official";
-import { DecisionRow } from "./Decision";
-import { AGENCY_LINKS } from "@/content/coast";
+import { SeasonLinks, TripStatus } from "./Official";
+import { TripFigures } from "./Decision";
+import { NoticesSheet } from "./Notices";
+import { fisheryForTrip, tripStatusLine } from "./tripStatus";
 import { econAudience } from "./economics/model";
 import { TimeView } from "./Lanes";
 import { HarbourMap, chlorophyll } from "./HarbourMap";
 import { seasonStatus } from "./season";
 import { Caps } from "./ui/Instrument";
 import { SeaBody, SeasonsBody, WorthBody, useSeaLimits, worthLine } from "@/components/coast/FishingBrief";
+import { Sheet } from "@/v4/motion/Sheet";
+import { Pop } from "@/v4/ui/Pop";
+import { DEFAULT_FISHERIES, FISHERY_OPTIONS, buildTodayModel, fisheryForSpecies, type PortTodayInputs } from "@/pilot/facts";
+import type { FisheryId } from "@/pilot/contracts";
+import "./coast.css";
 
 type Props = {
   manifest: Manifest;
@@ -59,7 +66,11 @@ type Props = {
   stationsError: string | null;
   baseUrl: string;
   portIntel: PortIntelCollection | null;
+  /** Today's server-side inputs for this port (null away from a CDFW port): the status line reads Today's model */
+  todayInputs: Omit<PortTodayInputs, "conditions" | "selected"> | null;
 };
+
+const ALL_FISHERIES = FISHERY_OPTIONS.map((f) => f.id);
 
 function exploreHref(s: Selection, back: string): string {
   const q = new URLSearchParams({ sel: encodeSelection(s)!, from: back });
@@ -127,14 +138,6 @@ export function Briefing(props: Props) {
   // round trip (so it opens offline from the saved briefing too)
   const sheet = mounted && sp.get("sheet") === "trip";
   const focusParam = (sp.get("focus") as FieldKey | null) ?? null;
-  const openSheet = useCallback((focus: FieldKey | null = null) => {
-    const q = new URLSearchParams(window.location.search);
-    q.set("sheet", "trip");
-    if (focus) q.set("focus", focus);
-    else q.delete("focus");
-    window.history.pushState(null, "", `${window.location.pathname}?${q.toString()}${window.location.hash}`);
-    window.scrollTo({ top: 0 });
-  }, []);
   const closeSheet = useCallback(() => {
     const q = new URLSearchParams(window.location.search);
     q.delete("sheet");
@@ -151,6 +154,25 @@ export function Briefing(props: Props) {
     }
   }, [mounted, place, liveSp]);
 
+  // "since you last checked" is mounted once, into a host that moves: it leads the briefing when something
+  // changed, and otherwise (remembered on this device, keep a copy, forget) it lives in the more menu
+  const [sinceHost] = useState(() => (typeof document === "undefined" ? null : document.createElement("div")));
+  const changesSlot = useRef<HTMLDivElement | null>(null);
+  const moreSlot = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!sinceHost) return;
+    const seat = () => {
+      const state = sinceHost.querySelector<HTMLElement>('[data-testid="since-last-check"]')?.dataset.state;
+      // a change or a "continue with" offer leads; the quiet "remembered" line waits in the more menu
+      const lead = state === "changes" || !!sinceHost.querySelector('[data-testid="since-resume"]');
+      const target = lead ? changesSlot.current : moreSlot.current;
+      if (target && sinceHost.parentElement !== target) target.appendChild(sinceHost);
+    };
+    seat();
+    const mo = new MutationObserver(seat);
+    mo.observe(sinceHost, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-state"] });
+    return () => mo.disconnect();
+  }, [sinceHost, placeKey]);
   const [tripOpen, setTripOpen] = useState(false);
   const [limits, setLimits] = useSeaLimits();
   const [placeOpen, setPlaceOpen] = useState(false);
@@ -198,6 +220,21 @@ export function Briefing(props: Props) {
     },
     [tickKey, ticked],
   );
+  // the status line: Today's model, every fishery, never a second status composed here
+  const statusRows = useMemo(() => (props.todayInputs ? buildTodayModel({ ...props.todayInputs, conditions: null, selected: ALL_FISHERIES }).status : null), [props.todayInputs]);
+  const unclearSpecies = useMemo(() => {
+    const f = fisheryForTrip(species, audience);
+    return !!f && b.assocs.some((a) => a.dispute && a.record.species.some((sp) => fisheryForSpecies(sp) === f));
+  }, [b.assocs, species, audience]);
+  const [noticesOpen, setNoticesOpen] = useState(false);
+  const [noticeFocus, setNoticeFocus] = useState<string[] | null>(null);
+  const [lit, setLit] = useState<string[]>([]);
+  const openNotices = useCallback((ids: string[] | null) => {
+    setNoticeFocus(ids);
+    setLit(ids ?? []);
+    setNoticesOpen(true);
+  }, []);
+  const [checksOpen, setChecksOpen] = useState(false);
   const localNotices = useMemo<LocalNotices | null>(() => (place ? { name: place.name, covering: b.notices.hereAssocs.map((a) => a.record.id), unsettled: b.notices.unsettled } : null), [place, b.notices]);
   const goPlace = useCallback((key: string) => router.push(coastHref({ place: key, for: audience, species: species.id })), [router, audience, species.id]);
   // the statements appear together once the model and the harbour conditions have answered (or 6 s
@@ -230,9 +267,8 @@ export function Briefing(props: Props) {
     return (
       <div className="env-chart min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="landing">
         <SkipLink />
-        <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} />} />
-        <RegistryDisclosure className="mx-auto w-full max-w-[1320px] px-4 sm:px-8" fixture={isFixture(props.manifest)} />
-        <main id="main" className="cw-fade-in mx-auto w-full max-w-[1320px] overflow-x-clip px-4 pb-32 pt-4 sm:px-8">
+        <TopBar active="coast" now={now} trust={{ official, status: sourceStatus(props.manifest, "official"), fixture: isFixture(props.manifest) }} />
+        <main id="main" className="cw-fade-in mx-auto w-full max-w-[1320px] overflow-x-clip px-4 pb-24 pt-4 sm:px-8">
           <Landing ports={ports} home={home} audience={audience} unknownKey={placeKey} />
         </main>
         <MobileDock />
@@ -245,7 +281,6 @@ export function Briefing(props: Props) {
   const speciesOptions = SPECIES.filter((s) => s.id === "any" || audience === "all" || s.activities.includes(audience as never)).map((s) => ({ id: s.id, label: s.id === "any" ? "Any species" : s.label }));
   const dayOptions = b.days.map((d) => ({ id: d.date, label: `${d.label}, ${d.day}` }));
   const asSaved = snap ? `as saved ${clockLabel(snap.savedAt)}` : null;
-  const counts = { here: b.notices.here, namingSpecies: b.notices.namingSpecies };
   const unclear = new Set([...b.notices.unsettled, ...b.assocs.filter((a) => a.dispute).map((a) => a.record.id)]).size;
   const portCode = place.kind === "port" ? Number(place.key.slice(5)) : null;
   const otherHere = b.notices.hereAssocs.filter((a) => !b.notices.namingIds.has(a.record.id));
@@ -256,65 +291,60 @@ export function Briefing(props: Props) {
   const season = seasonStatus(place, species, audience, b.tripDate ?? b.today);
   const runLayer = charmLayer(props.manifest, "particulate_domoic", 0) ?? charmLayer(props.manifest, "pseudo_nitzschia", 0);
   const runIssued = runLayer?.time.issued_date ? dayLabel(runLayer.time.issued_date) : null;
-  const stamp = asSaved ? `Briefing ${asSaved}` : now ? `Briefing · ${PT_STAMP.format(now).replace(/,(?= \d{1,2}:)/, " ·")}` : "Briefing";
+  const stamp = asSaved ? `Briefing ${asSaved}` : now ? `Briefing · ${stableFormat(PT_STAMP, now).replace(/,(?= \d{1,2}:)/, " ·")}` : "Briefing";
   const exploreLink = exploreHref(placeSel!, back);
   const researchLink = `/research?${new URLSearchParams({ place: place.key, from: back }).toString()}`;
   const econProps = { place: { key: place.key, name: place.name, portCode }, species: species.id, audience, tripDate: b.tripDate, season };
 
+  const tripWords = `${dayWords} · ${species.id === "any" ? "Any species" : species.label}, ${audience === "all" ? "any activity" : audience === "shellfish" ? "shellfish harvest" : audience}`;
+  const statusLine = tripStatusLine(species.id === "any" ? (statusRows?.filter((r) => DEFAULT_FISHERIES.includes(r.fishery as FisheryId)) ?? null) : statusRows, species, audience, unclearSpecies);
   const header = (
-    <header className="flex flex-col gap-2 pb-5 lg:pb-6" data-testid="coast-header">
-      <Caps className="text-n-ink-2" as="p">
-        <span data-testid="coast-stamp">{sheet ? `${place.name} · ${activityLabel} · ${species.id === "any" ? "any species" : species.label} · ${dayWords}` : stamp}</span>
-      </Caps>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-4 gap-y-2">
-        <div className="min-w-0">
-          {sheet ? (
-            <h1 className="font-serif font-medium tracking-[-0.015em] text-[34px] leading-[1.04] text-n-ink sm:text-[56px]" data-testid="econ-title">
-              Trip worksheet
-            </h1>
-          ) : (
-            <>
-              <h1 className="font-serif font-medium tracking-[-0.015em] text-[38px] leading-[1.04] text-n-ink sm:text-[56px] xl:text-[64px]" data-testid="coast-title">
-                <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-focus group max-w-full rounded-[3px] text-left hover:text-n-ink-2" data-testid="coast-place-button">
-                  {place.name}
-                  <Icon name="chevronDown" className={`ml-2 inline-block h-6 w-6 align-middle text-n-ink-3 transition-transform group-hover:text-n-ink ${placeOpen ? "rotate-180" : ""}`} />
-                </button>
-              </h1>
-              <span id="coast-place-hint" hidden>
-                Change the place, choose waters on the map, or keep it as your home port
-              </span>
-            </>
-          )}
-        </div>
-        <div className="col-start-2 row-start-1 self-start">
-          {sheet ? (
-            <button type="button" onClick={closeSheet} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 rounded-[3px] border border-n-line-strong px-3 text-[14px] text-n-ink" data-testid="econ-back">
-              <Icon name="back" className="h-4 w-4" /> Briefing
-            </button>
-          ) : (
-            <MoreMenu />
-          )}
-        </div>
+    <header className="coast-head" data-testid="coast-header">
+      <div className="min-w-0">
         {sheet ? (
-          <p className="col-span-2 max-w-[100ch] text-[14.5px] leading-snug text-n-ink" data-testid="econ-kicker-head">
-            <SheetLine place={place} species={species} season={season} rec={econAudienceOf(audience)} />
-          </p>
+          <>
+            <p className="nx-caps" data-testid="coast-stamp">{`${place.name} · ${activityLabel} · ${species.id === "any" ? "any species" : species.label} · ${dayWords}`}</p>
+            <h1 className="nx-display coast-title" data-testid="econ-title">
+              Trip ledger
+            </h1>
+          </>
         ) : (
-          <div className="col-span-2 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-6">
-            <button type="button" aria-expanded={tripOpen} aria-controls="trip-controls" onClick={() => setTripOpen((o) => !o)} className="nx-focus -mx-1 flex min-h-12 items-center justify-between gap-3 rounded-[3px] px-1 text-left sm:hidden" data-testid="trip-summary">
-              <span className="min-w-0 text-[15.5px] font-medium leading-snug text-n-ink">
-                {activityLabel} · {species.id === "any" ? "Any species" : species.label} · {dayWords}
-              </span>
-              <span className="shrink-0 text-[14.5px] text-n-ink underline decoration-n-line-strong underline-offset-4" data-testid="trip-change">
-                {tripOpen ? "Done" : "Change"}
-              </span>
-            </button>
-            <div id="trip-controls" className={`flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-end sm:gap-5 ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
-              <Select id="trip-activity" disabled={!mounted} label="For" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
-              <Select id="trip-species" disabled={!mounted} label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
-              <Select id="trip-day" disabled={!mounted} label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
-            </div>
-            <p className="flex flex-wrap items-center gap-x-3 text-[13.5px] text-n-ink-2 max-sm:hidden" data-testid="coast-subtitle">
+          <>
+            <p className="sr-only" data-testid="coast-stamp">{stamp}</p>
+            <h1 className="nx-display coast-title" data-testid="coast-title">
+              <button type="button" aria-expanded={placeOpen} aria-controls={placeOpen ? "coast-place-menu" : undefined} aria-describedby="coast-place-hint" onClick={() => setPlaceOpen((o) => !o)} className="nx-focus group max-w-full text-left" data-testid="coast-place-button">
+                {place.name}
+                <Icon name="chevronDown" className={`ml-2 inline-block h-6 w-6 align-middle text-n-ink-2 transition-transform group-hover:text-n-ink ${placeOpen ? "rotate-180" : ""}`} />
+              </button>
+            </h1>
+            <span id="coast-place-hint" hidden>
+              Change the place, choose waters on the map, or keep it as your home port
+            </span>
+          </>
+        )}
+      </div>
+      <div className="coast-head-side">
+        {sheet ? (
+          <button type="button" onClick={closeSheet} className="nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 text-[14.5px] text-n-ink underline decoration-n-line-strong underline-offset-4" data-testid="econ-back">
+            <Icon name="back" className="h-4 w-4" /> Briefing
+          </button>
+        ) : (
+          <MoreMenu sinceSlot={moreSlot} />
+        )}
+      </div>
+      {sheet ? (
+        <p className="col-span-2 max-w-[100ch] text-[14.5px] leading-snug text-n-ink" data-testid="econ-kicker-head">
+          <SheetLine place={place} species={species} season={season} rec={econAudienceOf(audience)} statusSentence={statusLine.kind === "row" ? `${statusLine.word}: ${statusLine.sentence}` : null} />
+        </p>
+      ) : (
+        <div className="coast-trip col-span-2">
+          <button type="button" aria-expanded={tripOpen} aria-controls="trip-controls" onClick={() => setTripOpen((o) => !o)} className="nx-focus coast-trip-line" data-testid="trip-summary">
+            <span className="min-w-0">{tripWords}</span>
+            <span className="coast-trip-change" data-testid="trip-change">
+              {tripOpen ? "Done" : "Change"}
+            </span>
+          </button>
+                      <p className="flex flex-wrap items-center gap-x-3 text-[13.5px] text-n-ink-2 coast-subtitle max-sm:hidden" data-testid="coast-subtitle">
               <span>
                 {place.note}
                 {place.county ? ` · ${place.county} County` : ""}
@@ -327,37 +357,40 @@ export function Briefing(props: Props) {
                 <HomeLink home={home} ports={ports} />
               ) : null}
             </p>
+          <div id="trip-controls" className={`coast-trip-controls ${tripOpen ? "flex" : "hidden"}`} data-testid="trip-controls">
+            <Select id="trip-activity" disabled={!mounted} label="Activity" value={audience} onChange={(v) => go({ for: v as Audience, species: v === "all" || species.activities.includes(v as never) ? species.id : "any" })} options={activityOptions} />
+            <Select id="trip-species" disabled={!mounted} label="Species" value={species.id} onChange={(v) => go({ species: v as SpeciesId })} options={speciesOptions} />
+            <Select id="trip-day" disabled={!mounted} label="Day" value={b.tripDate ?? dayOptions[0]?.id ?? ""} onChange={(v) => go({ date: v === b.days[0]?.date ? null : v })} options={dayOptions.length ? dayOptions : [{ id: "", label: "Today" }]} />
           </div>
-        )}
-        {placeOpen && !sheet && (
-          <div className="col-span-2">
-            <PlaceMenu
-              place={place}
-              ports={ports}
-              home={home}
-              audience={audience}
-              species={species.id}
-              onHome={setHome}
-              onPlace={(k) => {
-                setPlaceOpen(false);
-                goPlace(k);
-              }}
-              onMap={jumpToMap}
-              onClose={() => setPlaceOpen(false)}
-            />
-          </div>
-        )}
-      </div>
+        </div>
+      )}
+      {placeOpen && !sheet && (
+        <div className="col-span-2">
+          <PlaceMenu
+            place={place}
+            ports={ports}
+            home={home}
+            audience={audience}
+            species={species.id}
+            onHome={setHome}
+            onPlace={(k) => {
+              setPlaceOpen(false);
+              goPlace(k);
+            }}
+            onMap={jumpToMap}
+            onClose={() => setPlaceOpen(false)}
+          />
+        </div>
+      )}
     </header>
   );
 
-  // ---------------------------------------------------------------- the worksheet view
+  // ---------------------------------------------------------------- the ledger on its own (?sheet=trip, a deep link and a shared scenario)
   if (sheet)
     return (
       <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="worksheet">
         <SkipLink />
-        <TopBar active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
-        <RegistryDisclosure className="mx-auto w-full max-w-[1320px] px-4 sm:px-8" fixture={isFixture(props.manifest)} />
+        <TopBar active="coast" now={now} trust={{ official, status: sourceStatus(props.manifest, "official"), fixture: isFixture(props.manifest), local: localNotices }} />
         {!off.online && (
           <div className="mx-auto w-full max-w-[1320px] px-4 pt-3 sm:px-8">
             <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
@@ -365,101 +398,82 @@ export function Briefing(props: Props) {
         )}
         <main id="main" className="cw-fade-in mx-auto w-full max-w-[1320px] overflow-x-clip px-4 pb-32 pt-5 sm:px-8 lg:pt-8">
           {header}
-          <TripWorksheet {...econProps} focus={focusParam} />
+          <div className="mt-8">
+            <TripWorksheet {...econProps} focus={focusParam} />
+          </div>
         </main>
         <MobileDock />
       </div>
     );
 
-  // ---------------------------------------------------------------- the briefing: a reading column on the trip's waters
-  const official1 = (
-    <OfficialContext
-      place={place}
-      species={species}
-      audience={audience}
-      season={season}
-      details={
-        <Fold inline className="data-[open=true]:basis-full" id="seasons" title="Season details" summary={species.id === "any" ? "CDFW's list for these waters" : `CDFW's list, ${speciesPhrase(species)} first`}>
-          <SeasonLinks place={place} season={season} />
-          <SeasonsBody place={place} species={species} audience={audience} tripDate={b.tripDate} today={b.today} />
-        </Fold>
-      }
-    />
-  );
-  const noticeRows = notices.length + otherHere.length;
+  // ---------------------------------------------------------------- the briefing: one trip, on its waters
+  const noticeNodes = notices;
+  const noticeRows = noticeNodes.length + otherHere.length;
   return (
     <div className="env-chart relative min-h-dvh bg-n-bg text-n-ink" data-testid="my-coast" data-view="trip">
       <SkipLink />
-      <TopBar floating active="coast" now={now} notices={<NoticesButton official={official} status={sourceStatus(props.manifest, "official")} local={localNotices} />} />
+      <TopBar floating active="coast" now={now} trust={{ official, status: sourceStatus(props.manifest, "official"), fixture: isFixture(props.manifest), local: localNotices }} />
       {packOpen && <PackDialog pack={pack} manifest={props.manifest} baseUrl={props.baseUrl} official={official} onClose={() => setPackOpen(false)} />}
-      <main id="main" className="cw-fade-in grid grid-cols-1 overflow-x-clip pb-28 lg:grid-cols-[minmax(0,1fr)_minmax(420px,42vw)] lg:grid-rows-[auto_1fr] lg:pb-0">
-        {/* the decision: place, trip, season, the readings that decide a trip */}
-        <div className="flex min-w-0 flex-col px-4 pt-[64px] sm:px-8 lg:col-start-1 lg:row-start-1 lg:pl-10 lg:pr-10 xl:pl-12">
-          <RegistryDisclosure className="pb-3 pt-1" fixture={isFixture(props.manifest)} />
+      <NoticesSheet open={noticesOpen} onClose={() => { setNoticesOpen(false); setLit([]); setNoticeFocus(null); }} focus={noticeFocus} onLight={setLit} nodes={noticeNodes} other={otherHere} species={species} unsettled={unclear} />
+      <Sheet open={checksOpen} onClose={() => setChecksOpen(false)} title="Before you go" testid="checks-sheet">
+        <div className="flex flex-col gap-4 pb-6" data-testid="brief-checks">
+          <p className="text-[14px] text-n-ink-2" data-testid="checks-progress">
+            <span className="text-n-ink">
+              {b.checks.shown.filter((x) => ticked.includes(x.id)).length} of {b.checks.shown.length} ticked by you.
+            </span>{" "}
+            A tick is not a check by Neritic or by any agency.
+          </p>
+          <ol className="flex flex-col" data-testid="checks">
+            {b.checks.shown.map((s) => (
+              <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
+            ))}
+          </ol>
+          {b.checks.more.length > 0 && (
+            <div data-testid="checks-more">
+              <h3 className="nx-caps">Also worth checking</h3>
+              <ol className="flex flex-col">
+                {b.checks.more.map((s) => (
+                  <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      </Sheet>
+      <main id="main" className="coast-main cw-fade-in">
+        <div className="coast-col">
           {!off.online && (
             <div className="pb-3">
               <OfflineBanner record={off.record ?? null} problem={off.problem} name={pack.name} inline outside={covering ? null : { place: place.name, href: coastHref({ place: pack.place }) }} />
             </div>
           )}
           {header}
-          {/* what changed leads only when something did; the quiet "remembered" line goes under the readings */}
-          <div data-testid="brief-changes" className="mb-5 empty:hidden has-[[data-state=first]]:order-last has-[[data-state=first]]:mb-0 has-[[data-state=first]]:mt-3 has-[[data-state=none]]:order-last has-[[data-state=none]]:mb-0 has-[[data-state=none]]:mt-3">
-            <SinceLastCheck />
+          {/* what changed leads only when something did; otherwise the quiet "remembered" line lives in the more menu */}
+          <div ref={changesSlot} data-testid="brief-changes" className="coast-changes" />
+          <div className="coast-glance" data-testid="brief-glance">
+            <TripStatus line={statusLine} season={season} species={species} place={place} now={props.todayInputs?.now ?? now?.toISOString() ?? ""} />
+            <TripFigures cond={b.cond} now={now} today={b.today} tripDate={b.tripDate} asSaved={asSaved} />
           </div>
-          <div className="flex flex-col gap-5" data-testid="brief-glance">
-            {official1}
-            <DecisionRow cond={b.cond} now={now} today={b.today} tripDate={b.tripDate} asSaved={asSaved} notices={{ ...counts, unclear }} species={species} audience={audience} econ={<TripGlance {...econProps} onOpen={openSheet} />} />
-          </div>
-          <Fold inline className="mt-1" id="checks" title="Before you go" count={checksN} summary={`${tickedN} of ${checksN} ticked by you`}>
-            <p className="text-[13.5px] text-n-ink-2" data-testid="checks-progress">
-              <span className="text-n-ink">
-                {b.checks.shown.filter((x) => ticked.includes(x.id)).length} of {b.checks.shown.length} ticked by you.
-              </span>{" "}
-              A tick is not a check by Neritic or by any agency.
-            </p>
-            <ol className="grid grid-cols-1 divide-y divide-n-line border-y border-n-line" data-testid="checks">
-              {b.checks.shown.map((s) => (
-                <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
-              ))}
-            </ol>
-            {b.checks.more.length > 0 && (
-              <div data-testid="checks-more">
-                <Caps as="h4">Also worth checking</Caps>
-                <ol className="divide-y divide-n-line border-b border-n-line">
-                  {b.checks.more.map((s) => (
-                    <CheckItem key={s.id} s={s} done={ticked.includes(s.id)} onToggle={() => toggleTick(s.id)} />
-                  ))}
-                </ol>
-              </div>
-            )}
-          </Fold>
-        </div>
-
-        {/* the trip's waters: the page's ground on a wide screen (sticky while the column scrolls), a band on a phone */}
-        <div ref={mapBox} className="scroll-mt-16 px-4 pt-5 sm:px-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:p-0">
-          <div className="lg:sticky lg:top-0 lg:h-dvh">
-            <HarbourMap place={place} g={g} ports={ports} official={official} stations={stations} exploreHref={exploreLink} researchHref={researchLink} onPlace={goPlace} basemapPmtiles={basemap} manifest={props.manifest} baseUrl={props.baseUrl} now={now} />
-          </div>
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-8 px-4 pt-8 sm:gap-12 sm:px-8 sm:pt-10 lg:col-start-1 lg:row-start-2 lg:pb-16 lg:pl-10 lg:pr-10 xl:pl-12">
-          {/* the next 60 hours, then every NWS period in the forecaster's words */}
           <section aria-label="The sea, the next 60 hours" className="flex flex-col gap-1" data-testid="brief-lanes">
             <TimeView cond={b.cond} now={now} today={b.today} tripDate={b.tripDate} limits={limits} onLimits={setLimits} asSaved={asSaved} outlook={b.outlook} runIssued={runIssued} />
-            <Fold inline id="sea" title="Sea forecast detail" summary={asSaved ? `every NWS period, the buoy and the tides, ${asSaved}` : "every NWS period in the forecaster's words, the buoy and the tides"}>
-              <SeaBody cond={b.cond} tripDate={b.tripDate} today={b.today} limits={limits} now={now} asSaved={asSaved} />
-            </Fold>
+            <button type="button" onClick={() => setChecksOpen(true)} className="coast-checks-open nx-focus nx-press" data-testid="brief-checks-toggle" aria-haspopup="dialog">
+              <Icon name="check" className="h-[18px] w-[18px]" /> Before you go
+              <span className="text-n-ink-2">{checksN} {checksN === 1 ? "check" : "checks"} · {tickedN} of {checksN} ticked by you</span>
+            </button>
           </section>
+        </div>
 
-          {/* the one evidence section: the statements, then what each rests on (measured, official), then what is not known */}
-          <section aria-labelledby="now-h" className="flex min-w-0 flex-col gap-3" data-testid="brief-now">
-            <h2 id="now-h" className="flex flex-wrap items-baseline justify-between gap-x-4 border-t border-n-line-strong pt-4" data-testid="matters-heading">
-              <span className="font-serif font-medium tracking-[-0.015em] leading-[1.1] text-[24px] text-n-ink">{snap ? "What mattered when saved" : "What the evidence says"}</span>
-              {/* the separator is in the text, so the heading reads "… saved · Oct 22, 9:06 PM" aloud, not "savedOct" */}
-              <span className="text-[13px] text-n-ink-2">
-                <span className="sr-only"> · </span>
-                {snap ? clockLabel(snap.savedAt) : "notices, shore samples, NOAA’s model, the satellite"}
-              </span>
+        {/* the stage: beside the column on a wide screen (sticky while the column scrolls), above it on a phone */}
+        <div ref={mapBox} className="coast-stage-wrap">
+          <HarbourMap place={place} g={g} ports={ports} official={official} stations={stations} exploreHref={exploreLink} researchHref={researchLink} onPlace={goPlace} basemapPmtiles={basemap} manifest={props.manifest} baseUrl={props.baseUrl} now={now} noticeCount={noticeRows} lit={lit} onNotices={openNotices} />
+        </div>
+
+        <div className="coast-lower" data-testid="brief-now">
+          <section aria-labelledby="now-h" className="flex flex-col gap-3">
+            <h2 id="now-h" className="nx-title" data-testid="matters-heading">
+              {snap ? "What mattered when saved" : "What the evidence says"}
+              <span className="sr-only"> · </span>
+              <span className="ml-3 font-ui text-[13px] font-normal tracking-normal text-n-ink-2">{snap ? clockLabel(snap.savedAt) : "notices, shore samples, NOAA’s model, the satellite"}</span>
             </h2>
             <div className="min-h-[156px]">
               {!g || !settled ? (
@@ -470,135 +484,80 @@ export function Briefing(props: Props) {
                 <Matters claims={b.matters} graph={g} stations={stations} onSelect={(s) => router.push(exploreHref(s, back))} fallback={placeSel} />
               )}
             </div>
-            <Fold inline openFrom="md" className="border-t border-n-line pt-1 md:pt-4" id="evidence" title="What it rests on" summary={`${near.length + far.length} measured · ${noticeRows} official, not verified`}>
-            <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
+          </section>
+          <div className="coast-folds">
+            <Fold id="sea" title="Sea forecast detail" summary={asSaved ? `every NWS period, the buoy and the tides, ${asSaved}` : "every NWS period in the forecaster's words, the buoy and the tides"}>
+              <SeaBody cond={b.cond} tripDate={b.tripDate} today={b.today} limits={limits} now={now} asSaved={asSaved} />
+            </Fold>
+            <Fold id="seasons" title="Season list" summary={species.id === "any" ? "CDFW's list for these waters" : `CDFW's list, ${speciesPhrase(species)} first`}>
+              <SeasonLinks place={place} season={season} />
+              <SeasonsBody place={place} species={species} audience={audience} tripDate={b.tripDate} today={b.today} />
+            </Fold>
+            <Fold id="evidence" title="What it rests on" summary={`${near.length + far.length} measured · ${noticeRows} official, not verified`}>
               <div className="flex min-w-0 flex-col gap-4" data-testid="brief-evidence-measured">
                 <div className="flex flex-col gap-1" data-testid="brief-measured">
-                  <Caps as="h3" family="measured">
-                    Measured near these waters{asSaved ? `, ${asSaved}` : ""}
-                  </Caps>
+                  <h3 className="nx-caps">Measured near these waters{asSaved ? `, ${asSaved}` : ""}</h3>
                   {!g ? (
                     <p className="text-[14px] text-n-ink-2">Reading…</p>
                   ) : near.length ? (
-                    <ul className="divide-y divide-n-line">{near.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
+                    <ul className="flex flex-col">{near.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
                   ) : (
                     <p className="text-[14px] text-n-ink-2">Nothing measured recently in these waters themselves{far.length ? "; what exists is farther away or older, below." : "."}</p>
                   )}
                 </div>
                 {far.length > 0 && (
-                  <Fold inline id="context" title="Farther away or older" count={far.length} summary="context only">
-                    <ul className="divide-y divide-n-line">{far.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
-                  </Fold>
+                  <div data-testid="brief-context" className="flex flex-col gap-1">
+                    <h3 className="nx-caps">Farther away or older · context only · {far.length}</h3>
+                    <ul className="flex flex-col">{far.map((n) => <NodeRow key={n.id ?? n.variable} n={n} now={now} back={back} />)}</ul>
+                  </div>
                 )}
               </div>
-              <div className="flex min-w-0 flex-col gap-2" data-testid="brief-official">
-                <h3 id="official-h" className="scroll-mt-16">
-                  <Caps family="official">Official notices · not verified</Caps>
-                </h3>
-                {noticeRows ? (
-                  <ul className="divide-y divide-n-line border-b border-n-line">
-                    {notices.map((n) => (
-                      <li key={n.id} className="py-2.5" data-testid={`notice-${n.id}`}>
-                        <p className="text-[15px] font-medium leading-snug">{n.text}</p>
-                        <p className="mt-0.5 text-[13px] text-n-ink-2">
-                          <span className="nx-caps text-n-official">{n.source.name}</span>
-                          {n.where?.name ? ` · ${n.where.name}` : ""}
-                          {(n.time as { issued?: string | null }).issued ? ` · since ${dayLabel((n.time as { issued: string }).issued)}` : ""}
-                          <span className="text-n-official"> · Not verified</span>
-                        </p>
-                        {n.freshness?.note && <p className="mt-1 text-[13px] text-n-official">{n.freshness.note}</p>}
-                        {n.source.url && (
-                          <a href={n.source.url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-[13px] text-n-ink underline decoration-n-line-strong underline-offset-4 sm:min-h-8">
-                            {n.source.name} notice <Icon name="external" className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </li>
-                    ))}
-                    {otherHere.length > 0 && (
-                      <li className="pt-2.5" data-testid="notices-other">
-                        <Caps as="p">{species.id === "any" ? "Also tied to these waters" : `Tied to these waters, not naming ${speciesPhrase(species)}`}</Caps>
-                        <ul className="divide-y divide-n-line">
-                          {otherHere.map((a) => {
-                            const url = a.record.sources.find((x) => x.url.startsWith("https://"))?.url ?? null;
-                            return (
-                              <li key={a.record.id} className="py-2" data-testid={`notice-official:${a.record.id}`}>
-                                <p className="text-[14.5px] leading-snug">{a.record.title}</p>
-                                <p className="flex flex-wrap items-center gap-x-3 text-[13px] text-n-ink-2">
-                                  <span>
-                                    {a.record.agency}
-                                    {a.record.effective_date ? ` · since ${dayLabel(a.record.effective_date)}` : ""}
-                                  </span>
-                                  <span className="text-n-official">Not verified</span>
-                                  {url && (
-                                    <a href={url} target="_blank" rel="noreferrer" className="nx-focus inline-flex min-h-11 items-center gap-1 text-n-ink underline decoration-n-line-strong underline-offset-4 sm:min-h-8">
-                                      {a.record.agency} notice <Icon name="external" className="h-3.5 w-3.5" />
-                                    </a>
-                                  )}
-                                </p>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </li>
-                    )}
-                  </ul>
-                ) : (
-                  <p className="text-[14px] text-n-ink-2">No notice in Neritic&rsquo;s list is tied to these waters.</p>
-                )}
-                <p className="text-[13px] leading-snug text-n-ink-2" data-testid="official-caveat">
-                  <span className="text-n-official">Not verified</span> · may be incomplete · no notice listed does not mean open or safe. The agency page is the authority:{" "}
-                  <a href={`tel:${AGENCY_LINKS.cdfwClosureLine.tel}`} className="nx-focus whitespace-nowrap text-n-ink underline decoration-n-line-strong underline-offset-4">
-                    CDFW {AGENCY_LINKS.cdfwClosureLine.phone}
-                  </a>
-                  {" · "}
-                  <a href={`tel:${AGENCY_LINKS.cdphLine.tel}`} className="nx-focus whitespace-nowrap text-n-ink underline decoration-n-line-strong underline-offset-4">
-                    CDPH {AGENCY_LINKS.cdphLine.phone}
-                  </a>
-                </p>
-              </div>
-            </div>
             </Fold>
-            <div className="flex flex-col gap-0 border-t border-n-line pt-2">
-              <Fold inline id="unknown" title="Not known here" count={b.unknowns.length} summary="missing evidence is said, never filled in">
-                <ul className="flex list-disc flex-col gap-1 pl-5 text-[13.5px] leading-snug text-n-ink-2" data-testid="unknowns">
-                  {b.unknowns.map((u) => (
-                    <li key={u}>{u}</li>
-                  ))}
-                </ul>
-              </Fold>
-              <a href="#unknown-h" className="sr-only" data-testid="glance-unknown">
-                {b.unknowns.length} {b.unknowns.length === 1 ? "thing" : "things"} Neritic cannot say here
-              </a>
-              <Fold inline id="worth" title="Dock value, history" summary="CDFW landings by year, not today's price">
-                <p className="text-[14px] text-n-ink" data-testid="glance-worth">
-                  {worthLine(place, ports, species)}
-                </p>
-                <WorthBody place={place} ports={ports} species={species} />
-              </Fold>
-            </div>
-          </section>
-
-          <footer className="flex max-w-[80ch] flex-col gap-3 text-[13px] leading-snug text-n-ink-2">
-            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]">
-              <Link href={exploreLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
-                <Icon name="map" className="h-4 w-4" /> Open in Explore
-              </Link>
-              <Link href={researchLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
-                <Icon name="research" className="h-4 w-4" /> Open in Research
-              </Link>
-              {hasPack && (
-                <button type="button" onClick={() => setPackOpen(true)} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink" data-testid="pack-open">
-                  <Icon name={off.record?.complete ? "check" : "download"} className="h-4 w-4" /> {off.record?.complete ? "Saved for offline use" : "Save for offline use"}
-                </button>
-              )}
-            </div>
-            <p className="nx-margin" data-testid="matters-provenance">
-              Official items quote Neritic&rsquo;s copy of the CDFW and CDPH pages and notices. No person has reviewed that copy yet, so the agency pages are the authority. Your limits, ticks, trip numbers and home port stay on this device.
-            </p>
-            <p>Sources: CDFW and CDPH (Neritic&rsquo;s copy), CalHABMAP via SCCOOS, NOAA C-HARM, NOAA CoastWatch, NWS, NDBC and CO-OPS, CDFW By The Numbers, EIA. This link reproduces this trip. Neritic is an independent research project, not affiliated with or endorsed by NOAA, CDFW or CDPH.</p>
-          </footer>
+            <Fold id="unknown" title="Not known here" count={b.unknowns.length} summary="missing evidence is said, never filled in">
+              <ul className="flex list-disc flex-col gap-1 pl-5 text-[14.5px] leading-snug text-n-ink-2" data-testid="unknowns">
+                {b.unknowns.map((u) => (
+                  <li key={u}>{u}</li>
+                ))}
+              </ul>
+            </Fold>
+            <a href="#unknown-h" className="sr-only" data-testid="glance-unknown">
+              {b.unknowns.length} {b.unknowns.length === 1 ? "thing" : "things"} Neritic cannot say here
+            </a>
+            <Fold id="worth" title="Dock value, history" summary="CDFW landings by year, not today's price">
+              <p className="text-[14px] text-n-ink" data-testid="glance-worth">
+                {worthLine(place, ports, species)}
+              </p>
+              <WorthBody place={place} ports={ports} species={species} />
+            </Fold>
+          </div>
         </div>
       </main>
+
+      {/* the trip ledger: below the briefing, the width of the page */}
+      <div className="coast-ledger-band">
+        <TripLedger {...econProps} statusSentence={statusLine.kind === "row" ? `${statusLine.word}: ${statusLine.sentence}` : null} />
+      </div>
+
+      <footer className="coast-foot">
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14.5px]">
+          <Link href={exploreLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
+            <Icon name="map" className="h-4 w-4" /> Open in Explore
+          </Link>
+          <Link href={researchLink} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink">
+            <Icon name="research" className="h-4 w-4" /> Open in Research
+          </Link>
+          {hasPack && (
+            <button type="button" onClick={() => setPackOpen(true)} className="nx-focus inline-flex min-h-11 items-center gap-1.5 text-n-ink-2 hover:text-n-ink" data-testid="pack-open">
+              <Icon name={off.record?.complete ? "check" : "download"} className="h-4 w-4" /> {off.record?.complete ? "Saved for offline use" : "Save for offline use"}
+            </button>
+          )}
+        </div>
+        <p className="nx-margin" data-testid="matters-provenance">
+          Official items quote Neritic&rsquo;s copy of the CDFW and CDPH pages and notices. No person has reviewed that copy yet, so the agency pages are the authority. Your limits, ticks, trip numbers and home port stay on this device.
+        </p>
+        <p className="text-[13.5px] leading-[20px] text-n-ink-2">Sources: CDFW and CDPH (Neritic&rsquo;s copy), CalHABMAP via SCCOOS, NOAA C-HARM, NOAA CoastWatch, NWS, NDBC and CO-OPS, CDFW By The Numbers, EIA. This link reproduces this trip. Neritic is an independent research project, not affiliated with or endorsed by NOAA, CDFW or CDPH.</p>
+      </footer>
+      {mounted && sinceHost ? createPortal(<SinceLastCheck />, sinceHost) : null}
       <MobileDock />
     </div>
   );
@@ -606,9 +565,9 @@ export function Briefing(props: Props) {
 
 /**
  * The worksheet's one framing line, above every number (integrity C.19): hypothetical, the list it quotes
- * and what it says, and that Neritic holds no commercial season. One line, said once.
+ * and what it says, and Today's own status for the species. One line, said once.
  */
-function SheetLine({ place, species, season, rec }: { place: CoastPlace; species: ReturnType<typeof speciesById>; season: ReturnType<typeof seasonStatus>; rec: boolean }) {
+function SheetLine({ place, species, season, rec, statusSentence }: { place: CoastPlace; species: ReturnType<typeof speciesById>; season: ReturnType<typeof seasonStatus>; rec: boolean; statusSentence: string | null }) {
   const s = season.item;
   return (
     <span className="flex flex-col gap-0.5 border-l-2 border-n-official pl-3 sm:block" data-testid="econ-hypothetical">
@@ -622,7 +581,7 @@ function SheetLine({ place, species, season, rec }: { place: CoastPlace; species
         ) : (
           <>{species.id === "any" ? "No species chosen. " : `${species.label}: no entry of its own on CDFW's sport list here${season.commercial || season.commercialOnly ? "; " : ". "}`}</>
         )}
-        {(season.commercial || season.commercialOnly) && "Neritic holds no commercial season. "}
+        {statusSentence ? <span data-testid="econ-status">{statusSentence} (Not verified.) </span> : null}
         {rec ? <span data-testid="econ-rec-note">A recreational trip is worked out as its cost only: no price, gross, crew pay or net. </span> : ""}
         <span className="whitespace-nowrap">Kept on this device only.</span>
       </span>
@@ -701,63 +660,50 @@ function NodeRow({ n, now, back }: { n: EvidenceNode; now: Date | null; back: st
   );
 }
 
-/** The page's small menu: copy this briefing's link (the trip is in it). */
-function MoreMenu() {
-  const [open, setOpen] = useState(false);
+/** The page's more menu: copy this trip's link, what is remembered on this device, the before-you-go list. */
+function MoreMenu({ sinceSlot }: { sinceSlot: RefObject<HTMLDivElement | null> }) {
   const [done, setDone] = useState(false);
-  const box = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    const onDown = (e: PointerEvent) => box.current && !box.current.contains(e.target as Node) && setOpen(false);
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onDown);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onDown);
-    };
-  }, [open]);
   return (
-    <div ref={box} className="relative shrink-0">
-      <button type="button" aria-expanded={open} aria-controls={open ? "coast-more-menu" : undefined} aria-label="More: copy a link to this briefing" onClick={() => setOpen((o) => !o)} className="nx-press nx-focus grid h-11 w-11 place-items-center rounded-[3px] border border-n-line text-n-ink-2 hover:text-n-ink" data-testid="coast-more">
-        <Icon name="more" className="h-5 w-5" />
-      </button>
-      {open && (
-        <div id="coast-more-menu" className="nx-pop absolute right-0 top-14 z-30 flex w-60 flex-col rounded-[4px] border border-n-line bg-n-surface p-1.5 shadow-[var(--nx-shadow)]">
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(window.location.href);
-                setDone(true);
-                toast("Link copied");
-                setTimeout(() => {
-                  setDone(false);
-                  setOpen(false);
-                }, 1200);
-              } catch {
-                setDone(false);
-              }
-            }}
-            className="nx-tint nx-focus flex min-h-12 items-center gap-2 rounded-[3px] px-3 text-left text-[15px]"
-            data-testid="coast-copy-link"
-          >
-            <Icon name={done ? "check" : "link"} className="h-[18px] w-[18px]" /> {done ? "Link copied" : "Copy link to this trip"}
-          </button>
-          <span className="sr-only" aria-live="polite">
-            {done ? "Link copied" : ""}
-          </span>
-        </div>
-      )}
-    </div>
+    <Pop
+      label="More"
+      testId="coast-more"
+      triggerClass="nx-press nx-focus grid h-11 w-11 place-items-center text-n-ink-2 hover:text-n-ink"
+      trigger={
+        <>
+          <Icon name="more" className="h-5 w-5" />
+          <span className="sr-only">More: a link to this trip, and what is remembered on this device</span>
+        </>
+      }
+    >
+      <div className="flex w-[min(20rem,80vw)] flex-col gap-1" data-testid="coast-more-menu">
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              setDone(true);
+              toast("Link copied");
+              setTimeout(() => setDone(false), 1200);
+            } catch {
+              setDone(false);
+            }
+          }}
+          className="nx-tint nx-focus flex min-h-12 items-center gap-2 px-3 text-left text-[15px]"
+          data-testid="coast-copy-link"
+        >
+          <Icon name={done ? "check" : "link"} className="h-[18px] w-[18px]" /> {done ? "Link copied" : "Copy link to this trip"}
+        </button>
+        <span className="sr-only" aria-live="polite">{done ? "Link copied" : ""}</span>
+        {/* "Remembered on this device" (a dated copy, forget) moves here unless something changed */}
+        <div ref={sinceSlot} className="coast-more-since px-3 pb-2 pt-1" data-testid="coast-more-since" />
+      </div>
+    </Pop>
   );
 }
 
 function MobileDock() {
   return (
-    <div className="env-instrument fixed inset-x-0 bottom-0 z-40 border-t border-n-line bg-n-surface lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <NavTabs active="coast" size="dock" />
-    </div>
+    <Dock active="coast" />
   );
 }
 

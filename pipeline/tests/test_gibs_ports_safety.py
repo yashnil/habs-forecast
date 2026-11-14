@@ -165,7 +165,9 @@ def test_forecast_layers_disclaim_regulatory_status(out):
         if lyr.group_id == "charm":
             assert "not a closure or health decision" in joined
             assert "does not mean an area is safe" in joined
-            assert "inferred" in joined  # issue date honesty
+            # issue date honesty: either NOAA's stated date or a labelled inference
+            assert ("inferred" in joined) == lyr.time.issued_date_derived
+            assert "Issue date is" in joined
         if lyr.variable == "chlorophyll_a":
             assert "does not measure toxins" in joined
             assert "gap means no observation" in joined

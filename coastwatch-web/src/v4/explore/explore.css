@@ -4,24 +4,18 @@
  * the layer index and the legend's marks. Tokens come from src/v4/theme.css; nothing here redefines one.
  */
 
-/* ---- the field's shading: the map darkens toward its top and bottom edges, where the instrument's
-   text sits (the concept's gradient), so the words keep their contrast over any raster ---- */
-.nx-field-shade {
-  background:
-    linear-gradient(180deg, rgba(5, 9, 13, 0.72) 0, rgba(5, 9, 13, 0) 112px),
-    linear-gradient(0deg, rgba(5, 9, 13, 0.95) 0, rgba(5, 9, 13, 0.9) 150px, rgba(5, 9, 13, 0.55) 196px, rgba(5, 9, 13, 0) 250px);
+/* daylight: the margin line takes the ink */
+html[data-daylight] [data-testid="map-margin"] .nx-on-map,
+html[data-daylight] [data-testid="map-margin"] .nx-on-map a {
+  color: var(--nx-ink-2);
+  text-shadow: none;
 }
 
-/* ---- an instrument plate over the field: one hairline, square shoulders, a solid dark ground (no blur
-   over WebGL) ---- */
+/* ---- an instrument plate over the field is a deck (design.md §4.3): no border, no blur over WebGL ---- */
 .nx-iplate {
-  background: rgba(5, 9, 13, 0.88);
-  border: 1px solid var(--nx-line);
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 14px 36px -10px rgba(0, 0, 0, 0.55);
-}
-html[data-daylight] .nx-iplate {
-  background: var(--nx-surface);
+  background: var(--nx-deck);
+  border-radius: var(--nx-r-16);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 /* ---- the time rail ---- */
@@ -70,7 +64,44 @@ html[data-daylight] .nx-iplate {
   border-radius: 2px;
 }
 
-/* ---- the layer index: rows on hairlines, the lit one with its family swatch haloed ---- */
+/* ---- the field dock (design.md §7.3): the ramp's marker moves under the cursor or selected point ---- */
+.nx-ramp-mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--nx-ink);
+  box-shadow: 0 0 0 1px rgba(5, 9, 13, 0.75);
+  border-radius: 1px;
+  transition: left 80ms linear;
+}
+.nx-layer-group {
+  padding: 8px 8px 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--nx-ink-3);
+}
+.nx-layer-group:first-child {
+  padding-top: 0;
+}
+/* the rail's caption plate shows only when it has something to say */
+.nx-rail-cap {
+  display: none;
+}
+.nx-rail-cap:has(p, button) {
+  display: block;
+}
+/* the place sheet is a reading surface: opaque over any raster */
+.nx-place-sheet {
+  background: var(--nx-surface);
+}
+.nx-place-sheet .nx-note > summary {
+  min-height: 48px;
+}
+
+/* ---- the layer index: rows, the lit one with its family swatch haloed, the lit one with its family swatch haloed ---- */
 .nx-index-row[aria-checked="true"] .nx-index-sw {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 28%, transparent);
 }
@@ -125,5 +156,8 @@ html[data-daylight] .nx-iplate {
 @media (prefers-reduced-motion: reduce) {
   .nx-rail * {
     transition: none !important;
+  }
+  .nx-ramp-mark {
+    transition: none;
   }
 }

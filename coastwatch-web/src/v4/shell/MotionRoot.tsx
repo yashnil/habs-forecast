@@ -4,16 +4,18 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MotionConfig } from "motion/react";
 import { onAppReady, usePresence, exitProps } from "@/v4/motion";
+import { RouteTransitions } from "@/v4/motion/routes";
 import { onToast } from "@/v4/ui/toast";
 
 /**
- * The root of every page: reduced motion for every motion component (fades stay, movement goes), the
- * launch screen's dismissal, and the one toast.
+ * The root of every page: reduced motion for every motion component (fades stay, movement goes), route
+ * transitions, the launch screen's dismissal, and the one toast.
  */
 export function MotionRoot({ children }: { children: React.ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
       {children}
+      <RouteTransitions />
       <SplashGate />
       <Toaster />
     </MotionConfig>

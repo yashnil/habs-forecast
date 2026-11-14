@@ -87,6 +87,14 @@ const sstPresent = writeGrid("sst_latest/grid", O.width, O.height, (r, c) => {
   return t / SST_SCALE;
 });
 const oUncPresent = writeGrid("chl_outlook_8d/uncertainty", O.width, O.height, (r, c) => (inSfBay(...at(O, r, c)) ? null : 0.33 / UNC_SCALE));
+// the usual value for the outlook's 8-day period, cell for cell with the outlook (the pipeline's `typical_grid`). Synthetic: the
+// outlook runs 1.6x its usual value in and south of Monterey Bay (a "higher than usual" reading at Moss Landing, Monterey and
+// Santa Cruz) and 1.1x north of 37.2 N (an "about usual" reading at Half Moon Bay)
+const usualRatio = (lat) => (lat < 37.2 ? 1.6 : 1.1);
+const oTypPresent = writeGrid("chl_outlook_8d/typical", O.width, O.height, (r, c) => {
+  const [lat, lon] = at(O, r, c);
+  return inSfBay(lat, lon) ? null : code(field(lat, lon) - 0.05 - Math.log10(usualRatio(lat)));
+});
 let bayCells = 0;
 for (let r = 0; r < O.height; r++) for (let c = 0; c < O.width; c++) if (inSfBay(...at(O, r, c))) bayCells++;
 
@@ -121,6 +129,8 @@ const index = {
       units: "mg m-3",
       grid: grid(O, "chl_outlook_8d/grid", outPresent),
       uncertainty_grid: grid(O, "chl_outlook_8d/uncertainty", oUncPresent, UNC_SCALE, 0, "none"),
+      typical_grid: grid(O, "chl_outlook_8d/typical", oTypPresent),
+      typical_basis: "Fixture: each cell's usual chlorophyll for this 8-day period of the year (test data only).",
     },
     {
       id: "chl_estimate_latest",

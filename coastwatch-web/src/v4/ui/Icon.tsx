@@ -20,6 +20,12 @@ const P: Record<string, React.ReactNode> = {
   alert: <><path d="M12 4 2.8 19.5h18.4L12 4Z" /><path d="M12 10v4.5" /><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none" /></>,
   info: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5" /><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none" /></>,
   shield: <path d="M12 3 4.8 6v5.4c0 4.4 3.1 7.9 7.2 9.4 4.1-1.5 7.2-5 7.2-9.4V6L12 3Z" />,
+  // v11: the not-verified marker (a shield with a slash through it) and the status tag shapes
+  shieldOff: <><path d="M12 3 4.8 6v5.4c0 4.4 3.1 7.9 7.2 9.4 4.1-1.5 7.2-5 7.2-9.4V6L12 3Z" /><path d="M4 4l16 16" /></>,
+  noEntry: <><circle cx="12" cy="12" r="8.5" /><path d="M8 12h8" strokeWidth="2.4" /></>,
+  hourglass: <><path d="M7 3.5h10M7 20.5h10M8 3.5c0 4 4 5 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5-4 8.5s4 4.5 4 8.5" /></>,
+  eye: <><path d="M2.8 12S6 5.5 12 5.5 21.2 12 21.2 12 18 18.5 12 18.5 2.8 12 2.8 12Z" /><circle cx="12" cy="12" r="2.8" /></>,
+  ring: <circle cx="12" cy="12" r="7.5" />,
   station: <><circle cx="12" cy="9" r="3" /><path d="M12 12v9M8 21h8" /></>,
   cell: <><rect x="5" y="5" width="14" height="14" rx="1" /><path d="M5 12h14M12 5v14" opacity="0.5" /></>,
   harbor: <><circle cx="12" cy="5.5" r="2" /><path d="M12 7.5V20M7 11h10M4.5 14.5c1.2 3.4 4.2 5.5 7.5 5.5s6.3-2.1 7.5-5.5" /></>,
@@ -34,6 +40,11 @@ const P: Record<string, React.ReactNode> = {
   more: <><circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" /><circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none" /></>,
   play: <path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor" />,
   pause: <><path d="M8.5 5.5v13M15.5 5.5v13" strokeWidth="2.6" /></>,
+  // Today (pilot): the day's page in the nav, and the daylight (bright sun) switch
+  today: <><path d="M3.5 17.5h17" /><path d="M7 17.5a5 5 0 0 1 10 0" /><path d="M12 6.5v2.5M5.4 10.4l1.7 1.4M18.6 10.4l-1.7 1.4" /><path d="M6 20.5h12" opacity="0.6" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" /></>,
+  bell: <><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14l1.5-2Z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></>,
+  ask: <><path d="M4.5 5.5h15v10h-8l-4.5 3.5v-3.5h-2.5v-10Z" /><path d="M10 9a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.4" /><circle cx="12" cy="13.6" r="0.8" fill="currentColor" stroke="none" /></>,
   keyboard: <><rect x="3" y="6.5" width="18" height="11" rx="2" /><path d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8" /></>,
 };
 

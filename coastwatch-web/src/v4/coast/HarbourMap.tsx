@@ -15,7 +15,6 @@ import { coverageWhen, resolve } from "@/v4/explore/layers";
 import { ContourLoader } from "@/v4/ui/ContourLoader";
 import { Icon } from "@/v4/ui/Icon";
 import { relTime } from "@/v4/ui/time";
-import { Caps } from "./ui/Instrument";
 
 const MapCanvas = dynamic(() => import("@/components/map/MapCanvas"), { ssr: false, loading: () => null });
 
@@ -29,12 +28,19 @@ export function chlorophyll(m: Manifest | null, baseUrl: string) {
   return null;
 }
 
+/** One zoom-driven width expression that makes a notice's own line heavier while it is lit. */
+const litWidth = (ids: string[], base: [number, number], heavy: number) => {
+  const isLit = ids.length ? ["any", ...ids.map((id) => ["in", id, ["coalesce", ["get", "record_ids"], ["literal", []]]])] : false;
+  const at = (w: number) => (ids.length ? ["case", isLit, heavy, w] : w);
+  return ["interpolate", ["linear"], ["zoom"], 5, at(base[0]), 9, at(base[1])];
+};
+
 /**
- * The trip's waters, live (v10 pass 2): the place, the newest satellite chlorophyll view (observed and
- * dated), the stations behind the briefing and the notices' limits: the briefing's ground on a wide
- * screen (the whole height of the window, beside the reading column), a band on a phone.
- * The map loads once its box nears the screen. `basemapPmtiles`: offline with a saved field pack, the
- * pack's own map; undefined until the pack has been read (a map made before that would ask the tile server).
+ * The trip's stage (v11): the place, the newest satellite chlorophyll view (observed, dated, never toxin),
+ * the stations behind the briefing and the notices' limits. Beside the column on a wide screen, above it
+ * on a phone. The notices' geography is the map's own interaction: tap a limit line, or a notice in its
+ * sheet, and that notice's line lights and its words open. `basemapPmtiles`: offline with a saved field
+ * pack, the pack's own map; undefined until the pack has been read.
  */
 export function HarbourMap({
   place,
@@ -49,6 +55,9 @@ export function HarbourMap({
   manifest = null,
   baseUrl = "",
   now = null,
+  noticeCount = 0,
+  lit = [],
+  onNotices,
 }: {
   place: CoastPlace;
   g: EvidenceGraph | null;
@@ -62,6 +71,12 @@ export function HarbourMap({
   manifest?: Manifest | null;
   baseUrl?: string;
   now?: Date | null;
+  /** the notices tied to these waters, counted once */
+  noticeCount?: number;
+  /** registry ids whose lines are lit */
+  lit?: string[];
+  /** open the notices sheet, focused on these records when a line was tapped */
+  onNotices?: (recordIds: string[] | null) => void;
 }) {
   const isPort = place.kind === "port";
   const feats = useMemo<GeoJSON.FeatureCollection>(() => {
@@ -93,7 +108,8 @@ export function HarbourMap({
   const e = Math.max(...lons, place.lon + 0.16) + 0.03;
   const n = Math.max(...lats, place.lat + 0.07) + 0.03;
   // a wide screen's map is the page's ground: room for the legend above and the links below
-  const pad = () => (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches ? { top: 130, bottom: 140, left: 60, right: 40 } : 24);
+  // a phone's band keeps its top clear of the floating bar and the legend, so the waters are never under the chrome
+  const pad = () => (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches ? { top: 130, bottom: 140, left: 60, right: 40 } : { top: 84, bottom: 20, left: 20, right: 20 });
   const [map, setMap] = useState<import("maplibre-gl").Map | null>(null);
   const box = useRef<HTMLDivElement | null>(null);
   const [near, setNear] = useState(false);
@@ -112,22 +128,48 @@ export function HarbourMap({
     mq.addEventListener("change", fit);
     return () => mq.removeEventListener("change", fit);
   }, [map, w, s, e, n]);
-  const chip = "nx-press nx-focus inline-flex min-h-11 items-center gap-1.5 text-[14px] text-n-ink underline decoration-n-line-strong underline-offset-4 hover:decoration-n-ink lg:min-h-9 lg:rounded-[3px] lg:border lg:border-n-line lg:bg-[rgba(5,9,13,0.86)] lg:px-3 lg:text-[13.5px] lg:no-underline lg:hover:border-n-line-strong";
+  // a notice's own line, lit (the map's official layers already exist once the map is ready)
+  const litKey = lit.join("|");
+  useEffect(() => {
+    if (!map) return;
+    const ids = litKey ? litKey.split("|") : [];
+    const set = () => {
+      try {
+        if (map.getLayer("official-limit")) map.setPaintProperty("official-limit", "line-width", litWidth(ids, [1.4, 2], 4.2) as never);
+        if (map.getLayer("official-county")) map.setPaintProperty("official-county", "line-width", litWidth(ids, [1, 1.6], 3.2) as never);
+      } catch {
+        // the style is not ready yet: the next change sets it
+      }
+    };
+    if (map.isStyleLoaded()) set();
+    else map.once("idle", set);
+  }, [map, litKey]);
+  // a tap on a notice's line reads that notice; anywhere else on the water briefs those waters
+  const point = (pt: { lat: number; lon: number }) => {
+    if (map && onNotices) {
+      const q = map.project([pt.lon, pt.lat]);
+      const near: [[number, number], [number, number]] = [[q.x - 4, q.y - 4], [q.x + 4, q.y + 4]];
+      const layers = ["official-limit", "official-county"].filter((l) => map.getLayer(l));
+      const hit = layers.length ? map.queryRenderedFeatures(near, { layers }) : [];
+      const ids = [...new Set(hit.flatMap((f) => { const raw = (f.properties as { record_ids?: unknown }).record_ids; const list = typeof raw === "string" ? (JSON.parse(raw) as string[]) : (raw as string[] | undefined); return list ?? []; }))];
+      if (ids.length) return onNotices(ids);
+    }
+    onPlace(pointKey(pt.lat, pt.lon));
+  };
   const credit = `© OpenStreetMap contributors · OpenMapTiles · NOAA relief${field ? " · NOAA CoastWatch" : ""} · Not for navigation`;
   return (
-    // one map at every width: a band under the readings on a phone; on a wide screen the whole height of the
-    // window beside the reading column (Briefing makes it sticky), with its legend and links set on the water
-    <section aria-labelledby="coast-map-h" className="flex flex-col gap-2 lg:relative lg:block lg:h-full" data-testid="locator" id="coast-map">
-      <h2 id="coast-map-h" className="lg:sr-only">
-        <Caps>The waters · stations · notices&rsquo; limits</Caps>
+    // one map at every width: a band above the column on a phone; beside it, the whole height of the window, on a wide screen
+    <section aria-labelledby="coast-map-h" className="coast-stage" data-testid="locator" id="coast-map">
+      <h2 id="coast-map-h" className="sr-only">
+        The waters of this trip, the stations and the notices&rsquo; limits
       </h2>
-      <div ref={box} className="env-instrument relative -mx-4 h-[210px] overflow-hidden border-y border-n-line sm:mx-0 sm:h-[300px] sm:rounded-[4px] sm:border lg:absolute lg:inset-0 lg:h-auto lg:rounded-none lg:border-0">
+      <div ref={box} className="env-instrument coast-stage-canvas">
         {!map && (
           <div className="absolute inset-0 grid place-items-center" data-testid="locator-loading" role="status">
             <div className="absolute inset-0">
-              <ContourLoader loading={near} className="h-full w-full text-n-accent opacity-30" />
+              <ContourLoader loading={near} className="h-full w-full text-n-ink-2 opacity-30" />
             </div>
-            <p className="relative text-[13px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
+            <p className="relative text-[13.5px] text-n-ink-2">{near ? `Drawing ${place.name} and its stations…` : `Map of ${place.name}`}</p>
           </div>
         )}
         {near && basemapPmtiles !== undefined && (
@@ -150,40 +192,47 @@ export function HarbourMap({
             initialBounds={[[w, s], [e, n]]}
             initialPadding={pad()}
             onPort={(code) => onPlace(`port-${code}`)}
-            onPoint={(pt) => onPlace(pointKey(pt.lat, pt.lon))}
+            onPoint={point}
             onReady={setMap}
           />
         )}
-        {/* the reading column's edge fades into the water: the map is the page's ground, not a box */}
-        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 hidden w-12 bg-gradient-to-r from-[var(--nx-bg)] to-transparent lg:block" />
-        <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(5,9,13,0.9)] to-transparent px-2.5 pb-1.5 pt-5 text-right text-[10.5px] text-n-ink-2 lg:hidden">{credit}</p>
       </div>
-      <p className="text-[12px] leading-snug text-n-ink-2 lg:pointer-events-none lg:absolute lg:right-4 lg:top-[92px] lg:max-w-[300px] lg:rounded-[4px] lg:bg-[rgba(5,9,13,0.84)] lg:px-3 lg:py-2 lg:text-right" data-testid="locator-legend">
+      {/* the legend as the map's title: what it shows, when, and what it is not */}
+      <p className="coast-stage-legend nx-deck" data-testid="locator-legend">
         {field ? (
           <>
-            <span className="nx-caps text-n-measured">Chlorophyll-a · satellite, observed</span>
-            <br />
-            {fieldWhen}
-            {newest && now ? ` · newest ${relTime(newest, now)}` : ""}. Not toxin; no colour is no clear view, not low.
+            <b className="font-semibold text-n-ink">Chlorophyll · observed</b> · {fieldWhen?.split(", each")[0]}
+            <span className="max-sm:hidden">
+              {fieldWhen?.includes(", each") ? `, each${fieldWhen.split(", each")[1]}` : ""}
+              {newest && now ? `, newest ${relTime(newest, now)}` : ""}
+            </span>
+            . Not toxin<span className="max-sm:hidden">; no colour is no clear view, not low</span>.
           </>
         ) : (
           <>No satellite chlorophyll view in this dataset: the coast, stations and notices&rsquo; limits only.</>
         )}
       </p>
-      <div className="flex flex-col gap-1 lg:pointer-events-none lg:absolute lg:inset-x-0 lg:bottom-0 lg:gap-2 lg:bg-gradient-to-t lg:from-[rgba(5,9,13,0.95)] lg:via-[rgba(5,9,13,0.8)] lg:to-transparent lg:px-5 lg:pb-2 lg:pt-12">
-        <p className="max-w-[52ch] text-[12.5px] leading-snug text-n-ink-2 max-sm:sr-only" data-testid="locator-caption">
-          {place.name}
-          {nStations > 0 ? `, the ${nStations} ${nStations === 1 ? "station" : "stations"} behind this briefing` : ""} and the notices&rsquo; limits (amber), from their official geography. <span className="text-n-ink">Tap a harbour or the water to brief those waters.</span>
-        </p>
-        <p className="flex flex-wrap gap-x-5 gap-y-0 lg:gap-2">
-          <Link href={exploreHref} className={`${chip} lg:pointer-events-auto`} data-testid="locator-explore">
+      <div className="coast-stage-foot">
+        <p className="coast-stage-actions max-lg:sr-only">
+          <Link href={exploreHref} className="nx-link nx-focus inline-flex min-h-11 items-center gap-1.5" data-testid="locator-explore">
             <Icon name="map" className="h-4 w-4" /> {place.name} in Explore
           </Link>
-          <Link href={researchHref} className={`${chip} lg:pointer-events-auto`} data-testid="locator-research">
+          <Link href={researchHref} className="nx-link nx-focus inline-flex min-h-11 items-center gap-1.5" data-testid="locator-research">
             <Icon name="research" className="h-4 w-4" /> Its record in Research
           </Link>
         </p>
-        <p className="hidden text-right text-[10.5px] text-n-ink-2 lg:block">{credit}</p>
+        <p className="coast-stage-hint" data-testid="locator-caption">
+          {noticeCount > 0 ? (
+            <button type="button" onClick={() => onNotices?.(null)} className="nx-focus nx-press inline-flex min-h-11 items-center gap-2 text-n-ink" data-testid="notices-open">
+              <Icon name="shieldOff" className="h-4 w-4 text-n-official" /> {noticeCount} {noticeCount === 1 ? "notice" : "notices"} tied here, not verified · tap a line
+            </button>
+          ) : (
+            <span>No notice line tied to these waters</span>
+          )}
+          <span className="max-lg:hidden"> · Tap a harbour or the water to brief those waters.</span>
+          {nStations > 0 ? <span className="sr-only">, the {nStations} {nStations === 1 ? "station" : "stations"} behind this briefing</span> : null}
+        </p>
+        <p className="coast-stage-credit">{credit}</p>
       </div>
     </section>
   );

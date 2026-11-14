@@ -1,0 +1,101 @@
+/* v15 evidence: "Since you planned this trip", the recheck and the planning snapshot. Page layout over the ds kit
+   (Micro, Glyph, StampLine, Button, Disclosure). Tokens only (src/nx/ds/tokens.css). The headline is the one focal
+   point; changes are one line each; evidence opens on demand. */
+
+/* ---------------------------------------------------------------- the feed */
+.feed, .panel, .snap { font-family: var(--font); }
+.feed { display: grid; gap: var(--s-16); font-variant-numeric: tabular-nums; }
+.feedHead { display: grid; gap: var(--s-6); }
+.headline { margin: 0; font: var(--w7) var(--fs-25) / 1.15 var(--font); letter-spacing: -0.01em; color: var(--ink); text-wrap: balance; }
+.feed[data-state="incomplete"] .headline,
+.feed[data-state="saved"] .headline { color: var(--ink); }
+.sub { margin: 0; font: var(--w5) var(--fs-15) / 1.4 var(--font); color: var(--ink-2); }
+.stateRow { display: flex; align-items: center; gap: var(--s-8); }
+
+/* checking: a sounding line sweeping under the headline */
+.sweep { position: relative; height: 3px; overflow: hidden; border-radius: var(--r-pill); background: var(--sel); }
+.sweepBar { position: absolute; top: 0; bottom: 0; width: 34%; border-radius: var(--r-pill); background: var(--ultra); }
+
+.list { display: grid; margin: 0; padding: 0; list-style: none; border-top: var(--hair) solid var(--line); }
+.item { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: var(--s-2) var(--s-12); padding: var(--s-12) 0; border-bottom: var(--hair) solid var(--line); }
+.mark { width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; border: var(--rule) solid var(--ink-3); }
+.item[data-p="1"] .mark { border-color: var(--coral); background: var(--coral); }
+.item[data-p="2"] .mark { border-color: var(--ultra); background: var(--ultra-wash); }
+.item[data-kind="unavailable"] .mark { border-style: dotted; background: transparent; }
+.title { margin: 0; font: var(--w6) var(--fs-15) / 1.35 var(--font); color: var(--ink); }
+.meta { grid-column: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-10); font: var(--w5) var(--fs-13) / 1.4 var(--font); color: var(--ink-2); }
+.detail { grid-column: 2; margin: var(--s-4) 0 0; font: var(--w5) var(--fs-13) / 1.45 var(--font); color: var(--ink-2); }
+.was { grid-column: 2; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-2) var(--s-8); margin: var(--s-6) 0 0; font-size: var(--fs-13); line-height: 1.4; }
+.was dt { color: var(--ink-2); }
+.was dd { margin: 0; color: var(--ink); }
+.link { font: var(--w6) var(--fs-13) / 1.4 var(--font); color: var(--ultra); text-decoration: underline dashed; text-underline-offset: 3px; }
+.link:hover { color: var(--ultra-deep); }
+.link:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-1); }
+
+.unchecked { display: grid; gap: var(--s-4); margin: 0; padding: var(--s-12) var(--s-16); border: var(--rule) dotted var(--ink-3); border-radius: var(--r-ctl); list-style: none; }
+.unchecked li { font: var(--w5) var(--fs-13) / 1.45 var(--font); color: var(--ink-2); }
+.unchecked b { font-weight: var(--w6); color: var(--ink); }
+
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-12); }
+
+/* ---------------------------------------------------------------- the change history */
+.history { display: grid; gap: var(--s-8); }
+.axis { position: relative; height: 64px; margin: 0 var(--s-16); }
+.axisLine { position: absolute; left: 0; right: 0; top: 18px; height: 0; border-top: var(--rule) solid var(--rule-soft); }
+.axisNow { position: absolute; top: 8px; width: 0; height: 20px; border-left: var(--rule) solid var(--ink); }
+.axisNowLabel { position: absolute; top: 34px; transform: translateX(-50%); font: var(--w6) var(--fs-11) / 1 var(--font); color: var(--ink); white-space: nowrap; }
+.stop {
+  position: absolute; top: 0; display: grid; justify-items: center; align-content: start; gap: var(--s-4); width: 44px; height: 60px; margin-left: -22px; padding: var(--s-6) 0 0;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink-2); cursor: pointer; font: var(--w6) var(--fs-11) / 1 var(--font);
+}
+.stop:hover { background: var(--sel); }
+.stop:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
+.dot { width: 14px; height: 14px; border-radius: 50%; border: var(--rule) solid var(--ink); background: var(--paper); }
+.stop[data-kind="planning"] .dot { border-color: var(--ultra); background: var(--ultra); }
+.stop[data-kind="superseded"] .dot { border-color: var(--ink-3); }
+.stop[data-kind="recheck"][data-complete] .dot { background: var(--ink); }
+.stop[data-mode="saved"] .dot { border-style: dotted; }
+.stop[data-selected] { color: var(--ink); }
+.stop[data-selected] .dot { box-shadow: 0 0 0 4px var(--ultra-wash); }
+.count { min-width: 16px; padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--coral-wash); color: var(--coral-ink); font: var(--w7) var(--fs-11) / 16px var(--font); }
+
+/* ---------------------------------------------------------------- the recheck */
+.panel { display: grid; gap: var(--s-16); font-variant-numeric: tabular-nums; }
+.panelHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-12); }
+.stamp { margin: 0; font: var(--w6) var(--fs-13) / 1.4 var(--font); color: var(--ink-2); }
+.stamp[data-complete] { color: var(--ink); }
+.parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-12); }
+.part { display: grid; align-content: start; gap: var(--s-8); min-width: 0; padding: var(--s-14) var(--s-16); border-radius: var(--r-ctl); background: var(--paper-2); }
+.part[data-part="unchecked"] { background: transparent; border: var(--rule) dotted var(--ink-3); }
+.part[data-part="changed"][data-some] { background: var(--coral-wash); }
+.partHead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-8); }
+.n { font: var(--w7) var(--fs-25) / 1 var(--font); color: var(--ink); }
+.part[data-part="changed"][data-some] .n { color: var(--coral-ink); }
+.partList { display: grid; gap: var(--s-6); margin: 0; padding: 0; list-style: none; font: var(--w5) var(--fs-13) / 1.4 var(--font); color: var(--ink); }
+.partList small { display: block; font-size: var(--fs-13); color: var(--ink-2); }
+.empty { margin: 0; font: var(--w5) var(--fs-13) / 1.4 var(--font); color: var(--ink-2); }
+
+/* ---------------------------------------------------------------- the snapshot */
+.snap { display: grid; gap: var(--s-20); font-variant-numeric: tabular-nums; }
+.snapHead { display: grid; gap: var(--s-6); }
+.snapTitle { margin: 0; font: var(--w7) var(--fs-25) / 1.15 var(--font); color: var(--ink); }
+.ev { display: grid; margin: 0; padding: 0; list-style: none; border-top: var(--hair) solid var(--line); }
+.evItem { display: grid; gap: var(--s-4); padding: var(--s-12) 0; border-bottom: var(--hair) solid var(--line); }
+.evTitle { margin: 0; display: flex; align-items: center; gap: var(--s-8); font: var(--w6) var(--fs-15) / 1.35 var(--font); color: var(--ink); }
+.evText { margin: 0; font: var(--w5) var(--fs-15) / 1.45 var(--font); color: var(--ink); }
+.evConflict { margin: 0; font: var(--w6) var(--fs-13) / 1.4 var(--font); color: var(--coral-ink); }
+.sources { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-6) var(--s-16); margin: 0; font-size: var(--fs-13); line-height: 1.4; }
+.sources dt { color: var(--ink); }
+.sources dd { margin: 0; color: var(--ink-2); text-align: right; }
+.sources dd[data-state="failed"] { color: var(--coral-ink); font-weight: var(--w6); }
+.plain { display: grid; gap: var(--s-6); margin: 0; padding-left: var(--s-18); font: var(--w5) var(--fs-13) / 1.45 var(--font); color: var(--ink-2); }
+.periods { display: grid; gap: var(--s-4); margin: 0; padding: 0; list-style: none; font-size: var(--fs-13); line-height: 1.4; color: var(--ink); }
+.periods b { font-weight: var(--w6); }
+.versions { display: flex; flex-wrap: wrap; gap: var(--s-8); }
+
+@media (max-width: 640px) {
+  .parts { grid-template-columns: minmax(0, 1fr); }
+  .headline, .snapTitle { font-size: var(--fs-18); }
+  .axis { margin: 0 var(--s-8); }
+}
+.feed[data-state="checking"] .list { opacity: 0.55; }

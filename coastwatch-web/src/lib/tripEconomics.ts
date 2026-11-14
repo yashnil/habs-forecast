@@ -168,13 +168,17 @@ export const usdPerLbToPerTon = (p: number) => p * LB_PER_TON;
 
 const known = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
-/** Gallons for the trip: entered directly, else steaming (nm ÷ kt × gph) + fishing (h × gph). */
+/**
+ * Gallons for the trip: entered directly, else steaming (nm ÷ kt × gph) + fishing (h × gph). A leg left
+ * blank is unknown, not nothing: the total waits until the leg is filled or set to 0 (0 nm, 0 h), so a
+ * blank leg can never make the trip look cheaper than it is.
+ */
 export function fuelGallons(i: TripInputs): number | null {
   if (known(i.fuelGal)) return i.fuelGal;
   const steamKnown = known(i.roundTripNm) && known(i.cruiseKt) && i.cruiseKt > 0 && known(i.steamGph);
-  const steamNone = !known(i.roundTripNm) || i.roundTripNm === 0;
+  const steamNone = i.roundTripNm === 0;
   const fishKnown = known(i.fishingHours) && known(i.fishingGph);
-  const fishNone = !known(i.fishingHours) || i.fishingHours === 0;
+  const fishNone = i.fishingHours === 0;
   if (!steamKnown && !fishKnown) return null;
   if (!steamKnown && !steamNone) return null;
   if (!fishKnown && !fishNone) return null;

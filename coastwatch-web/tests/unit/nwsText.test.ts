@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { headlineAlerts, parseCoastalText, parseIssued, zoneNear, zonePageUrl, zoneTextUrl, ZONE_ANCHORS } from "@/lib/nwsText";
+import { headlineAlerts, headlineEnds, parseCoastalText, parseIssued, zoneNear, zonePageUrl, zoneTextUrl, ZONE_ANCHORS } from "@/lib/nwsText";
 import { marineHeadline } from "@/lib/conditions";
 
 const FX = path.resolve(__dirname, "fixtures/conditions");
@@ -51,5 +51,17 @@ describe("NWS coastal waters forecast text (tgftp)", () => {
     // every anchor's zone is an inner (coastal or bay) zone with a published product
     for (const a of ZONE_ANCHORS) expect(["PZZ450", "PZZ455", "PZZ530", "PZZ535", "PZZ540", "PZZ545", "PZZ645", "PZZ650", "PZZ655", "PZZ740"]).toContain(a.zone);
     expect(zoneTextUrl("PZZ535")).toBe("https://tgftp.nws.noaa.gov/data/forecasts/marine/coastal/pz/pzz535.txt");
+  });
+});
+
+describe("when a headline says it ends", () => {
+  const issued = "2026-11-10T04:55:00.000Z"; // 8:55 PM PST, Mon Nov 9
+  it("reads a stated clock time as the first one after the bulletin", () => {
+    expect(headlineEnds("SMALL CRAFT ADVISORY IN EFFECT UNTIL 9 PM PST THIS EVENING", issued)).toBe("2026-11-10T05:00:00.000Z");
+    expect(headlineEnds("GALE WARNING IN EFFECT UNTIL 3 AM PST WEDNESDAY", issued)).toBe("2026-11-11T11:00:00.000Z");
+  });
+  it("gives no time where NWS named none, or the bulletin has no date", () => {
+    expect(headlineEnds("SMALL CRAFT ADVISORY IN EFFECT THROUGH MONDAY EVENING", issued)).toBeNull();
+    expect(headlineEnds("SMALL CRAFT ADVISORY IN EFFECT UNTIL 9 PM PST THIS EVENING", null)).toBeNull();
   });
 });

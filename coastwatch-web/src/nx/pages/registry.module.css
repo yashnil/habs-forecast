@@ -1,0 +1,163 @@
+/* The registry line (RegistryNote): one quiet row that opens in place. Coral is regulation's colour: the ring glyph
+   says "official record, not verified by a person" as it does on every stamp. Tokens only. */
+
+.reg {
+  max-width: 68ch;
+}
+.line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-10);
+  max-width: 100%;
+  min-height: var(--target);
+  margin-left: calc(-1 * var(--s-12));
+  padding: var(--s-6) var(--s-12);
+  border-radius: var(--r-ctl);
+  color: var(--ink-2);
+  font-size: var(--fs-13);
+  line-height: 1.35;
+  text-align: left;
+  transition: background-color var(--dur-hover) linear, color var(--dur-hover) linear;
+}
+.line:hover,
+.line[aria-expanded="true"] {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.glyph {
+  flex: none;
+}
+.words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--s-6);
+  min-width: 0;
+}
+.fixture {
+  color: var(--coral-ink);
+  font-weight: var(--w6);
+}
+.sep {
+  color: var(--ink-3);
+}
+.state {
+  color: var(--coral-ink);
+  font-weight: var(--w7);
+}
+.chev {
+  flex: none;
+  color: var(--ink-2);
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.panel {
+  margin-top: var(--s-8);
+  padding: var(--s-16) var(--s-20) var(--s-8);
+  border-radius: var(--r-ctl);
+  background: var(--paper-2);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.lead {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--w6);
+  color: var(--ink);
+}
+.text {
+  margin: var(--s-8) 0 0;
+}
+.inline {
+  color: var(--ink);
+  font-weight: var(--w6);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-3);
+  text-underline-offset: 3px;
+}
+.agencies {
+  display: flex;
+  gap: var(--s-8);
+  margin: var(--s-12) 0 0;
+}
+.agencies a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding: 0 var(--s-16);
+  border-radius: var(--r-ctl);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+  color: var(--ink);
+  font-size: var(--fs-15);
+  font-weight: var(--w7);
+  text-decoration: none;
+}
+.agencies a:hover {
+  background: var(--ultra-wash);
+}
+.list {
+  list-style: none;
+  margin: var(--s-12) 0 0;
+  padding: 0;
+  border-top: var(--hair) solid var(--line);
+}
+.list li {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-10) 0;
+  border-bottom: var(--hair) solid var(--line);
+}
+.recLine {
+  color: var(--coral-ink);
+  font-weight: var(--w6);
+}
+.recTitle {
+  color: var(--ink);
+  font-size: var(--fs-15);
+  font-weight: var(--w6);
+  line-height: 1.35;
+}
+.recState {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-6);
+}
+.more {
+  margin: var(--s-12) 0 0;
+}
+.missing {
+  margin: var(--s-12) 0 0;
+  font-weight: var(--w6);
+  color: var(--ink);
+}
+.hotlines {
+  display: grid;
+  margin: var(--s-4) 0 0;
+}
+.hotlines div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: var(--s-12);
+}
+.hotlines dd {
+  margin: 0;
+}
+.hotlines a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  color: var(--ink);
+  font-weight: var(--w7);
+  font-variant-numeric: tabular-nums;
+}

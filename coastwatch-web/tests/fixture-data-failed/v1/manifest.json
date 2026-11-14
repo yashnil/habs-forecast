@@ -18,8 +18,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
@@ -137,7 +137,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -284,8 +284,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
@@ -404,7 +404,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -551,8 +551,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
@@ -671,7 +671,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -818,8 +818,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
@@ -937,7 +937,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1084,8 +1084,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
@@ -1204,7 +1204,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1351,8 +1351,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
@@ -1471,7 +1471,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1618,8 +1618,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
@@ -1737,7 +1737,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1884,8 +1884,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
@@ -2004,7 +2004,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2151,8 +2151,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
@@ -2271,7 +2271,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2418,8 +2418,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
@@ -2537,7 +2537,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2684,8 +2684,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
@@ -2804,7 +2804,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2951,8 +2951,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
@@ -3071,7 +3071,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -3391,7 +3391,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/latest-2026-10-12-df869442f6/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/latest-2026-10-12-92714dea62/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3407,14 +3407,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -3490,7 +3490,9 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -3525,6 +3527,11 @@
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "416 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3555,6 +3562,11 @@
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
           },
           {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "157 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
+          },
+          {
             "name": "noaacwS3AOLCIchlaSectorCIDaily:required_variables",
             "passed": true,
             "detail": "all present"
@@ -3583,11 +3595,16 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "0 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 13159,
-        "valid_fraction": 0.120216,
+        "n_valid": 12671,
+        "valid_fraction": 0.115758,
         "value_min": 0.009999297310040017,
         "value_max": 297.9865075625561
       },
@@ -3604,7 +3621,7 @@
         "request_urls": [],
         "upstream_metadata": {
           "days": "2026-10-05, 2026-10-06, 2026-10-07",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3615,14 +3632,14 @@
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.205,
+        "domain_observed_fraction": 0.2011,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.2876,
-            "observed_km2": 815.7,
+            "observed_fraction": 0.2823,
+            "observed_km2": 785.5,
             "reference_cells": 372
           }
         ]
@@ -3651,7 +3668,7 @@
             "observed_times": [
               "2026-10-06T18:50:40Z"
             ],
-            "pixels_used": 8734
+            "pixels_used": 8577
           },
           {
             "date": "2026-10-05",
@@ -3661,21 +3678,21 @@
             "observed_times": [
               "2026-10-05T19:15:21Z"
             ],
-            "pixels_used": 4425
+            "pixels_used": 4094
           }
         ],
         "age_histogram": [
           {
             "age_days": 6,
-            "fraction": 0.6637
+            "fraction": 0.6769
           },
           {
             "age_days": 7,
-            "fraction": 0.3363
+            "fraction": 0.3231
           }
         ],
         "age_grid": {
-          "url": "satellite/olci300/latest-2026-10-12-df869442f6/age/{row}_{col}.u16.gz",
+          "url": "satellite/olci300/latest-2026-10-12-92714dea62/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 341,
           "height": 321,
@@ -3691,14 +3708,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/olci300/latest-2026-10-12-df869442f6/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/olci300/latest-2026-10-12-92714dea62/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -3757,7 +3774,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-05-e8b048e1c1/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-05-e20c14b221/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3773,14 +3790,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-05-e8b048e1c1/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-05-e20c14b221/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-05-e8b048e1c1/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-05-e20c14b221/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -3855,7 +3872,9 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -3888,11 +3907,16 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "416 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 12028,
-        "valid_fraction": 0.109884,
+        "n_valid": 11612,
+        "valid_fraction": 0.106083,
         "value_min": 0.035233814269304276,
         "value_max": 315.6449890136719
       },
@@ -3911,7 +3935,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-05T19:15:21Z",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -3922,14 +3946,14 @@
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.1877,
+        "domain_observed_fraction": 0.1839,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.2634,
-            "observed_km2": 745.7,
+            "observed_fraction": 0.2581,
+            "observed_km2": 719.9,
             "reference_cells": 372
           }
         ]
@@ -3970,7 +3994,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/olci300/day-2026-10-06-ebd50939dc/grid/{row}_{col}.u16.gz",
+        "url": "satellite/olci300/day-2026-10-06-2b38ec1aa0/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 341,
         "height": 321,
@@ -3986,14 +4010,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/olci300/day-2026-10-06-ebd50939dc/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/olci300/day-2026-10-06-2b38ec1aa0/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/olci300/day-2026-10-06-ebd50939dc/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/olci300/day-2026-10-06-2b38ec1aa0/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4068,7 +4092,9 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -4101,13 +4127,18 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "9 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "157 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
-        "n_valid": 8734,
-        "valid_fraction": 0.079791,
+        "n_valid": 8577,
+        "valid_fraction": 0.078357,
         "value_min": 0.009999999776482582,
-        "value_max": 138.30592346191406
+        "value_max": 137.43399047851562
       },
       "provenance": {
         "source_id": "satellite_chl",
@@ -4124,7 +4155,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-06T18:50:40Z",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4135,14 +4166,14 @@
       ],
       "coverage": {
         "reference": "C-HARM v3.1 ocean cells (0.03\u00b0, about 3 km) inside the layer's domain; a cell counts as observed if any pixel inside it has a value. Nearshore pixels outside the C-HARM mask are not counted.",
-        "domain_observed_fraction": 0.1322,
+        "domain_observed_fraction": 0.1303,
         "domain_reference_cells": 522,
         "regions": [
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
-            "observed_fraction": 0.1855,
-            "observed_km2": 541.1,
+            "observed_fraction": 0.1828,
+            "observed_km2": 531.4,
             "reference_cells": 372
           }
         ]
@@ -4236,7 +4267,9 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values.",
+        "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the product's value is far too high. They are shown as left out, not as a low or a missing observation."
       ],
       "qc": {
         "checks": [
@@ -4269,6 +4302,11 @@
             "name": "coastal_scope",
             "passed": true,
             "detail": "0 valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out"
+          },
+          {
+            "name": "land_adjacency",
+            "passed": true,
+            "detail": "0 valid pixels within 2 pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"
           }
         ],
         "n_cells": 109461,
@@ -4292,7 +4330,7 @@
         ],
         "upstream_metadata": {
           "scenes": "Sentinel-3A noaacwS3AOLCIchlaSectorCIDaily 2026-10-07T19:16:29Z",
-          "processing": "satellite-processing-3"
+          "processing": "satellite-processing-5"
         },
         "pipeline_version": "fixture",
         "pipeline_run_id": "fixture"
@@ -4340,8 +4378,6 @@
         "observed_date": "2026-10-04",
         "lead_days": null,
         "observed_times": [
-          "2026-10-01T19:02:52Z",
-          "2026-10-01T19:06:26Z",
           "2026-10-02T19:28:03Z",
           "2026-10-02T19:35:10Z",
           "2026-10-03T19:11:16Z",
@@ -4358,7 +4394,7 @@
       },
       "image": null,
       "grid": {
-        "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
+        "url": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/grid/{row}_{col}.u16.gz",
         "encoding": "uint16le+gzip",
         "width": 114,
         "height": 107,
@@ -4374,14 +4410,14 @@
         "chunks": {
           "rows": 512,
           "cols": 512,
-          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/grid/{row}_{col}.u16.gz",
+          "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/grid/{row}_{col}.u16.gz",
           "present": [
             "0_0"
           ]
         }
       },
       "tiles": {
-        "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 10,
         "legend_url": null,
@@ -4457,7 +4493,8 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
@@ -4710,9 +4747,9 @@
         ],
         "upstream_metadata": {
           "days": "2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04",
-          "processing": "satellite-processing-3",
+          "processing": "satellite-processing-5",
           "scenes": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-01T19:02:52Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-01T19:06:26Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-02T19:28:03Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-02T19:35:10Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-03T19:11:16Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-03T19:20:30Z, NOAA-21 noaacwN21VIIRSchlaSectorUSDaily 2026-10-04T19:37:51Z, NOAA-20 noaacwN20VIIRSchlaSectorUSDaily 2026-10-04T19:02:17Z",
-          "platform_grid": "satellite/viirs750/latest-2026-10-08-3af56abd1a/platform/{row}_{col}.u16.gz",
+          "platform_grid": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/platform/{row}_{col}.u16.gz",
           "platform_codes": "1=NOAA-21, 2=NOAA-20; a cell without a value has no code. Same chunks (512 x 512 cells) and lattice as the value grid; one platform per cell, never averaged.",
           "platform_rule": "NOAA-21 first; NOAA-20 only in cells the platforms before it have no value for. No averaging, no bias correction.",
           "pixels_by_platform": "NOAA-21 5048, NOAA-20 3365",
@@ -4745,7 +4782,7 @@
         "window_days": 7,
         "reference_date": "2026-10-08",
         "newest_observed_date": "2026-10-04",
-        "oldest_observed_date": "2026-10-01",
+        "oldest_observed_date": "2026-10-02",
         "days": [
           {
             "date": "2026-10-04",
@@ -4815,7 +4852,7 @@
           }
         ],
         "age_grid": {
-          "url": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
+          "url": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/age/{row}_{col}.u16.gz",
           "encoding": "uint16le+gzip",
           "width": 114,
           "height": 107,
@@ -4831,14 +4868,14 @@
           "chunks": {
             "rows": 512,
             "cols": 512,
-            "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age/{row}_{col}.u16.gz",
+            "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/age/{row}_{col}.u16.gz",
             "present": [
               "0_0"
             ]
           }
         },
         "age_tiles": {
-          "url_template": "satellite/viirs750/latest-2026-10-08-3af56abd1a/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/viirs750/latest-2026-10-08-0d4c28ed15/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 10,
           "legend_url": null,
@@ -4886,8 +4923,6 @@
         "observed_date": "2026-10-06",
         "lead_days": null,
         "observed_times": [
-          "2026-10-01T19:02:52Z",
-          "2026-10-01T19:06:26Z",
           "2026-10-02T19:28:03Z",
           "2026-10-02T19:35:10Z",
           "2026-10-03T19:11:16Z",
@@ -4907,7 +4942,7 @@
       "image": null,
       "grid": null,
       "tiles": {
-        "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/tiles/{z}/{x}/{y}.png",
+        "url_template": "satellite/multisensor/latest-2026-10-12-80be571ff7/tiles/{z}/{x}/{y}.png",
         "tile_size": 512,
         "max_native_zoom": 11,
         "legend_url": null,
@@ -4984,14 +5019,15 @@
         "Chlorophyll-a measures algae biomass near the surface. It does not measure toxins, does not identify Pseudo-nitzschia and does not predict where fish are.",
         "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
         "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
-        "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; bays within about 12 km of the coastal ocean are included."
+        "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); inland lakes, reservoirs and inland land/water pixels are left out.",
+        "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic matter there can make them read too high or too low, so treat bay values as approximate and do not compare them directly with open-coast values."
       ],
       "qc": {
         "checks": [
           {
             "name": "one_sensor_per_pixel",
             "passed": true,
-            "detail": "13159 pixels Sentinel-3, 62376 pixels VIIRS (on the 300 m lattice); no pixel combines values"
+            "detail": "12671 pixels Sentinel-3, 62790 pixels VIIRS (on the 300 m lattice); no pixel combines values"
           },
           {
             "name": "members_unchanged",
@@ -5000,8 +5036,8 @@
           }
         ],
         "n_cells": 109461,
-        "n_valid": 75535,
-        "valid_fraction": 0.690063,
+        "n_valid": 75461,
+        "valid_fraction": 0.689387,
         "value_min": 0.009999297310040017,
         "value_max": 297.9865075625561
       },
@@ -5039,7 +5075,7 @@
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "observed_fraction": 0.9866,
-            "observed_km2": 3324.0,
+            "observed_km2": 3319.4,
             "reference_cells": 372
           }
         ]
@@ -5065,7 +5101,7 @@
           }
         ],
         "sensor_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/sensor-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-80be571ff7/sensor-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5089,7 +5125,7 @@
           ]
         },
         "age_tiles": {
-          "url_template": "satellite/multisensor/latest-2026-10-12-994e6b2302/age-tiles/{z}/{x}/{y}.png",
+          "url_template": "satellite/multisensor/latest-2026-10-12-80be571ff7/age-tiles/{z}/{x}/{y}.png",
           "tile_size": 512,
           "max_native_zoom": 11,
           "legend_url": null,
@@ -5117,31 +5153,31 @@
             "region_id": "domain",
             "label": "Whole domain",
             "reference_cells": 522,
-            "primary_fraction": 0.205,
+            "primary_fraction": 0.2011,
             "secondary_fraction": 0.9789,
             "combined_fraction": 0.9866,
-            "secondary_only_fraction": 0.7816
+            "secondary_only_fraction": 0.7855
           },
           {
             "region_id": "monterey_bay",
             "label": "Monterey Bay",
             "reference_cells": 372,
-            "primary_fraction": 0.2876,
+            "primary_fraction": 0.2823,
             "secondary_fraction": 0.9812,
             "combined_fraction": 0.9866,
-            "secondary_only_fraction": 0.699
+            "secondary_only_fraction": 0.7043
           }
         ],
         "shown": [
           {
             "order": 0,
-            "pixels": 13159,
+            "pixels": 12671,
             "median_age_days": 6.0,
             "max_age_days": 7
           },
           {
             "order": 1,
-            "pixels": 62376,
+            "pixels": 62790,
             "median_age_days": 9.0,
             "max_age_days": 10
           }
@@ -8885,7 +8921,7 @@
       "group_id": "charm",
       "source_id": "charm",
       "issued_date": "2026-10-08",
-      "issued_date_derived": true,
+      "issued_date_derived": false,
       "leads_available": [
         0,
         1,
@@ -8946,7 +8982,7 @@
       "last_attempt_at": "2026-10-12T18:00:00Z",
       "last_success_at": "2026-10-12T18:00:00Z",
       "outcome": "partial",
-      "error": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D; S-NPP fallback: S-NPP erdVHNchla1day: time listing failed: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv0?time%5B(2026-10-05T00:00:00Z):1:(last)%5D",
+      "error": "NOAA-21 noaacwN21VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN21VIIRSchlaSectorUSDaily.csv0?time; NOAA-20 noaacwN20VIIRSchlaSectorUSDaily: time listing failed: HTTP 502 for https://coastwatch.noaa.gov/erddap/griddap/noaacwN20VIIRSchlaSectorUSDaily.csv0?time; S-NPP fallback: S-NPP erdVHNchla1day: time listing failed: HTTP 502 for https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdVHNchla1day.csv0?time",
       "notes": [
         "olci300 2026-10-05: same overpasses as the published day; reused it.",
         "olci300 2026-10-06: same overpasses as the published day; reused it.",
@@ -9137,6 +9173,6 @@
   "ports_url": "ports-9e81ebe6cd.geojson",
   "official_url": "official-d3bc6fbc55.json",
   "port_intel_url": "port-intel-dbcc522fbd.json",
-  "observations_url": "observations-e4ca12aea2.json",
+  "observations_url": "observations-aa033df115.json",
   "fisheries_url": "fisheries-3da88e0b2f.json"
 }

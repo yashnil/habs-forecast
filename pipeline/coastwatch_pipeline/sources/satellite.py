@@ -27,6 +27,7 @@ Rules (docs/coastwatch/05-science-and-safety.md, forecast-upgrade/04):
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import math
@@ -75,14 +76,29 @@ VIIRS_WINDOW_DAYS = WINDOW_DAYS
 # published days are reused across runs only when made by the same processing version.
 # 3: VIIRS from NOAA-21/NOAA-20 (per-cell platform grid) instead of S-NPP; no S-NPP day is
 # ever reused as a NOAA-21/NOAA-20 one.
-PROCESSING_VERSION = "satellite-processing-3"
+# 4: scope adds the marine bays and estuaries connected to the coastal ocean (MARINE_WATER_MASK).
+# 5: the first water ring beside land is left out where the evidence supports it (LAND_ADJACENCY_MASK).
+PROCESSING_VERSION = "satellite-processing-5"
 CHUNK = 512
 LOG_RANGE = (-3.0, 3.0)  # quantization domain for log10(chl): 0.001 .. 1000 mg m-3
 IMPLAUSIBLE_MG_M3 = 200.0  # flagged in QC, never silently removed
-# Product scope: the coastal ocean. The C-HARM ocean domain (3 km) extended this many
-# cells (about 12 km) landward keeps the nearshore strip and bays, and drops inland lakes,
-# reservoirs and the mixed land/water pixels the upstream L3 product carries inland.
+# Product scope: the coastal ocean plus the marine bays and estuaries connected to it.
+# - The C-HARM ocean domain (3 km) extended this many cells (about 12 km) landward keeps the
+#   offshore extent and the open-coast nearshore strip, and drops inland lakes, reservoirs and the
+#   mixed land/water pixels the upstream L3 product carries inland.
+# - Enclosed water farther from the model's ocean cells (95% of San Francisco Bay, with San Pablo
+#   and Suisun Bays) is added from MARINE_WATER_MASK: OpenStreetMap ocean water (bays and
+#   estuaries up to the OSM coastline; never lakes or reservoirs) connected to that scope, built
+#   by pipeline/scripts/build_marine_water_mask.py. The C-HARM layers are not affected.
 COASTAL_DILATE_CELLS = 4
+MARINE_WATER_MASK = "marine_water_mask.json"
+# Land adjacency (docs/coastwatch/v13/research/coastal-adjacency.md): in the OLCI 300 m product the
+# water pixel that touches the product's own land mask reads ten to fifty times the open water on every
+# clear day, and the next one several times (land and water in one pixel, stray light from the land);
+# the product has no flag for it. Those cells (data/reference/olci_land_adjacency.json, built from the product's own never-valid
+# cells by pipeline/scripts/build_land_adjacency_mask.py) are left out: no value, never a changed one.
+# Applied per product (Product.land_adjacent_rings), only where the same measurement supports it.
+LAND_ADJACENCY_MASK = "olci_land_adjacency.json"
 MAX_IMPLAUSIBLE_FRACTION = 0.01
 
 LICENSE_OLCI = (
@@ -107,15 +123,25 @@ CAVEATS_BASE = [
     "Clouds and fog leave gaps. A gap means no observation, not low chlorophyll. Gaps are never filled.",
     "Values very close to shore, in river plumes and in shallow water are less reliable (bottom reflectance, sediment, land adjacency).",
 ]
+CAVEAT_ADJACENCY = (
+    "The two pixels beside land (about 600 m) are left out: there the satellite reads land and water together and the "
+    "product's value is far too high. They are shown as left out, not as a low or a missing observation."
+)
 CAVEAT_SCOPE = (
-    "Shown for the coastal ocean only: inland lakes, reservoirs and inland land/water pixels are left out; "
-    "bays within about 12 km of the coastal ocean are included."
+    "Shown for the coastal ocean and the bays and estuaries that open onto it (OpenStreetMap ocean water); "
+    "inland lakes, reservoirs and inland land/water pixels are left out."
+)
+CAVEAT_TURBID = (
+    "In bays and estuaries (San Francisco, San Pablo, Suisun, Humboldt, Tomales and Morro Bays, Elkhorn Slough) the water is "
+    "often turbid. The near-real-time chlorophyll algorithms were made for open-ocean water; sediment and dissolved organic "
+    "matter there can make them read too high or too low, so treat bay values as approximate and do not compare them "
+    "directly with open-coast values."
 )
 CAVEAT_COMPOSITE = (
     "Latest clear view: each pixel shows its most recent valid observation within {n} days; neighbouring pixels can come "
     "from different days. Check the observation date in the readout."
 )
-CAVEATS = CAVEATS_BASE + [CAVEAT_SCOPE]
+CAVEATS = CAVEATS_BASE + [CAVEAT_SCOPE, CAVEAT_TURBID]
 
 
 @dataclass(frozen=True)
@@ -154,6 +180,9 @@ class Product:
     offsets: str | None = None
     # Latest clear view: days back from the run date
     window_days: int = WINDOW_DAYS
+    # How many water pixels beside the product's land mask are left out (LAND_ADJACENCY_MASK: 0, 1 or 2);
+    # set per product from the measurement in docs/coastwatch/v13/research/coastal-adjacency.md
+    land_adjacent_rings: int = 0
 
 
 SPLIT = -120.0
@@ -175,6 +204,9 @@ OLCI = Product(
     license=LICENSE_OLCI,
     source_name="Sentinel-3 OLCI chlorophyll-a, near real time (NOAA CoastWatch)",
     sensor_text="the OLCI sensor on Sentinel-3A, with Sentinel-3B filling gaps",
+    # ring 1 reads 8-50 mg m-3 (35-83% of it in the top display class) and ring 2 2-17 mg m-3 (9-38%) on every
+    # clear scene measured, against 0-1% offshore; ring 3 is clean in the Southern California Bight
+    land_adjacent_rings=2,
 )
 # Measured on 98 days with all three sensors, February-October 2026, California, same cells
 # (research/viirs-jpss-overlap/report.md): median log10 ratio, pooled.
@@ -275,8 +307,17 @@ def target_for(p: Product, d: Domain, lattice: tuple[float, float] | None = None
 
 # ---------------------------------------------------------------- upstream access
 def times_url(server: str, ds: str, start: date) -> str:
+    """A windowed time listing. Kept for reference and tests; the pipeline reads the whole axis
+    (axis_url) instead, because coastwatch.noaa.gov answers a site-wide HTML 404 for any ERDDAP
+    error, including a start bound outside the axis (issue #95)."""
     q = f"time[({start.isoformat()}T00:00:00Z):1:(last)]"
     return f"{server}/griddap/{ds}.csv0?" + quote(q, safe=":(),")
+
+
+def axis_url(server: str, ds: str) -> str:
+    """The dataset's whole time axis, unconstrained: no bound can fall outside it, so a 404 here is
+    an outage or an unknown dataset, never "nothing newer" (a 90-day OLCI axis is about 2 KB)."""
+    return f"{server}/griddap/{ds}.csv0?time"
 
 
 def scene_url(server: str, ds: str, var: str, t: str, target: Target, lon_lo: float, lon_hi: float, lat_max: float) -> str:
@@ -314,29 +355,39 @@ def masked_404(e: Exception) -> bool:
     return bool(detail) and ("<html" in detail or "<!doctype" in detail or "noaa coastwatch" in detail) and "no matching results" not in detail and "unknown datasetid" not in detail
 
 
+def axis_times(ctx: RunContext, server: str, ds: str) -> list[str]:
+    """Every time on a dataset's axis (ISO, Z), read once per run and cached on the run context.
+
+    Requests are then made only for times the axis lists (issue #95): coastwatch.noaa.gov's front
+    end turns every ERDDAP error, including a time that is not on the axis (the 2026-10-31/11-01
+    gap) or a bound outside the rolling 90-day OLCI window, into the same HTML 404 as an outage, so
+    a request must never depend on ERDDAP accepting a bound."""
+    cache = ctx.options.setdefault("_erddap_time_axes", {})
+    key = (server, ds)
+    if key not in cache:
+        try:
+            r = ctx.fetcher(axis_url(server, ds))
+        except FetchError as e:
+            # ERDDAP's own "no matching results" is an answer (an empty axis); anything else here,
+            # an unknown datasetID or the front end's HTML 404, is the outage it looks like
+            if no_matching_results(e):
+                cache[key] = []
+                return []
+            raise
+        out = []
+        for line in r.body.decode("utf-8", "replace").splitlines():
+            line = line.strip()
+            if line and line[:1].isdigit():
+                out.append(line if line.endswith("Z") else line + "Z")
+        cache[key] = sorted(out)
+    return list(cache[key])
+
+
 def list_times(ctx: RunContext, server: str, ds: str, start: date) -> list[str]:
-    try:
-        r = ctx.fetcher(times_url(server, ds, start))
-    except FetchError as e:
-        # ERDDAP answers 404 "Your query produced no matching results" when nothing is newer
-        # than start; a 404 for "Currently unknown datasetID" is an outage, not "no data"
-        if no_matching_results(e):
-            return []
-        # a front-end HTML 404 hides which it was: the dataset's own metadata settles it
-        # (reachable: nothing newer than start; not reachable: the outage it looks like)
-        if masked_404(e):
-            try:
-                ctx.fetcher(f"{server}/griddap/{ds}.das")
-            except FetchError:
-                raise e
-            return []
-        raise
-    out = []
-    for line in r.body.decode("utf-8", "replace").splitlines():
-        line = line.strip()
-        if line:
-            out.append(line if line.endswith("Z") else line + "Z")
-    return out
+    """Times on the axis from the evening before `start` on (callers keep only their window).
+    An empty list means no new granule; a failure to read the axis raises."""
+    lo = (start - timedelta(days=1)).isoformat()
+    return [t for t in axis_times(ctx, server, ds) if t[:10] >= lo]
 
 
 @dataclass
@@ -447,20 +498,78 @@ def _load_reference():
     return mask, ocean, regions
 
 
-def coastal_mask(target: Target) -> np.ndarray:
-    """True where a target cell lies in the coastal-ocean scope (see COASTAL_DILATE_CELLS)."""
+def _on_target(mask_meta: dict, cells: np.ndarray, target: Target) -> np.ndarray:
+    """Sample a reference mask (nearest cell) at each target cell centre; False outside it."""
+    ref = SourceGrid(mask_meta["lat_first"], mask_meta["lat_step"], mask_meta["lon_first"], mask_meta["lon_step"], mask_meta["height"], mask_meta["width"])
+    lats, lons = target.lats(), target.lons()
+    r, _ = ref.cell_index(lats, np.full_like(lats, mask_meta["lon_first"]))
+    _, c = ref.cell_index(np.full_like(lons, mask_meta["lat_first"]), lons)
+    ok = (r[:, None] >= 0) & (c[None, :] >= 0)
+    out = np.zeros((target.height, target.width), dtype=bool)
+    out[ok] = cells[np.broadcast_to(r[:, None], ok.shape)[ok], np.broadcast_to(c[None, :], ok.shape)[ok]]
+    return out
+
+
+def charm_scope(target: Target) -> np.ndarray:
+    """True where a target cell lies within COASTAL_DILATE_CELLS of a C-HARM ocean cell."""
     from scipy.ndimage import binary_dilation
 
     mask, ocean, _ = _load_reference()
-    scope = binary_dilation(ocean, iterations=COASTAL_DILATE_CELLS)
-    ref = SourceGrid(mask["lat_first"], mask["lat_step"], mask["lon_first"], mask["lon_step"], mask["height"], mask["width"])
-    lats, lons = target.lats(), target.lons()
-    r3, _ = ref.cell_index(lats, np.full_like(lats, mask["lon_first"]))
-    _, c3 = ref.cell_index(np.full_like(lons, mask["lat_first"]), lons)
-    ok = (r3[:, None] >= 0) & (c3[None, :] >= 0)
-    out = np.zeros((target.height, target.width), dtype=bool)
-    out[ok] = scope[np.broadcast_to(r3[:, None], ok.shape)[ok], np.broadcast_to(c3[None, :], ok.shape)[ok]]
-    return out
+    return _on_target(mask, binary_dilation(ocean, iterations=COASTAL_DILATE_CELLS), target)
+
+
+@functools.lru_cache(maxsize=1)
+def _load_marine() -> tuple[dict, np.ndarray]:
+    m = json.loads((REPO / "data" / "reference" / MARINE_WATER_MASK).read_text())
+    cells = np.zeros((m["height"], m["width"]), dtype=bool)
+    for r, runs in enumerate(m["rows_rle"]):
+        for s, n in runs:
+            cells[r, s : s + n] = True
+    return m, cells
+
+
+def marine_water(target: Target) -> np.ndarray:
+    """True where a target cell is a marine bay or estuary connected to the coastal ocean."""
+    m, cells = _load_marine()
+    return _on_target(m, cells, target)
+
+
+def coastal_mask(target: Target) -> np.ndarray:
+    """True where a target cell lies in the satellite scope: the dilated C-HARM ocean
+    (COASTAL_DILATE_CELLS) or connected marine water (MARINE_WATER_MASK)."""
+    return charm_scope(target) | marine_water(target)
+
+
+@functools.lru_cache(maxsize=1)
+def _load_adjacency() -> tuple[dict, np.ndarray]:
+    """The reference, as one array: 1 = touches the product's land mask, 2 = touches ring 1, 0 = neither."""
+    m = json.loads((REPO / "data" / "reference" / LAND_ADJACENCY_MASK).read_text())
+    cells = np.zeros((m["height"], m["width"]), dtype=np.uint8)
+    for k, key in ((2, "rows_rle_ring2"), (1, "rows_rle")):
+        for r, runs in enumerate(m[key]):
+            for s, n in runs:
+                cells[r, s : s + n] = k
+    return m, cells
+
+
+def land_adjacent(target: Target, rings: int = 1) -> np.ndarray:
+    """True where a target cell is one of the first `rings` water pixels beside the OLCI product's
+    land mask (LAND_ADJACENCY_MASK). The reference is on the OLCI lattice, so this is exact for OLCI."""
+    m, cells = _load_adjacency()
+    return _on_target(m, (cells > 0) & (cells <= rings), target)
+
+
+def drop_land_adjacent(values: np.ndarray, src: np.ndarray, adjacency: np.ndarray) -> int:
+    """Set valid pixels beside land to no value, in place (and their platform to none).
+    Returns how many. No other cell is touched and no value is altered."""
+    hit = np.isfinite(values) & adjacency
+    values[hit] = np.nan
+    src[hit] = 0
+    return int(hit.sum())
+
+
+def caveats_for(p: "Product") -> list[str]:
+    return list(CAVEATS) + ([CAVEAT_ADJACENCY] if p.land_adjacent_rings else [])
 
 
 def coverage(values: np.ndarray, target: Target) -> Coverage:
@@ -610,7 +719,7 @@ def day_layer(ctx: RunContext, p: Product, target: Target, day: Day, zooms: rang
         resolution_deg=p.step, native_resolution_m=p.native_m, platforms=platform_labels(p, day.platforms),
         time=TimeInfo(observed_date=day.date.isoformat(), valid_date=day.date.isoformat(), observed_times=sorted(day.observed_times)),
         freshness=FRESHNESS, grid=grid if has else None, tiles=tiles if has else None, palette=CHLOROPHYLL,
-        caveats=list(CAVEATS), qc=_qc(day.values, day.checks), coverage=coverage(day.values, target),
+        caveats=caveats_for(p), qc=_qc(day.values, day.checks), coverage=coverage(day.values, target),
         provenance=_provenance(ctx, p, [s.url for s in day.scenes], {"scenes": ", ".join(f"{s.platform} {s.dataset} {s.time}" for s in day.scenes), "processing": PROCESSING_VERSION}, day.platforms),
     )
     return layer, nbytes
@@ -623,6 +732,7 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
     track = p.platform_grid and all(d.source is not None for d in days)
     src = np.zeros((target.height, target.width), dtype=np.uint8)
     used: list[CompositeDay] = []
+    contributing: list[Day] = []
     for d in sorted(days, key=lambda x: x.date, reverse=True):
         fill = np.isnan(comp) & np.isfinite(d.values)
         comp[fill] = d.values[fill]
@@ -630,9 +740,13 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
         if track:
             src[fill] = d.source[fill]  # type: ignore[index]
         used.append(CompositeDay(date=d.date.isoformat(), platforms=platform_labels(p, d.platforms), observed_times=sorted(d.observed_times), pixels_used=int(fill.sum())))
+        if fill.any():
+            contributing.append(d)
     if not np.isfinite(comp).any():
         return None, 0
-    observed_days = [d for d in days if np.isfinite(d.values).any()]
+    # The stated dates, overpass times and platforms are those of the days whose pixels the view
+    # shows: a day entirely covered by newer days is listed (pixels_used 0) but dates nothing.
+    observed_days = contributing
     newest, oldest = max(d.date for d in observed_days), min(d.date for d in observed_days)
     h = hashlib.sha256((p.key + "|".join(f"{d.date}:{d.key}" for d in days) + ref.isoformat()).encode()).hexdigest()[:10]
     base = f"satellite/{p.key}/latest-{ref.isoformat()}-{h}"
@@ -662,7 +776,7 @@ def composite_layer(ctx: RunContext, p: Product, target: Target, days: list[Day]
         resolution_deg=p.step, native_resolution_m=p.native_m, platforms=platform_labels(p, platforms),
         time=TimeInfo(observed_date=newest.isoformat(), valid_date=newest.isoformat(), observed_times=sorted(t for d in observed_days for t in d.observed_times)),
         freshness=FRESHNESS, grid=grid, tiles=tiles, palette=CHLOROPHYLL,
-        caveats=[CAVEAT_COMPOSITE.format(n=p.window_days)] + list(CAVEATS), qc=_qc(comp, [c for d in days for c in d.checks]),
+        caveats=[CAVEAT_COMPOSITE.format(n=p.window_days)] + caveats_for(p), qc=_qc(comp, [c for d in days for c in d.checks]),
         coverage=coverage(comp, target),
         composite=CompositeInfo(
             window_days=p.window_days, reference_date=ref.isoformat(), newest_observed_date=newest.isoformat(),
@@ -752,6 +866,7 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     # OLCI's lattice is fixed and known; VIIRS's is read from the first scene.
     target = target_for(p, domain) if p.lattice_lat or p.lattice_lon else None
     scope: np.ndarray | None = None
+    adjacency: np.ndarray | None = None
 
     by_day: dict[date, list[tuple[str, str, str]]] = {}
     for (plat, ds), ts in listings.items():
@@ -759,6 +874,7 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
             by_day.setdefault(date.fromisoformat(t[:10]), []).append((plat, ds, t))
     prev_days = {lyr.time.observed_date: lyr for lyr in prev_layers if lyr.layer_id.startswith(f"{p.key}_chl_2")}
     days: list[Day] = []
+    gone: list[str] = []
     order = [plat for plat, _ in p.platforms]
     for d in sorted(by_day):
         entries = by_day[d]
@@ -784,6 +900,13 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
                 url = scene_url(p.server, ds, p.variable, t, target, sec[1], sec[2], sec[3])
                 r = ctx.fetcher(url)
                 scenes.append(load_scene(r.body, p, plat, ds, t, url, target))
+            except FetchError as e:
+                if no_matching_results(e) or masked_404(e):
+                    # listed a moment ago, not served now (e.g. rolled out of the 90-day window):
+                    # no granule, said so; an outage that loses every scene still fails below
+                    gone.append(f"{plat} {ds} {t}: listed on the time axis but not served (HTTP 404); skipped")
+                else:
+                    errors.append(f"{plat} {ds} {t}: {e}")
             except Exception as e:
                 errors.append(f"{plat} {ds} {t}: {e}")
         if not scenes or target is None:
@@ -794,11 +917,17 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
         checks = [c for s in scenes for c in s.checks] + [
             QCCheck(name="coastal_scope", passed=True, detail=f"{dropped} valid pixels outside the coastal-ocean scope (inland lakes, reservoirs, land/water mix) left out")
         ]
+        if p.land_adjacent_rings:
+            if adjacency is None:
+                adjacency = land_adjacent(target, p.land_adjacent_rings)
+            n_adj = drop_land_adjacent(vals, src, adjacency)
+            checks.append(QCCheck(name="land_adjacency", passed=True, detail=f"{n_adj} valid pixels within {p.land_adjacent_rings} pixel(s) of land left out (land and water in one pixel, and the land's stray light, read far too high; no value is altered)"))
         day = Day(d, vals, scenes=scenes, observed_times=sorted(s.time for s in scenes),
                   platforms=[pl for pl in order if any(s.platform == pl for s in scenes)], checks=checks, source=src)
         days.append(day)
     if not days or target is None:
-        return SatelliteResult([], errors or [f"{p.key}: no scenes in the last {p.window_days} days"], notes, None)
+        return SatelliteResult([], errors + gone or [f"{p.key}: no scenes in the last {p.window_days} days"], notes, None)
+    notes.extend(gone)
 
     layers: list[LayerArtifact] = []
     nbytes = 0
@@ -819,19 +948,23 @@ def run_product(ctx: RunContext, p: Product, domain: Domain, prev_layers: list[L
     return SatelliteResult(layers, errors, notes, latest.isoformat() if latest else None, nbytes)
 
 
-def newest_listed(ctx: RunContext, p: Product) -> str | None:
-    """Newest day a product's datasets list in its window (one small time listing each), or None."""
+def newest_listed(ctx: RunContext, p: Product) -> tuple[str | None, list[str]]:
+    """Newest day a product's datasets list in its window (one small time listing each), or None,
+    and the listings that failed (coastwatch.pfeg.noaa.gov refuses runners with HTTP 403 at
+    times: a failed listing must be reported, not read as "nothing newer")."""
     start = ctx.now.date() - timedelta(days=p.window_days)
     newest = None
+    failed: list[str] = []
     for _, sectors in p.platforms:
         for ds, _, _, _ in sectors:
             try:
-                ts = list_times(ctx, p.server, ds, start)
-            except Exception:
+                ts = [t for t in list_times(ctx, p.server, ds, start) if start.isoformat() <= t[:10] <= ctx.now.date().isoformat()]
+            except Exception as e:
+                failed.append(f"{ds}: time listing failed: {e}")
                 continue
             if ts:
                 newest = max(newest or "", ts[-1][:10])
-    return newest
+    return newest, failed
 
 
 def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact]) -> SatelliteResult:
@@ -843,7 +976,10 @@ def run_viirs(ctx: RunContext, domain: Domain, prev_layers: list[LayerArtifact])
     (2026-11-02) its listing has nothing new and it drops out."""
     res = run_product(ctx, VIIRS_JPSS, domain, prev_layers, VIIRS_ZOOMS, per_day=False)
     if res.layers:
-        listed = newest_listed(ctx, VIIRS_SNPP)
+        listed, failed = newest_listed(ctx, VIIRS_SNPP)
+        if failed:
+            # NOAA-21/NOAA-20 updated; whether S-NPP holds a newer day is unknown this run
+            res.notes.append(f"VIIRS: could not check the S-NPP composite for a day newer than {res.latest_date}: " + "; ".join(failed)[:300])
         if not listed or listed <= (res.latest_date or ""):
             return res
         snpp = run_product(ctx, VIIRS_SNPP, domain, prev_layers, VIIRS_ZOOMS, per_day=False)

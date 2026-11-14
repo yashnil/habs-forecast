@@ -67,7 +67,8 @@ export function plan(pack: PackDef, m: Manifest, baseUrl: string, pageAssets: st
   const out: PlanItem[] = [];
   const add = (url: string, group: Group, key?: string) => out.some((x) => x.url === url) || out.push({ url, group, bytes: null, key });
   // the app: its pages (saved under stable keys for the offline fallback) and the code they load
-  add(`/?sel=harbor:${pack.port}&layer=forecast`, "app", "/__pack__/page/explore");
+  // v12: Explore's own address (the worker also answers the old `/?…` one from this key)
+  add(`/explore?sel=harbor:${pack.port}&layer=forecast`, "app", "/__pack__/page/explore");
   add(`/coast?place=${pack.place}`, "app", "/__pack__/page/coast");
   for (const a of pageAssets) add(a, "app");
   add("/vendor/maplibre/maplibre-gl-worker.mjs", "app");

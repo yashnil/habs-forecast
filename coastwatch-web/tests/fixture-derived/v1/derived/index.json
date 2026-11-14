@@ -75,7 +75,31 @@
             "0_0"
           ]
         }
-      }
+      },
+      "typical_grid": {
+        "url": "derived/chl_outlook_8d/typical/{row}_{col}.u16.gz",
+        "encoding": "uint16le+gzip",
+        "lat_first": 38.205,
+        "lat_step": -0.01,
+        "lon_first": -123.105,
+        "lon_step": 0.01,
+        "width": 136,
+        "height": 181,
+        "scale_factor": 0.00009155552842799158,
+        "add_offset": -3,
+        "nodata": 65535,
+        "max_quantization_error": 0.00004577776421399579,
+        "transform": "log10",
+        "chunks": {
+          "rows": 512,
+          "cols": 512,
+          "url_template": "derived/chl_outlook_8d/typical/{row}_{col}.u16.gz",
+          "present": [
+            "0_0"
+          ]
+        }
+      },
+      "typical_basis": "Fixture: each cell's usual chlorophyll for this 8-day period of the year (test data only)."
     },
     {
       "id": "chl_estimate_latest",

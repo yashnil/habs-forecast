@@ -3,15 +3,16 @@ import { defineConfig } from "@playwright/test";
 /**
  * End-to-end tests run against a production build with deterministic fixture data:
  *   npm run test:e2e   (copies fixtures, builds, then runs)
- * Three servers share one build and differ only in which data they read.
+ * The servers share one build and differ only in which data they read (and, for the last, the pilot flag).
  */
-const start = (port: number, base: string) => ({
+const start = (port: number, base: string, extra: Record<string, string> = {}) => ({
   command: `npx next start -p ${port}`,
   port,
   reuseExistingServer: false,
   timeout: 60_000,
   // ocean conditions are replayed from recorded NOAA responses (2026-10-13), never fetched live
-  env: { CW_DATA_BASE_URL: base, CW_CONDITIONS_FIXTURE: "tests/conditions-fixtures.json", CW_NWS_API: "1", CW_FIXED_NOW: "2026-10-13T06:00:00Z" },
+  // (the same clock holds the pilot sidecars' read dates: scripts/copy-fixture-data.mjs)
+  env: { CW_DATA_BASE_URL: base, CW_CONDITIONS_FIXTURE: "tests/conditions-fixtures.json", CW_NWS_API: "1", CW_FIXED_NOW: "2026-10-13T06:00:00Z", ...extra },
 });
 
 const BASE = Number(process.env.CW_E2E_PORT_BASE ?? 3200); // tests/e2e/ports.ts
@@ -22,7 +23,7 @@ const BASE = Number(process.env.CW_E2E_PORT_BASE ?? 3200); // tests/e2e/ports.ts
 // (tests/e2e/coastal.spec.ts); m8, welcome and tour open fresh contexts.
 const dismissedIntro = {
   cookies: [],
-  origins: [0, 1, 2, 3, 4].map((i) => ({
+  origins: [0, 1, 2, 3, 4, 5].map((i) => ({
     origin: `http://localhost:${BASE + i}`,
     localStorage: [
       { name: "cw-intro-dismissed-v1", value: "1" },
@@ -55,5 +56,7 @@ export default defineConfig({
     start(BASE + 3, "/data/compat-m2/v1"),
     // v10: the newest radar hour blank over Monterey Bay (scripts/copy-fixture-data.mjs)
     start(BASE + 4, "/data/fixture-hfrgap/v1"),
+    // the private pilot's front door: the main fixture with NERITIC_PILOT=1 (a bare "/" opens Today)
+    start(BASE + 5, "/data/fixture/v1", { NERITIC_PILOT: "1", NERITIC_ASK_WEB_LIMIT: "200" }),
   ],
 });

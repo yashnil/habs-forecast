@@ -290,3 +290,91 @@ def test_verification_uses_the_other_copy_when_the_layers_own_server_is_gone(tmp
     live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
     assert live and all(r["verified_against"] == "hfradar_uswc_2km" and r["status"] == "pass" for r in live), [r for r in live if r["status"] != "pass"][:2]
     assert rep["summary"]["all_passed"]
+
+
+def test_verification_samples_settled_hours_not_the_newest_still_revised_ones(tmp_path):
+    # issue #95: HFRNet revises the newest hours after the pipeline reads them (runs 42176911402,
+    # 42375268587, 42417909426, 42453211803 each failed on an hour 2.2-2.6 h old); hours older than
+    # SETTLE_HOURS are sampled instead, with the same pass criteria
+    from datetime import datetime, timedelta
+
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    m = run_pipeline(fixture_context(out))
+    hours = sorted(lyr.time.valid_time for lyr in m.layers if lyr.layer_id.startswith("hfr2km_currents_2"))
+    newest = datetime.fromisoformat(hours[-1].replace("Z", "+00:00"))
+
+    rep = verify_currents(out, live=False, now=newest + timedelta(hours=2))
+    checked = {r["time"] for r in rep["rows"] if r["kind"] in ("value", "no_value")}
+    cut = (newest + timedelta(hours=2 - vc.SETTLE_HOURS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert checked and all(t <= cut for t in checked)
+    assert max(checked) == max(t for t in hours if t <= cut)  # the newest settled hour is always checked
+    assert rep["summary"]["unsettled_hours_not_sampled"] == sum(t > cut for t in hours) > 0
+    assert rep["summary"]["all_passed"]
+    # nothing settled yet: the newest hours are checked, as before
+    rep = verify_currents(out, live=False, now=datetime.fromisoformat(hours[0].replace("Z", "+00:00")))
+    assert hours[-1] in {r["time"] for r in rep["rows"] if r["kind"] == "value"}
+    assert rep["summary"]["unsettled_hours_not_sampled"] == 0
+
+
+def test_a_cell_no_server_answered_for_is_asked_again_before_it_fails(tmp_path, monkeypatch):
+    # staging run 42569650052: 30 of 32 checks passed, 2 cells got no answer from either server for a
+    # moment and the whole dataset was withheld. Such a cell is asked again after a pause; the check
+    # is unchanged, and a cell that never gets an answer still fails (the test above).
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))
+    fx = FixtureFetcher()
+    state = {"fail": 3, "slept": []}
+
+    def flaky(url, **kw):
+        if "ucsdHfrW2" in url:  # the layers' own server is down throughout
+            raise FetchError(f"HTTP 404 for {url} (unknown)", detail='Error { code=404; message="Not Found: Currently unknown datasetID=ucsdHfrW2"; }')
+        if "hfradar_uswc_2km.dods" in url and "%5B" in url:  # NDBC point queries: the first few get no answer
+            if state["fail"] > 0:
+                state["fail"] -= 1
+                raise FetchError(f"Failed after 4 attempts: {url} (timed out)", hang=True)
+            return fx(url.replace("%5B", "[").replace("%5D", "]"))
+        return fx(url)
+
+    monkeypatch.setattr(vc, "fetch", flaky)
+    monkeypatch.setattr(vc.time, "sleep", lambda s: state["slept"].append(s))
+    rep = verify_currents(out, live=True)
+    live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
+    assert rep["summary"]["cells_asked_again"] == 3 and vc.UNVERIFIABLE_WAIT_S in state["slept"]
+    assert sum(r.get("attempts", 1) > 1 for r in live) == 3
+    assert all(r["status"] == "pass" for r in live) and rep["summary"]["all_passed"]
+    assert rep["summary"]["unverifiable_upstream_unreachable"] == 0
+
+
+def test_a_server_that_keeps_failing_is_asked_last_and_the_comparison_has_a_time_budget(tmp_path, monkeypatch):
+    # scheduled runs 42485019815 and 42528644587 (2026-11-08) were cancelled at the 40-minute job
+    # limit after 23-26 minutes in this step: a silent server was asked first, with all its retries,
+    # for every cell. After HOST_LAST_AFTER unanswered cells in a row the other copy is asked first.
+    from coastwatch_pipeline import http
+    from coastwatch_pipeline import verify_currents as vc
+
+    out = tmp_path / "v1"
+    run_pipeline(fixture_context(out))  # layers read from ERDDAP
+    fx = FixtureFetcher()
+    asked = []
+
+    def erddap_silent(url, **kw):
+        assert http._remaining() is not None and http._remaining()[0] <= vc.VERIFY_BUDGET_S  # a budget is running
+        if "ucsdHfrW2" in url:
+            asked.append(url)
+            raise FetchError(f"Failed after 4 attempts: {url} (timed out)", hang=True)
+        if "hfradar_uswc_2km.dods" in url and "%5B" in url:
+            return fx(url.replace("%5B", "[").replace("%5D", "]"))
+        return fx(url)
+
+    monkeypatch.setattr(vc, "fetch", erddap_silent)
+    monkeypatch.setattr(vc.time, "sleep", lambda s: None)
+    rep = verify_currents(out, live=True)
+    live = [r for r in rep["rows"] if r["kind"] in ("value", "no_value")]
+    assert len(live) > vc.HOST_LAST_AFTER and len(asked) == vc.HOST_LAST_AFTER  # then never asked again
+    assert all(r["status"] == "pass" and r["verified_against"] == "hfradar_uswc_2km" for r in live)
+    assert rep["summary"]["all_passed"] and rep["summary"]["time_budget_s"] == vc.VERIFY_BUDGET_S
+    assert http._remaining() is None  # the budget ends with the comparison

@@ -3,7 +3,14 @@
 Verified 2026-10-08 (docs/coastwatch/evidence/sources-charm.md):
 - datasets wvcharmV3_{0,1,2,3}day (0-360 longitudes), product_version 3.1
 - `time` is the VALID day (12:00Z), not the issue time
-- one daily run issues all four leads; issue date = nowcast valid date + 1 (inferred)
+- one daily run issues all four leads (nowcast valid day D, forecasts D+1..D+3)
+- issue date: NOAA's processing date, the "YYYY-MM-DD:" that opens the NC_GLOBAL `history` of
+  the response (verified 2026-11-14: the run valid 2026-11-02..05 reads "2026-11-05: DINEOF gap
+  filling ...", and the per-file timestamps on ERDDAP's files/ listing are 2026-11-05 17:05-17:06Z;
+  earlier runs were likewise released about 3 days after their nowcast day, not 1). `history` is
+  dataset-level (it describes the newest file), so it is used only when the same response's
+  `time_coverage_end` is the valid time fetched. Otherwise the date falls back to nowcast valid
+  day + 1, flagged issued_date_derived (date_created/date_modified are 2022 and never change)
 - runs are frequently missing; never back-fill a missing lead from an older run
 """
 
@@ -12,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import io
 import math
+import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import quote
@@ -108,8 +116,13 @@ CAVEAT_TOXIN_MASK = (
     "including piers and harbours."
 )
 CAVEAT_ISSUE = (
-    "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+    "Issue date is inferred (nowcast valid day + 1): this run's NOAA metadata did not state it. "
+    "NOAA often releases a run two or three days after its nowcast day."
 )
+CAVEAT_ISSUE_SOURCE = "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
+ISSUED_METHOD_DERIVED = "nowcast valid day + 1 day (one run issues all leads)"
+ISSUED_METHOD_SOURCE = "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP"
+HISTORY_DATE = re.compile(r"^\s*(\d{4}-\d{2}-\d{2}):")
 
 FRESHNESS = FreshnessPolicy(
     basis="issued_date",
@@ -137,10 +150,37 @@ def parse_time(s: str) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+def nowcast_day(valid: date, lead: int) -> date:
+    """The run a lead belongs to, by its nowcast (lead 0) valid day: valid - lead."""
+    return valid - timedelta(days=lead)
+
+
 def issue_date_for(valid: date, lead: int) -> date:
-    """Nowcast (lead 0) for day D is produced by the run on D+1, which also produces
-    leads 1..3 valid D+1..D+3. So issue = valid - lead + 1."""
-    return valid - timedelta(days=lead) + timedelta(days=1)
+    """Fallback issue date when the source does not state it: nowcast valid day + 1 (the
+    earliest a run could be issued). Real runs are often released later."""
+    return nowcast_day(valid, lead) + timedelta(days=1)
+
+
+def issued_from_attrs(attrs: dict[str, str], valid_time: datetime, lead: int, today: date) -> date | None:
+    """NOAA's processing date for the run a lead belongs to, from the response's own global
+    attributes, or None when they do not establish it:
+    - `history` must open with "YYYY-MM-DD:" (the producer's run date);
+    - `time_coverage_end` must be the valid time fetched (history describes the dataset's newest
+      file, so it applies only when that file is the one fetched);
+    - the date must lie between the run's nowcast day and today (UTC)."""
+    m = HISTORY_DATE.match(str(attrs.get("history", "")))
+    if not m:
+        return None
+    try:
+        d = date.fromisoformat(m.group(1))
+        end = parse_time(str(attrs.get("time_coverage_end", "")))
+    except ValueError:
+        return None
+    if end != valid_time:
+        return None
+    if not nowcast_day(valid_time.date(), lead) <= d <= today:
+        return None
+    return d
 
 
 # ---------------------------------------------------------------- upstream access
@@ -347,7 +387,7 @@ def _provenance(ctx: RunContext, ld: LeadData, probe_url: str) -> Provenance:
     )
 
 
-def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], issued: date) -> list[LayerArtifact]:
+def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], issued: date, issued_derived: bool = True) -> list[LayerArtifact]:
     # Axis values arrive as float32; derive the step from the full span and round the
     # origin to 0.1 m-scale precision so cell centres sit exactly on the 0.03 deg lattice.
     lat_first = round(float(ld.lat[0]), 4)
@@ -372,7 +412,7 @@ def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], i
         rgba = apply_palette(resample_to_mercator(published, src, img), PROBABILITY)
         img_rel = f"{base}/{v.name}.png"
         write_png(ctx.out_dir / img_rel, rgba)
-        caveats = list(CAVEATS_COMMON) + [CAVEAT_ISSUE]
+        caveats = list(CAVEATS_COMMON) + [CAVEAT_ISSUE if issued_derived else CAVEAT_ISSUE_SOURCE]
         if v.name != "pseudo_nitzschia":
             caveats.insert(2, CAVEAT_TOXIN_MASK)
         artifacts.append(
@@ -389,8 +429,8 @@ def build_lead_artifacts(ctx: RunContext, ld: LeadData, checks: list[QCCheck], i
                 resolution_deg=STEP,
                 time=TimeInfo(
                     issued_date=issued.isoformat(),
-                    issued_date_derived=True,
-                    issued_date_method="nowcast valid day + 1 day (one run issues all leads)",
+                    issued_date_derived=issued_derived,
+                    issued_date_method=ISSUED_METHOD_DERIVED if issued_derived else ISSUED_METHOD_SOURCE,
                     valid_date=valid.isoformat(),
                     valid_time=ld.valid_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                     lead_days=ld.lead,
@@ -446,20 +486,20 @@ def run(ctx: RunContext) -> CharmResult:
     if not probed:
         return CharmResult([], None, errors, None, None)
 
-    issues = {lead: issue_date_for(t.date(), lead) for lead, t in probed.items()}
-    newest = max(issues.values())
+    # leads are grouped into runs by their nowcast day; never mix leads of two runs
+    runs_of = {lead: nowcast_day(t.date(), lead) for lead, t in probed.items()}
+    newest_run = max(runs_of.values())
     notes: list[str] = []
-    stale_leads = sorted(lead for lead, d in issues.items() if d != newest)
+    stale_leads = sorted(lead for lead, d in runs_of.items() if d != newest_run)
     for lead in stale_leads:
         notes.append(
-            f"Lead {lead}: newest available valid day {probed[lead].date()} belongs to the run issued "
-            f"{issues[lead]}, not {newest}; not shown."
+            f"Lead {lead}: newest available valid day {probed[lead].date()} belongs to the run with nowcast day "
+            f"{runs_of[lead]}, not {newest_run}; not shown."
         )
 
-    layers: list[LayerArtifact] = []
-    available: list[int] = []
+    loaded: list[tuple[LeadData, list[QCCheck]]] = []
     for lead in LEADS:
-        if lead not in probed or issues[lead] != newest:
+        if lead not in probed or runs_of[lead] != newest_run:
             continue
         url = data_url(lead, probed[lead])
         try:
@@ -467,13 +507,34 @@ def run(ctx: RunContext) -> CharmResult:
             ld, checks = load_lead(r.body, lead, probed[lead], url)
             # the palette is part of the address: re-rendered images never reuse an old URL
             ld.content_hash = hashlib.sha256(r.body + PROBABILITY.id.encode()).hexdigest()[:10]
-            layers.extend(build_lead_artifacts(ctx, ld, checks, newest))
-            available.append(lead)
+            loaded.append((ld, checks))
         except ValidationFailure as e:
             failed = "; ".join(f"{c.name}: {c.detail}" for c in e.checks if not c.passed)
             errors.append(f"{e} ({failed})")
         except Exception as e:
             errors.append(f"lead {lead}: {e}")
+
+    # issue date: NOAA's own processing date when every lead that states it agrees; else inferred
+    stated = {issued_from_attrs(ld.attrs, ld.valid_time, ld.lead, ctx.now.date()) for ld, _ in loaded}
+    newest = newest_run + timedelta(days=1)
+    issued_derived = True
+    if len(stated) == 1 and None not in stated:
+        newest, issued_derived = stated.pop(), False  # type: ignore[assignment]
+    elif loaded:
+        notes.append(
+            "Issue date inferred (nowcast valid day + 1): "
+            + ("the leads' NOAA metadata disagree" if len(stated - {None}) > 1 else "NOAA's run metadata did not state it")
+            + "."
+        )
+
+    layers: list[LayerArtifact] = []
+    available: list[int] = []
+    for ld, checks in loaded:
+        try:
+            layers.extend(build_lead_artifacts(ctx, ld, checks, newest, issued_derived))
+            available.append(ld.lead)
+        except Exception as e:
+            errors.append(f"lead {ld.lead}: {e}")
 
     missing = [lead for lead in LEADS if lead not in available]
     run_info = (
@@ -481,7 +542,7 @@ def run(ctx: RunContext) -> CharmResult:
             group_id=GROUP_ID,
             source_id=SOURCE_ID,
             issued_date=newest.isoformat(),
-            issued_date_derived=True,
+            issued_date_derived=issued_derived,
             leads_available=available,
             leads_missing=missing,
             notes=notes + [f"Lead {lead} could not be published this run." for lead in missing if lead not in stale_leads],

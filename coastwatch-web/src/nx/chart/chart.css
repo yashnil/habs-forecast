@@ -1,0 +1,147 @@
+/* The chart (v14 README §4): one full-bleed MapLibre sheet behind every page, the names and marks written on it, the
+   graticule's border labels, the chart's own furniture (zoom, scale "Not for navigation"), the opening's still.
+   From the approved prototype's style.css (#marks, .port, .zone-*, .scale, .zoom). Colours only from tokens.css. */
+
+.n12-sheet { position: absolute; inset: 0; z-index: 0; min-width: 0; min-height: 0; background: var(--depth-8); }
+.n12-frame { position: relative; width: 100%; height: 100%; background: var(--depth-8); container-type: size; container-name: n12-frame; }
+.n12-map, .n12-poster, .n12-overlay, .n12-still, .n12-underlay { position: absolute; inset: 0; overflow: hidden; }
+.n12-underlay { pointer-events: none; }
+/* the ambient deep-water texture (DeepWater.tsx): only where the water is deeper than 200 m, hidden while the camera moves */
+.n12-deep { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity var(--dur-deep) linear; mix-blend-mode: var(--deep-blend); mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; }
+.n12-deep[data-on="1"] { opacity: var(--deep-opacity); }
+.n12-static-field { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; image-rendering: pixelated; }
+.n12-map .maplibregl-canvas { outline: none; }
+.n12-map .maplibregl-canvas:focus-visible { outline: 2.5px solid var(--ultra); outline-offset: -3px; }
+.n12-sheet[data-tier="static"] .n12-map { display: none; }
+.n12-poster img { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; user-select: none; }
+.n12-poster-land { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: var(--land); }
+.n12-overlay { pointer-events: none; }
+.n12-overlay a, .n12-overlay button { pointer-events: auto; }
+.n12-labels, .n12-marks { position: absolute; inset: 0; }
+.n12-mark, .n12-point { position: absolute; left: 0; top: 0; visibility: hidden; will-change: transform; }
+.n12-mark { white-space: nowrap; }
+.n12-point { width: 0; height: 0; }
+.n12-point > svg { position: absolute; transform: translate(-50%, -50%); overflow: visible; }
+
+/* a place lit from outside the chart (highlight.ts): an ultramarine ring on a paper halo */
+.n12-highlight { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.n12-highlight::before { content: ""; position: absolute; left: -12px; top: -12px; width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid var(--ultra); box-shadow: 0 0 0 2px var(--halo); }
+.n12-highlight .n12-port-name { position: absolute; left: 16px; top: -10px; white-space: nowrap; }
+
+/* chart lettering (the map voice): water names italic and spaced, places upright, on a soft white halo */
+.n12-water-name, .n12-port-name { display: block; line-height: 1.15; }
+.n12-water-name { font-family: var(--font); font-style: italic; font-weight: var(--w5); color: var(--water-name-light); letter-spacing: 0.12em; }
+.n12-water-name-sm { color: var(--water-label); text-shadow: 0 0 2px var(--shore-halo), 0 0 5px var(--shore-halo); }
+.n12-port-name { font-family: var(--font); font-weight: var(--w6); font-size: var(--fs-13); color: var(--ink); text-shadow: 0 0 2px var(--halo), 0 0 5px var(--halo), 0 0 8px var(--halo); }
+.n12-port-name-focus { font-size: var(--fs-15); font-weight: var(--w7); }
+.n12-port-label { display: block; }
+.n12-mark[data-anchor$="left"] .n12-port-label { text-align: right; }
+.n12-port-tag { display: block; margin-top: 2px; text-shadow: 0 0 2px var(--halo), 0 0 4px var(--halo), 0 0 7px var(--halo); font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--ink); }
+/* a port: a ringed dot; the current port larger, on a paper halo, its ring expanding once; a followed port in ultramarine */
+.n12-port-sym { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.n12-port-sym i { position: absolute; left: -4.5px; top: -4.5px; width: 9px; height: 9px; box-sizing: border-box; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); }
+.n12-port-sym-focus i { left: -8px; top: -8px; width: 16px; height: 16px; border-width: 4.5px; box-shadow: var(--shadow-port); }
+.n12-port-sym-follow i { border-color: var(--ultra); }
+.n12-port-ringonce { position: absolute; left: -15px; top: -15px; width: 30px; height: 30px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--ink); opacity: 0.22; pointer-events: none; }
+.n12-port-sym-follow .n12-port-ringonce { border-color: var(--ultra); }
+.n12-canyon-name { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.n12-water-name-svg { font-family: var(--font); font-style: italic; font-weight: var(--w5); fill: var(--water-label); letter-spacing: 0.12em; paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 3px; stroke-linejoin: round; }
+.n12-leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.n12-leaders line { stroke: var(--ink); stroke-width: 1.5; }
+.n12-leaders circle { fill: var(--ink); stroke: var(--halo); stroke-width: 2.5; }
+
+/* depth labels along their line (DepthLabels.tsx): "55 fm" italic, "100 m" small after */
+.n12-depths { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.n12-depth { transition: opacity var(--dur-hover) linear; }
+.n12-depth text { font-family: var(--font); font-style: italic; paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 4.5px; stroke-linejoin: round; }
+.n12-depth-fm { font-size: 12px; font-weight: var(--w6); fill: var(--depth-label); }
+.n12-depth-m { font-size: var(--fs-11); font-weight: var(--w5); fill: var(--depth-label-2); }
+
+/* the chart's border: parallels named at the right edge */
+.n12-grat { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.n12-grat text { font-family: var(--font); font-size: var(--fs-11); font-weight: var(--w6); fill: var(--ink-2); paint-order: stroke fill; stroke: var(--land-halo); stroke-width: 3px; font-variant-numeric: tabular-nums; }
+
+/* regulation (RegulationLayer.tsx): coral and nothing else */
+.n12-reg-wrap { position: absolute; inset: 0; }
+.n12-reg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.n12-reg path { fill: none; }
+.n12-reg-line { stroke: var(--coral); stroke-width: 1.8; }
+.n12-reg-line-thin { stroke-width: 1.2; opacity: 0.8; }
+.n12-reg-line-hl { stroke-width: 1.8; }
+.n12-reg-tick { stroke: var(--coral); stroke-width: 1.8; }
+.n12-reg .n12-reg-wash { fill: var(--coral); opacity: 0.085; }
+.n12-reg-ribbon { fill: var(--coral); opacity: 0.16; }
+/* a health advisory's area: the coral illustrative hatch, light inside, heavier at its two limits */
+.n12-reg-hatch-ground { fill: var(--coral-hatch); }
+.n12-reg-hatch-stripe { fill: var(--coral); }
+.n12-reg .n12-reg-adv-band { opacity: 0.1; }
+.n12-reg-adv-edge { opacity: 0.42; }
+.n12-reg-adv-title { font-family: var(--font); font-size: var(--fs-13); font-weight: var(--w7); fill: var(--coral-map); paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 5px; stroke-linejoin: round; }
+.n12-reg-adv-note { font-family: var(--font); font-size: var(--fs-11); font-weight: var(--w6); fill: var(--ink); paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 4px; stroke-linejoin: round; }
+.n12-reg-bracket { stroke: var(--coral); stroke-width: 4; stroke-linejoin: miter; }
+.n12-reg-limitline { stroke: var(--coral); stroke-width: 1.5; stroke-dasharray: 8 6; }
+.n12-reg-text { font-family: var(--font); font-size: var(--fs-13); font-weight: var(--w6); fill: var(--coral-map); paint-order: stroke fill; stroke: var(--shore-halo); stroke-width: 4px; stroke-linejoin: round; }
+.n12-reg-limit { font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: 0.1em; text-transform: uppercase; }
+.n12-reg-zone { font-size: var(--fs-11); font-weight: var(--w7); letter-spacing: 0.16em; text-transform: uppercase; }
+.n12-reg-zone-hl { font-size: var(--fs-13); letter-spacing: 0.12em; }
+.n12-reg-ext { font-weight: var(--w7); }
+.n12-reg-cape { font-family: var(--font); font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--land-label); paint-order: stroke fill; stroke: var(--land-halo); stroke-width: 3px; stroke-linejoin: round; }
+.n12-zonepin { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: 6px; padding: 10px 14px; min-height: 44px; border-radius: var(--r-ctl); background: var(--chip-glass); box-shadow: var(--shadow-chip); white-space: nowrap; pointer-events: none; }
+.n12-zonepin b { font-size: var(--fs-18); line-height: 1; font-weight: var(--w7); letter-spacing: 0.3em; margin-right: -0.3em; text-transform: uppercase; color: var(--coral-map); }
+.n12-zonepin span { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-11); font-weight: var(--w6); letter-spacing: 0.1em; text-transform: uppercase; color: var(--coral-map); }
+.n12-zonepin-g { width: 9px; height: 9px; box-sizing: border-box; border-radius: 50%; border: 1.8px solid currentColor; }
+@container n12-frame (max-width: 640px) {
+  .n12-zonepin { padding: 6px 8px; gap: 4px; }
+  .n12-zonepin b { font-size: var(--fs-13); letter-spacing: 0.22em; margin-right: -0.22em; }
+  .n12-zonepin span { display: none; }
+}
+
+/* the chart's foot: scale and "Not for navigation", zoom and back to the page's place, bottom right */
+.n12-scale { position: absolute; right: 78px; bottom: calc(var(--nx-foot, var(--gutter)) + 6px); z-index: 3; display: flex; align-items: center; gap: 8px; pointer-events: none; }
+.n12-scale-bar { display: block; height: 5px; border: 1.5px solid var(--ink); border-top: 0; }
+.n12-scale-text, .n12-scale-nfn { font-size: var(--fs-11); font-weight: var(--w6); color: var(--ink); text-shadow: 0 0 2px var(--halo), 0 0 4px var(--halo); white-space: nowrap; }
+.n12-attrib { position: absolute; right: var(--s-6); bottom: 2px; z-index: 3; margin: 0; font-size: var(--fs-11); color: var(--ink-2); text-shadow: 0 0 2px var(--halo), 0 0 4px var(--halo); white-space: nowrap; opacity: 0.85; }
+.n12-attrib a { pointer-events: auto; }
+.n12-controls { position: absolute; z-index: 3; right: var(--gutter); bottom: var(--nx-foot, var(--gutter)); display: flex; flex-direction: column; background: var(--paper); border-radius: var(--r-ctl); box-shadow: var(--shadow-sm); overflow: hidden; }
+.n12-controls button { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; background: var(--paper); color: var(--ink); cursor: pointer; font: var(--w6) var(--fs-13) / 1.1 var(--font); }
+.n12-controls button + button { border-top: var(--hair) solid var(--line); }
+.n12-controls button:hover { background: var(--paper-2); }
+.n12-controls button:focus-visible { outline: 2.5px solid var(--ultra); outline-offset: -4px; }
+.n12-controls-word { width: auto !important; padding: 0 var(--s-8) !important; max-width: 96px; white-space: normal; }
+.n12-controls-icon { display: none; }
+/* a phone: the strip is small and a pinch zooms it; no buttons, no scale (as the prototype) */
+@media (max-width: 640px) {
+  .n12-controls, .n12-scale, .n12-attrib { display: none; }
+}
+
+/* the opening: a dithered still of the lit canyon, inked in the mode's water colour, covering the sheet */
+.n12-still { display: none; background: var(--paper); z-index: 2; pointer-events: none; }
+html[data-nx-opening="on"] .n12-still, html[data-nx-opening="run"] .n12-still { display: block; }
+.n12-still-ink {
+  position: absolute; inset: 0; background: var(--water-name);
+  mask-size: cover; -webkit-mask-size: cover; mask-position: 50% 50%; -webkit-mask-position: 50% 50%;
+  mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; transform-origin: 50% 50%;
+}
+.n12-ink-lines { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+.n12-ink-lines path { fill: none; stroke: var(--isobath); stroke-dasharray: 1; stroke-dashoffset: 1; stroke-linejoin: round; stroke-linecap: round; }
+.n12-ink-minor { stroke-width: 0.7; opacity: 0.42; }
+.n12-ink-index { stroke-width: 1.1; opacity: 0.78; }
+.n12-still-caption {
+  position: absolute; right: var(--s-12); bottom: var(--s-12); margin: 0; max-width: 34em; text-align: right;
+  font-size: var(--type-small); color: var(--ink); text-shadow: 0 0 1px var(--paper), 1.5px 0 0 var(--paper), -1.5px 0 0 var(--paper), 0 1.5px 0 var(--paper), 0 -1.5px 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper), 1px -1px 0 var(--paper), -1px 1px 0 var(--paper), 0 0 3px var(--paper);
+}
+/* while it plays, the chart's names, marks and neatline wait for their beats */
+html[data-nx-opening="on"] .n12-overlay,
+html[data-nx-opening="run"]:not([data-nx-marks]) .n12-overlay { opacity: 0; }
+html[data-nx-opening="on"] .n12-neat,
+html[data-nx-opening="run"]:not([data-nx-neat]) .n12-neat { opacity: 0; }
+html[data-nx-opening="on"] .n12-scale, html[data-nx-opening="run"] .n12-scale,
+html[data-nx-opening="on"] .n12-attrib, html[data-nx-opening="run"] .n12-attrib { visibility: hidden; }
+/* during the opening the still's ink layer lies under the drawn isobaths */
+.n12-still .n12-ink-lines { z-index: 1; }
+
+@media (max-width: 640px) {
+  /* the still covers only the part of the sheet the resting margin leaves free, so it registers with the chart */
+  .n12-still { bottom: 38dvh; }
+  .n12-still-caption { left: var(--s-12); right: var(--s-12); top: var(--s-8); bottom: auto; text-align: left; }
+}

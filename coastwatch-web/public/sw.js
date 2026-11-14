@@ -21,14 +21,30 @@
  *   from a pack carries a mark (self.__NERITIC_SAVED__: when it was saved, and the address it was saved
  *   for), so the page can say it is a saved copy and hydrate the HTML it was actually given.
  *
+ * - A port's field pack (v12, Menu > Offline): "neritic-pack-field" holds Today, My Coast (its gates and sea
+ *   window), Explore (each layer's latest frame around the port) and Research (a station's record) for one
+ *   port, with a record of what it holds (/__field__/record.json). Its pages are answered at their addresses
+ *   with or without the port in them; the offline page links to each one.
+ * - Today at your port ("Save for offline"): a pack named "neritic-pack-today" holding the port's page,
+ *   its code and its /api/conditions answer. It is answered like any pack, and the offline page links
+ *   to each saved port by name with the time it was saved.
+ * - Web push for the pilot's alerts comes from /sw-push.js (imported below; listeners only).
+ *
  * - A kept briefing (My Coast's "Keep a dated copy"): the page keeps /coast/kept and the files it loads
  *   in "neritic-kept-v1" (src/v4/offline/kept.ts). Offline, /coast/kept is answered from it (the copy
  *   itself is in the device's storage), its code from it, and the offline page links to it by name.
  *
+ * - Your trips (v15, /coast/trips: the history, a trip's workspace at ?id=, its briefing): the page keeps itself and
+ *   the files it loads in "neritic-trips-v1" each time it is opened online (src/nx/offline/trips.ts). Online the
+ *   page is network-first as always (the page then replaces its kept copy, code included, so the copy and its code
+ *   always come from one build); offline, or when the network fails,
+ *   /coast/trips at any address is answered from the kept copy, marked as a saved copy with the time it was kept
+ *   (self.__NERITIC_SAVED__), never as live. The trips themselves are in the device's storage, not in any cache.
+ *
  * Packs are never deleted here: a new worker version keeps them (they are removed only from the
  * page, by the reader). Browsers may still evict storage; the page says so.
  */
-const VERSION = "neritic-sw-3";
+const VERSION = "neritic-sw-7";
 /** How long a page or an /api answer waits for the network before a field pack answers instead. */
 const DEADLINE_MS = 5000;
 // one code cache per build: hashed files of an old build are never needed by the new one
@@ -37,6 +53,17 @@ const STATIC = `neritic-static-${BUILD ? BUILD.replace(/[^\w.-]/g, "").slice(0, 
 const PACK_PREFIX = "neritic-pack-";
 const KEPT = "neritic-kept-v1";
 const KEPT_PAGE = "/coast/kept";
+/** Your trips (v15): the /coast/trips page and its code, kept by the page itself (src/nx/offline/trips.ts). */
+const TRIPS = "neritic-trips-v1";
+const TRIPS_PAGE = "/coast/trips";
+/** Today at your port, saved from its "Save for offline" button (src/pilot/today/offline.ts). */
+const TODAY_PACK = "neritic-pack-today";
+/** A port's field pack (v12, Menu > Offline; src/nx/offline/pack.ts): Today, My Coast, Explore, Research. */
+const FIELD_PACK = "neritic-pack-field";
+
+// Pilot: web push ("push", "notificationclick" and a ping). It adds listeners only; it never touches
+// fetch handling or the caches above (public/sw-push.js; docs/coastwatch/pilot/accounts.md).
+importScripts("/sw-push.js");
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {
@@ -72,6 +99,33 @@ async function keptPage(path) {
   return (await caches.open(KEPT)).match(KEPT_PAGE);
 }
 
+/** A file the trips page needs (its code, styles, fonts, the baked chart), from the trips cache. */
+async function tripsMatch(request) {
+  if (!(await caches.has(TRIPS))) return null;
+  const url = new URL(request.url);
+  return (await caches.open(TRIPS)).match(request, { ignoreSearch: url.pathname.startsWith("/_next/") });
+}
+
+/** The kept trips page for any /coast/trips address (the page reads ?id= on the device), marked as a saved copy. */
+async function tripsPage(path) {
+  if (path !== TRIPS_PAGE || !(await caches.has(TRIPS))) return null;
+  const r = await (await caches.open(TRIPS)).match(TRIPS_PAGE);
+  return r ? marked(r, new URL(TRIPS_PAGE, self.location.origin).href) : null;
+}
+
+/** When the trips page was kept, for the offline page's link; null without one. */
+async function tripsMeta() {
+  if (!(await caches.has(TRIPS))) return null;
+  const c = await caches.open(TRIPS);
+  if (!(await c.match(TRIPS_PAGE))) return null;
+  try {
+    const r = await c.match("/__trips__/meta");
+    return r ? await r.json() : {};
+  } catch {
+    return {};
+  }
+}
+
 /** What the offline page says about the kept copy: its title and when it was kept, or null. */
 async function keptMeta() {
   if (!(await caches.has(KEPT))) return null;
@@ -99,6 +153,61 @@ async function packPage(request) {
     }
   }
   return null;
+}
+
+/**
+ * Which saved copy of a path answers an address it was not saved for. A page is rendered for its whole address
+ * (`/coast?place=port-592&view=trip` is the trip workspace, `/coast?place=port-592` the brief), so the copy
+ * that shares the most parameters with the request is the nearest thing this device holds: the trip view for a
+ * trip address, the brief for anything else. Ties go to the copy saved with the fewest parameters, then to the
+ * first saved. Pure (the unit test reads it): `saved` are the saved addresses of one path.
+ */
+function nearestSaved(requestUrl, saved) {
+  const want = new URL(requestUrl).searchParams;
+  let best = null;
+  let bestScore = -1;
+  let bestSize = Infinity;
+  for (const href of saved) {
+    const have = new URL(href).searchParams;
+    let score = 0;
+    let size = 0;
+    for (const [k, v] of have) {
+      size += 1;
+      if (want.get(k) === v) score += 1;
+    }
+    if (score > bestScore || (score === bestScore && size < bestSize)) {
+      best = href;
+      bestScore = score;
+      bestSize = size;
+    }
+  }
+  return best;
+}
+
+/**
+ * A navigation answered from a pack. The copy saved for exactly this address is served as it is. An address
+ * the pack holds only under other parameters (a bare `/coast`, another port, `?view=trip` from a link that
+ * also carries a fishery, a point and date carried from Explore) is SENT ON to the nearest saved address
+ * (`nearestSaved`), never answered with that copy's HTML in place: the page reads its address when it draws,
+ * so HTML rendered for one address and hydrated at another is a different page (React error 418, and a page
+ * rebuilt on the client). After the redirect the address bar says what is shown. A v4 pack's own pages
+ * (`/__pack__/…`) have no address to send to and are served as before.
+ */
+async function packNavigate(request) {
+  const names = (await caches.keys()).filter((k) => k.startsWith(PACK_PREFIX));
+  const saved = [];
+  for (const k of names) {
+    const c = await caches.open(k);
+    const [exact] = await c.keys(request);
+    if (exact) {
+      const r = await c.match(exact);
+      if (r) return marked(r, exact.url);
+    }
+    for (const key of await c.keys(request, { ignoreSearch: true })) if (!new URL(key.url).pathname.startsWith("/__pack__/")) saved.push(key.url);
+  }
+  const to = nearestSaved(request.url, saved);
+  if (to && to !== request.url) return Response.redirect(to, 302);
+  return packPage(request);
 }
 
 /** A saved HTML page with its mark: when it was saved, and the address it was saved for. */
@@ -136,46 +245,113 @@ async function ranged(request, resp) {
   });
 }
 
-/** The pack's own page for the paths it saves (Explore and the briefing), else null. */
-const PACK_PAGE = { "/": "/__pack__/page/explore", "/coast": "/__pack__/page/coast" };
-async function savedPageFor(path) {
-  const key = PACK_PAGE[path];
+/**
+ * The pack's own page for the paths it saves (Explore and the briefing), else null.
+ * v12 (sw-5) moved Explore from `/?…` to `/explore` and made `/` the front door, which opens Today at the saved
+ * port. Packs are not rewritten (their page keys never named a URL, and Today's are still `/today?place=…`);
+ * the worker answers the new addresses from them instead, and an old `/?…` Explore address too:
+ *   /explore, or / with Explore's parameters   the pack's Explore page
+ *   / (bare), /today without a port            the newest saved Today, else the pack's Explore page
+ *   /coast                                     the pack's briefing
+ */
+const PACK_PAGE = { "/explore": "/__pack__/page/explore", "/coast": "/__pack__/page/coast" };
+const CAMPAIGN = /^(utm_[a-z_]+|fbclid|gclid|msclkid|mc_[a-z]+|ref|source|pick)$/i;
+const namesExplore = (url) => [...url.searchParams.keys()].some((k) => !CAMPAIGN.test(k));
+/** Pages the worker can answer from a pack for this address (see savedPageFor). */
+function hasPackPage(url) {
+  return !!PACK_PAGE[url.pathname] || url.pathname === "/" || (url.pathname === "/today" && !url.searchParams.get("place"));
+}
+async function savedPageFor(path, url) {
+  const u = url || new URL(path, self.location.origin);
+  if (u.pathname === "/" && namesExplore(u)) return packPage(new Request(PACK_PAGE["/explore"]));
+  if (u.pathname === "/" || (u.pathname === "/today" && !u.searchParams.get("place"))) {
+    const t = (await savedTodays())[0];
+    if (t) {
+      const c = await caches.open(TODAY_PACK);
+      const r = await c.match(t.href);
+      if (r) return marked(r, new URL(t.href, self.location.origin).href);
+    }
+    return packPage(new Request(PACK_PAGE["/explore"]));
+  }
+  const key = PACK_PAGE[u.pathname];
   return key ? packPage(new Request(key)) : null;
 }
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const MARK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="30" height="30" aria-hidden="true"><clipPath id="nxmmicrolight0"><path d="M11 0H37A11 11 0 0 1 48 11V37A11 11 0 0 1 37 48H11A11 11 0 0 1 0 37V11A11 11 0 0 1 11 0Z"/></clipPath><g clip-path="url(#nxmmicrolight0)"><path d="M11 0H37A11 11 0 0 1 48 11V37A11 11 0 0 1 37 48H11A11 11 0 0 1 0 37V11A11 11 0 0 1 11 0Z" fill="#0e3352"/><g fill="none" stroke-linecap="round"><path d="M-1.95 41.92C-1.28 40.55 -0.82 40.14 0.05 37.8C0.92 35.46 2.31 30.6 3.25 27.89C4.19 25.18 4.81 23.63 5.69 21.53C6.57 19.44 7.65 17.07 8.52 15.34C9.4 13.62 10.09 12.42 10.94 11.2C11.79 9.97 12.64 8.92 13.63 8C14.61 7.09 15.71 6.28 16.84 5.69C17.96 5.1 19.19 4.68 20.37 4.46C21.55 4.25 22.96 4.32 23.9 4.4C24.83 4.48 25.32 4.69 25.99 4.94C26.66 5.19 27.29 5.5 27.92 5.9C28.55 6.3 29.21 6.82 29.78 7.36C30.35 7.9 30.76 8.31 31.36 9.14C31.96 9.97 32.3 10.35 33.4 12.33C34.49 14.32 36.25 18.11 37.91 21.04C39.57 23.98 42.11 27.79 43.33 29.93C44.56 32.07 44.71 32.53 45.28 33.88C45.86 35.22 46.15 35.46 46.77 38.01C47.4 40.56 48.27 45.46 49.02 49.19" stroke="#a9d3df" stroke-width="3.6"/><path d="M6.72 49.4C7.33 47.63 7.72 46.88 8.55 44.1C9.38 41.32 10.79 35.54 11.69 32.72C12.6 29.9 13.29 28.62 13.99 27.19C14.69 25.77 15.25 25.03 15.9 24.16C16.55 23.29 17.21 22.56 17.9 21.97C18.58 21.38 19.28 20.91 20 20.6C20.71 20.3 21.37 20.1 22.18 20.15C23 20.19 23.98 20.4 24.89 20.89C25.8 21.38 26.58 21.96 27.64 23.08C28.7 24.2 30.16 26.02 31.25 27.6C32.34 29.19 33.45 31.14 34.18 32.59C34.9 34.05 35.23 35.08 35.58 36.32C35.94 37.56 36.16 38.79 36.31 40.04C36.46 41.29 36.51 42.23 36.49 43.82C36.47 45.42 36.29 47.69 36.19 49.62" stroke="#5fd0e6" stroke-width="5.4"/></g></g></svg>';
 
-/** The offline page, in the site's own dark system: what is not saved, the kept briefing and the saved
- *  briefing when there is one, a way to try again, and the agencies (pages and tap-to-call lines). */
-async function offlinePage(path) {
-  const saved = await savedPageFor(path);
+/** The Today pages saved on this device: their address, the port's name and when each was saved. */
+async function savedTodays() {
+  if (!(await caches.has(TODAY_PACK))) return [];
+  const c = await caches.open(TODAY_PACK);
+  const out = [];
+  for (const key of await c.keys()) {
+    const u = new URL(key.url);
+    if (u.pathname !== "/today") continue;
+    const r = await c.match(key);
+    if (!r) continue;
+    let label = "";
+    try {
+      label = decodeURIComponent(r.headers.get("x-neritic-saved-label") || "");
+    } catch {
+      label = "";
+    }
+    out.push({ href: u.pathname + u.search, label, at: r.headers.get("x-neritic-saved-at") });
+  }
+  return out.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+}
+
+/** The field pack's record: the port, when it was saved and which pages it holds; null without one. */
+async function fieldRecord() {
+  if (!(await caches.has(FIELD_PACK))) return null;
+  try {
+    const r = await (await caches.open(FIELD_PACK)).match("/__field__/record.json");
+    return r ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The offline page, in the chart's own paper and ink (v12 Day tokens): it says this page was not saved,
+ *  links to what this device holds (the field pack's pages, saved Todays, a kept or v4 pack briefing), offers
+ *  a way to try again, and gives the agencies (pages and tap-to-call lines). */
+async function offlinePage(path, url) {
+  const saved = await savedPageFor(path, url);
   if (saved) return saved;
   const kept = await keptMeta();
+  const trips = await tripsMeta();
   const brief = await savedPageFor("/coast");
-  const when = kept && kept.keptAt ? new Date(kept.keptAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" }) : null;
+  const field = await fieldRecord();
+  const stamp = (t) => new Date(t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles", timeZoneName: "short" });
+  const when = kept && kept.keptAt ? stamp(kept.keptAt) : null;
+  const todays = (await savedTodays()).filter((t) => !(field && field.pages && field.pages.some((p) => p.ok && p.path === t.href)));
+  const fieldLinks = field && Array.isArray(field.pages) ? field.pages.filter((p) => p.ok && typeof p.path === "string" && p.path.startsWith("/")) : [];
   const opts = [
-    kept ? `<a class="btn" href="/coast/kept" data-testid="offline-kept">Open your kept briefing${kept.title ? `<small>${esc(kept.title)}${when ? `, kept ${esc(when)}` : ""}</small>` : ""}</a>` : "",
-    brief ? `<a class="btn" href="/coast">Open the saved briefing<small>from your field pack</small></a>` : "",
+    ...fieldLinks.map((p) => `<a class="btn" href="${esc(p.path)}" data-testid="offline-field">${esc(p.label)}${field.port && field.port.name ? ` at ${esc(field.port.name)}` : ""}<small>saved ${esc(stamp(field.savedAt))}, as it was then</small></a>`),
+    // the pilot's front door: the reader's own port, as it was when they saved it
+    ...todays.map((t) => `<a class="btn" href="${esc(t.href)}" data-testid="offline-today">Today${t.label ? ` at ${esc(t.label)}` : ""}<small>${t.at && !Number.isNaN(Date.parse(t.at)) ? `saved ${esc(stamp(t.at))}, as it was then` : "your saved copy"}</small></a>`),
+    trips ? `<a class="btn" href="/coast/trips" data-testid="offline-trips">Your trips<small>${trips.keptAt && !Number.isNaN(Date.parse(trips.keptAt)) ? `page kept ${esc(stamp(trips.keptAt))}; your trips are on this device` : "your trips are on this device"}</small></a>` : "",
+    kept ? `<a class="btn" href="/coast/kept" data-testid="offline-kept">Your kept briefing${kept.title ? `<small>${esc(kept.title)}${when ? `, kept ${esc(when)}` : ""}</small>` : ""}</a>` : "",
+    brief && !fieldLinks.length ? `<a class="btn" href="/coast">The saved briefing<small>from your field pack</small></a>` : "",
   ].join("");
   return new Response(
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · Neritic</title><style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#05090d;color:#e6eef2;font:16px/1.5 "IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-main{max-width:620px;margin:0 auto;padding:20px 16px 40px}.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em;font-size:18px;margin-bottom:36px}
-.caps{font:500 11px/1.3 "IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#a9bac5}
-h1{font:500 36px/1.08 Newsreader,Georgia,"Times New Roman",serif;letter-spacing:-.015em;margin:6px 0 10px}p{margin:0 0 12px;color:#a9bac5}
-.btn{display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:10px 14px;margin:0 0 10px;border:1px solid rgba(190,215,230,.32);border-radius:4px;color:#e6eef2;text-decoration:none;font-weight:500}
-.btn small{font-weight:400;color:#a9bac5;font-size:13.5px}.btn:focus-visible,a:focus-visible{outline:2px solid #74c7ff;outline-offset:2px}
-.agency{margin-top:28px;border-left:2px solid #f0a94a;padding-left:14px}.agency .caps{color:#f0a94a}.agency p{color:#e6eef2}
-.agency a{color:#e6eef2;text-decoration:underline;text-decoration-color:rgba(240,169,74,.5);text-underline-offset:4px;display:inline-flex;align-items:center;min-height:44px;margin-right:14px}
-.tel{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:300}
-</style></head><body><main data-testid="offline-page"><div class="brand">${MARK}<span>Neritic</span></div>
-<p class="caps">Offline</p><h1>You are offline</h1>
-<p>This page was not saved for offline use. A kept briefing (My Coast, &ldquo;Keep a dated copy&rdquo;) and a field pack open without a connection; download a pack while you have one.</p>
-${opts}<a class="btn" href="" style="border-style:dashed">Try again</a>
-<section class="agency"><p class="caps">Official notices · CDFW and CDPH</p>
-<p>No notice listed does not mean open or safe. The agencies are the authority; call before you go.</p>
-<p><a class="tel" href="tel:+18316492883">CDFW closure line (831) 649-2883</a><a class="tel" href="tel:+18005534133">CDPH biotoxin line 1 (800) 553-4133</a></p></section>
+:root{color-scheme:light;--paper:#fffefa;--ink:#0e1417;--ink-2:#2f4a5b;--rule-soft:rgba(14,20,23,.26);--reg:#a83ba6}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--paper:#1c2226;--ink:#e2e7e8;--ink-2:#aebbc0;--rule-soft:rgba(226,231,232,.24);--reg:#cf8ccd}}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:620px;margin:0 auto;padding:16px 16px 40px}.brand{font:500 22px/1 Literata,Georgia,serif;min-height:52px;display:flex;align-items:center;margin-bottom:24px}
+h1{font:500 36px/1.1 Literata,Georgia,serif;letter-spacing:-.012em;margin:0 0 12px;padding-top:12px;border-top:1.5px solid var(--ink)}p{margin:0 0 12px;color:var(--ink-2)}
+h2{font-size:16px;font-weight:600;margin:24px 0 8px}
+.btn{display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:8px 0;border-top:1px solid var(--rule-soft);color:var(--ink);text-decoration:none;font-weight:600}
+.btn small{font-weight:400;color:var(--ink-2);font-size:14px}.btn:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.agency{margin-top:32px;border-left:2px solid var(--reg);padding-left:12px}.agency p{color:var(--ink)}
+.agency a{color:var(--ink);display:inline-flex;align-items:center;min-height:44px;margin-right:16px;font-variant-numeric:tabular-nums}
+</style></head><body><main data-testid="offline-page"><div class="brand">Neritic</div>
+<h1>You are offline</h1>
+<p>This page was not saved for offline use. ${opts ? "This device holds these pages, each as it was when saved:" : "Save your port while you have a connection: Menu, Offline keeps Today, My Coast, Explore&rsquo;s latest frames and Research&rsquo;s record."}</p>
+${opts}<a class="btn" href="">Try again</a>
+<section class="agency"><h2>Official notices: CDFW and CDPH</h2>
+<p>No notice listed does not mean open. The agencies are the authority; call before you go.</p>
+<p><a href="tel:+18316492883">CDFW closure line (831) 649-2883</a><a href="tel:+18005534133">CDPH biotoxin line 1 (800) 553-4133</a></p></section>
 </main></body></html>`,
     { headers: { "Content-Type": "text/html; charset=utf-8", "x-neritic-offline": "1" } },
   );
@@ -229,7 +405,8 @@ async function briefingAnyTrip(url) {
 
 /** The pack's copy of a non-page request (exact address; a briefing for another trip of the same place). */
 async function packAnswer(req, url) {
-  const hit = (await packMatch(req)) || (url.origin === self.location.origin && url.pathname.startsWith("/_next/") ? await keptMatch(req) : null);
+  const same = url.origin === self.location.origin;
+  const hit = (await packMatch(req)) || (same && url.pathname.startsWith("/_next/") ? await keptMatch(req) : null) || (same ? await tripsMatch(req) : null);
   if (hit) return hit;
   return url.pathname === "/api/briefing" ? briefingAnyTrip(url) : null;
 }
@@ -243,7 +420,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         const c = await caches.open(STATIC);
-        const hit = (await c.match(req)) || (await packMatch(req)) || (await keptMatch(req));
+        const hit = (await c.match(req)) || (await packMatch(req)) || (await keptMatch(req)) || (await tripsMatch(req));
         if (hit) return hit;
         const r = await fetch(req);
         if (r.ok) c.put(req, r.clone()).catch(() => undefined); // storage full: served, not kept
@@ -271,17 +448,17 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         if (offline) {
-          const saved = (await packPage(req)) || (await keptPage(url.pathname));
+          const saved = (await packNavigate(req)) || (await keptPage(url.pathname)) || (await tripsPage(url.pathname));
           if (saved) return saved;
           // offline and the pack never held this page: say so at once (no request that cannot succeed)
-          if (!PACK_PAGE[url.pathname] && (await hasPack())) return offlinePage(url.pathname);
+          if (!hasPackPage(url) && (await hasPack())) return offlinePage(url.pathname, url);
         }
         try {
           // a slow network gives way to the pack after the deadline: the saved copy of this page, else
           // the short offline page (with a way to try again); with no pack at all, the network is waited for
-          return await withDeadline(req, async () => (await packPage(req)) || offlinePage(url.pathname), (await hasPack()) ? DEADLINE_MS : 0);
+          return await withDeadline(req, async () => (await packNavigate(req)) || (await tripsPage(url.pathname)) || offlinePage(url.pathname, url), (await hasPack()) ? DEADLINE_MS : 0);
         } catch {
-          return (await packPage(req)) || (await keptPage(url.pathname)) || offlinePage(url.pathname);
+          return (await packNavigate(req)) || (await keptPage(url.pathname)) || (await tripsPage(url.pathname)) || offlinePage(url.pathname, url);
         }
       })(),
     );

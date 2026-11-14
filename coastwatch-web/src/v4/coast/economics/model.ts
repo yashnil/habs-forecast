@@ -1,5 +1,5 @@
-import { usd } from "@/lib/tripEconomics";
-import { evaluateTrip, fieldLabel, type Audience as EconAudience, type FieldKey, type Output, type TripEvaluation } from "@/lib/tripEvaluation";
+import { LIMITS, usd } from "@/lib/tripEconomics";
+import { evaluateTrip, fieldLabel, type Audience as EconAudience, type FieldKey, type Output, type TripEvaluation, type WeightUnit } from "@/lib/tripEvaluation";
 import { draftInputs, type Draft } from "@/lib/tripEconomicsStore";
 import type { Audience } from "@/lib/coast";
 
@@ -11,8 +11,34 @@ import type { Audience } from "@/lib/coast";
 /** Recreational and shellfish trips are cost-only (nothing is sold); commercial and "any" get the full worksheet. */
 export const econAudience = (a: Audience): EconAudience => (a === "recreational" || a === "shellfish" ? "recreational" : "commercial");
 
-export function evaluateDraft(d: Draft, a: Audience): TripEvaluation {
-  return evaluateTrip(draftInputs(d), { audience: econAudience(a) });
+export function evaluateDraft(d: Draft, a: Audience, weight?: WeightUnit): TripEvaluation {
+  return evaluateTrip(draftInputs(d), { audience: econAudience(a), weight });
+}
+
+/** A break-even fuel price as the page says it: past the highest price the worksheet takes, only that it is past it. */
+export const fuelBreakEvenWords = (v: number) => (v > LIMITS.usdPerGal ? `above $${LIMITS.usdPerGal}/gal` : `$${v.toFixed(2)}/gal`);
+
+/** What the sensitivity grid holds still as price and catch move. */
+export const SENSITIVITY_HELD = "Fuel, bait, other costs and day-rate pay stay as entered.";
+
+/**
+ * The vertical range of the waterfall: from the lowest point the money reaches to the larger of gross
+ * and total deductions. `deductions` run in row order; an unknown term ends the running position,
+ * because later terms have no known place.
+ */
+export function waterfallDomain(gross: number | null, deductions: (number | null)[], net: number | null): { hi: number; lo: number } {
+  const total = deductions.reduce<number>((a, b) => a + (b ?? 0), 0);
+  let running = gross;
+  let lo = Math.min(0, net ?? 0);
+  for (const d of deductions) {
+    if (running === null) break;
+    if (d === null) running = null;
+    else {
+      running -= d;
+      lo = Math.min(lo, running);
+    }
+  }
+  return { hi: Math.max(gross ?? 0, total, 1), lo };
 }
 
 export const money = (v: number | null, signed = false) => usd(v, { signed });

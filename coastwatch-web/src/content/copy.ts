@@ -221,28 +221,28 @@ export const ABOUT = {
   lede:
     "Neritic is an independent research project, published as a research preview: no independent scientist or agency has reviewed it, and it is not a regulatory or seafood-safety service. It brings together the public information about harmful algal blooms along California’s coast: official notices, NOAA’s bloom forecast, satellite and shore-station measurements, and past fisheries landings. Each is labelled for what it is.",
   kindsIntro:
-    "Every page uses the same four colours, and they never stand for anything else. A forecast is never shown as a measurement, chlorophyll is never shown as toxin, and history is never shown as a prediction.",
+    "Every page marks what a value is with the same small glyphs, and they never stand for anything else: a filled dot is measured, a half-filled dot was measured more than 30 days ago, a ring is an official record not yet checked by a person, a dashed mark is predicted or modelled, and a dotted box is no data. A forecast is never shown as a measurement, an estimate is never shown as an observation, chlorophyll is never shown as toxin, and history is never shown as a prediction.",
   kinds: [
     {
       kind: "official",
       name: "Notices from CDFW and CDPH",
       text: "Closures, advisories and quarantines, quoted from the agencies’ pages. They come first on every page. They are transcribed and not yet checked by a person, so the agency pages are always the authority.",
-      where: "See the notices on the map",
-      href: "/",
+      where: "Official notices",
+      href: "/notices",
     },
     {
       kind: "model",
       name: "NOAA’s C-HARM forecast",
       text: "The modelled probability of Pseudo-nitzschia and of domoic acid, the toxin it can produce, at 3 km, for today and the next three days. A probability, not a measurement and not a closure decision.",
-      where: "Ocean Map",
-      href: "/",
+      where: "Explore California Waters",
+      href: "/explore",
     },
     {
       kind: "measured",
       name: "Satellite and shore-station measurements",
       text: "Chlorophyll seen from space (algae biomass, not toxin), surface currents from HF radar, and water samples from CalHABMAP piers tested for domoic acid and Pseudo-nitzschia, each with its own date.",
-      where: "Bloom Intelligence",
-      href: "/bloom",
+      where: "Research",
+      href: "/research",
     },
     {
       kind: "historical",
@@ -267,7 +267,7 @@ export const ABOUT = {
       "Neritic does not run those research models. Its forecast is NOAA’s operational C-HARM, and its observations come from the agencies below. The publication covers the research, not this application: Neritic has not been peer reviewed or reviewed by an independent HAB scientist.",
   },
   providersIntro:
-    "Neritic reads public data from these providers every six hours, checks it against the source, and shows the last good data with its own dates when a source fails.",
+    "Neritic reads public data from these providers, most of it every six hours and the live ocean, buoy, tide and forecast sources when a page needs them; it checks it against the source, and shows the last good data with its own dates when a source fails.",
   providers: [
     { name: "NOAA C-HARM v3.1", what: "Bloom and domoic acid forecast (NOAA CoastWatch West Coast ERDDAP)" },
     { name: "NOAA CoastWatch, NASA GIBS", what: "Satellite chlorophyll: Sentinel-3 OLCI 300 m, VIIRS 750 m (NOAA-21, NOAA-20)" },
@@ -276,6 +276,9 @@ export const ABOUT = {
     { name: "NOAA Fisheries FOSS, BLS CPI-U", what: "Commercial landings since 2015, and the inflation index for constant dollars" },
     { name: "CDFW, CDPH", what: "Official closures, advisories and landing ports" },
     { name: "OpenFreeMap, OpenMapTiles, OpenStreetMap; NOAA NCEI", what: "Basemap, coastline and seafloor relief" },
+    { name: "NOAA CO-OPS WCOFS", what: "Ocean model guidance: surface currents and temperature, about 4 km, 3-hourly; NOAA labels it developmental. Read when you open Explore" },
+    { name: "NOAA CoastWatch DINEOF (Liu & Wang 2023)", what: "Gap-filled chlorophyll, 2 km daily: an estimate where satellites saw nothing, not an observation (CC0). Read when you open Explore" },
+    { name: "NOAA NDBC, NOAA CO-OPS, National Weather Service", what: "Buoy wind, waves and water temperature; tide predictions and water temperature; coastal waters forecasts. Read when a page needs them" },
   ],
   repo: "https://github.com/yashnil/habs-forecast",
   review: [
