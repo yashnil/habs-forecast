@@ -54,6 +54,15 @@ export function ExploreLegend({ product, frame, currents, currentsLine, about }:
     body = (
       <>
         <RampLegend title="Chlorophyll" unit="mg/m³" steps={CHL_STEPS} domain={CHL_DOMAIN} scale="log" ticks={CHL_TICKS} noView className={s.legend} />
+        <ul className={s.keys} aria-label="Marks">
+          {/* v15.1: past the area the sensor saw this week is not cloud: its own plain tint */}
+          <li data-testid="nx-key-outside-area">
+            <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+              <rect x="0.5" y="0.5" width="39" height="15" className={s.swatchArea} />
+            </svg>
+            <span>Plain: outside this layer&rsquo;s area</span>
+          </li>
+        </ul>
         {frame.besideLandLeftOut ? (
           <ul className={s.keys} aria-label="Marks">
             {/* its own key: not cloud ("no view") and not a model's footprint ("outside the model") */}

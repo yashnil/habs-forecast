@@ -1,10 +1,10 @@
 "use client";
 
 import { useId, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Button, range, sig, useElementWidth } from "@/nx/ds";
+import { Button, day, range, sig, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
 import { axisLabels, axisX, frameCount, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
-import { LAYER_LABEL, layerKindWord, oldMark } from "./words";
+import { isOld, LAYER_LABEL, layerKindWord, oldMark } from "./words";
 import s from "./explore.module.css";
 
 /**
@@ -134,6 +134,7 @@ function HoursStrip({ model, currentId, onCurrent, width, on }: { model: Explore
   const HT = T - meanW;
   const step = hours.length > 1 ? HT / hours.length : HT;
   const maxVol = Math.max(0.0001, ...hours.map((h) => h.volume ?? 0));
+  const old = hours.length > 0 && isOld(hours[hours.length - 1].fresh);
   const pick = (e: PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - r.left;
@@ -163,10 +164,14 @@ function HoursStrip({ model, currentId, onCurrent, width, on }: { model: Explore
     right = x + w;
   });
   return (
-    <div className={s.railRow} data-active={on ? "1" : "0"} data-off={on ? undefined : "1"} style={{ height: ROW_ACTIVE + 18 }} data-testid="nx-rail-hours">
+    <div className={s.railRow} data-active={on ? "1" : "0"} data-off={on ? undefined : "1"} data-old={old ? "1" : "0"} style={{ height: ROW_ACTIVE + 18 }} data-testid="nx-rail-hours">
+      {/* v15.1: the hours are their own axis, dated, never read against the days' "Now" */}
       <span className={s.railLabel}>
         Currents
-        <small className={s.railNote}>by the hour</small>
+        <small className={s.railNote} data-testid="nx-hours-date">
+          {hours.length ? (day(hours[0].time) === day(hours[hours.length - 1].time) ? day(hours[0].time) : `${day(hours[0].time)}–${day(hours[hours.length - 1].time).replace(/^[A-Z][a-z]+ /, "")}`) : "by the hour"}
+          {old ? <b className={s.railOld}> old</b> : null}
+        </small>
       </span>
       <div className={s.railTrack} onPointerDown={pick} onKeyDown={keys} role="radiogroup" aria-label="Current hours">
         <svg width={T} height={ROW_ACTIVE + 18} className={s.railSvg} aria-hidden="true">
@@ -325,8 +330,13 @@ export function TimeRail({ model, product, frameId, onFrame, onProduct, currents
           {tracks.map((t, i) => (
             <TrackRow key={t.id} model={model} product={product} track={t} active height={i === 0 ? ROW_ACTIVE : ROW} frameId={frameId} onFrame={onFrame} width={width} hatchId={hatchId} hatchPastId={hatchPastId} plain={!all} />
           ))}
-          {model.currents && currentsOn ? <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on /> : null}
         </div>
+        {/* below the days and their "Now" line: the radar's hours on their own dated axis */}
+        {model.currents && currentsOn ? (
+          <div className={s.hoursBlock}>
+            <HoursStrip model={model} currentId={currentId} onCurrent={onCurrent} width={width} on />
+          </div>
+        ) : null}
       </div>
       <div className={s.railMore}>
         <Button variant="text" aria-expanded={more} aria-controls={moreId} onClick={() => setMore((v) => !v)} data-testid="nx-rail-more">

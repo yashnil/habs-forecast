@@ -65,6 +65,12 @@ export type ChartScene = {
    * statewide view keeps the port marked, but its view is the whole coast: "Whole coast", not "Back to Moss Landing")
    */
   refitLabel?: string;
+  /**
+   * how long the camera's flight to this view lasts, ms, instead of the distance-based 0.5–1.15 s: a deliberate
+   * flight for a change of scale (Explore California Waters: a port to the whole coast and back). Reduced motion
+   * still cuts.
+   */
+  flightMs?: number;
 };
 
 let current: ChartScene | null = null;
