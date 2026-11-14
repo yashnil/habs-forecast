@@ -695,7 +695,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         {phone ? (
           <StationReadout pick={pick} stations={model.stations} buoys={model.buoys} now={nowIso} place={key} onClose={() => setPick(null)} />
         ) : (
-          <Ticket at={{ lon: pickAt.lon, lat: pickAt.lat }} side={f && f.project(pickAt.lon, pickAt.lat).x > f.viewport.width * 0.55 ? "west" : "east"} lead={false} anchorY={48} width={340} label="Station" className={s.readTicket}>
+          <Ticket at={{ lon: pickAt.lon, lat: pickAt.lat }} side={f && f.project(pickAt.lon, pickAt.lat).x > f.viewport.width - 400 ? "west" : "east"} lead={false} anchorY={48} width={340} label="Station" className={s.readTicket}>
             <TicketMain>
               <StationReadout pick={pick} stations={model.stations} buoys={model.buoys} now={nowIso} place={key} onClose={() => setPick(null)} />
             </TicketMain>

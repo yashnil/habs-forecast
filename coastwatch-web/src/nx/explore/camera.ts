@@ -46,11 +46,13 @@ export const MEXICO_BORDER = 32.53;
 /**
  * Explore California Waters' statewide box: the whole coast from the Oregon border to Mexico, with the sea the
  * published grids cover west of Cape Mendocino (their west edge is 125.5 W) and a sliver of land east of San
- * Diego. A hair beyond each border, so the borders themselves are inside the view, never on its edge.
+ * Diego. Beyond each border, so the borders themselves are inside the view, never on its edge.
  */
 export const STATE_BOUNDS: Bounds = [
   [-125.2, MEXICO_BORDER - 0.08],
-  [-117.0, OREGON_BORDER + 0.08],
+  // the floating bar (brand, port, menu) is not part of the chart's covered insets: a degree of sea and Oregon to
+  // the north keeps the border itself below it at phone widths
+  [-117.0, OREGON_BORDER + 0.9],
 ];
 
 /**
