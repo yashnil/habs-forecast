@@ -1,0 +1,19 @@
+/* A kept briefing: dated sections ruled like a log, the warning in regulation's coral, print-ready. */
+.warning { margin: 0; padding: var(--s-4) 0 var(--s-4) var(--s-16); border-left: 3px solid var(--coral); font-size: var(--fs-15); font-weight: var(--w6); line-height: 1.4; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--s-8) var(--s-12); margin: var(--s-16) 0 0; }
+.section { margin-top: var(--s-32); break-inside: avoid; }
+.section h2, .others h2 { margin: 0; padding-bottom: var(--s-6); border-bottom: var(--rule) solid var(--ink); font-size: var(--fs-18); font-weight: var(--w7); }
+.section ul, .others ul { list-style: none; margin: 0; padding: 0; }
+.section li { display: grid; gap: var(--s-2); padding: var(--s-10) 0; border-bottom: var(--hair) solid var(--line); }
+.text { font-size: var(--fs-15); line-height: 1.4; }
+.text a, .tels a { color: var(--ink); font-weight: var(--w6); font-variant-numeric: tabular-nums; text-decoration: underline; text-decoration-color: var(--coral); text-underline-offset: 4px; }
+.lineNote { font-size: var(--fs-13); color: var(--ink-2); }
+.url { font-size: var(--fs-13); color: var(--ultra); overflow-wrap: anywhere; }
+.agencies { margin: var(--s-32) 0 var(--s-16); padding-left: var(--s-16); border-left: 3px solid var(--coral); }
+.agencies p { margin: var(--s-4) 0 0; }
+.agTitle { color: var(--coral-ink); font-weight: var(--w7); }
+.tels { display: flex; flex-wrap: wrap; gap: 0 var(--s-20); }
+.tels a { display: inline-flex; align-items: center; min-height: var(--target); }
+.others { margin-top: var(--s-48); }
+.others li { padding: var(--s-6) 0; }
+@media print { .actions, .others { display: none; } }
