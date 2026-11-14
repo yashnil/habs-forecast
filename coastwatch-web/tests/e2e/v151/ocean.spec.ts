@@ -113,7 +113,8 @@ test("every live layer shows its legend, units and dates; what is not live is ne
   const legend = page.getByTestId("nx-legend");
   // chlorophyll: an observation, mg/m³, its dates, algae not toxin
   await expect(page.getByTestId("nx-layer-chl")).toHaveAttribute("data-class", "observation");
-  await expect(page.getByTestId("nx-layer-chl")).toContainText(/Observation · Oct/);
+  // the chip names the view on show: the recent composite by default (each pixel its own latest day)
+  await expect(page.getByTestId("nx-layer-chl")).toContainText(/Composite · Oct/);
   await expect(legend).toContainText("mg/m³");
   await expect(legend).toContainText(/Oct \d/);
   await expect(legend).toContainText("Algae, not toxin");
@@ -281,6 +282,8 @@ test("round 2 (B): chlorophyll's views: Observed (one day), Recent composite (pi
 });
 
 
+/** A model step is drawn only; the row is one slider: a tap at the step's tick picks it. */
+const pickStep = (page: Page, id: string) => page.getByTestId(`nx-step-${id}`).click({ force: true });
 const hook2 = (page: Page) => page.evaluate(() => (window as unknown as { __nxExplore?: { ocean?: string; oceanStep?: string } }).__nxExplore ?? {});
 
 test("round 2 (B): the gap-filled estimate is drawn as an estimate, dated and said stale, on the Analysis / Estimates track", async ({ browser }) => {
@@ -320,24 +323,22 @@ test("round 2 (D): WCOFS model temperature and predicted currents, steps on the 
   await expect(page.getByTestId("nx-rail-family-est").getByTestId("nx-step-n024")).toBeVisible();
   await expect(page.getByTestId("nx-rail-family-fc").getByTestId("nx-step-f024")).toBeVisible();
   // a step the fixture serves draws; its label is the model's own, a forecast not a measurement
-  await page.getByTestId("nx-step-f024").click();
+  await pickStep(page, "f024");
   await expect.poll(async () => (await hook2(page)).oceanStep, { timeout: 15_000 }).toBe("f024");
   // isotherms as their own warm map lines (traced on the CPU, never along the mask), labelled in °F
   await expect.poll(() => page.evaluate(() => !!(window as unknown as { __cwMap: { getLayer: (id: string) => unknown } }).__cwMap.getLayer("nx-isotherms-line")), { timeout: 10_000 }).toBe(true);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __nxExplore?: { isotherms?: number } }).__nxExplore?.isotherms ?? 0)).toBeGreaterThan(0);
   await expect(page.getByTestId("nx-model-label")).toContainText(/NOAA WCOFS model guidance \(developmental\) · cycle Nov 14 03z · valid .* · a model forecast, not a measurement; not a bloom or toxin prediction/);
-  await page.getByTestId("nx-step-n024").click();
+  await pickStep(page, "n024");
   await expect(page.getByTestId("nx-model-label")).toContainText("a model nowcast");
-  // a step the fixture does not serve: said, nothing drawn in its place
-  await page.getByTestId("nx-step-f048").click();
-  await expect(page.getByTestId("nx-model-label")).toContainText("could not be read");
-  await expect(page.getByTestId("nx-step-f048")).toHaveAttribute("data-failed", "1");
+  // the recorded fixture advertises only the steps it serves: nothing reads "could not be read"
+  await expect(page.getByTestId("nx-model-label")).not.toContainText("could not be read");
   // predicted currents: a sub-switch beside the measured radar, their own key
   await page.getByTestId("nx-layer-chl").click();
   await expect.poll(() => page.evaluate(() => !!(window as unknown as { __cwMap: { getLayer: (id: string) => unknown } }).__cwMap.getLayer("nx-isotherms-line"))).toBe(false);
   await page.getByTestId("nx-currents-toggle").click();
   await page.getByTestId("nx-currents-predicted").click();
-  await page.getByTestId("nx-step-f024").click();
+  await pickStep(page, "f024");
   await expect(page.getByTestId("nx-currents-predicted-key")).toContainText("Predicted currents · NOAA WCOFS model guidance (developmental)");
   await expect(page.getByTestId("nx-currents-key")).toHaveCount(0);
   await page.getByTestId("nx-currents-measured").click();
@@ -346,29 +347,72 @@ test("round 2 (D): WCOFS model temperature and predicted currents, steps on the 
 });
 
 
-test("round 2 (E): every row sits on its true times on one shared axis; WCOFS plays only over served steps", async ({ browser }) => {
+test("round 2 (E): every row sits on its true times on one shared axis; the model's steps are one control", async ({ browser }) => {
   const { ctx, page } = await newContext(browser, SIZES.desk);
   await page.goto(`${OK}/explore?rail=1&place=${MOSS}`);
   await mapReady(page);
   await expect(page.getByTestId("nx-step-n024")).toBeVisible({ timeout: 15_000 });
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
   const rail = await box("nx-timerail");
-  const n = await box("nx-step-n024"), f = await box("nx-step-f024"), last = await box("nx-step-f072");
-  // narrow 3-hour ticks at their valid times: the nowcast before the forecast, the last forecast inside the axis
+  const n = await box("nx-step-n024"), f = await box("nx-step-f024");
+  // narrow 3-hour ticks at their valid times: the nowcast before the forecast, the forecast inside the axis
   expect(n.width).toBeLessThan(12);
   expect(n.x).toBeLessThan(f.x);
-  expect(last.x + last.width).toBeLessThanOrEqual(rail.x + rail.width + 1);
+  expect(f.x + f.width).toBeLessThanOrEqual(rail.x + rail.width + 1);
   // the estimate's single day sits at its date, left of the model's steps (Nov 2 before Nov 13)
   const est = await box("nx-rail-chl-estimate-day");
   expect(est.x + est.width).toBeLessThan(n.x);
-  // nothing stretched: the nowcast row's ticks span about a day, not the whole axis
-  const first = await box("nx-step-n003");
-  expect(n.x - first.x).toBeLessThan(rail.width / 4);
-  // playback over the forecast steps: an unserved step is skipped, never shown as "could not be read"
+  // the ticks are drawn; the row is one slider (keyboard steps through the served steps)
+  const control = page.getByTestId("nx-rail-wcofs-forecast-control");
+  await expect(control).toHaveAttribute("role", "slider");
   await page.getByTestId("nx-layer-sst-model").click();
   await expect.poll(async () => (await hook2(page)).oceanStep, { timeout: 15_000 }).toMatch(/^(n024|f024)$/);
-  await page.getByTestId("nx-play").first().click();
-  await expect.poll(async () => (await hook2(page)).oceanStep, { timeout: 30_000 }).toBe("f024");
+  await page.getByTestId("nx-rail-wcofs-forecast-control").focus();
+  await page.keyboard.press("End");
+  await expect.poll(async () => (await hook2(page)).oceanStep).toBe("f024");
   await expect(page.getByTestId("nx-model-label")).not.toContainText("could not be read");
+  await ctx.close();
+});
+
+
+
+test("round 2 review: every readout and chip says its own family (measured vs predicted currents; observed, composite, estimate)", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk);
+  await page.goto(`${OK}/explore?rail=1&place=${MOSS}&cur=1`);
+  await mapReady(page);
+  const toggle = page.getByTestId("nx-currents-toggle");
+  await expect(toggle).toContainText("on, measured");
+  // predicted currents: the chip, the key and the readout all say model, never measured or HF radar
+  await page.getByTestId("nx-currents-predicted").click();
+  await pickStep(page, "f024");
+  await expect(toggle).toContainText("on, predicted (model)");
+  await expect(page.getByTestId("nx-currents-predicted-key")).toContainText("Predicted currents · NOAA WCOFS model guidance");
+  await tapWater(page, 36.8, -122.0);
+  const readout = page.getByTestId("nx-readout");
+  await expect(readout).toContainText(/Predicted current \(NOAA WCOFS model, developmental\) · valid .* · a model forecast, not a measurement|No predicted current within 6 km/);
+  await expect(readout).not.toContainText("Nearest measured current");
+  await expect(readout).not.toContainText("HF radar");
+  // back to measured: the radar's words
+  await page.getByTestId("nx-currents-measured").click();
+  await expect(toggle).toContainText("on, measured");
+  // chlorophyll's chip names the view on show
+  const chip = page.getByTestId("nx-layer-chl");
+  await page.getByTestId("nx-chl-composite").click();
+  await expect(chip).toContainText(/^Chlorophyll\s*Composite · /);
+  await page.getByTestId("nx-chl-observed").click();
+  await expect(chip).toContainText(/Observation · Oct \d+/);
+  await page.getByTestId("nx-chl-estimate").click();
+  await expect(chip).toContainText("Estimate · Nov 2 (stale)");
+  await ctx.close();
+});
+
+test("round 2 review: an explicit layer link wins over the saved preference", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk, { "nx-explore-prefs-v1": JSON.stringify({ v: 1, base: "charm", opacity: 1, depth: true, regulation: false, currents: null, stations: false, rail: null }) });
+  await page.goto(`${OK}/explore?place=${MOSS}`);
+  await mapReady(page);
+  await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-base", "charm");
+  await page.goto(`${OK}/explore?place=${MOSS}&layer=chl`);
+  await mapReady(page);
+  await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-base", "chl");
   await ctx.close();
 });

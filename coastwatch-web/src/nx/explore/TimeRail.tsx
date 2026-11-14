@@ -3,7 +3,7 @@
 import { useId, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { Button, day, Micro, range, sig, time, useElementWidth } from "@/nx/ds";
 import type { CurrentFrame, ExploreFrame, ExploreModel, ExploreProduct, ProductId, Track } from "./model";
-import { axisLabels, axisLength, axisX, frameCount, hourX, nearestFrame, nearestHour, nowX, productSpan } from "./timeline";
+import { axisLabels, axisLength, axisX, frameCount, hourX, nearestFrame, nowX, productSpan } from "./timeline";
 import { isOld, LAYER_LABEL, layerKindWord, oldMark } from "./words";
 import s from "./explore.module.css";
 
@@ -77,11 +77,13 @@ function AxisStepRow({ model, label, steps, selected, failed, onStep, width, tes
   const long = last.kind === "nowcast" ? `to ${day(last.valid_time)}, ${time(last.valid_time)}` : `valid to ${day(last.valid_time)}, ${time(last.valid_time)}`;
   const short = `to ${day(last.valid_time)}`;
   const w = (t: string) => t.length * 7.2;
+  const sel = steps.find((x) => x.id === selected);
+  const selectedWords = sel ? `${sel.kind === "nowcast" ? "Nowcast" : "Forecast"}, valid ${day(sel.valid_time)}, ${time(sel.valid_time)}` : "no step chosen";
   const placed = lx + 4 + w(long) < T ? { text: long, x: lx + 4, anchor: "start" as const } : fx - w(long) > 0 ? { text: long, x: fx, anchor: "end" as const } : lx + 4 + w(short) < T ? { text: short, x: lx + 4, anchor: "start" as const } : fx - w(short) > 0 ? { text: short, x: fx, anchor: "end" as const } : null;
   return (
     <div className={s.railRow} style={{ height: STEP_ROW }} data-testid={testid}>
       <span className={s.railLabel}>{label}</span>
-      <div className={s.railTrack} role="radiogroup" aria-label={`${label} steps`} style={{ overflow: "hidden" }}>
+      <div className={s.railTrack} style={{ overflow: "hidden" }}>
         <svg width={T} height={STEP_ROW} className={s.railSvg} aria-hidden="true">
           <line x1={0} x2={T} y1={STEP_ROW - 0.5} y2={STEP_ROW - 0.5} className={s.railBase} />
           <line x1={lx} x2={lx} y1={2} y2={STEP_ROW - 1} className={s.railLatest} />
@@ -91,21 +93,46 @@ function AxisStepRow({ model, label, steps, selected, failed, onStep, width, tes
             </text>
           ) : null}
         </svg>
-        {steps.map((st) => (
-          // design-lint-allow raw-button: a model step at its valid time on the axis (a radio drawn as a tick), like the rail's frames
-          <button
-            key={st.id}
-            type="button"
-            role="radio"
-            aria-checked={st.id === selected}
-            aria-label={`${st.kind === "nowcast" ? "Nowcast" : "Forecast"}, valid ${day(st.valid_time)}, ${time(st.valid_time)}${failed.has(st.id) ? ", could not be read" : ""}`}
-            className={s.axisStep}
-            data-failed={failed.has(st.id) ? "1" : undefined}
-            style={{ left: px(st.valid_time) - tick / 2, width: tick }}
-            onClick={() => onStep(st.id)}
-            data-testid={`nx-step-${st.id}`}
-          />
-        ))}
+        {/* one control for the whole row (a slider over the steps): a tap picks the nearest step, the arrow keys step
+            through the served ones; the 3-hour ticks are drawn only, so no target is ever narrower than its neighbour */}
+        <svg width={T} height={STEP_ROW} className={s.railSvg} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }} aria-hidden="true">
+          {steps.map((st) => (
+            <rect key={st.id} x={px(st.valid_time) - tick / 2} y={4} width={tick} height={STEP_ROW - 9} rx={1} className={failed.has(st.id) ? s.axisTickFailed : st.id === selected ? s.axisTickOn : s.axisTick} data-testid={`nx-step-${st.id}`} data-on={st.id === selected ? "1" : "0"} data-failed={failed.has(st.id) ? "1" : undefined} />
+          ))}
+        </svg>
+        <div
+          role="slider"
+          tabIndex={0}
+          aria-label={`${label} steps`}
+          aria-valuemin={0}
+          aria-valuemax={steps.length - 1}
+          aria-valuenow={Math.max(0, steps.findIndex((x) => x.id === selected))}
+          aria-valuetext={selectedWords}
+          className={s.axisSlider}
+          data-testid={`${testid}-control`}
+          onPointerDown={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - r.left;
+            let best = steps[0], d = Infinity;
+            for (const st of steps) {
+              const dd = Math.abs(px(st.valid_time) - x);
+              if (dd < d) {
+                d = dd;
+                best = st;
+              }
+            }
+            onStep(best.id);
+          }}
+          onKeyDown={(e) => {
+            const ok = steps.filter((x) => !failed.has(x.id));
+            if (!ok.length) return;
+            const i = ok.findIndex((x) => x.id === selected);
+            const to = e.key === "ArrowRight" || e.key === "ArrowUp" ? i + 1 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? ok.length - 1 : null;
+            if (to === null) return;
+            e.preventDefault();
+            onStep(ok[Math.max(0, Math.min(ok.length - 1, to < 0 ? 0 : to))].id);
+          }}
+        />
       </div>
     </div>
   );
@@ -187,6 +214,12 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
     if (f) onFrame(product, f);
   };
   const measured = product.kind === "measured";
+  // hit areas never overlap (every control is its own top element at any width): a latest view's bracket is the
+  // row's top strip, the single days below it, each exactly its own day
+  const bracketed = measured && frames.some((f) => f.start !== f.end);
+  const strip = Math.min(12, Math.floor(H / 2));
+  const hitStyle = (f: ExploreFrame, a: number, b: number) =>
+    measured && f.start !== f.end ? { left: a, width: Math.max(2, b - a), top: 0, height: strip } : { left: a, width: Math.max(2, b - a), top: bracketed ? strip + 1 : 0, bottom: 0 };
   const last = frames.map((f) => f.end).filter(Boolean).sort().pop() ?? null;
   // with the sources folded away, the row is named for what it shows, not the satellite
   const name = plain ? LAYER_LABEL[product.id] : track.id === "viirs" ? "VIIRS" : track.id === "olci" ? "OLCI" : product.id === "chl" ? "Chlorophyll" : product.id === "sst" ? "Temperature" : product.id === "charm" ? "C-HARM" : "Outlook";
@@ -242,7 +275,7 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
               aria-checked={f.id === frameId && active}
               tabIndex={f.id === frameId && active ? 0 : frames[0].id === f.id && !active ? 0 : -1}
               className={s.railHit}
-              style={{ left: a, width: Math.max(8, b - a) }}
+              style={hitStyle(f, a, b)}
               aria-label={frameWords(f)}
               data-testid={`nx-frame-${f.id}`}
               onClick={() => onFrame(product, f)}
@@ -254,101 +287,87 @@ function TrackRow({ model, product, track, active, height, frameId, onFrame, wid
   );
 }
 
-function HoursStrip({ model, currentId, onCurrent, width, on, nowAt }: { model: ExploreModel; currentId: string | null; onCurrent: (f: CurrentFrame) => void; width: number; on: boolean; /** the days' Now line, px into the track: the hours end visibly before it */ nowAt?: number }) {
-  const hours = (model.currents?.frames ?? []).filter((f) => !f.mean);
+function HoursStrip({ model, currentId, onCurrent, width, on }: { model: ExploreModel; currentId: string | null; onCurrent: (f: CurrentFrame) => void; width: number; on: boolean; nowAt?: number }) {
+  // the radar's hours at their true times on the shared day axis (round 2): narrow bars at their real hours, one
+  // slider control over the row (taps pick the nearest hour, arrows step), the 24 h mean its own button by the label
+  const hours = (model.currents?.frames ?? []).filter((f) => !f.mean).sort((a, b) => a.time.localeCompare(b.time));
   const mean = model.currents?.frames.find((f) => f.mean) ?? null;
   const T = Math.max(40, width - LABEL_W);
-  const meanW = mean ? 64 : 0;
-  // v15.1 review: the hours' own axis ends a clear gap before the days' Now line, so no hour (the selected one least
-  // of all) ever reads as "now"
-  const limit = nowAt != null && nowAt > T * 0.5 ? Math.min(T, nowAt - 32) : T;
-  const HT = limit - meanW;
-  const step = hours.length > 1 ? HT / hours.length : HT;
+  const H = ROW_ACTIVE - 16;
+  const px = (f: CurrentFrame) => hourX(model.axis, f) * T;
+  const hourW = Math.max(1, T / (axisLength(model.axis) * 24));
   const maxVol = Math.max(0.0001, ...hours.map((h) => h.volume ?? 0));
   const old = hours.length > 0 && isOld(hours[hours.length - 1].fresh);
-  const pick = (e: PointerEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    if (mean && px > HT) return onCurrent(mean);
-    const f = nearestHour(hours, Math.max(0, Math.min(1, (px - step / 2) / Math.max(1, HT - step))));
-    if (f) onCurrent(f);
-  };
-  const keys = (e: KeyboardEvent<HTMLDivElement>) => {
-    const all = mean ? [...hours, mean] : hours;
-    const i = all.findIndex((f) => f.id === currentId);
-    const to = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? all.length - 1 : null;
-    if (to === null) return;
-    e.preventDefault();
-    onCurrent(all[Math.max(0, Math.min(all.length - 1, to))]);
-  };
-  // hour labels at 12 and 6 o'clock, thinned so each keeps its own room (about 7.5 px a character at 14 px)
-  const tickText = (h: CurrentFrame) => h.label.replace(":00", "").replace(" PT", "");
-  const ticks: CurrentFrame[] = [];
-  let right = -Infinity;
-  hours.forEach((h, i) => {
-    if (i !== 0 && !/^(12|6):00 (AM|PM)/.test(h.label)) return;
-    const x = i * step + 1;
-    if (x < right + 10) return;
-    const w = tickText(h).length * 7.5;
-    if (x + w > HT) return;
-    ticks.push(h);
-    right = x + w;
-  });
+  const sel = hours.find((h) => h.id === currentId) ?? null;
+  const last = hours[hours.length - 1];
+  const lx = last ? px(last) + hourW : 0;
   return (
-    <div className={s.railRow} data-active={on ? "1" : "0"} data-off={on ? undefined : "1"} data-old={old ? "1" : "0"} style={{ height: ROW_ACTIVE + 18 }} data-testid="nx-rail-hours">
-      {/* v15.1: the hours are their own axis, dated, never read against the days' "Now" */}
+    <div className={s.railRow} data-active={on ? "1" : "0"} data-off={on ? undefined : "1"} data-old={old ? "1" : "0"} style={{ height: H }} data-testid="nx-rail-hours">
       <span className={s.railLabel}>
         Currents
-        <small className={s.railNote} data-testid="nx-hours-date">
-          {hours.length ? (day(hours[0].time) === day(hours[hours.length - 1].time) ? day(hours[0].time) : `${day(hours[0].time)}–${day(hours[hours.length - 1].time).replace(/^[A-Z][a-z]+ /, "")}`) : "by the hour"}
-          {old ? <b className={s.railOld}> old</b> : null}
-        </small>
+        {mean ? (
+          // design-lint-allow raw-button: the 24 h mean is one more frame of the hours, a radio beside its row's name
+          <button type="button" role="radio" aria-checked={on && currentId === mean.id} className={s.meanHit} onClick={() => onCurrent(mean)} aria-label={mean.stamp} data-testid={`nx-hour-${mean.id}`}>
+            24 h mean
+          </button>
+        ) : (
+          <small className={s.railNote} data-testid="nx-hours-date">
+            {old ? <b className={s.railOld}>old</b> : "by the hour"}
+          </small>
+        )}
       </span>
-      <div className={s.railTrack} onPointerDown={pick} onKeyDown={keys} role="radiogroup" aria-label="Current hours">
-        <svg width={T} height={ROW_ACTIVE + 18} className={s.railSvg} aria-hidden="true">
-          <line x1={0} x2={HT} y1={ROW_ACTIVE - 0.5} y2={ROW_ACTIVE - 0.5} className={s.railBase} />
-          {hours.map((h, i) => {
+      <div className={s.railTrack} style={{ overflow: "hidden" }}>
+        <svg width={T} height={H} className={s.railSvg} aria-hidden="true" style={{ pointerEvents: "none" }}>
+          <line x1={0} x2={T} y1={H - 0.5} y2={H - 0.5} className={s.railBase} />
+          {hours.map((h) => {
             const v = h.volume ?? 0;
-            const ht = Math.max(v > 0 ? 2 : 0, (v / maxVol) * (ROW_ACTIVE - 12));
-            const sel = on && h.id === currentId;
+            const ht = Math.max(v > 0 ? 2 : 0, (v / maxVol) * (H - 14));
             return (
-              <g key={h.id}>
-                {ht ? <rect x={i * step + 1} y={ROW_ACTIVE - ht} width={Math.max(1, step - 2)} height={ht} className={s.barMeasured} /> : null}
-                {sel ? <rect x={i * step + 0.75} y={1} width={Math.max(3, step - 1.5)} height={ROW_ACTIVE - 2} className={s.frameSel} fill="none" /> : null}
-              </g>
+              <rect key={h.id} x={px(h)} y={H - ht} width={hourW} height={ht} className={on && h.id === currentId ? s.barSelHour : s.barMeasured} data-testid={`nx-hour-${h.id}`} />
             );
           })}
-          {ticks.map((h) => {
-            const i = hours.indexOf(h);
-            return (
-              <text key={h.id} x={i * step + 1} y={ROW_ACTIVE + 15} className={s.railTick}>
-                {tickText(h)}
+          {last ? (
+            <>
+              <line x1={lx} x2={lx} y1={2} y2={H - 1} className={s.railLatest} />
+              <text x={lx + (lx + 110 < T ? 4 : -4)} y={12} textAnchor={lx + 110 < T ? "start" : "end"} className={s.railLatestText}>
+                {`latest ${time(last.time)}${old ? " (old)" : ""}`}
               </text>
-            );
-          })}
-          {mean ? (
-            <g>
-              <rect x={HT + 6} y={8} width={meanW - 8} height={ROW_ACTIVE - 16} className={on && currentId === mean.id ? s.frameSel : s.meanBox} fill="none" />
-              <text x={HT + 6 + (meanW - 8) / 2} y={ROW_ACTIVE / 2 + 5} textAnchor="middle" className={s.railTick}>
-                24 h
-              </text>
-            </g>
+            </>
           ) : null}
         </svg>
-        {[...hours, ...(mean ? [mean] : [])].map((h, i) => (
-          <button
-            key={h.id}
-            type="button"
-            role="radio"
-            aria-checked={h.id === currentId}
-            tabIndex={h.id === currentId ? 0 : -1}
-            className={s.railHit}
-            style={h.mean ? { left: HT + 4, width: meanW - 4 } : { left: i * step, width: Math.max(6, step) }}
-            aria-label={`${h.mean ? h.stamp : `${h.stamp}, measured`}${h.volume != null ? `, ${Math.round(h.volume * 100)} % of the radar's area` : ""}`}
-            data-testid={`nx-hour-${h.id}`}
-            onClick={() => onCurrent(h)}
+        {hours.length ? (
+          <div
+            role="slider"
+            tabIndex={0}
+            aria-label="Current hours"
+            aria-valuemin={0}
+            aria-valuemax={hours.length - 1}
+            aria-valuenow={Math.max(0, hours.findIndex((h) => h.id === currentId))}
+            aria-valuetext={sel ? `${sel.stamp}, measured${sel.volume != null ? `, ${Math.round(sel.volume * 100)} % of the radar's area` : ""}` : "no hour chosen"}
+            className={s.axisSlider}
+            data-testid="nx-rail-hours-control"
+            onPointerDown={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - r.left;
+              let best = hours[0], d = Infinity;
+              for (const h of hours) {
+                const dd = Math.abs(px(h) + hourW / 2 - x);
+                if (dd < d) {
+                  d = dd;
+                  best = h;
+                }
+              }
+              onCurrent(best);
+            }}
+            onKeyDown={(e) => {
+              const i = hours.findIndex((h) => h.id === currentId);
+              const to = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? hours.length - 1 : null;
+              if (to === null) return;
+              e.preventDefault();
+              onCurrent(hours[Math.max(0, Math.min(hours.length - 1, to))]);
+            }}
           />
-        ))}
+        ) : null}
       </div>
     </div>
   );
