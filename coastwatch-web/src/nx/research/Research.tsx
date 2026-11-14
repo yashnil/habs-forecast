@@ -16,6 +16,8 @@ import { ChartScene, type ChartScene as Scene } from "@/nx/chart/scene";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { openSheet } from "@/nx/shell/Margin";
 import { distanceKm } from "@/lib/grid";
+import { directionWords, modelCoverage, placeCoverage, stationsAround, whereWords } from "./coverage";
+import { Nearby } from "./Nearby";
 import { availabilityAll, chooseFocus, copyStart, emptyRange, exportCounts, inspectSample, latestWindow, modelCollapsed, nearestWithRecent, stationLatest, stepSample, visitTicks } from "./availability";
 import { download, svgFigure } from "./dom";
 import { citation, modelCsv, windowCsv } from "./exports";
@@ -28,6 +30,7 @@ import {
   DEFAULT_STATION,
   extentOf,
   figure,
+  NEAR_KM,
   inWin,
   LABEL,
   located,
@@ -256,6 +259,15 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const place = useMemo(() => resolvePlace(query.place, ports), [query.place, ports]);
   const choice = useMemo(() => chooseStation(stations, query, place, port), [stations, query, place, port]);
   const st = choice.station;
+  // v15.1: the place the page is read from (the link's place, else the reader's port): its stations, per variable
+  const ctxPlace = useMemo(() => (place ? { key: place.key, name: place.name, lat: place.lat, lon: place.lon } : port ? { key: port.key, name: port.name, lat: port.lat, lon: port.lon } : null), [place, port]);
+  const around = useMemo(() => (ctxPlace ? stationsAround(stations, ctxPlace, nowMs) : []), [stations, ctxPlace, nowMs]);
+  const reach = useMemo(() => (ctxPlace ? placeCoverage(stations, ctxPlace, nowMs) : []), [stations, ctxPlace, nowMs]);
+  const aroundExtent = useMemo<[number, number]>(() => {
+    const firsts = around.flatMap((r) => r.vars.filter((c) => c.first).map((c) => Date.parse(c.first!)));
+    return [firsts.length ? Math.min(...firsts) - 20 * DAY : nowMs - 5 * 365 * DAY, nowMs + 20 * DAY];
+  }, [around, nowMs]);
+  const farFromAll = ctxPlace != null && around.length > 0 && !around.some((r) => r.near);
 
   // ------------------------------------------------------------ the variable: the link's `var` whenever this station has ever measured it
   const { focus, askedMissing, measured } = useMemo(() => chooseFocus(st, query.v), [st, query.v]);
@@ -415,7 +427,15 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const position = selected ? focusPoints.findIndex((p) => p.i === selected.i) + 1 : null;
 
   // ------------------------------------------------------------ the record and the tools: a panel over the pass's main part
-  const [panel, setPanel] = useState<"record" | "tools" | null>(() => (query.section ? "tools" : null));
+  const [panel, setPanel] = useState<"record" | "tools" | "nearby" | null>(() => (query.section ? "tools" : null));
+  // v15.1: a place no station is near opens on its stations (distances, what each measures, when), never on a
+  // distant pier's record as if it were this water's; the reader opens a record from there
+  const autoNearby = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ctxPlace || query.station || query.section || autoNearby.current === ctxPlace.key) return;
+    autoNearby.current = ctxPlace.key;
+    if (farFromAll) setPanel("nearby");
+  }, [ctxPlace, query.station, query.section, farFromAll]);
   useEffect(() => {
     if (query.section) setPanel("tools");
   }, [query.section]);
@@ -471,6 +491,19 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
       }),
     );
   };
+  /** Opens a station on a variable from the stations near the place (the place is kept); `latest` jumps to its newest sample. */
+  const openStationVar = (id: string, vv: ObsVariableId, toLatest = false) => {
+    const target = stations.find((y) => y.station_id === id);
+    if (!target) return;
+    const tStrips = buildStrips(target, vv);
+    const tExt = extentOf(tStrips, nowMs);
+    const pts = tStrips.find((y) => y.v === vv)?.points ?? [];
+    const l = toLatest ? latestWindow(pts, tExt) : null;
+    const w = l?.win ?? openingWindow({ extent: tExt, from: null, to: null, range: null, day: null, focusTimes: pts.filter((p) => p.cls !== "rejected").map((p) => p.t) });
+    setPanel(null);
+    write(queryFor({ station: id, v: vv, win: w, place: query.place ?? ctxPlace?.key ?? null, back: query.back, day: l?.day ?? null }));
+  };
+  const exploreHref = `/explore?place=${encodeURIComponent(ctxPlace?.key ?? (st.nearest_port_code != null ? `port-${st.nearest_port_code}` : ""))}`;
   const showDetails = () => {
     openSheet("full");
     requestAnimationFrame(() =>
@@ -681,8 +714,23 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   // (as the prototype, the model's panel and a comparison take their room from it first)
   const overview = phone || chartH + brushH + 20 - (showModel ? 92 : 0) - (cmpStrip ? 90 : 0) >= 226;
 
+  // the open station seen from the place, when the arrival line does not already say it
+  const awayKm = ctxPlace ? distanceKm(ctxPlace.lat, ctxPlace.lon, st.lat, st.lon) : null;
+  const away =
+    ctxPlace && awayKm != null && !choice.arrival ? (
+      <span data-testid="research-away">
+        {awayKm > NEAR_KM
+          ? `${st.name} is ${whereWords({ km: awayKm, dir: directionWords(ctxPlace.lat, ctxPlace.lon, st.lat, st.lon) })} of ${ctxPlace.name}: its record is of that water, not ${ctxPlace.name}'s.`
+          : `${st.name}, ${whereWords({ km: awayKm, dir: directionWords(ctxPlace.lat, ctxPlace.lon, st.lat, st.lon) })} of ${ctxPlace.name}.`}
+      </span>
+    ) : null;
+  const nearbyBtn = ctxPlace ? (
+    <button type="button" className={x.nearbyLink} onClick={() => setPanel((p) => (p === "nearby" ? null : "nearby"))} aria-expanded={panel === "nearby"} data-testid="research-nearby-open">
+      {around.filter((r) => r.near).length ? `${count(around.filter((r) => r.near).length, "station")} near ${ctxPlace.name}` : `Stations near ${ctxPlace.name}`}
+    </button>
+  ) : null;
   const arrived =
-    choice.arrival || askedMissing || query.askedVar || query.back ? (
+    choice.arrival || askedMissing || query.askedVar || query.back || ctxPlace ? (
       <p className={x.arrived} data-testid="research-arrived">
         {choice.arrival ? (
           choice.arrival.near ? (
@@ -701,7 +749,9 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
             {LABEL[askedMissing]} isn&rsquo;t measured at {st.name}; the tabs show what is.
           </span>
         ) : null}
+        {away}
         {query.askedVar ? <span> &ldquo;{query.askedVar}&rdquo; isn&rsquo;t a quantity a shore station measures; the tabs show what this one does.</span> : null}
+        {nearbyBtn}
         {query.back ? (
           <Link href={query.back} className={s.back} data-testid="research-back">
             Back
@@ -1183,7 +1233,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
 
       <Pass label={`${st.name}: shore station record`} at={{ lon: st.lon, lat: st.lat }} stub={stub} stubWidth={340} className={x.pass} stubClassName={x.stub} data-testid="research-record" data-model={showModel || cmpStrip ? "" : undefined}>
         <div className={x.main} data-testid="research-chart" data-panel={panel ?? undefined}>
-          {!phone ? (
+          {!phone && panel !== "nearby" ? (
             <button type="button" className={x.toolsLink} onClick={() => setPanel((p) => (p === "tools" ? null : "tools"))} aria-expanded={panel === "tools"} data-testid="research-tools-open">
               {panel === "tools" ? "Close the tools" : "Table, exports, sources"}
             </button>
@@ -1254,7 +1304,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                       <div className={x.empty}>
                         {/* the source on the heading's row, so the actions keep to one row under any font's metrics */}
                         <div className={x.emptyTop}>
-                          <Micro glyph="none">Not collected in this range</Micro>
+                          <Micro glyph="none" data-testid="research-empty-kind" data-kind={empty.kind}>{empty.kind === "never" ? "Not collected at this station" : "Outside this window: no sample in this range"}</Micro>
                           <a href={st.source_url} target="_blank" rel="noreferrer" className={x.emptySource} data-testid="empty-source">
                             The record at SCCOOS ERDDAP ↗
                           </a>
@@ -1394,6 +1444,25 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
           {record && panel === "record" ? (
             <section id="rx-record" className={x.panel} aria-label="Sample record" data-testid="research-sample-record">
               <SampleRecordPanel record={record} n={position} total={focusPoints.length} short={SHORT[focus]} onClose={() => setPanel(null)} />
+            </section>
+          ) : null}
+          {ctxPlace && (phone || panel === "nearby") ? (
+            <section className={`${x.panel} ${x.nearbyPanel}`} aria-label={`Stations near ${ctxPlace.name}`} data-testid="research-nearby-panel" data-first={farFromAll || undefined}>
+              <Nearby
+                placeName={ctxPlace.name}
+                rows={around}
+                reach={reach}
+                model={modelCoverage(st)}
+                extent={aroundExtent}
+                now={nowMs}
+                selected={st.station_id}
+                focus={focus}
+                exploreHref={exploreHref}
+                drawTicks={drawn}
+                onOpen={(id, vv) => openStationVar(id, vv)}
+                onLatest={(id, vv) => openStationVar(id, vv, true)}
+                onClose={phone ? undefined : () => setPanel(null)}
+              />
             </section>
           ) : null}
           {phone || panel === "tools" ? (

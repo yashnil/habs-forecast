@@ -304,3 +304,16 @@
   .title { flex-basis: 100%; }
   .segArea { flex: 1; }
 }
+
+/* ------------------------------------------------------------ v15.1: the stations near the place */
+.nearbyLink {
+  margin-left: var(--s-10); padding: 0; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ultra-deep); white-space: nowrap;
+  text-decoration: underline dashed; text-underline-offset: 4px; text-decoration-thickness: 1.5px;
+}
+.nearbyLink:hover { color: var(--ultra); }
+.nearbyPanel { padding-top: var(--s-14); }
+@media (max-width: 640px) {
+  .nearbyLink { display: none; }
+  .nearbyPanel { order: 5; }
+  .nearbyPanel[data-first] { order: 2; margin-top: var(--s-4); padding-top: var(--s-10); }
+}
