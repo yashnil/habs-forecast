@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useEffect, useId, useLayoutEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import { clearCameraAnchor, setCameraAnchor, ticketMargin } from "@/nx/chart/anchor";
 import { useChartCover } from "@/nx/chart/cover";
 import { getFrame, onFrame, type ChartFrame } from "@/nx/chart/runtime";
@@ -249,9 +249,31 @@ export function TicketMain({ className, children, ...rest }: ComponentPropsWitho
 }
 
 /** The perforated stub under the main part: tabs, the panel, the actions. */
+/**
+ * The stub scrolls when its content outgrows the ticket (a long legend, wider fonts). A region that scrolls must be
+ * reachable from the keyboard (WCAG 2.1.1; axe scrollable-region-focusable), so while it overflows it becomes a named,
+ * focusable region; otherwise it adds no tab stop.
+ */
 export function TicketStub({ className, children, ...rest }: ComponentPropsWithoutRef<"div">) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const check = () => setScrolls(el.scrollHeight - el.clientHeight > 1 || el.scrollWidth - el.clientWidth > 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    for (const c of Array.from(el.children)) ro.observe(c);
+    const mo = new MutationObserver(check);
+    mo.observe(el, { childList: true, subtree: true, characterData: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, []);
   return (
-    <div className={cx(s.stub, className)} {...rest}>
+    <div ref={ref} className={cx(s.stub, className)} {...(scrolls ? { tabIndex: 0, role: "region", "aria-label": rest["aria-label"] ?? "More of this panel" } : {})} {...rest}>
       {children}
     </div>
   );
