@@ -1,9 +1,9 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { chromium, expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { chromium, expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { OK } from "../ports";
-import { MOSS, newContext, noSideways, NOW, planTrip, returning, SIZES, tripKeys } from "../v15/helpers";
+import { MOSS, newContext, noSideways, NOW, planTrip, returning, seed, serious, SIZES, tripKeys } from "../v15/helpers";
 
 /**
  * Neritic v15.1 cross-feature journey (DIRECTION §7, §8): exploration and trips complement each other.
@@ -15,8 +15,8 @@ import { MOSS, newContext, noSideways, NOW, planTrip, returning, SIZES, tripKeys
  * Plus the same transition under reduced motion (no flight, the final frame at once) and on a low-power device (no
  * WebGL: the static tier, where the statewide view is a baked picture and MapLibre never loads).
  *
- * Parts that need agent A's v15.1 entry point and statewide camera are `test.fixme` until A's branch is merged into
- * feat/neritic-v15.1; the parts the V15 app already supports run now.
+ * The entries are Today's own (nx-today-explore), the navigation's (nx-nav-explore / nx-tab-explore) and the trip
+ * workspace's (trip-open-explore); the address contract is src/nx/explore/links.ts.
  */
 
 // ---------------------------------------------------------------- geography
@@ -41,14 +41,91 @@ const atPort = (b: Bounds | null) => !!b && b.s < MOSS_LL.lat && b.n > MOSS_LL.l
 const mapReady = (page: Page) => expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
 const scene = (page: Page) => page.evaluate(() => (window as unknown as { __nxChart?: { scene: string | null } }).__nxChart?.scene ?? null);
 
-// ---------------------------------------------------------------- the v15.1 entry points (agent A)
+/**
+ * A returning reader whose device clock starts at the fixture instant and runs on. Only Date is shifted:
+ * page.clock (tests/e2e/v15/helpers.ts newContext) also fakes performance.now and requestAnimationFrame, which freezes
+ * Motion, so a panel can pass toBeVisible while it sits at opacity 0. The journey checks what a reader would see.
+ */
+async function runningContext(browser: Browser, size: { width: number; height: number } = SIZES.desk, o: { reducedMotion?: "reduce" } = {}) {
+  const ctx = await browser.newContext({ viewport: size, ...(size.width <= 640 ? { isMobile: true, hasTouch: true } : {}), reducedMotion: o.reducedMotion, storageState: { cookies: [], origins: [] } });
+  await seed(ctx, returning);
+  await ctx.addInitScript((now) => {
+    const Real = Date;
+    const off = now - Real.now();
+    class Shifted extends Real {
+      constructor(...a: []) {
+        if (a.length) super(...(a as unknown as [number]));
+        else super(Real.now() + off);
+      }
+      static now() {
+        return Real.now() + off;
+      }
+    }
+    (window as unknown as { Date: DateConstructor }).Date = Shifted as unknown as DateConstructor;
+  }, Date.parse(NOW));
+  const page = await ctx.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  return { ctx, page, errors };
+}
 
-/** "Explore California Waters" on Today: a visible entry, not the menu. */
-const exploreEntry = (page: Page) => page.getByTestId("nx-explore-entry").or(page.getByRole("link", { name: /explore california waters/i })).first();
-/** Inside the statewide map: back to the chosen port. */
-const backToPort = (page: Page) => page.getByTestId("nx-explore-port").or(page.getByRole("button", { name: /back to moss landing|moss landing/i })).first();
-/** Inside the statewide map: back to the trip the reader came from. */
-const backToTrip = (page: Page) => page.getByTestId("nx-explore-trip").or(page.getByRole("link", { name: /trip/i })).first();
+/** The element is on screen for real: in the viewport and fully opaque once its entrance has run. */
+async function onScreen(page: Page, testid: string) {
+  const el = page.getByTestId(testid).first();
+  await expect(el).toBeVisible();
+  await expect.poll(() => el.evaluate((e) => getComputedStyle(e).opacity), { timeout: 5_000, message: `${testid} fades in` }).toBe("1");
+}
+
+/**
+ * The whole coast is on screen and not under the page's own furniture (the bar, Explore's panel, the time dock):
+ * six points on the shore from the Oregon border (42.0 N) to the Mexican border (32.53 N). The topmost element at each
+ * point must belong to the chart.
+ */
+async function coastUncovered(page: Page) {
+  return page.evaluate(() => {
+    const m = (window as unknown as { __cwMap?: { project(ll: [number, number]): { x: number; y: number } } }).__cwMap;
+    if (!m) return ["no map"];
+    const canvas = document.querySelector(".maplibregl-canvas")!;
+    const box = canvas.getBoundingClientRect();
+    const map = canvas.closest("[data-testid=nx-map]") ?? canvas.parentElement!;
+    const bad: string[] = [];
+    const coast = [
+      ["Oregon border", [-124.21, 42.0]],
+      ["Cape Mendocino", [-124.41, 40.44]],
+      ["Golden Gate", [-122.48, 37.81]],
+      ["Point Conception", [-120.47, 34.45]],
+      ["Los Angeles harbor", [-118.27, 33.72]],
+      ["Mexican border", [-117.12, 32.53]],
+    ] as const;
+    for (const [name, ll] of coast) {
+      const p = m.project(ll as unknown as [number, number]);
+      const x = box.left + p.x;
+      const y = box.top + p.y;
+      if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) {
+        bad.push(`${name} off screen (${Math.round(x)}, ${Math.round(y)})`);
+        continue;
+      }
+      // what a reader sees there: the chart itself (its canvas or a mark drawn on it), or a piece of the page over it
+      const top = document.elementFromPoint(x, y);
+      if (top && !map.contains(top)) {
+        const owner = top.closest("[data-testid]");
+        bad.push(`${name} under ${owner?.getAttribute("data-testid") ?? top.tagName.toLowerCase() + "." + top.className} (${Math.round(x)}, ${Math.round(y)})`);
+      }
+    }
+    return bad;
+  });
+}
+
+// ---------------------------------------------------------------- the v15.1 entry points (agent A, src/nx/explore/**)
+
+/** Explore California Waters on Today itself (src/nx/today/ExploreEntry.tsx). */
+const exploreEntry = (page: Page) => page.getByTestId("nx-today-explore");
+/** The same from the navigation: the bar's pill on a desk, the tab bar on a phone (src/nx/shell/Shell.tsx). */
+const navExplore = (page: Page) => page.getByTestId("nx-nav-explore").or(page.getByTestId("nx-tab-explore")).filter({ visible: true }).first();
+/** Inside the statewide map: back to the chosen port (Explore.tsx "Back to <port>"). */
+const backToPort = (page: Page) => page.getByTestId("nx-back-port");
+/** Inside Explore: back to where the reader came from (links.ts backLink: Today, Research or one saved trip). */
+const backFrom = (page: Page) => page.getByTestId("nx-back-from");
 
 /** The device has no WebGL at all: the chart host chooses the static tier (as tests/e2e/nx-shell.spec.ts emulates it). */
 async function lowPower(ctx: BrowserContext) {
@@ -101,9 +178,9 @@ test.describe("v15.1 journey: a saved trip, the whole coast, and back", () => {
     await ctx.close();
   });
 
-  test.fixme("v15.1: Today → Explore California Waters → statewide → zoom to the port → back to the saved trip", async ({ browser }) => {
+  test("v15.1: Today → Explore California Waters → statewide → zoom to the port → back to the saved trip", async ({ browser }) => {
     test.setTimeout(150_000);
-    const { ctx, page, errors } = await newContext(browser);
+    const { ctx, page, errors } = await runningContext(browser);
     const id = await planTrip(page);
     const before = await tripState(page, id);
 
@@ -116,39 +193,81 @@ test.describe("v15.1 journey: a saved trip, the whole coast, and back", () => {
     await entry.click();
 
     // the camera animates from the port to the whole coast (it passes through intermediate frames)
-    await expect(page).toHaveURL(/\/explore/);
-    await expect(page.getByTestId("nx-explore")).toBeVisible();
-    await expect.poll(async () => statewide(await bounds(page)), { timeout: 15_000, message: "statewide: Oregon border to Mexico" }).toBe(true);
+    // the flight passes through frames that are neither the port nor the state
+    const seen: boolean[] = [];
+    await expect
+      .poll(async () => {
+        const b = await bounds(page);
+        seen.push(!atPort(b) && !statewide(b));
+        return statewide(b);
+      }, { timeout: 15_000, intervals: [100], message: "statewide: Oregon border to Mexico" })
+      .toBe(true);
+    expect(seen.some(Boolean), "the camera flies from the port to the coast (intermediate frames)").toBe(true);
+    await expect(page).toHaveURL(/\/explore\?view=coast&place=port-592/);
+    await expect(page.getByTestId("nx-explore-heading")).toHaveText("Explore California Waters");
+    await onScreen(page, "nx-explore-panel");
     await expect(page.getByTestId("nx-legend").or(page.getByTestId("nx-legend-sticky")).first()).toBeVisible();
     await noSideways(page);
 
     // the chosen port is kept: zoom back to it
+    await expect(backToPort(page)).toHaveText(/Back to Moss Landing/);
     await backToPort(page).click();
     await expect.poll(async () => atPort(await bounds(page)), { timeout: 15_000 }).toBe(true);
 
     // and back to the saved trip, its planning context intact
     await page.goto(`${OK}/coast/trips?id=${id}`);
     await expectWorkspace(page, id);
+    await expect(page.locator("[data-panel]").first()).toBeVisible();
+    for (const k of await page.locator("[data-panel]").evaluateAll((els) => els.map((e) => e.getAttribute("data-panel")!)))
+      await expect.poll(() => page.locator(`[data-panel="${k}"]`).evaluate((e) => getComputedStyle(e).opacity), { message: `trip panel ${k} fades in` }).toBe("1");
     expect(await tripState(page, id)).toEqual(before);
     expect(errors).toEqual([]);
     await ctx.close();
   });
 
-  test.fixme("v15.1: the statewide map offers the way back to the trip the reader came from", async ({ browser }) => {
+  test("v15.1: the trip workspace opens the coast, and Explore brings the reader back to that trip", async ({ browser }) => {
     test.setTimeout(120_000);
-    const { ctx, page } = await newContext(browser);
+    const { ctx, page } = await runningContext(browser);
     const id = await planTrip(page);
-    // from the trip's workspace into the statewide map, then straight back
-    await page.goto(`${OK}/today?place=${MOSS}`);
+    const before = await tripState(page, id);
+    const open = page.getByTestId("trip-open-explore");
+    await open.scrollIntoViewIfNeeded();
+    await expect(open).toHaveAttribute("href", `/explore?view=coast&place=${MOSS}&from=trip&trip=${id}`);
+    await open.click();
     await mapReady(page);
-    await exploreEntry(page).click();
     await expect.poll(async () => statewide(await bounds(page)), { timeout: 15_000 }).toBe(true);
-    const back = backToTrip(page);
-    await expect(back).toBeVisible();
+    const back = backFrom(page);
+    await expect(back).toHaveText(/Back to your trip/);
     await back.click();
     await expectWorkspace(page, id);
+    expect(await tripState(page, id)).toEqual(before);
     await ctx.close();
   });
+
+  test("v15.1: Explore in the navigation opens the whole coast with the port kept", async ({ browser }) => {
+    const { ctx, page } = await runningContext(browser);
+    await page.goto(`${OK}/research?place=${MOSS}`);
+    await navExplore(page).click();
+    await expect(page).toHaveURL(new RegExp(`/explore\\?view=coast&place=${MOSS}`));
+    await mapReady(page);
+    await expect.poll(async () => statewide(await bounds(page)), { timeout: 15_000 }).toBe(true);
+    await expect(backToPort(page)).toHaveText("Back to Moss Landing");
+    await ctx.close();
+  });
+
+  for (const size of [SIZES.desk, { width: 1280, height: 800 }, { width: 1100, height: 800 }, SIZES.phone, SIZES.small]) {
+    test(`v15.1: the statewide view shows Oregon to Mexico uncovered at ${size.width} px`, async ({ browser }) => {
+      const { ctx, page } = await runningContext(browser, size);
+      await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+      await mapReady(page);
+      await expect.poll(async () => statewide(await bounds(page)), { timeout: 15_000 }).toBe(true);
+      await page.waitForFunction(() => !(window as unknown as { __cwMap: { isMoving(): boolean } }).__cwMap.isMoving());
+      await page.waitForTimeout(600);
+      expect(await coastUncovered(page), "the coast from Oregon to Mexico is visible, not under the panel, bar or time dock").toEqual([]);
+      await noSideways(page);
+      await ctx.close();
+    });
+  }
 
   test("offline: the trip saved before exploring reopens after a browser restart with no network", async () => {
     test.setTimeout(150_000);
@@ -185,6 +304,36 @@ test.describe("v15.1 journey: a saved trip, the whole coast, and back", () => {
   });
 });
 
+// ---------------------------------------------------------------- accessibility (axe, WCAG 2.1 A/AA, serious or critical)
+
+test.describe("v15.1 journey: accessibility of the new states", () => {
+  for (const size of [SIZES.desk, SIZES.phone]) {
+    test(`statewide Explore, C-HARM with currents and stations, at ${size.width} px`, async ({ browser }) => {
+      const { ctx, page } = await runningContext(browser, size);
+      await page.goto(`${OK}/explore?view=coast&place=${MOSS}&layer=charm&cur=1&st=1`);
+      await mapReady(page);
+      await onScreen(page, "nx-explore-panel");
+      expect(await serious(page)).toEqual([]);
+      await ctx.close();
+    });
+  }
+
+  test("My Coast with a panel moved away from its rest (Reset layout showing)", async ({ browser }) => {
+    const { ctx, page } = await runningContext(browser);
+    await page.goto(`${OK}/coast?place=${MOSS}`);
+    const grip = page.locator("[data-panel-grip]").first();
+    await expect(grip).toBeVisible({ timeout: 20_000 });
+    const b = (await grip.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width / 2 - 300, b.y + b.height / 2 + 120, { steps: 10 });
+    await page.mouse.up();
+    await expect(page.getByTestId("panel-reset").first()).toBeVisible();
+    expect(await serious(page)).toEqual([]);
+    await ctx.close();
+  });
+});
+
 // ---------------------------------------------------------------- reduced motion
 
 test.describe("v15.1 journey under reduced motion", () => {
@@ -199,7 +348,7 @@ test.describe("v15.1 journey under reduced motion", () => {
     await ctx.close();
   });
 
-  test.fixme("Today → statewide: the camera jumps, no flight", async ({ browser }) => {
+  test("Today → statewide: the camera jumps, no flight", async ({ browser }) => {
     const { ctx, page } = await newContext(browser);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(`${OK}/today?place=${MOSS}`);
@@ -233,7 +382,7 @@ test.describe("v15.1 journey on a low-power device (static tier)", () => {
     await ctx.close();
   });
 
-  test.fixme("Today → statewide on the static tier: the baked statewide fallback renders, with its honest note", async ({ browser }) => {
+  test("Today → statewide on the static tier: the baked statewide fallback renders, with its honest note", async ({ browser }) => {
     const { ctx, page, errors } = await newContext(browser);
     await lowPower(ctx);
     await page.goto(`${OK}/today?place=${MOSS}`);
@@ -242,7 +391,7 @@ test.describe("v15.1 journey on a low-power device (static tier)", () => {
     await expect(page.getByTestId("nx-explore")).toBeVisible();
     await expect(page.locator(".maplibregl-canvas")).toHaveCount(0);
     // the fallback is a real picture of the statewide view, not an empty frame
-    const img = page.getByTestId("nx-poster").locator("img").or(page.getByTestId("nx-static-field")).first();
+    const img = page.getByTestId("nx-static-field").or(page.getByTestId("nx-poster").locator("img")).first();
     await expect(img).toBeVisible();
     const box = (await img.boundingBox())!;
     expect(box.width * box.height).toBeGreaterThan(200 * 200);

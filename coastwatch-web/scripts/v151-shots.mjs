@@ -45,11 +45,41 @@ const RETURNING = {
 const shots = [];
 const missing = [];
 const errors = [];
+/**
+ * The device clock starts at the fixture's instant and runs on. Only Date moves: Playwright's page.clock also fakes
+ * performance.now and requestAnimationFrame, which freezes Motion's frame loop, so after a client-side navigation the
+ * panels' entrances stay at opacity 0 in the frame (a test artifact, not the product).
+ */
+const clockAt = (p) =>
+  p.addInitScript((now) => {
+    const Real = Date;
+    const off = now - Real.now();
+    class Shifted extends Real {
+      constructor(...a) {
+        if (a.length) super(...a);
+        else super(Real.now() + off);
+      }
+      static now() {
+        return Real.now() + off;
+      }
+    }
+    window.Date = Shifted;
+  }, Date.parse(NOW));
 const settle = (p, ms = 1200) => p.waitForTimeout(ms);
 const mapReady = (p) => p.locator("[data-testid=nx-sheet][data-map-ready='1'], [data-testid=nx-sheet][data-tier=static]").first().waitFor({ timeout: 20_000 }).catch(() => {});
 
+/** What is on screen when a frame is taken: the free panels and Explore's panel, with their boxes and opacity. */
+const onScreen = (page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll("[data-panel], [data-testid=nx-explore-panel]")].map((e) => {
+      const r = e.getBoundingClientRect();
+      return `${e.getAttribute("data-panel") ?? e.getAttribute("data-testid")}@${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)} o${getComputedStyle(e).opacity}`;
+    }),
+  );
+
 async function shot(page, size, name, o = {}) {
   await settle(page, o.wait ?? 1200);
+  if (process.env.CW_SHOTS_DEBUG) console.log("  on screen", name, page.url().replace(BASE, ""), JSON.stringify(await onScreen(page).catch(() => [])));
   const file = join(OUT, `${size.tag}-${name}.png`);
   await page.screenshot({ path: file, fullPage: !!o.full });
   shots.push(file);
@@ -72,10 +102,20 @@ async function first(...list) {
 
 // ---------------------------------------------------------------- v15.1 controls (agents A, B)
 
-const exploreEntry = (p) => first(p.getByTestId("nx-explore-entry"), p.getByRole("link", { name: /explore california waters/i }), p.getByRole("button", { name: /explore california waters/i }));
-const backToPort = (p) => first(p.getByTestId("nx-explore-port"), p.getByRole("button", { name: /back to moss landing/i }), p.getByRole("link", { name: /back to moss landing/i }));
+// Today's own entry (src/nx/today/ExploreEntry.tsx), else Explore in the navigation (src/nx/shell/Shell.tsx); both open
+// /explore?view=coast&place=<port> (src/nx/explore/links.ts)
+async function exploreEntry(p) {
+  const today = p.getByTestId("nx-today-explore").first();
+  if (await today.count()) {
+    await today.scrollIntoViewIfNeeded().catch(() => {});
+    if (await today.isVisible().catch(() => false)) return today;
+  }
+  return first(p.getByTestId("nx-nav-explore"), p.getByTestId("nx-tab-explore"));
+}
+const backToPort = (p) => first(p.getByTestId("nx-back-port"));
 const layer = (p, id) => first(p.getByTestId(`nx-layer-${id}`));
-const panelHandle = (p) => first(p.locator("[data-panel-handle]"), p.locator("[data-testid$=-handle]"), p.getByRole("button", { name: /^(move|drag)\b/i }));
+// a free panel's grip (src/nx/ds/panels/usePanel.tsx)
+const panelHandle = (p) => first(p.locator("[data-panel-grip]"));
 
 async function caBounds(page) {
   return page.evaluate(() => {
@@ -126,7 +166,7 @@ async function moments(browser, size, o = {}) {
   }, RETURNING);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(`[${size.tag}] ${e.message}`));
-  await page.clock.setFixedTime(new Date(NOW));
+  await clockAt(page);
   const desk = size.viewport.width >= 1024;
 
   // the trip is saved first, so the journey can return to it
@@ -141,7 +181,8 @@ async function moments(browser, size, o = {}) {
   const entry = await exploreEntry(page);
   if (entry) {
     await entry.click();
-    await settle(page, 700);
+    await page.getByTestId("nx-explore-panel").waitFor({ timeout: 20_000 }).catch(() => {});
+    await settle(page, 450);
     await page.screenshot({ path: join(OUT, `${size.tag}-02a-transition.png`) });
     shots.push(join(OUT, `${size.tag}-02a-transition.png`));
     await page.waitForFunction(() => window.__cwMap && !window.__cwMap.isMoving(), null, { timeout: 15_000 }).catch(() => {});
@@ -196,14 +237,20 @@ async function moments(browser, size, o = {}) {
     await page.goto(`${BASE}/coast?place=${MOSS}`);
     await page.getByTestId("coast-status").first().waitFor({ timeout: 20_000 }).catch(() => {});
     await settle(page, 1200);
+    await page.locator("[data-panel]").first().waitFor({ timeout: 20_000 }).catch(() => {});
     const h = await panelHandle(page);
     if (h) {
       const box = await h.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down();
-      await page.mouse.move(box.x + box.width / 2 + 260, box.y + box.height / 2 + 120, { steps: 12 });
+      await page.mouse.move(box.x + box.width / 2 - 300, box.y + box.height / 2 + 120, { steps: 12 });
       await page.mouse.up();
       await shot(page, size, "07-panel-moved");
+      const reset = await first(page.getByTestId("panel-reset"));
+      if (reset) {
+        await reset.click();
+        await shot(page, size, "07b-panel-reset");
+      } else miss(size, "07b-reset", "no Reset layout after a move");
     } else miss(size, "07-panel", "no draggable panel handle on My Coast");
   }
 
@@ -241,13 +288,13 @@ async function video(browser) {
   }, RETURNING);
   // plan the trip off camera, then hand the storage to the recorded context
   const pre = await ctx.newPage();
-  await pre.clock.setFixedTime(new Date(NOW));
+  await clockAt(pre);
   const id = await plan(pre);
   const state = await ctx.storageState();
   await ctx.close();
   const rec = await browser.newContext({ viewport: size.viewport, storageState: state, recordVideo: { dir, size: size.viewport } });
   const page = await rec.newPage();
-  await page.clock.setFixedTime(new Date(NOW));
+  await clockAt(page);
   await page.goto(`${BASE}/today?place=${MOSS}`);
   await mapReady(page);
   await settle(page, 2000);
