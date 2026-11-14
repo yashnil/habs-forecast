@@ -38,7 +38,7 @@ export function wcofsStateWords(ix: WcofsIndex | null, loaded: boolean, offline 
   if (!loaded) return "Reading NOAA WCOFS…";
   if (!ix || ix.status === "unavailable" || !ix.cycle) return `NOAA WCOFS is unavailable${ix?.reason ? `: ${ix.reason}` : ""}.`;
   const v = ix.valid ? ` · valid ${stepWhen({ valid_time: ix.valid.start })} to ${stepWhen({ valid_time: ix.valid.end })}` : "";
-  return `${ix.status === "expired" ? "Expired: " : ""}NOAA WCOFS model guidance (developmental) · cycle ${cycleName(ix.cycle.id)}${v}${ix.fallback ? " · the last good cycle (a newer one could not be checked)" : ""}`;
+  return `${ix.status === "expired" ? "Expired: " : ""}NOAA WCOFS model guidance (developmental) · cycle ${cycleName(ix.cycle.id)}${v}${ix.fallback ? " · the last good cycle (a newer one could not be checked)" : ""}${ix.reason && !ix.fallback ? ` · ${ix.reason}` : ""}`;
 }
 
 /** One line of the chlorophyll estimate's state: its day, and how old it is. */

@@ -411,12 +411,16 @@ def write(ctx: RunContext, idx: BiotoxinIndex) -> Path:
 
 
 def is_newer_or_equal(new: BiotoxinIndex, old_path: Path) -> bool:
-    """Never replace a readable index with one built from an older crab PDF."""
+    """Never replace a readable index with one built from an older crab PDF, or with one that has
+    no crab results at all (crab PDF unreachable or unreadable while the seafood PDF was read: the
+    new index would lead with the seafood document and silently drop every crab site)."""
     if not old_path.exists():
         return True
     try:
         old = BiotoxinIndex.model_validate_json(old_path.read_text())
     except Exception:
         return True
+    if new.source.name != old.source.name:
+        return False
     return (new.source.as_of or "") >= (old.source.as_of or "")
 

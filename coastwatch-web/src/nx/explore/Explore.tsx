@@ -1077,7 +1077,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   const railModel: ExploreModel = { ...model, axis: extendAxis(model.axis, wcofsOk ? (ocean.wcofs?.steps ?? []).map((x) => x.valid_time) : [], oceanRail.estimate ? [oceanRail.estimate.date] : []) };
   const oceanExtra = {
     est: !chlEstimateUsable(ocean.chl) ? <EstimateRow ix={ocean.chl} loaded={ocean.loaded} on={false} onChoose={chooseEstimate} offline={ocean.offline} /> : null,
-    fc: wcofsOk ? null : <WcofsNote ix={ocean.wcofs} loaded={ocean.loaded} offline={ocean.offline} />,
+    // a recorded test cycle says so on its own row (live there is no reason to show)
+    fc: wcofsOk ? (ocean.wcofs?.reason ? <p className={s.oceanNote} data-testid="nx-wcofs-reason">{ocean.wcofs.reason}</p> : null) : <WcofsNote ix={ocean.wcofs} loaded={ocean.loaded} offline={ocean.offline} />,
   };
   const pickAt = pick ? ((pick.kind === "shore" ? model.stations.find((x) => x.id === pick.id) : model.buoys.find((x) => x.id === pick.id)) ?? null) : null;
   const stationSlot =
@@ -1181,7 +1182,7 @@ export function Explore({ model }: { model: ExploreModel }) {
                 <button key={p.id} type="button" role="radio" aria-checked={!chartOnly && oceanField !== "sst" && p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`} data-class={meta?.productClass}>
                   <span>{LAYER_LABEL[p.id]}</span>
                   {/* observation or model, then its own dates ("Model · run of Nov 3, valid Nov 2–5 (past run)") */}
-                  <small>{p.id === "chl" && !chartOnly && oceanField !== "sst" ? chlChipWords : meta ? chipWords(meta) : p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
+                  <small>{p.id === "chl" ? chlChipWords : meta ? chipWords(meta) : p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
                 </button>
               );
             })}
@@ -1350,6 +1351,7 @@ export function Explore({ model }: { model: ExploreModel }) {
                 </svg>
                 <span>
                   Predicted currents · {ocean.wcofs?.cycle ? wcofsLabel(ocean.wcofs.cycle.id, wstep) : stepWhen(wstep)}
+                  {ocean.wcofs?.reason ? ` · ${ocean.wcofs.reason}` : ""}
                   {fieldState.status === "failed" ? " · this step could not be read; nothing is drawn" : ""}
                   {speeds ? ` · median ${speedWords(speeds.median)}` : ""}. Not drawn within {ocean.wcofs?.near_shore_km ?? 0} km of shore.
                 </span>
@@ -1374,7 +1376,7 @@ export function Explore({ model }: { model: ExploreModel }) {
               </p>
             )
           ) : null}
-          {!readout && tier !== "static" ? <p className={s.prompt}>Tap the water to read one cell.</p> : null}
+          {!readout && tier !== "static" && !chartOnly ? <p className={s.prompt}>Tap the water to read one cell.</p> : null}
         </TicketStub>
       </Ticket>
 

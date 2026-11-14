@@ -228,3 +228,10 @@
   font-size: var(--fs-13);
   color: var(--ink);
 }
+.liveLink {
+  color: var(--ultra);
+  font-weight: var(--w6);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}

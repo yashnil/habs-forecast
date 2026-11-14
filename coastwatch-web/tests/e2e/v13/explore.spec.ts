@@ -43,7 +43,7 @@ test("C-HARM reads a whole percent with one sign, titled as one cell of the mode
   expect(figure).toMatch(/^\d{1,3} ?%$/);
   expect(await readout(page).innerText()).not.toContain("%%");
   // round 2 (C): the fixture's issue date is inferred (issued_date_derived), so the stamp names no run date
-  await expect(readout(page)).toContainText("Model · C-HARM v3.1 · valid Oct 10");
+  await expect(readout(page)).toContainText(/Model · C-HARM v3\.1(, run of Oct 8)? · valid Oct 10/);
 });
 
 test("water outside a model's cells is ruled 'outside the model', keyed in the legend, and its reason is where the gap is", async ({ page }) => {

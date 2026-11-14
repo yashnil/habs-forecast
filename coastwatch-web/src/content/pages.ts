@@ -21,7 +21,7 @@ export const DATA_UNAVAILABLE = "Neritic’s data could not be loaded. Official 
 
 /** The legal pages' head and foot (was LegalPage's). */
 export const LEGAL_FRAME = {
-  kicker: "Neritic private pilot · legal",
+  kicker: "Neritic research preview · legal",
   draftLead: "Draft — pending owner/legal review.",
   draftRest: "This text has not yet been reviewed by a lawyer and is not legal advice.",
   attributionLead: "Structure and some wording adapted from",
@@ -70,4 +70,20 @@ export const ERROR_COPY = {
   errorTitle: "This page could not be drawn",
   errorLede: "Nothing on it is shown rather than a partial or out-of-date page. Try again, or open another page. Official closures and advisories are always on the CDFW and CDPH sites.",
   retry: "Try again",
+} as const;
+
+/** Sources read live when a page needs them (not part of the published dataset), for Sources. WCOFS and DINEOF
+ *  take their names, links and licences from src/lib/ocean (the code that reads them). */
+export const LIVE_SOURCES_COPY = {
+  heading: "Live sources",
+  intro: "Read by Neritic's server when a page needs them, not from the published dataset. Each is shown with its own time and source; when one cannot be reached, the page says so.",
+  wcofsWhat: "Ocean model guidance on Explore: surface currents and temperature, 3-hourly nowcast and 72-hour forecast. NOAA labels it developmental; a model, not a measurement, and not a bloom or toxin prediction.",
+  wcofsVia: "NOAA CO-OPS OPeNDAP (THREDDS)",
+  dineofWhat: "Gap-filled chlorophyll on Explore: reconstructed where satellites saw nothing, shown as an estimate, never as an observation. Chlorophyll is algae, not toxin.",
+  dineofCite: "Liu, X. & Wang, M. (2023), IEEE Transactions on Geoscience and Remote Sensing",
+  rows: [
+    { id: "ndbc", name: "NOAA National Data Buoy Center (NDBC)", what: "Buoy wind, waves and water temperature, as measured, with each reading's time.", url: "https://www.ndbc.noaa.gov/", licence: "U.S. Government work (NOAA), public domain" },
+    { id: "nws", name: "National Weather Service marine text", what: "Coastal waters forecasts and advisories in NWS's own words, from its plain-text products.", url: "https://tgftp.nws.noaa.gov/data/forecasts/marine/coastal/pz/", licence: "U.S. Government work (NOAA), public domain" },
+    { id: "coops", name: "NOAA CO-OPS Tides and Currents", what: "Tide predictions and water temperature at tide stations.", url: "https://tidesandcurrents.noaa.gov/", licence: "U.S. Government work (NOAA), public domain" },
+  ],
 } as const;

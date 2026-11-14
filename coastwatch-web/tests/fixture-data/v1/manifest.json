@@ -18,8 +18,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
@@ -137,7 +137,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -284,8 +284,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
@@ -404,7 +404,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -551,8 +551,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-07",
         "valid_time": "2026-10-07T12:00:00Z",
         "observed_date": null,
@@ -671,7 +671,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -818,8 +818,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
@@ -937,7 +937,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1084,8 +1084,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
@@ -1204,7 +1204,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1351,8 +1351,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-08",
         "valid_time": "2026-10-08T12:00:00Z",
         "observed_date": null,
@@ -1471,7 +1471,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1618,8 +1618,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
@@ -1737,7 +1737,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -1884,8 +1884,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
@@ -2004,7 +2004,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2151,8 +2151,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-09",
         "valid_time": "2026-10-09T12:00:00Z",
         "observed_date": null,
@@ -2271,7 +2271,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2418,8 +2418,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
@@ -2537,7 +2537,7 @@
         "A low probability does not mean an area is safe.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2684,8 +2684,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
@@ -2804,7 +2804,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -2951,8 +2951,8 @@
       "resolution_deg": 0.03,
       "time": {
         "issued_date": "2026-10-08",
-        "issued_date_derived": true,
-        "issued_date_method": "nowcast valid day + 1 day (one run issues all leads)",
+        "issued_date_derived": false,
+        "issued_date_method": "NOAA processing date: the date opening the NC_GLOBAL history attribute of the run's files on ERDDAP",
         "valid_date": "2026-10-10",
         "valid_time": "2026-10-10T12:00:00Z",
         "observed_date": null,
@@ -3071,7 +3071,7 @@
         "Toxin probabilities are not provided for many cells within about 3-6 km of shore, including piers and harbours.",
         "Published skill assessment covers C-HARM v1 (Anderson et al. 2016); no published skill assessment for v3.1 was found.",
         "The producer notes salinity errors can affect domoic acid predictions and that bloom predictions include many false positives.",
-        "Issue date is inferred (nowcast valid day + 1). C-HARM does not publish an issue time."
+        "Issue date is NOAA's processing date for this run, read from the run's own metadata (history attribute)."
       ],
       "qc": {
         "checks": [
@@ -9911,7 +9911,7 @@
       "group_id": "charm",
       "source_id": "charm",
       "issued_date": "2026-10-08",
-      "issued_date_derived": true,
+      "issued_date_derived": false,
       "leads_available": [
         0,
         1,

@@ -3,8 +3,8 @@
  * in the consent record (consent_log.text_shown / alert_subscriptions.sms_consent_text), and quoted
  * on /sms-terms. Changing a word here changes LEGAL_VERSION.
  */
-export const LEGAL_VERSION = "2026-11-08-draft";
-export const LEGAL_EFFECTIVE = "November 8, 2026";
+export const LEGAL_VERSION = "2026-11-14";
+export const LEGAL_EFFECTIVE = "November 14, 2026";
 export const PROGRAM_NAME = "Neritic Alerts";
 
 export const AGE_TEXT = "I am 13 or older, and I have read the Terms of Use and the Privacy Policy.";

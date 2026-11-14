@@ -128,13 +128,13 @@ test("every live layer shows its legend, units and dates; what is not live is ne
   // C-HARM: a model probability with its run and valid dates
   await page.getByTestId("nx-layer-charm").click();
   await expect(page.getByTestId("nx-layer-charm")).toHaveAttribute("data-class", "model");
-  // the run's issue date is inferred in the data, so it is dated by its valid days only (round 2, C)
-  await expect(page.getByTestId("nx-layer-charm")).toContainText(/Model · valid .+ \(expired\)/);
-  await expect(page.getByTestId("nx-layer-charm")).not.toContainText("run of");
+  // the fixture's run carries NOAA's own processing date (verified, not inferred): the run is named by it, then its valid days
+  await expect(page.getByTestId("nx-layer-charm")).toContainText(/Model · run of Oct 8, valid .+ \(expired\)/);
+  await expect(page.getByTestId("nx-layer-charm")).not.toContainText("inferred");
   await expect(legend).toHaveAttribute("data-product", "charm");
   await expect(page.getByTestId("nx-explore-lead")).toContainText("not measured toxin");
   await expect(legend).toContainText("P(pDA > 500 ng/L)");
-  await expect(legend).toContainText(/valid Oct \d+, last run available/);
+  await expect(legend).toContainText(/valid Oct \d+, (last run available|run of Oct \d+)/);
   await expect(legend).toContainText("not toxin in seafood");
   // currents: measured HF radar, its hour, and the hour's real speeds in kn and cm/s
   await page.getByTestId("nx-layer-chl").click();
@@ -259,7 +259,7 @@ test("round 2 (E): the time rail in three families, each layer with its own late
   await expect(rail).not.toContainText(/\bNow\b/);
   await expect(page.getByTestId("nx-rail-latest-olci")).toContainText(/latest Oct \d+/);
   await expect(page.getByTestId("nx-rail-latest-charm")).toContainText(/valid to Oct \d+/);
-  await expect(page.getByTestId("nx-rail-expired-charm")).toContainText(/Last run available: valid .+ · expired · .*not a current forecast/);
+  await expect(page.getByTestId("nx-rail-expired-charm")).toContainText(/Last run (available: valid .+ · expired · |.+, valid .+\. Expired: ).*not a current forecast/);
   // choosing a forecast frame from its own row makes C-HARM the layer on show
   await page.locator('[data-testid^="nx-frame-charm:"]').first().click();
   await expect(page.getByTestId("nx-legend")).toHaveAttribute("data-product", "charm");
@@ -414,5 +414,39 @@ test("round 2 review: an explicit layer link wins over the saved preference", as
   await page.goto(`${OK}/explore?place=${MOSS}&layer=chl`);
   await mapReady(page);
   await expect(page.getByTestId("nx-explore")).toHaveAttribute("data-base", "chl");
+  await ctx.close();
+});
+
+test("final pass: opening or closing the timeline refits with a short ease, never the 1.5 s flight", async ({ browser }) => {
+  const { ctx, page } = await newContext(browser, SIZES.desk);
+  await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+  await mapReady(page);
+  await expect.poll(() => moving(page), { timeout: 10_000 }).toBe(false);
+  await page.waitForTimeout(800);
+  // what the camera is asked to do, not how long a (software-rendered) machine takes to draw it: record every camera
+  // call's requested duration while the timeline is toggled; the refit must be a short ease, never the 1.5 s flight
+  const refit = () =>
+    page.evaluate(async () => {
+      type Cam = { easeTo: (o: { duration?: number }) => unknown; flyTo: (o: { duration?: number }) => unknown; jumpTo: (o: unknown) => unknown; once: (e: string, f: () => void) => void };
+      const m = (window as unknown as { __cwMap: Cam }).__cwMap;
+      const asked: { kind: string; ms: number }[] = [];
+      const orig = { easeTo: m.easeTo, flyTo: m.flyTo, jumpTo: m.jumpTo };
+      m.easeTo = function (o) { asked.push({ kind: "ease", ms: o?.duration ?? 0 }); return orig.easeTo.call(this, o); };
+      m.flyTo = function (o) { asked.push({ kind: "fly", ms: o?.duration ?? 0 }); return orig.flyTo.call(this, o); };
+      m.jumpTo = function (o) { asked.push({ kind: "jump", ms: 0 }); return orig.jumpTo.call(this, o); };
+      (document.querySelector("[data-testid=nx-rail-toggle]") as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 1500));
+      Object.assign(m, orig);
+      return asked;
+    });
+  for (let k = 0; k < 2; k++) {
+    const asked = await refit();
+    expect(asked.length, "a timeline toggle refits the camera").toBeGreaterThan(0);
+    for (const a of asked) {
+      expect(a.kind, "never a flight").not.toBe("fly");
+      expect(a.ms, "a short ease (≈350 ms)").toBeLessThanOrEqual(400);
+    }
+    await page.waitForTimeout(500);
+  }
   await ctx.close();
 });

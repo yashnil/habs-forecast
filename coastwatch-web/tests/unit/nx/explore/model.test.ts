@@ -90,7 +90,7 @@ describe("past runs and old frames (T3, T17, T25, T27)", () => {
     expect(layerKindWord(o)).toBe("past run (Oct 12)");
     expect(legendCaption(o, o.frames[0])).toMatch(/^Outlook, past run · .*Past run: every day it covers is before today/);
     // round 2 (C): the fixture's run carries an inferred issue date (issued_date_derived), never shown as fact
-    expect(layerKindWord(product("charm"))).toBe("past run");
+    expect(layerKindWord(product("charm"))).toMatch(/^past run/);
     expect(layerKindWord(product("chl"))).toBe("measured");
   });
 

@@ -9,7 +9,7 @@ import { LEGAL_EFFECTIVE, LEGAL_VERSION } from "./consent";
  * as long reading, and the attribution the CC BY licence asks for. The pilot footer links the three
  * pages to each other and back to Today and the account page.
  */
-export const OWNER_CONTACT = "[OWNER: add a contact email before launch]";
+export { OWNER_CONTACT } from "@/content/legal/contact";
 
 export async function LegalPage({ title, testId, children }: { title: string; testId: string; children: ReactNode }) {
   return (

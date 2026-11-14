@@ -20,9 +20,10 @@ export function PrivacyBody() {
   return (
     <>
     <p>
-      Neritic is an independent research preview that summarises California coastal and fisheries information for fishermen. This policy explains what we collect when you use the Neritic website and its
-      pilot features (saved ports, alerts, notifications, text alerts, feedback, trip logs and Ask Neritic), why, who it is shared with, how long we keep it, and how you can see or delete it. &ldquo;We&rdquo; means
-      the people who run Neritic. Contact: <strong>{OWNER_CONTACT}</strong>.
+      Neritic is an independent research preview that summarises California coastal and fisheries information for fishermen. This policy explains what we collect when you use the Neritic website, why, who it
+      is shared with, how long we keep it, and how you can see or delete it. On the public site, your saved ports, trips and alerts are kept on your device only. Accounts, text alerts, notifications sent to an
+      account and account feedback belong to a private pilot and are not offered on the public site; this policy also covers them for the people in that pilot. Ask Neritic, where it is offered, sends your
+      question to our server (see Ask Neritic below). &ldquo;We&rdquo; means the people who run Neritic. Contact: <strong>{OWNER_CONTACT}</strong>.
     </p>
     <p>
       <strong>The short version:</strong> you can use Neritic without an account. Without one, your choices stay in your own browser and we never see them. If you create an account, we keep only what the pilot needs,
@@ -37,7 +38,7 @@ export function PrivacyBody() {
       <li>What Today showed at each port on your last visit, so it can say what changed since.</li>
       <li>Trips you save on My Coast: your vessels, costs, prices, catch and crew shares. These never leave your browser.</li>
       <li>Pages, records and chart pictures you save for offline use.</li>
-      <li>Display choices (day, dusk or night chart; introductions you dismissed).</li>
+      <li>Display choices (day, dusk or night chart; introductions you dismissed; where you placed, sized or collapsed the panels on a page).</li>
       <li>In the pilot account page: role, saved ports, feedback answers and trip feedback, and any confirmation or consent you gave there, with the time and the words shown.</li>
     </ul>
     <p>
@@ -61,6 +62,11 @@ export function PrivacyBody() {
       <li>Our hosting provider records standard server logs (IP address, browser type, page requested, time) to run and secure the service.</li>
       <li>We do not use advertising or cross-site tracking cookies. Signing in sets a cookie that keeps you signed in. Any product analytics we add will be first-party and cookieless.</li>
     </ul>
+    <h3>Ocean data Neritic fetches</h3>
+    <p>
+      Neritic&rsquo;s server fetches the live ocean data a page shows (NOAA WCOFS model guidance, NOAA CoastWatch’s gap-filled chlorophyll estimate, NDBC buoys, CO-OPS tides and National Weather
+      Service marine forecasts) directly from NOAA. Those requests name only the data and the area of the coast; they carry nothing about you, your ports or your trips, and your browser does not contact NOAA.
+    </p>
     <h3>Ask Neritic</h3>
     <p>If you use Ask Neritic, your question is sent to our AI provider to produce an answer from Neritic&rsquo;s published data. We keep questions and answers only if you agree, for up to 90 days, to check accuracy.</p>
 
@@ -104,7 +110,7 @@ export function PrivacyBody() {
       <li>The <Link href="/account">account page</Link> shows and lets you change everything you have given us.</li>
       <li>&ldquo;Delete my account&rdquo; on that page deletes your account and every record linked to it immediately (backups as above). &ldquo;Delete everything on this device&rdquo; removes everything Neritic keeps in your browser: ports, fisheries, follows, alerts, saved trips, visit history and offline copies. If you are signed in, it does not sign you out or delete your account.</li>
       <li>To stop texts, reply STOP. To stop notifications, turn them off on the account page or in your browser settings.</li>
-      <li>You can also email <strong>{OWNER_CONTACT}</strong> to ask for a copy of your information, a correction, or deletion. We will answer within 30 days.</li>
+      <li>You can also contact us through <strong>{OWNER_CONTACT}</strong> to ask for a copy of your information, a correction, or deletion. We will answer within 30 days.</li>
       <li>California residents have rights under the California Consumer Privacy Act where it applies; we honour access and deletion requests from anyone, wherever they live.</li>
     </ul>
 

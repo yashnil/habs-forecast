@@ -109,6 +109,20 @@ SOURCE_BUDGET_S = {
 RUN_BUDGET_S = 25 * 60
 POST_MANIFEST_BUDGET_S = 4 * 60
 
+# Derived layers (gap-filled estimate, 8-day outlook, SST -> v1/derived/) are experimental and
+# must never reach the production dataset. They are built only when asked for: `cwp run --derived`
+# or CWP_DERIVED=1 (the data workflow sets it for the staging channel only). Off by default.
+DERIVED_ENV = "CWP_DERIVED"
+
+
+def derived_enabled(flag: bool | None = None) -> bool:
+    """An explicit flag wins; otherwise CWP_DERIVED=1/true/yes turns derived layers on."""
+    import os
+
+    if flag is not None:
+        return flag
+    return os.environ.get(DERIVED_ENV, "").strip().lower() in ("1", "true", "yes")
+
 
 def _source(name: str) -> None:
     """A source starts: log it and give it its own time budget."""
@@ -127,16 +141,19 @@ def _progress(msg: str) -> None:
     print(f"[cwp +{now - _T0[0]:6.1f}s] {msg}", file=sys.stderr, flush=True)
 
 
-def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES + PILOT_SIDECARS) -> Manifest:
+def run_pipeline(ctx: RunContext, only: tuple[str, ...] = ALL_SOURCES + PILOT_SIDECARS, derived: bool | None = None) -> Manifest:
+    """Run the selected sources and write the manifest. `derived` (default: the CWP_DERIVED
+    environment variable, else off) also builds v1/derived/; when off, v1/derived/ is neither
+    written nor pruned."""
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
     http.start_budget("run", RUN_BUDGET_S, scope="run")
     try:
-        return _run(ctx, only)
+        return _run(ctx, only, derived_enabled(derived))
     finally:
         http.clear_budgets()
 
 
-def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
+def _run(ctx: RunContext, only: tuple[str, ...], with_derived: bool = False) -> Manifest:
     prev = load_previous(ctx.out_dir)
     layers: list[LayerArtifact] = []
     runs: list[ForecastRun] = []
@@ -452,9 +469,9 @@ def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
     # run 42565307093: a slow SCCOOS used it up and the outlook, SST and CDPH requests were skipped).
     http.clear_budgets()
     http.start_budget("derived and sidecars", POST_MANIFEST_BUDGET_S, scope="run")
-    if "satellite_chl" in only:
+    if with_derived and "satellite_chl" in only:
         # Derived layers (estimate, outlook) go to v1/derived/, never into the manifest; a failure
-        # here never affects the published observations.
+        # here never affects the published observations. Opt-in only (staging): see DERIVED_ENV.
         _progress("derived: start")
         try:
             from .derived import run as derived
@@ -463,6 +480,8 @@ def _run(ctx: RunContext, only: tuple[str, ...]) -> Manifest:
             _progress(f"derived: {r['layers']} ({r['bytes_written']} bytes)")
         except Exception as e:  # pragma: no cover - logged, never fatal
             _progress(f"derived: failed: {e}")
+    elif "satellite_chl" in only:
+        _progress(f"derived: skipped (experimental; enable with --derived or {DERIVED_ENV}=1)")
     run_sidecars(ctx, only)
     return manifest
 

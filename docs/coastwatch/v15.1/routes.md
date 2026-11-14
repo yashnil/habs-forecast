@@ -54,3 +54,12 @@ the shell was About's “Set up for” (`src/components/welcome/PurposeSwitch.ts
 Footers (AppShell, PilotFooter), the data-unavailable sentence, the legal frame (draft banner, effective date,
 CC BY attribution) and the kept briefing's words are in `src/content/pages.ts`; the three policies' bodies in
 `src/content/legal/*.tsx`. About and Sources read `src/content/copy.ts` as before.
+
+## Public-release copy pass (2026-11-14, owner approved)
+
+About's kinds link to today's destinations (Official notices → /notices, Explore California Waters → /explore,
+Research → /research, Fisheries); the kinds intro describes the glyph grammar instead of "four colours"; the providers
+add WCOFS, DINEOF and the live NDBC / CO-OPS / NWS reads. Terms describe what the app shows (observations, a 7-day
+composite, NOAA's DINEOF estimate, C-HARM and WCOFS model output) instead of the unpublished chlorophyll outlook. The
+legal kicker and Ask say "research preview". Privacy names panel layout as device-only and says live ocean data are
+fetched by the server from NOAA with nothing personal. Sources lists the live sources with attribution and links.

@@ -82,7 +82,7 @@ export function SstModelLegend({ ix, step, failed, about }: { ix: WcofsIndex; st
         </div>
       </figure>
       <p className={s.caption} data-testid="nx-model-label">
-        {failed ? `This step could not be read from NOAA WCOFS (unavailable). Nothing is drawn in its place.` : step && ix.cycle ? wcofsLabel(ix.cycle.id, step) : wcofsStateWords(ix, true)}
+        {failed ? `This step could not be read from NOAA WCOFS (unavailable). Nothing is drawn in its place.` : step && ix.cycle ? `${wcofsLabel(ix.cycle.id, step)}${ix.reason ? ` · ${ix.reason}` : ""}` : wcofsStateWords(ix, true)}
       </p>
       <details className={s.about} data-testid="nx-about">
         <summary>About this layer</summary>

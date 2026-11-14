@@ -67,6 +67,10 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       - name: Run pipeline
         working-directory: pipeline
+        env:
+          # The experimental derived layers (gap-filled estimate, 8-day outlook, SST -> v1/derived/)
+          # are built for the staging channel only; production never writes v1/derived/.
+          CWP_DERIVED: ${{ inputs.channel == 'staging' && '1' || '0' }}
         run: uv sync && uv run cwp run --out ../publish/v1
       - name: Watch official pages for changes since the last human review (never edits records)
         # v1/official-watch.json carries the watcher's conditions from run to run (like health.json),
@@ -106,9 +110,11 @@ jobs:
           name: health-report
           path: health-report.md
           retention-days: 7
-      - name: Only pipeline artifacts may be published
+      - name: Only pipeline artifacts may be published (production also refuses v1/derived/)
         working-directory: pipeline
-        run: uv run cwp guard-publish --root ../publish
+        env:
+          FORBID: ${{ inputs.channel != 'staging' && '--forbid v1/derived/' || '' }}
+        run: uv run cwp guard-publish --root ../publish $FORBID
       - uses: actions/upload-artifact@v6
         with:
           name: coastwatch-data
