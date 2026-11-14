@@ -18,6 +18,7 @@ import { openSheet } from "@/nx/shell/Margin";
 import { distanceKm } from "@/lib/grid";
 import { directionWords, modelCoverage, placeCoverage, stationsAround, whereWords } from "./coverage";
 import { Nearby } from "./Nearby";
+import { exploreHref as exploreLink } from "@/nx/explore/links";
 import { availabilityAll, chooseFocus, copyStart, emptyRange, exportCounts, inspectSample, latestWindow, modelCollapsed, nearestWithRecent, stationLatest, stepSample, visitTicks } from "./availability";
 import { download, svgFigure } from "./dom";
 import { citation, modelCsv, windowCsv } from "./exports";
@@ -503,7 +504,9 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     setPanel(null);
     write(queryFor({ station: id, v: vv, win: w, place: query.place ?? ctxPlace?.key ?? null, back: query.back, day: l?.day ?? null }));
   };
-  const exploreHref = `/explore?place=${encodeURIComponent(ctxPlace?.key ?? (st.nearest_port_code != null ? `port-${st.nearest_port_code}` : ""))}`;
+  // Explore California Waters (src/nx/explore/links.ts): the whole coast, the stations on, the model when it is shown here,
+  // the place kept, and "Back to Research" home again
+  const statewideHref = exploreLink({ view: "coast", place: ctxPlace?.key ?? (st.nearest_port_code != null ? `port-${st.nearest_port_code}` : null), stations: true, layer: modelOn ? "charm" : undefined, from: "research" });
   const showDetails = () => {
     openSheet("full");
     requestAnimationFrame(() =>
@@ -1457,7 +1460,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
                 now={nowMs}
                 selected={st.station_id}
                 focus={focus}
-                exploreHref={exploreHref}
+                exploreHref={statewideHref}
                 drawTicks={drawn}
                 onOpen={(id, vv) => openStationVar(id, vv)}
                 onLatest={(id, vv) => openStationVar(id, vv, true)}
