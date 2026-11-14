@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ObservationDataset, ObsStation } from "@/generated/observations";
-import { cadenceWords, directionWords, modelCoverage, placeCoverage, programmeVariables, reachOf, reachWords, stationsAround, valueTimes, varCoverage, whereWords, type Located } from "@/nx/research/coverage";
+import { cadenceWords, directionWords, modelCoverage, usefulStation, placeCoverage, programmeVariables, reachOf, reachWords, stationsAround, valueTimes, varCoverage, whereWords, type Located } from "@/nx/research/coverage";
 import { located } from "@/nx/research/model";
 
 /**
@@ -153,5 +153,40 @@ describe("words and the model", () => {
     expect(m.days).toBeGreaterThan(0);
     expect(m.radiusKm).toBe(15);
     expect(modelCoverage({ charm: null } as unknown as ObsStation).days).toBe(0);
+  });
+});
+
+describe("the station a place opens on, by usefulness", () => {
+  it("Moss Landing opens on Santa Cruz Wharf (recent pDA), naming Monterey Wharf, nearer, whose record is older", () => {
+    const p = usefulStation(stations, MOSS, null, NOW)!;
+    expect(p.station.station_id).toBe("HABs-SantaCruzWharf");
+    expect(p.passed?.station.station_id).toBe("HABs-MontereyWharf");
+    expect(p.passed!.km).toBeLessThan(p.km);
+  });
+
+  it("Fort Bragg opens on Bodega Marine Lab (Apr 2026), not the buoy beside it (Jan 2026)", () => {
+    const p = usefulStation(stations, FORT_BRAGG, null, NOW)!;
+    expect(p.station.station_id).toBe("HABs-BodegaMarineLab");
+    expect(p.last.slice(0, 10)).toBe("2026-04-13");
+  });
+
+  it("Crescent City opens on Trinidad Pier, the nearest, with nothing passed over", () => {
+    const p = usefulStation(stations, CRESCENT, null, NOW)!;
+    expect(p.station.station_id).toBe("HABs-TrinidadPier");
+    expect(p.passed).toBeNull();
+  });
+
+  it("an asked variable leads: temperature at Moss Landing is Monterey Wharf's, current and nearest", () => {
+    const p = usefulStation(stations, MOSS, "temp", NOW)!;
+    expect(p.station.station_id).toBe("HABs-MontereyWharf");
+    expect(p.passed).toBeNull();
+  });
+
+  it("two current stations a few km apart: the nearer stays the choice (Morro Bay front bay, not back bay)", () => {
+    expect(usefulStation(stations, { lat: 35.36581, lon: -120.84991 }, null, NOW)!.station.station_id).toBe("HABs-MorroBayFrontBay");
+  });
+
+  it("a station at the port with a current record stays the choice (Avila: Cal Poly Pier)", () => {
+    expect(usefulStation(stations, { lat: 35.17498, lon: -120.75519 }, null, NOW)!.station.station_id).toBe("HABs-CalPolyPier");
   });
 });
