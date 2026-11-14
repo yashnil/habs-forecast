@@ -7,7 +7,7 @@ import { registerCover } from "@/nx/chart/cover";
 import { Icon } from "../Icon";
 import { settle } from "../motion";
 import { usePhone } from "../useMedia";
-import { clampBox, clampSize, coverSideFor, fromPlacement, guidesFor, nudge, toPlacement, type Area, type Box, type Guide, type Limits, type Placement, type Side } from "./geometry";
+import { clampBox, clampSize, fromPlacement, guidesFor, nudge, toPlacement, type Area, type Box, type Guide, type Limits, type Placement } from "./geometry";
 import { getPanelsPage, layoutChanged, livePanels, loadLayout, notePanel, registerPanel, resetCount, resetLayout, savePanel, subscribePanels } from "./store";
 import p from "./panels.module.css";
 
@@ -25,6 +25,13 @@ export interface PanelOptions {
   limits: Limits;
   /** The panel's height may be dragged (its content scrolls); else only its width. */
   resizeHeight?: boolean;
+  /**
+   * The edge the object covers at rest, for the camera (a dock's or pass's "bottom"). Once the reader moves or collapses
+   * it, the camera keeps reserving that resting box, so moving a panel never moves the chart (nor the ticket that
+   * follows its place); the moved panel is only an obstacle for the chart's names. Omit for a ticket, whose
+   * reservation is already a strip on its side.
+   */
+  restCover?: "bottom";
   /** Called after a reset clears the panel's own placement, so the object lays itself out again at once (a ticket beside its place). */
   relayout?: () => void;
 }
@@ -83,7 +90,7 @@ function useResetCount(page: string | null): number {
  * A floating stage object as a free panel (v15.1, DIRECTION §4): moved by its grip (pointer or arrow keys), resized
  * from its corner within limits, collapsed to its header, kept on screen, its place remembered on this device per page
  * and key. Dragging one panel never moves another and nothing snaps: guides only show where edges line up. "Reset
- * layout" appears in the chrome once anything on the page has changed. Off on a phone (the objects are blocks in the
+ * layout" appears in the chrome of a panel the reader has changed and puts the whole page back. Off on a phone (the objects are blocks in the
  * sheet there) and on pages that do not free their panels (PageLayout `panels`).
  */
 export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): PanelState {
@@ -101,6 +108,8 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
   const [title, setTitle] = useState(typeof o.name === "string" ? o.name : "");
   const movedRef = useRef(false);
   const placement = useRef<Placement | null>(null);
+  /** where the object stood at rest (its page's layout), for the camera's reservation while it is moved */
+  const restBox = useRef<Box | null>(null);
   const opts = useRef(o);
   useLayoutEffect(() => {
     opts.current = o;
@@ -149,6 +158,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
     const el = ref.current;
     if (!on || !el || !page) return;
     const off = registerPanel(key, el);
+    restBox.current = boxOf(el);
     // the panel last touched stands in front of the others (panels may overlap where the reader puts them)
     const front = () => {
       for (const x of livePanels()) if (x.el !== el) x.el.removeAttribute("data-panel-front");
@@ -199,7 +209,9 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const area = stageArea(el);
-        if (resized) {
+        if (!movedRef.current && !el.hasAttribute("data-panel-collapsed")) restBox.current = boxOf(el);
+        // a collapsed panel's box is its header: its kept size waits for it to open again
+        if (resized && !el.hasAttribute("data-panel-collapsed")) {
           const lim = opts.current.limits;
           const sz = clampSize({ w: el.offsetWidth, h: el.offsetHeight }, lim, area);
           if (el.style.width && sz.w !== el.offsetWidth) el.style.width = `${sz.w}px`;
@@ -253,6 +265,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
   /** Freezes a panel where it stands now (the first move): from here on it is the reader's. */
   const takeOver = useCallback((el: HTMLElement) => {
     const area = stageArea(el);
+    if (!movedRef.current && !el.hasAttribute("data-panel-collapsed")) restBox.current = boxOf(el);
     const b = clampBox(boxOf(el), area);
     put(el, b);
     if (!movedRef.current) markMoved(true);
@@ -271,7 +284,6 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
       e.preventDefault();
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       drag.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, b: boxOf(el), area: stageArea(el), live: false };
-      (e.currentTarget.querySelector("[data-panel-grip]") as HTMLElement | null)?.focus({ preventScroll: true });
     },
     [ref],
   );
@@ -286,10 +298,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
         const t = takeOver(el);
         d.b = t.b;
         d.area = t.area;
-        d.x0 = e.clientX;
-        d.y0 = e.clientY;
         el.setAttribute("data-panel-dragging", "");
-        return;
       }
       const b = clampBox({ ...d.b, x: d.b.x + dx, y: d.b.y + dy }, d.area);
       put(el, b);
@@ -414,28 +423,38 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
 
   // ---------------------------------------------------------------- collapse
   const toggle = useCallback(() => {
-    setCollapsed((c) => {
-      persist({ c: !c });
-      return !c;
-    });
+    const el = ref.current;
+    if (el && !collapsed && !movedRef.current) restBox.current = boxOf(el);
+    persist({ c: !collapsed });
+    setCollapsed(!collapsed);
     setCoverRev((n) => n + 1);
-  }, [persist]);
+  }, [persist, collapsed, ref]);
 
   // ---------------------------------------------------------------- the camera's cover, when the panel stands by itself
   const free = on && (moved || collapsed);
-  const [side, setSide] = useState<Side>("none");
+  // the moved panel itself: an obstacle the chart's names keep clear of (never camera padding)
   useLayoutEffect(() => {
     const el = ref.current;
     if (!free || !el) return;
-    const parent = (el.offsetParent as HTMLElement | null) ?? document.documentElement;
-    const pr = parent.getBoundingClientRect();
-    setSide(coverSideFor(boxOf(el), { w: pr.width || window.innerWidth, h: pr.height || window.innerHeight }));
-  }, [free, coverRev, collapsed, ref]);
+    return registerCover(`panel:${key}`, el, "none");
+  }, [free, coverRev, key, ref]);
+  // the camera keeps reserving the resting box (a hidden stand-in where the object stood)
+  const restSide = o.restCover;
   useLayoutEffect(() => {
-    const el = ref.current;
-    if (!free || !el) return;
-    return registerCover(`panel:${key}`, el, side);
-  }, [free, side, coverRev, key, ref]);
+    const el = ref.current, rb = restBox.current;
+    const parent = el?.offsetParent as HTMLElement | null;
+    if (!free || !restSide || !el || !rb || !parent) return;
+    const ghost = document.createElement("div");
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.dataset.panelRest = key;
+    Object.assign(ghost.style, { position: "absolute", left: `${rb.x}px`, width: `${rb.w}px`, height: `${rb.h}px`, bottom: `${Math.max(0, parent.clientHeight - rb.y - rb.h)}px`, visibility: "hidden", pointerEvents: "none" });
+    parent.appendChild(ghost);
+    const off = registerCover(`panel-rest:${key}`, ghost, restSide);
+    return () => {
+      off();
+      ghost.remove();
+    };
+  }, [free, restSide, key, ref]);
 
   const chrome = on ? (
     <div className={p.chrome} data-panel-chrome="" onPointerDown={onStripDown} onPointerMove={onStripMove} onPointerUp={onStripUp} onPointerCancel={onStripUp}>
@@ -448,7 +467,7 @@ export function usePanel(ref: RefObject<HTMLElement | null>, o: PanelOptions): P
         </span>
       ) : null}
       <span className={p.tools}>
-        {changed ? (
+        {changed && (moved || collapsed || resized) ? (
           <button type="button" className={p.reset} data-panel-tool="" data-testid="panel-reset" onClick={() => page && resetLayout(page)}>
             Reset layout
           </button>
