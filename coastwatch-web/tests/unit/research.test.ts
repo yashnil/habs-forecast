@@ -96,7 +96,9 @@ describe("exports carry their provenance", () => {
     expect(h).toContain("wvcharmV3_0day");
     expect(h).toContain(`Licence: ${l.provenance.license}`);
     expect(h).toContain(`Pipeline run: ${manifest.pipeline_run_id}`);
-    expect(h).toContain("(inferred: nowcast valid day + 1 day");
+    // the fixture now carries NOAA's own processing date (history attribute): the run's date is stated, not inferred
+    expect(h).toContain("Run issued 2026-10-08");
+    expect(h).not.toContain("inferred");
     expect(h).toContain("Empty value = no published value");
     expect(h).toContain("Model probability, not a toxin measurement.");
     expect(h).toContain("Not a seafood test");
@@ -158,7 +160,7 @@ describe("layer lineage: only what the manifest holds", () => {
     const l = charm("particulate_domoic", 2);
     const L = layerLineage(l, manifest);
     expect(L.source.find((r) => r.label === "Dataset")!.value).toBe("wvcharmV3_2day");
-    expect(L.time.find((r) => r.label === "Run issued")!.value).toContain("inferred");
+    expect(L.time.find((r) => r.label === "Run issued")!.value).toContain("2026-10-08");
     expect(L.time.find((r) => r.label === "Valid")!.value).toContain("forecast, 2 days ahead");
     expect(L.upstreamNote).toContain("DINEOF gap filling");
     expect(L.checks.map((c) => c.name)).toEqual(l.qc!.checks.map((c) => c.name));

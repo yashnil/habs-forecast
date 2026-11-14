@@ -377,7 +377,8 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
 
     if out.exists():
         shutil.rmtree(out)
-    m = run_pipeline(fixture_context(out, now))
+    # the web fixture is test data (never published): it keeps the derived layers its e2e tests read
+    m = run_pipeline(fixture_context(out, now), derived=True)
     if scenario == "charm-failed":
         # a later run: every C-HARM request fails, the VIIRS daily products fail too (an explicit
         # failure: with a 10-day VIIRS window the four-day-later run would otherwise still find
@@ -391,7 +392,7 @@ def build_fixture_dataset(out: Path, now: str = FIXTURE_NOW, scenario: str = "no
                 re.escape(CDPH_RELEASES): _with_lift_release,
             }
         )
-        m = run_pipeline(fixture_context(out, later, fetcher))
+        m = run_pipeline(fixture_context(out, later, fetcher), derived=True)
         # The web's failed fixture is also its dataset WITHOUT derived products
         # (coastwatch-web/tests/e2e/v5-map.spec.ts: "without a derived index nothing derived is
         # offered"): derived/ is optional and is left out here. The pilot sidecars stay.

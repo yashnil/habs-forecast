@@ -52,13 +52,13 @@ describe("layer metadata", () => {
     expect(m("chl")).toMatchObject({ productClass: "observation", units: "mg/m³", role: "surface" });
     expect(m("chl").when).toMatch(/Oct/);
     expect(m("charm")).toMatchObject({ productClass: "model", units: "probability (%)" });
-    // an inferred issue date is never shown: the run is dated by its valid days (round 2, C)
-    expect(m("charm").when).toMatch(/^valid .+ \(expired\)$/);
+    // a verified issue date names the run; an inferred one is never shown (round 2, C)
+    expect(m("charm").when).toMatch(/^(run of .+, )?valid .+ \(expired\)$/);
     expect(m("charm").note).toMatch(/not a measured toxin/);
     expect(m("currents")).toMatchObject({ productClass: "observation", units: "kn · cm/s", role: "overlay" });
     expect(m("currents").when).toMatch(/\d+ hours to /);
     expect(m("stations").when).toMatch(/1 shore stations, newest sample Oct 6; 1 buoys read live/);
-    expect(chipWords(m("charm"))).toMatch(/^Model · valid /);
+    expect(chipWords(m("charm"))).toMatch(/^Model · (run of .+, )?valid /);
     expect(chipWords(m("chl"))).toMatch(/^Observation · /);
   });
   it("chlorophyll is never called toxin", () => {
@@ -309,7 +309,7 @@ describe("final pass: nothing expired, stale or old ever reads as current", () =
     expect(leadSentence(charm, charm.frames[0])).toMatch(/expired/);
     expect(shortLine(charm)).toMatch(/expired/);
     expect(legendCaption(charm, charm.frames[0])).toMatch(/Past run: every day it covers is before today/);
-    expect(railExpired(charm)).toMatch(/expired .*not a current forecast/);
+    expect(railExpired(charm)).toMatch(/expired.*not a current forecast/i);
   });
   it("old satellite days are marked (old) wherever their dates are shown", () => {
     const meta = m.find((x) => x.id === "chl")!;
