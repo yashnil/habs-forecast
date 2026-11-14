@@ -11,7 +11,8 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("a v2 Explore link naming the forecast opens Explore on C-HARM, with its words", async ({ page }) => {
   await page.goto(`${OK}/?region=monterey_bay&port=550&layer=forecast`);
   await expect(page).toHaveURL(/\/explore\?/);
-  await expect(page.getByTestId("nx-margin")).toContainText("Explore: C-HARM");
+  // v15.1: the page heading names the layer on show (Explore California Waters: C-HARM)
+  await expect(page.getByTestId("nx-margin").getByRole("heading", { level: 1, name: "Explore California Waters: C-HARM" })).toBeVisible();
   await expect(page.getByTestId("nx-margin")).toContainText("not toxin in seafood");
 });
 
@@ -26,7 +27,8 @@ test("a research-mode My Coast link opens Research near that place", async ({ pa
   await page.goto(`${OK}/coast?mode=research&place=port-592`);
   await expect(page).toHaveURL(/\/research\?place=port-592/);
   await expect(page.getByTestId("nx-research")).toBeVisible();
-  await expect(page.getByTestId("nx-margin")).toContainText("Nearest station to Moss Landing");
+  // v15.1: Research opens on the most useful station near the place and says so ("… stations near Moss Landing")
+  await expect(page.getByTestId("nx-margin")).toContainText(/stations? near Moss Landing/);
 });
 
 test("a campaign tag on / keeps the front door; a reload of Explore stays on Explore", async ({ page }) => {
@@ -35,7 +37,7 @@ test("a campaign tag on / keeps the front door; a reload of Explore stays on Exp
   await page.goto(`${OK}/explore?layer=charm`);
   await page.reload();
   await expect(page).toHaveURL(/\/explore\?layer=charm/);
-  await expect(page.getByTestId("nx-margin")).toContainText("Explore: C-HARM");
+  await expect(page.getByTestId("nx-margin").getByRole("heading", { level: 1, name: "Explore California Waters: C-HARM" })).toBeVisible();
 });
 
 test("About and Sources are one tap from the menu on every page (navigation.spec)", async ({ page }) => {

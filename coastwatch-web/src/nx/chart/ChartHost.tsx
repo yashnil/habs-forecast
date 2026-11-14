@@ -121,6 +121,7 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets, anchor
     return { center: unproject(c, free, free.width / 2, free.height / 2 + cover.bottom / 2), zoom: c.zoom };
   }
   const ins = sceneInsets(vp, cover);
+  if (scene.view.padTop) ins.top += scene.view.padTop;
   // a tall, narrow free area (a desk page's chart pane) takes the view's own box for that shape when it has one
   const freeW = vp.width - ins.left - ins.right, freeH = vp.height - ins.top - ins.bottom;
   const box = scene.view.tall && freeH >= freeW * 1.25 ? scene.view.tall : scene.view.bounds;
@@ -615,7 +616,7 @@ export function ChartHost({ ports, opening }: { ports: ChartPort[]; opening?: Re
           const from = m.getCenter();
           const ws = worldSize(Math.min(m.getZoom(), target.zoom));
           const dist = Math.hypot((lngX(target.center[0]) - lngX(from.lng)) * ws, (latY(target.center[1]) - latY(from.lat)) * ws) + Math.abs(target.zoom - m.getZoom()) * 160;
-          const duration = tier === "reduced" ? 300 : flightSeconds(dist) * 1000;
+          const duration = tier === "reduced" ? 300 : (scene.flightMs ?? flightSeconds(dist) * 1000);
           const delay = flightDelay();
           noteFlight(delay, duration);
           panUntil.current = performance.now() + delay + duration;

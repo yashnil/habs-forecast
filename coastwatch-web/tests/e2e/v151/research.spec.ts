@@ -34,7 +34,7 @@ test("Crescent City (sparse): opens on the stations near it, never on a distant 
   // which variables it measures, the latest date per variable, its state; what it does not collect
   await expect(page.getByTestId("nearby-latest-HABs-TrinidadPier-pDA")).toContainText("Apr 17, 2026");
   await expect(page.getByTestId("nearby-latest-HABs-TrinidadPier-pDA")).toContainText("Old but valid");
-  await expect(page.getByTestId("nearby-not-HABs-TrinidadPier")).toContainText("Not collected here: seriata, delicatissima, chlorophyll, temperature");
+  await expect(page.getByTestId("nearby-not-HABs-TrinidadPier")).toContainText("Not collected here: Pseudo-nitzschia (seriata), Pseudo-nitzschia (delicatissima), chlorophyll, water temperature");
   // variables no listed station measures: the nearest that does, far and said so
   await expect(page.getByTestId("nearby-reach-pn_seriata")).toContainText("The nearest station measuring Pseudo-nitzschia (seriata) is Bodega Marine Lab");
   await expect(page.getByTestId("nearby-reach-pn_seriata")).toContainText("nothing nearer samples it");
@@ -60,6 +60,19 @@ test("Crescent City: one press reaches the latest sample; the place stays; the o
   // the whole historical record is one press away
   await page.getByTestId("range-all").click();
   await expect(page.getByTestId("range-all")).toHaveAttribute("aria-checked", "true");
+});
+
+test("Moss Landing: opens on the most useful station (Santa Cruz, recent pDA) and names Monterey Wharf, nearer and older", async ({ page }) => {
+  await open(page, "place=port-592");
+  await expect(page.getByTestId("nx-research")).toHaveAttribute("data-station", "HABs-SantaCruzWharf");
+  await expect(page.getByTestId("research-choice")).toContainText("Santa Cruz Wharf, 27 km northwest, pDA sampled Sep 30, 2026");
+  await expect(page.getByTestId("research-choice")).toContainText("Monterey Wharf, nearer, pDA last sampled 2022");
+  await expect(page.getByTestId("research-arrived")).not.toContainText("Nearest station to Moss Landing");
+  // both stay one press away; the statewide map is there, quietly, at a well-covered port too
+  await expect(page.getByTestId("research-statewide-quiet")).toHaveAttribute("href", "/explore?view=coast&place=port-592&st=1&from=research");
+  await page.getByTestId("research-nearby-open").click();
+  await page.getByTestId("nearby-latest-HABs-MontereyWharf-pDA").click();
+  await expect.poll(() => params(page)).toMatchObject({ place: "port-592", station: "HABs-MontereyWharf", var: "pDA", day: "2022-08-31" });
 });
 
 test("Monterey (dense): opens on the record; the nearby stations are one press away and current ones say so", async ({ page }) => {
@@ -90,6 +103,11 @@ test("Fort Bragg (nothing near): every listed station is beyond 60 km and says s
   for (const t of await wheres.allTextContents()) expect(t).toContain("beyond 60 km");
   // the arrival line still says the record is not this water's
   await expect(page.getByTestId("research-arrived")).toContainText("No station is near Fort Bragg");
+  // the most useful far station: Bodega Marine Lab (Apr 2026), not the buoy beside it (Jan 2026)
+  await expect(page.getByTestId("nx-research")).toHaveAttribute("data-station", "HABs-BodegaMarineLab");
+  // reader labels, never raw ids
+  await expect(page.getByTestId("nearby-not-HABs-BodegaMarineLab")).toContainText("Not collected here: pDA, tDA, chlorophyll");
+  await expect(page.getByTestId("research-nearby")).not.toContainText(/\bpda\b|\btda\b|pn_|chl_extracted/);
 });
 
 test("phone: the stations near a sparse place read first in the sheet", async ({ browser }) => {

@@ -55,7 +55,7 @@ for (const [name, size] of [
     await expect.poll(() => scene(page), { timeout: 15_000 }).toBe("explore:state");
     // the camera leaves once Today's ticket has shrunk away, then lands on the whole coast
     await expect.poll(async () => { const b = await bounds(page); return b.s <= 32.53 && b.n >= 42 && !(await moving(page)); }, { timeout: 15_000 }).toBe(true);
-    await expect(page.getByTestId("nx-explore-heading")).toHaveText("Explore California Waters");
+    await expect(page.getByRole("heading", { level: 1, name: "Explore California Waters: Chlorophyll" })).toBeVisible();
     // the port is kept: one tap back to its water
     await page.getByTestId("nx-back-port").click();
     await expect.poll(() => scene(page), { timeout: 15_000 }).toBe("explore:port-592");
@@ -65,6 +65,33 @@ for (const [name, size] of [
     await page.getByTestId("nx-back-from").click();
     await expect(page).toHaveURL(/\/today\?place=port-592/);
     expect(errors).toEqual([]);
+    await ctx.close();
+  });
+}
+
+for (const size of [SIZES.desk, { width: 1280, height: 800 }, { width: 1100, height: 800 }, SIZES.phone, SIZES.small]) {
+  test(`statewide at ${size.width}: the Oregon border and the Mexican border are uncovered`, async ({ browser }) => {
+    const { ctx, page } = await newContext(browser, size);
+    await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+    await mapReady(page);
+    const at = (lon: number, lat: number) => page.evaluate(([lo, la]) => (window as unknown as { __cwMap: { project: (x: [number, number]) => { x: number; y: number } } }).__cwMap.project([lo, la]), [lon, lat]);
+    const sheet = (await page.getByTestId("nx-sheet").boundingBox())!;
+    await expect
+      .poll(async () => {
+        const n = await at(-124.21, 42.0), s = await at(-117.12, 32.53);
+        const p = { x: sheet.x + n.x, y: sheet.y + n.y };
+        for (const sel of ["[data-testid=nx-bar]", "[data-testid=nx-port-control]", "[data-testid=nx-menu-button]", ".nx-nav", ".nx-bar-end"]) {
+          const id = sel;
+          const r = await page.locator(sel).first().boundingBox();
+          if (r && p.x >= r.x - 4 && p.x <= r.x + r.width + 4 && p.y >= r.y - 4 && p.y <= r.y + r.height + 4) return `under ${id}`;
+        }
+        // a phone's sheet spans the width; at a desk the time dock runs along the chart's foot
+        const pane = await page.locator(size.width <= 640 ? ".n12-margin" : "[data-testid=nx-time-dock]").first().boundingBox();
+        const m = { x: sheet.x + s.x, y: sheet.y + s.y };
+        if (pane && m.y > pane.y && m.x >= pane.x && m.x <= pane.x + pane.width) return "Mexico under the sheet or dock";
+        return "clear";
+      }, { timeout: 15_000 })
+      .toBe("clear");
     await ctx.close();
   });
 }
@@ -90,13 +117,19 @@ test("every live layer shows its legend, units and dates; what is not live is ne
   await expect(legend).toContainText("mg/m³");
   await expect(legend).toContainText(/Oct \d/);
   await expect(legend).toContainText("Algae, not toxin");
+  // one short line in view, the rest one tap away in "About this layer"
+  await expect(page.getByTestId("nx-explore-lead")).toHaveText("Algae seen from space · not toxin");
+  await expect(page.getByTestId("nx-resolution-note")).toBeHidden();
+  await page.getByTestId("nx-about").locator("summary").click();
   // statewide, the 300 m grid is finer than the screen: said with the numbers
   await expect(page.getByTestId("nx-resolution-note")).toContainText(/cells of 278 m/);
+  await expect(page.getByTestId("nx-about")).toContainText("Sentinel-3 OLCI");
   // C-HARM: a model probability with its run and valid dates
   await page.getByTestId("nx-layer-charm").click();
   await expect(page.getByTestId("nx-layer-charm")).toHaveAttribute("data-class", "model");
   await expect(page.getByTestId("nx-layer-charm")).toContainText(/Model · run of .+, valid/);
   await expect(legend).toHaveAttribute("data-product", "charm");
+  await expect(page.getByTestId("nx-explore-lead")).toContainText("not measured toxin");
   await expect(legend).toContainText("P(pDA > 500 ng/L)");
   await expect(legend).toContainText(/valid Oct \d+, run of Oct \d+/);
   await expect(legend).toContainText("not toxin in seafood");
@@ -149,6 +182,10 @@ test("a tap on the water reads the real published cell", async ({ browser }) => 
   expect(expected).not.toBeNull();
   const shown = await readout.locator("p").filter({ hasText: "mg/m³" }).first().innerText();
   expect(Number(/([\d.]+)\s*mg/.exec(shown)![1])).toBeCloseTo(Number(expected!.toPrecision(2)), 6);
+  // land inside the grid's box (inland of Seaside) is outside the layer's area, never "cloud" (review j10)
+  await tapWater(page, 36.6, -121.77);
+  await expect(readout).toContainText("Outside this layer's area: land");
+  await expect(readout).not.toContainText("cloud, fog or no pass");
   await ctx.close();
 });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { RampLegend } from "@/nx/ds";
 import { ADJACENT_KEY } from "./adjacency";
 import type { CurrentFrame, ExploreFrame, ExploreProduct } from "./model";
@@ -41,13 +42,27 @@ function OutsideKey() {
   );
 }
 
-export function ExploreLegend({ product, frame, currents }: { product: ExploreProduct; frame: ExploreFrame; currents: CurrentFrame | null }) {
+/**
+ * v15.1: what stays in view is the scale, its units and its marks; the caption (kind, source, dates, mandatory words),
+ * the currents' method and whatever the page adds (`about`: resolution, what is not published) are one tap away in
+ * "About this layer", kept in the page (a closed <details>, so nothing is fetched or lost when it opens).
+ */
+export function ExploreLegend({ product, frame, currents, currentsLine, about }: { product: ExploreProduct; frame: ExploreFrame; currents: CurrentFrame | null; currentsLine?: ReactNode; about?: ReactNode }) {
   const caption = legendCaption(product, frame);
   let body;
   if (product.id === "chl") {
     body = (
       <>
-        <RampLegend title="Chlorophyll" unit="mg/m³" steps={CHL_STEPS} domain={CHL_DOMAIN} scale="log" ticks={CHL_TICKS} caption={caption} noView className={s.legend} />
+        <RampLegend title="Chlorophyll" unit="mg/m³" steps={CHL_STEPS} domain={CHL_DOMAIN} scale="log" ticks={CHL_TICKS} noView className={s.legend} />
+        <ul className={s.keys} aria-label="Marks">
+          {/* v15.1: past the area the sensor saw this week is not cloud: its own plain tint */}
+          <li data-testid="nx-key-outside-area">
+            <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
+              <rect x="0.5" y="0.5" width="39" height="15" className={s.swatchArea} />
+            </svg>
+            <span>Plain water: outside this layer&rsquo;s area</span>
+          </li>
+        </ul>
         {frame.besideLandLeftOut ? (
           <ul className={s.keys} aria-label="Marks">
             {/* its own key: not cloud ("no view") and not a model's footprint ("outside the model") */}
@@ -81,7 +96,6 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
           </li>
           <OutsideKey />
         </ul>
-        <p className={s.caption}>{caption}</p>
       </>
     );
   } else if (product.id === "charm") {
@@ -106,7 +120,6 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
           </li>
           <OutsideKey />
         </ul>
-        <p className={s.caption}>{caption}</p>
       </>
     );
   } else {
@@ -123,7 +136,6 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
           </svg>
           <span>every 1 °F, heavier every 2 °F</span>
         </div>
-        <p className={s.caption}>{caption}</p>
       </figure>
     );
   }
@@ -131,13 +143,21 @@ export function ExploreLegend({ product, frame, currents }: { product: ExplorePr
     <div className={s.legendBlock} data-testid="nx-legend" data-product={product.id}>
       {body}
       {currents ? (
-        <p className={s.currentsKey} data-testid="nx-currents-key">
+        <p className={s.currentsKey} data-testid="nx-currents-line">
           <svg viewBox="0 0 40 16" className={s.swatch} aria-hidden="true">
             <path d="M3,12 C14,11 24,7 37,4" className={s.streakSwatch} />
           </svg>
-          <span>{currentsCaption(currents)}</span>
+          <span>{currentsLine ?? `Measured currents · HF radar · ${currents.stamp}`}</span>
         </p>
       ) : null}
+      <details className={s.about} data-testid="nx-about">
+        <summary>About this layer</summary>
+        <div className={s.aboutBody}>
+          <p>{caption}</p>
+          {currents ? <p data-testid="nx-currents-key">{currentsCaption(currents)}</p> : null}
+          {about}
+        </div>
+      </details>
     </div>
   );
 }

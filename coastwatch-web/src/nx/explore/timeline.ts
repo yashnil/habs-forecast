@@ -91,18 +91,30 @@ export function nextOf<T extends { id: string }>(list: T[], id: string | null): 
 export function axisLabels(axis: [string, string], T: number, nx: number): Array<{ date: string; text: string; x: number }> {
   const w = (t: string) => t.length * 7.5 + 8;
   const nowHalf = w("Now") / 2 + 4;
-  const out: Array<{ date: string; text: string; x: number }> = [];
-  let right = -Infinity;
-  axisDays(axis).forEach((d, i) => {
-    const x = axisX(axis, d, 0) * T;
-    const text = i === 0 || d.endsWith("-01") ? `${new Date(`${d}T12:00:00Z`).toLocaleString("en-US", { month: "short", timeZone: "UTC" })} ${Number(d.slice(8, 10))}` : String(Number(d.slice(8, 10)));
-    const x1 = x + w(text);
-    if (x < right + 8 || x1 > T) return;
-    if (x1 > nx - nowHalf && x < nx + nowHalf) return;
-    out.push({ date: d, text, x });
-    right = x1;
-  });
-  return out;
+  const days = axisDays(axis);
+  const textOf = (d: string, i: number) => (i === 0 || d.endsWith("-01") ? `${new Date(`${d}T12:00:00Z`).toLocaleString("en-US", { month: "short", timeZone: "UTC" })} ${Number(d.slice(8, 10))}` : String(Number(d.slice(8, 10))));
+  // v15.1: when every day does not fit, every second (third…) day on a regular beat, never a ragged gap
+  for (let k = 1; k <= 7; k++) {
+    const out: Array<{ date: string; text: string; x: number }> = [];
+    let right = -Infinity;
+    let fits = true;
+    days.forEach((d, i) => {
+      if (!fits || i % k) return;
+      const x = axisX(axis, d, 0) * T;
+      const text = textOf(d, i);
+      const x1 = x + w(text);
+      if (x1 > nx - nowHalf && x < nx + nowHalf) return;
+      if (x1 > T) return;
+      if (x < right + 8) {
+        fits = false;
+        return;
+      }
+      out.push({ date: d, text, x });
+      right = x1;
+    });
+    if (fits || k === 7) return out;
+  }
+  return [];
 }
 
 /** A product's span on the rail and how much of it has data, for the rail's one availability line. */

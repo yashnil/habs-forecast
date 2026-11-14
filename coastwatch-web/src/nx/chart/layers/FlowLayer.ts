@@ -329,14 +329,16 @@ export function createFlowLayer(layerId: string, tier: FlowTier, colours: ModeCo
         g.uniform1f(u.u_taper, 1);
         // a casing in the halo colour holds each streak's edge over any ground (it carries no value)
         // thinner when zoomed out, where a 2 km cell is only a few pixels
-        const zw = Math.min(1, Math.max(0.6, (map.getZoom() - 6.5) / 3));
-        g.uniform1f(u.u_width, 4.2 * dpr * zw);
+        // v15.1 review: never thinner than legible statewide, and the casing strong enough to hold over a dark field;
+        // a still frame (an old hour, the 24 h mean, reduced motion) is drawn heavier, so it reads as settled marks
+        const zw = Math.min(1, Math.max(0.8, (map.getZoom() - 6.5) / 3)) * (stopped() ? 1.2 : 1);
+        g.uniform1f(u.u_width, 5.4 * dpr * zw);
         const [hr, hg, hb, ha] = cols.halo;
-        g.uniform4f(u.u_color, hr, hg, hb, ha * 0.38);
+        g.uniform4f(u.u_color, hr, hg, hb, ha * 0.85);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
-        g.uniform1f(u.u_width, 2.4 * dpr * zw);
+        g.uniform1f(u.u_width, 2.6 * dpr * zw);
         const [sr, sg, sb, sa] = cols.streak;
-        g.uniform4f(u.u_color, sr, sg, sb, sa * 0.92);
+        g.uniform4f(u.u_color, sr, sg, sb, sa);
         g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, n);
       }
       g.bindVertexArray(null);

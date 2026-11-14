@@ -9,14 +9,14 @@ import type { Manifest, PortsCollection } from "@/generated/schema";
 import type { ObservationDataset } from "@/generated/observations";
 import type { OfficialDataset } from "@/generated/official";
 import { resolvePlace } from "@/lib/coast";
-import type { ObsVariableId } from "@/lib/observations";
+import { lastMeasured, type ObsVariableId } from "@/lib/observations";
 import { Button, ButtonGroup, Disclosure, Glyph, MapLayers, Micro, PageLayout, Pass, PortLabel, PlotSync, PlotTable, Stamp, Unavailable, brushEase, useMedia, usePhone, windowAround, type PlotSyncValue, type Provenance } from "@/nx/ds";
 import { age, day, dayTime, latLon, range } from "@/nx/ds/format";
 import { ChartScene, type ChartScene as Scene } from "@/nx/chart/scene";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { openSheet } from "@/nx/shell/Margin";
 import { distanceKm } from "@/lib/grid";
-import { directionWords, modelCoverage, placeCoverage, stationsAround, whereWords } from "./coverage";
+import { directionWords, modelCoverage, placeCoverage, stationsAround, usefulStation, whereWords } from "./coverage";
 import { Nearby } from "./Nearby";
 import { exploreHref as exploreLink } from "@/nx/explore/links";
 import { availabilityAll, chooseFocus, copyStart, emptyRange, exportCounts, inspectSample, latestWindow, modelCollapsed, nearestWithRecent, stationLatest, stepSample, visitTicks } from "./availability";
@@ -31,6 +31,7 @@ import {
   DEFAULT_STATION,
   extentOf,
   figure,
+  findStation,
   NEAR_KM,
   inWin,
   LABEL,
@@ -258,7 +259,17 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
     if (fromUrl && portKey) savePort(portKey);
   }, [fromUrl, portKey]);
   const place = useMemo(() => resolvePlace(query.place, ports), [query.place, ports]);
-  const choice = useMemo(() => chooseStation(stations, query, place, port), [stations, query, place, port]);
+  // v15.1: without a station in the link, the place opens on its most useful station (the nearest with a recent sample of
+  // what matters), not on a nearer pier whose record stopped years ago; the page names the one passed over
+  const pick = useMemo(() => {
+    if (findStation(stations, query.station)) return null;
+    const from = place ?? port;
+    return from ? usefulStation(stations, from, query.v, nowMs) : null;
+  }, [stations, query.station, query.v, place, port, nowMs]);
+  const choice = useMemo(() => {
+    const base = chooseStation(stations, query, place, port);
+    return pick ? { station: pick.station, arrival: base.arrival } : base;
+  }, [stations, query, place, port, pick]);
   const st = choice.station;
   // v15.1: the place the page is read from (the link's place, else the reader's port): its stations, per variable
   const ctxPlace = useMemo(() => (place ? { key: place.key, name: place.name, lat: place.lat, lon: place.lon } : port ? { key: port.key, name: port.name, lat: port.lat, lon: port.lon } : null), [place, port]);
@@ -727,6 +738,17 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
           : `${st.name}, ${whereWords({ km: awayKm, dir: directionWords(ctxPlace.lat, ctxPlace.lon, st.lat, st.lon) })} of ${ctxPlace.name}.`}
       </span>
     ) : null;
+  // the choice in the focused variable's terms where both stations measure it ("pDA sampled Sep 30, 2026; … pDA last sampled 2022")
+  const choiceWords = (() => {
+    if (!pick?.passed) return { here: "", there: "" };
+    const mine = lastMeasured(st, focus);
+    const theirs = lastMeasured(pick.passed.station, focus);
+    const when = (t: string) => (nowMs - Date.parse(t) > 365 * DAY ? String(new Date(t).getUTCFullYear()) : day(t, { year: true }));
+    return {
+      here: mine ? `${SHORT[focus]} sampled ${day(mine.time, { year: true })}` : `sampled ${day(pick.last, { year: true })}`,
+      there: theirs ? `${SHORT[focus]} last sampled ${when(theirs.time)}` : `last sampled ${when(pick.passed.last)}`,
+    };
+  })();
   const nearbyBtn = ctxPlace ? (
     <button type="button" className={x.nearbyLink} onClick={() => setPanel((p) => (p === "nearby" ? null : "nearby"))} aria-expanded={panel === "nearby"} data-testid="research-nearby-open">
       {around.filter((r) => r.near).length ? `${count(around.filter((r) => r.near).length, "station")} near ${ctxPlace.name}` : `Stations near ${ctxPlace.name}`}
@@ -735,7 +757,7 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
   const arrived =
     choice.arrival || askedMissing || query.askedVar || query.back || ctxPlace ? (
       <p className={x.arrived} data-testid="research-arrived">
-        {choice.arrival ? (
+        {choice.arrival && !(pick?.passed && choice.arrival.near) ? (
           choice.arrival.near ? (
             <span>
               Nearest station to {choice.arrival.name}, {kmWords(choice.arrival.km)} away.
@@ -752,9 +774,20 @@ export function Research({ observations, ports, manifest, official, baseUrl, now
             {LABEL[askedMissing]} isn&rsquo;t measured at {st.name}; the tabs show what is.
           </span>
         ) : null}
-        {away}
+        {pick?.passed ? (
+          <span data-testid="research-choice">
+            {" "}
+            {pick.station.name}, {whereWords(pick)}, {choiceWords.here}; {pick.passed.station.name}, nearer, {choiceWords.there}.
+          </span>
+        ) : null}
+        {pick?.passed ? null : away}
         {query.askedVar ? <span> &ldquo;{query.askedVar}&rdquo; isn&rsquo;t a quantity a shore station measures; the tabs show what this one does.</span> : null}
         {nearbyBtn}
+        {ctxPlace || st.nearest_port_code != null ? (
+          <Link href={statewideHref} className={x.statewideLink} data-testid="research-statewide-quiet">
+            Statewide map
+          </Link>
+        ) : null}
         {query.back ? (
           <Link href={query.back} className={s.back} data-testid="research-back">
             Back

@@ -382,8 +382,9 @@ test.describe("phone chart", () => {
       await expect(page.getByTestId("nx-sheet")).toHaveAttribute("data-map-ready", "1", { timeout: 20_000 });
       await expect(page.getByTestId("nx-zoom-in")).toBeHidden();
       await expect(page.locator(".n12-scale")).toBeHidden();
-      // the layers are one button named "Layers"; the sections a tab bar
-      await expect(page.getByRole("button", { name: "Layers", exact: true })).toBeVisible();
+      // v15.1: in Explore its own layer switch is the one set of layer controls (the shell's "Layers" button steps aside); the sections a tab bar
+      await expect(page.getByRole("button", { name: "Layers", exact: true })).toBeHidden();
+      await expect(page.getByTestId("nx-data-layers")).toBeVisible();
       await expect(page.getByTestId("nx-tabs")).toBeVisible();
       const sheetTop = (await page.getByTestId("nx-margin").boundingBox())!.y;
       const name = page.locator(".n12-port-name-focus");

@@ -220,3 +220,65 @@ export function modelCoverage(st: Pick<ObsStation, "charm">): ModelCoverage {
     .sort();
   return { days: new Set(dates).size, first: dates[0] ?? null, last: dates.at(-1) ?? null, radiusKm: st.charm?.radius_km ?? 15 };
 }
+
+// ---------------------------------------------------------------- the station the page opens on, by usefulness
+
+/** The variables that lead a station's choice: the toxin and the cells that make it (not temperature or chlorophyll). */
+export const HEADLINE: ObsVariableId[] = ["pDA", "tDA", "pn_seriata", "pn_delicatissima"];
+/** "Recent" for the default station: a sample within a year. */
+export const USEFUL_DAYS = 365;
+/** Beyond 60 km the band reaches this far past the nearest station (a farther, newer record can still be chosen). */
+export const BAND_KM = 60;
+/** Recent stations within this much of the nearest recent one count as equally near: the newest of them is chosen. */
+export const TIE_KM = 10;
+/** …and a farther one of them wins only when its newest sample is this much newer (a week apart is the same cadence). */
+export const TIE_DAYS = 30;
+
+export type UsefulPick<S extends Located = Located> = {
+  station: S;
+  km: number;
+  dir: string;
+  /** its newest sample of the leading variables (ISO time) */
+  last: string;
+  /** the nearer station that measures them and was passed over (its record older), or null */
+  passed: { station: S; km: number; dir: string; last: string } | null;
+};
+
+/**
+ * The station a place opens on: not simply the nearest, but the nearest with a recent sample of what matters (the
+ * asked variable, else pDA, tDA and Pseudo-nitzschia): Moss Landing opens on Santa Cruz Wharf (pDA Oct 28, 25 km)
+ * rather than Monterey Wharf (24 km, pDA last 2022). Among stations with a sample in the last USEFUL_DAYS inside the
+ * band (60 km, or the nearest + 60 km where none is that close), the nearest wins; ones within TIE_KM of it are told
+ * apart only when the farther one's sample is clearly newer (TIE_DAYS). With no recent sample in the band, the newest record in it. The page names the nearer
+ * station passed over, so both stay one press away.
+ */
+export function usefulStation<S extends Located>(stations: S[], from: { lat: number; lon: number }, asked: ObsVariableId | null, now: number): UsefulPick<S> | null {
+  const score = (vars: ObsVariableId[]) =>
+    stations
+      .map((s) => {
+        const t = Math.max(-Infinity, ...vars.map((v) => valueTimes(s, v).at(-1) ?? -Infinity));
+        return { s, km: distanceKm(from.lat, from.lon, s.lat, s.lon), t };
+      })
+      .filter((r) => Number.isFinite(r.t))
+      .sort((a, b) => a.km - b.km);
+  let rows = score(asked ? [asked] : HEADLINE);
+  if (!rows.length && !asked) rows = score(VAR_ORDER);
+  if (!rows.length) return null;
+  const reach = rows[0].km <= NEAR_KM ? NEAR_KM : rows[0].km + BAND_KM;
+  const band = rows.filter((r) => r.km <= reach);
+  const recent = band.filter((r) => now - r.t <= USEFUL_DAYS * DAY);
+  const newest = (xs: typeof rows) => [...xs].sort((a, b) => b.t - a.t || a.km - b.km)[0];
+  // equally near (within TIE_KM): the nearest, unless a farther one is clearly newer (by more than TIE_DAYS)
+  const tied = (xs: typeof rows) => xs.filter((r) => r.km <= xs[0].km + TIE_KM).reduce((best, r) => (r.t > best.t + TIE_DAYS * DAY ? r : best));
+  const pick = recent.length ? tied(recent) : newest(band);
+  const iso = (r: (typeof rows)[number]) => r.s.sample_times.find((x) => Date.parse(x) === r.t) ?? new Date(r.t).toISOString();
+  const near = rows[0];
+  const passedOver = near !== pick && near.km < pick.km - 0.05 && near.t < pick.t;
+  return {
+    station: pick.s,
+    km: pick.km,
+    dir: directionWords(from.lat, from.lon, pick.s.lat, pick.s.lon),
+    last: iso(pick),
+    passed: passedOver ? { station: near.s, km: near.km, dir: directionWords(from.lat, from.lon, near.s.lat, near.s.lon), last: iso(near) } : null,
+  };
+}

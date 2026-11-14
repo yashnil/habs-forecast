@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import type { FisheryId } from "@/pilot/contracts";
 import { FISHERY_OPTIONS } from "@/pilot/facts";
@@ -16,7 +17,7 @@ import s from "./today.module.css";
  * (port-level landings are not published openly; src/content/landings.ts holds port areas only). One tap
  * chooses and Today assembles in place.
  */
-export function FisheryChooser({ port, inputs, onChoose }: { port: { key: string; name: string }; inputs: TodayInputs | null | undefined; onChoose: (f: FisheryId) => void }) {
+export function FisheryChooser({ port, inputs, onChoose, lead }: { port: { key: string; name: string }; inputs: TodayInputs | null | undefined; onChoose: (f: FisheryId) => void; /** set under the lead line, above the list (v15.1: the Explore entry, in the sheet's resting view) */ lead?: ReactNode }) {
   const suggested = inputs ? suggestFisheries(inputs) : [];
   const rest = FISHERY_OPTIONS.filter((f) => !suggested.includes(f.id));
   const option = (id: FisheryId, label: string) => (
@@ -33,6 +34,7 @@ export function FisheryChooser({ port, inputs, onChoose }: { port: { key: string
         {port.name}
       </motion.h1>
       <p className={s.chooserLead}>What do you fish from here? Today leads with it, and you can change it at any time under Others.</p>
+      {lead}
       {inputs === undefined ? (
         // the list's own geometry while the port's records are read: a head and its rows
         <Skeleton className={s.block} label={`Reading what Neritic has for ${port.name}`} lines={6} />

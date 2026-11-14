@@ -194,3 +194,22 @@ const latWords = (lat: number) => `${Math.floor(Math.abs(lat))}°${String(Math.r
 export function coverageNote(layer: string, portName: string, box: [number, number, number, number]): string {
   return `${layer} is not published for the water at ${portName} in this data run: its cells run from ${latWords(box[1])} to ${latWords(box[3])}. The chart is on ${portName}; "Fit the data" on the chart goes to where the layer is.`;
 }
+
+/**
+ * v15.1: the one short line a layer keeps in view (the owner's "evidence on demand": the method, the dates' detail
+ * and the caveats wait behind "About this layer"). Each carries its truth rule's words: chlorophyll is not toxin;
+ * C-HARM is a model, not measured toxin, and a low probability is not open or safe (T37).
+ */
+export function shortLine(p: Pick<ExploreProduct, "id" | "kind" | "pastRun">): string {
+  switch (p.id) {
+    case "chl":
+      return "Algae seen from space · not toxin";
+    case "charm":
+      // design-lint-allow forbidden-word: T37 requires "does not mean open or safe" within one glance of a low probability
+      return `Model probability${p.pastRun ? ", past run" : ""} · not measured toxin; a lower probability does not mean open or safe`;
+    case "sst":
+      return p.kind === "analysis" ? "Sea temperature, an analysis · not a point measurement" : "Sea temperature, measured";
+    case "outlook":
+      return "Experimental chlorophyll outlook · a model, not toxin";
+  }
+}

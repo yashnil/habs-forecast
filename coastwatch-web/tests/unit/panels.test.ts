@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampBox, clampSize, coverSideFor, fitBeside, fromPlacement, guidesFor, nudge, toPlacement, type Area } from "@/nx/ds/panels/geometry";
+import { avoid, clampBox, clampSize, coverSideFor, fitBeside, fromPlacement, guidesFor, hitsAny, nudge, toPlacement, type Area } from "@/nx/ds/panels/geometry";
 import { PANELS_NS, cleanPanel, layoutChanged, loadLayout, parseLayout, resetLayout, savePanel } from "@/nx/ds/panels/store";
 
 const AREA: Area = { left: 24, top: 80, right: 1416, bottom: 876 }; // 1440 × 900, under the bar
@@ -79,6 +79,36 @@ describe("panels: guides, covers, the default layout", () => {
     // a ticket above the dock's band does not narrow it
     expect(fitBeside({ x: 24, y: 500, w: 1000, h: 300 }, [{ ...ticket, h: 300 }], 24, 320)).toBe(1000);
     expect(fitBeside({ x: 24, y: 500, w: 1000, h: 300 }, [{ ...ticket, x: 200 }], 24, 320)).toBe(320);
+  });
+});
+
+describe("panels: never under the floating chrome", () => {
+  const chips = { x: 24, y: 80, w: 442, h: 44 };
+  const zoom = { x: 1376, y: 756, w: 40, h: 120 };
+  it("moves a short panel dragged under the layer chips just below them", () => {
+    const b = avoid({ x: 30, y: 82, w: 400, h: 200 }, [chips, zoom], AREA);
+    expect(hitsAny(b, [chips, zoom])).toBe(false);
+    expect(b).toMatchObject({ x: 30, y: 132, h: 200 });
+  });
+  it("lets a tall panel keep its column under the chips by giving up height", () => {
+    const b = avoid({ x: 24, y: 80, w: 404, h: 790 }, [chips], AREA);
+    expect(hitsAny(b, [chips])).toBe(false);
+    expect(b.x).toBe(24);
+    expect(b.y).toBe(132);
+    expect(b.h).toBe(876 - 132);
+  });
+  it("steps a panel off the zoom buttons", () => {
+    const b = avoid({ x: 1000, y: 600, w: 400, h: 270 }, [chips, zoom], AREA);
+    expect(hitsAny(b, [zoom])).toBe(false);
+  });
+  it("finds the nearest free place beside another panel after the screen shrinks", () => {
+    const sea = { x: 24, y: 520, w: 620, h: 216 };
+    const small: Area = { left: 24, top: 80, right: 1076, bottom: 736 };
+    const b = avoid({ x: 300, y: 240, w: 320, h: 400 }, [chips, sea], small);
+    expect(hitsAny(b, [chips, sea])).toBe(false);
+  });
+  it("leaves a box with nothing in the way alone", () => {
+    expect(avoid({ x: 600, y: 300, w: 300, h: 200 }, [chips, zoom], AREA)).toEqual({ x: 600, y: 300, w: 300, h: 200 });
   });
 });
 

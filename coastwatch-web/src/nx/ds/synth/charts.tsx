@@ -519,6 +519,9 @@ export function SeaBars({ label, domain, periods, measured, advisories = [], day
           const isMax = q.hi === top && !maxDone;
           if (isMax) maxDone = true;
           const str = q.lo === q.hi ? String(q.hi) : `${q.lo}–${q.hi}`;
+          // a narrow dock drops the values that would run into their neighbours (each bar still names itself on
+          // hover and to a screen reader); the highest stays
+          if (!isMax && bw < str.length * 6.6 + 6) return null;
           return (
             <text key={`v${q.id}`} x={cxp} y={y(q.hi) + 16} textAnchor="middle" className={cx(s.seaVal, isMax && s.seaValMax, bw < 44 && str.length > 3 && s.seaValSmall)} opacity={grow}>
               {str}
@@ -548,11 +551,16 @@ export function SeaBars({ label, domain, periods, measured, advisories = [], day
             {narrow ? keyText.replace(/^Seas, /, "") : keyText}
           </text>
         </g>
-        {days.map((d) => (
-          <text key={d.t} x={x(d.t)} y={pb + 16} textAnchor="middle" className={s.tickText}>
-            {narrow ? (d.short ?? d.label.slice(0, 3)) : d.label}
-          </text>
-        ))}
+        {days.map((d, i) => {
+          // day names closer than a short name's width: every other one
+          const gap = days.length > 1 ? Math.abs(x(days[1].t) - x(days[0].t)) : w;
+          if (gap < 34 && i % 2 === 1) return null;
+          return (
+            <text key={d.t} x={x(d.t)} y={pb + 16} textAnchor="middle" className={s.tickText}>
+              {narrow ? (d.short ?? d.label.slice(0, 3)) : d.label}
+            </text>
+          );
+        })}
         {periods.map((q) => (
           <rect
             key={`h${q.id}`}
@@ -580,7 +588,7 @@ export function SeaBars({ label, domain, periods, measured, advisories = [], day
                   <circle cx={bx} cy={byy} r={5.5} className={s.buoyDot} />
                   <circle cx={bx} cy={byy} r={16} className={s.hit} />
                   <text x={Math.max(0, bx - 4)} y={byy - 10} className={s.buoyWord}>
-                    {measured.label}
+                    {narrow && typeof measured.label === "string" ? measured.label.split(" · ")[0] : measured.label}
                   </text>
                 </g>
               );

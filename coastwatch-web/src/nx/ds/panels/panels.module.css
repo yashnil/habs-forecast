@@ -3,6 +3,8 @@
 
 .panel { touch-action: auto; }
 .panel[data-panel-front] { z-index: 3; }
+/* a moved panel is the reader's size: the shell's resting cap beside the ticket no longer applies */
+.panel[data-panel-moved] { max-width: none !important; }
 .panel[data-panel-dragging] { user-select: none; will-change: left, top; }
 
 /* ------------------------------------------------------------ the strip: grip in the middle, tools at the end */

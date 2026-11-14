@@ -147,6 +147,14 @@ test.describe("the disclosures are still there", () => {
     await expect(page.getByTestId("registry-disclosure")).toContainText("Unavailable", { useInnerText: true });
   });
 
+  test("the registry line and the Notices page count the same notices", async ({ page }) => {
+    await settle(page, "/sources");
+    const line = (await page.getByTestId("registry-disclosure").innerText()).match(/(\d+) official notices? in CA/);
+    expect(line).not.toBeNull();
+    await page.goto(`${OK}/notices`);
+    await expect(page.locator("#nx-notices-title")).toContainText(`${line![1]} current notices on the coast`);
+  });
+
   test("the kept briefing page says what it is when nothing is kept", async ({ page }) => {
     await settle(page, "/coast/kept");
     await expect(page.getByTestId("kept-empty")).toContainText("No briefing is kept on this device");

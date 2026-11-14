@@ -52,6 +52,7 @@ const near = (a: Box, b: Box, tol = 3) => {
 const overlap = (a: Box, b: Box) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 
 test("My Coast: the sea window and the ticket move, resize, collapse and reset independently, and are remembered", async ({ browser }) => {
+  test.setTimeout(120_000);
   const { ctx, page, errors } = await coastContext(browser);
   await page.goto(`${OK}/coast?place=${MOSS}`);
   const ticket = page.locator('[data-panel="ticket"]');
@@ -175,18 +176,163 @@ test("Today: the sea dock and the ticket move independently", async ({ browser }
   await ctx.close();
 });
 
-test("My Coast trip view: the pass keeps its width when moved and stays inside the gutters", async ({ browser }) => {
+test("My Coast trip view: the full-width pass is not a free panel, and no Reset layout appears", async ({ browser }) => {
   const { ctx, page } = await coastContext(browser, { width: 1100, height: 760 });
+  // an entry left by an earlier build for the pass is dropped, so Menu offers no reset either
+  await page.goto(`${OK}/about`);
+  await page.evaluate(() => localStorage.setItem("nx-panels-v1:coast", JSON.stringify({ v: 1, panels: { pass: { p: { ax: "l", dx: 0, ay: "t", dy: 0 } } } })));
   await page.goto(`${OK}/coast?place=${MOSS}&view=trip`);
-  const pass = page.locator('[data-panel="pass"]');
-  const p0 = await settled(pass);
-  await drag(page, pass.locator("[data-panel-grip]"), 40, -120);
-  const p1 = await settled(pass);
-  expect(Math.round(p1.width)).toBe(Math.round(p0.width));
-  expect(p1.x + p1.width).toBeLessThanOrEqual(1100 - 14);
-  expect(Math.round(p0.y - p1.y)).toBe(120);
+  await expect(page.getByTestId("trip-pass")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("[data-panel]")).toHaveCount(0);
+  await expect(page.locator("[data-panel-grip]")).toHaveCount(0);
+  await expect(page.getByTestId("panel-reset")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("nx-panels-v1:coast"))).toBeNull();
   await ctx.close();
 });
+
+/** True when the point at the centre of `l` hits `l` itself (nothing floats over it). */
+async function reachable(l: Locator) {
+  const b = (await l.boundingBox())!;
+  return l.evaluate((n, p) => {
+    const hit = document.elementFromPoint(p.x, p.y);
+    return !!hit && (hit === n || n.contains(hit));
+  }, { x: b.x + b.width / 2, y: b.y + b.height / 2 });
+}
+
+const CHROME = ".n12-bar > *, .nx-layers, .n12-controls";
+async function chromeBoxes(page: Page): Promise<Box[]> {
+  return page.evaluate((sel) => [...document.querySelectorAll(sel)].map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => ({ x: r.left, y: r.top, width: r.width, height: r.height })), CHROME);
+}
+
+test("Today: a ticket dragged into the top-left corner stops clear of the bar and chips; grip, collapse and reset stay in reach", async ({ browser }) => {
+  const { ctx, page, errors } = await coastContext(browser);
+  await page.goto(`${OK}/today?place=${MOSS}`);
+  const ticket = page.locator('[data-panel="ticket"]');
+  await settled(ticket);
+  await drag(page, ticket.locator("[data-panel-grip]"), -2000, -2000);
+  const t = await settled(ticket);
+  for (const c of await chromeBoxes(page)) expect(overlap(t, c), `ticket clear of ${JSON.stringify(c)}`).toBe(false);
+  expect(t.y + t.height).toBeLessThanOrEqual(900);
+  expect(await reachable(ticket.locator("[data-panel-grip]"))).toBe(true);
+  expect(await reachable(ticket.getByTestId("panel-collapse"))).toBe(true);
+  expect(await reachable(ticket.getByTestId("panel-reset"))).toBe(true);
+  // collapsed there, it is still on screen and in reach
+  await ticket.getByTestId("panel-collapse").click();
+  const c = await settled(ticket);
+  for (const ch of await chromeBoxes(page)) expect(overlap(c, ch)).toBe(false);
+  expect(await reachable(ticket.getByTestId("panel-collapse"))).toBe(true);
+  await ticket.getByTestId("panel-collapse").click();
+  // and its own Reset puts it back
+  await ticket.getByTestId("panel-reset").click();
+  await expect(ticket).not.toHaveAttribute("data-panel-moved", "");
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+test("Today: the resize corner keeps the top-left corner still, and a narrow ticket never cuts its big date", async ({ browser }) => {
+  const { ctx, page } = await coastContext(browser);
+  await page.goto(`${OK}/today?place=${MOSS}`);
+  const ticket = page.locator('[data-panel="ticket"]');
+  const t0 = await settled(ticket);
+  await drag(page, ticket.locator("[data-panel-resize]"), 60, -80);
+  const t1 = await settled(ticket);
+  expect(Math.abs(t1.x - t0.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(t1.y - t0.y)).toBeLessThanOrEqual(1);
+  expect(Math.round(t1.width - t0.width)).toBe(60);
+  expect(Math.round(t0.height - t1.height)).toBe(80);
+  // shorter: the content's last part is inside the box or reached by scrolling the ticket's own scroller
+  await drag(page, ticket.locator("[data-panel-resize]"), 0, -(t1.height - 420));
+  const short = await settled(ticket);
+  // it stops at the height of what does not scroll inside (the heading, the action): never shorter than that
+  expect(short.height).toBeLessThanOrEqual(t1.height + 1);
+  const reach = await ticket.evaluate((n) => {
+    const box = n.getBoundingClientRect();
+    const last = n.lastElementChild as HTMLElement;
+    let deepest: Element = last;
+    while (deepest.lastElementChild) deepest = deepest.lastElementChild;
+    const lastIn = last.getBoundingClientRect().bottom <= box.bottom + 1;
+    // scroll whichever ancestor inside the ticket scrolls, to the end
+    for (let e: HTMLElement | null = deepest.parentElement; e && e !== n; e = e.parentElement) if (e.scrollHeight > e.clientHeight + 1) e.scrollTop = e.scrollHeight;
+    const d = deepest.getBoundingClientRect();
+    return { lastIn, deepIn: d.bottom <= box.bottom + 1 && d.top >= box.top - 1, overflow: n.scrollHeight - n.clientHeight };
+  });
+  expect(reach.lastIn, "the ticket's last part ends inside its box").toBe(true);
+  expect(reach.deepIn, "its last line is reached by scrolling").toBe(true);
+  expect(reach.overflow).toBeLessThanOrEqual(1);
+  const grip = ticket.locator("[data-panel-grip]");
+  const gb = (await grip.boundingBox())!;
+  expect(Math.abs(gb.y - short.y)).toBeLessThanOrEqual(2);
+  // as narrow as it will go: nothing inside is wider than the ticket
+  await drag(page, ticket.locator("[data-panel-resize]"), -400, 0);
+  const t2 = await settled(ticket);
+  expect(Math.abs(t2.x - t0.x)).toBeLessThanOrEqual(1);
+  const cut = await ticket.evaluate((n) => [...n.children].some((c) => c instanceof HTMLElement && c.offsetParent !== null && c.scrollWidth > c.clientWidth + 1));
+  expect(cut, "no child draws past the ticket").toBe(false);
+  expect(await ticket.evaluate((n) => n.scrollHeight <= n.clientHeight + 1), "nothing draws past its foot").toBe(true);
+  await ctx.close();
+});
+
+test("a panel enlarged at 1280 keeps the reader's size after a shrink to 1100 and a re-grow", async ({ browser }) => {
+  const { ctx, page } = await coastContext(browser, { width: 1280, height: 800 });
+  await page.goto(`${OK}/coast?place=${MOSS}`);
+  const sea = page.locator('[data-panel="sea-window"]');
+  const s0 = await settled(sea);
+  await drag(page, sea.locator("[data-panel-grip]"), 0, -200);
+  await drag(page, sea.locator("[data-panel-resize]"), 300, 60);
+  const big = await settled(sea);
+  expect(Math.round(big.width - s0.width)).toBe(300);
+  await page.setViewportSize({ width: 1100, height: 600 });
+  await page.waitForTimeout(500);
+  const small = await settled(sea);
+  expect(small.x + small.width).toBeLessThanOrEqual(1100);
+  expect(small.y + small.height).toBeLessThanOrEqual(600);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(500);
+  const back = await settled(sea);
+  expect(Math.round(back.width)).toBe(Math.round(big.width));
+  expect(Math.round(back.height)).toBe(Math.round(big.height));
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("nx-panels-v1:coast") ?? "{}").panels?.["sea-window"]);
+  expect(saved.w).toBe(Math.round(big.width));
+  await ctx.close();
+});
+
+for (const [w, h] of [[1100, 760], [900, 700]]) {
+  test(`Today: after the screen shrinks to ${w} px a moved ticket finds a free place (no pile-up on the sea panel)`, async ({ browser }) => {
+    const { ctx, page } = await coastContext(browser);
+    await page.goto(`${OK}/today?place=${MOSS}`);
+    const ticket = page.locator('[data-panel="ticket"]');
+    const sea = page.locator('[data-panel="sea-next-four-days"]');
+    const t0 = await settled(ticket);
+    await settled(sea);
+    // left, into the middle of the chart, above the sea panel
+    await drag(page, ticket.locator("[data-panel-grip]"), -(t0.x - 300), 0);
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(400);
+    const [t, s] = [await settled(ticket), await settled(sea)];
+    expect(overlap(t, s), "the ticket and the sea panel do not overlap").toBe(false);
+    for (const c of await chromeBoxes(page)) expect(overlap(t, c)).toBe(false);
+    expect(t.x + t.width).toBeLessThanOrEqual(w);
+    expect(t.y + t.height).toBeLessThanOrEqual(h);
+    expect(await ticket.evaluate((n) => n.scrollHeight <= n.clientHeight + 1), "its content scrolls inside it").toBe(true);
+    const entry = page.getByTestId("nx-today-explore");
+    if (await entry.isVisible()) {
+      await entry.scrollIntoViewIfNeeded();
+      expect(await reachable(entry), "Explore California Waters is not covered").toBe(true);
+    }
+    await ctx.close();
+  });
+}
+
+for (const [path, key] of [["/today", "ticket"], ["/coast", "ticket"]]) {
+  test(`${path}: the resting ticket fits inside a 1440×900 screen (its content scrolls)`, async ({ browser }) => {
+    const { ctx, page } = await coastContext(browser);
+    await page.goto(`${OK}${path}?place=${MOSS}`);
+    const t = await settled(page.locator(`[data-panel="${key}"]`));
+    expect(t.y + t.height).toBeLessThanOrEqual(900);
+    expect(await page.locator(`[data-panel="${key}"]`).evaluate((n) => n.scrollHeight <= n.clientHeight + 1), "its content scrolls inside it").toBe(true);
+    await ctx.close();
+  });
+}
 
 for (const width of [390, 320]) {
   test(`phone ${width} px: no floating panels; the sheet reads in order with nothing overlapping`, async ({ browser }) => {

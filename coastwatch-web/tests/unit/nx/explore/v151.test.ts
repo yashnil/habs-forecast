@@ -120,3 +120,57 @@ describe("the address and the way back", () => {
     expect(destinationHref("/coast", "port-592")).toBe("/coast?place=port-592");
   });
 });
+
+import { markForDisplay, westmostPerRow } from "@/nx/chart/layers/marks";
+import { axisLabels } from "@/nx/explore/timeline";
+
+describe("three meanings of no value, drawn apart (review j9)", () => {
+  const N = 65535;
+  // 2 rows x 4 cols, chunks of 1 row x 2 cols: row 0 has a value at col 2; row 1 none
+  const g = { width: 4, height: 2, lat_first: 1, lat_step: -1, lon_first: 0, lon_step: 1, scale_factor: 1, add_offset: 0, nodata: N, transform: "none" as const, chunks: { rows: 1, cols: 2, present: ["0_0", "0_1", "1_0", "1_1"] } };
+  const codes = Uint16Array.from([N, N, 5, N, N, N, N, N]);
+  it("west of the week's westernmost pixel is outside; a gap east of it stays cloud; the published codes are untouched", () => {
+    const west = westmostPerRow(g, codes);
+    expect([...west]).toEqual([2, -1]);
+    const m = markForDisplay(g, codes, { westmost: west });
+    expect([...m.codes.slice(0, 4)]).toEqual([m.outCode, m.outCode, 5, N]);
+    expect([...m.codes.slice(4)]).toEqual([m.outCode, m.outCode, m.outCode, m.outCode]);
+    expect(codes[0]).toBe(N);
+  });
+  it("cells of a chunk not loaded yet are marked loading, never cloud", () => {
+    const m = markForDisplay(g, codes, { loaded: new Set(["0_0", "0_1"]) });
+    expect([...m.codes.slice(4)]).toEqual([m.loadingCode, m.loadingCode, m.loadingCode, m.loadingCode]);
+    expect([...m.codes.slice(0, 4)]).toEqual([N, N, 5, N]);
+  });
+});
+
+describe("the day axis thins on a regular beat (review: labels dropped at 1100)", () => {
+  it("every day when there is room, else every second day, never a ragged gap", () => {
+    const wide = axisLabels(["2026-11-02", "2026-11-14"], 1200, 2000);
+    expect(wide.length).toBe(13);
+    const narrow = axisLabels(["2026-11-02", "2026-11-14"], 260, 2000);
+    const idx = narrow.map((l) => Number(l.date.slice(8)) - 2);
+    const gaps = new Set(idx.slice(1).map((v, i) => v - idx[i]));
+    expect(gaps.size).toBe(1);
+  });
+});
+
+import { outsideObservedArea } from "@/nx/explore/read";
+
+describe("land and the open ocean read as outside the layer's area, never cloud (review j10)", () => {
+  const shoreLon = (lat: number) => (lat > 32 && lat < 42.1 ? -122 + (lat - 37) * -0.5 : null);
+  it("a cell in the Sierra the week never saw is outside", () => {
+    expect(outsideObservedArea({ lat: 37.46, lon: -118.7, row: 10, col: 900, compositeEmpty: true, westmost: null, shoreLon })).toBe(true);
+  });
+  it("a cell at sea the week never saw stays cloud (no view)", () => {
+    expect(outsideObservedArea({ lat: 37, lon: -123, row: 10, col: 100, compositeEmpty: true, westmost: null, shoreLon })).toBe(false);
+  });
+  it("west of the week's westernmost pixel is outside; east of it a gap is cloud", () => {
+    const westmost = Int32Array.from([50]);
+    expect(outsideObservedArea({ lat: 37, lon: -125, row: 0, col: 10, compositeEmpty: false, westmost, shoreLon })).toBe(true);
+    expect(outsideObservedArea({ lat: 37, lon: -123, row: 0, col: 60, compositeEmpty: false, westmost, shoreLon })).toBe(false);
+  });
+  it("north or south of California, an unseen cell is outside", () => {
+    expect(outsideObservedArea({ lat: 43, lon: -124.5, row: 0, col: 10, compositeEmpty: true, westmost: null, shoreLon })).toBe(true);
+  });
+});

@@ -107,7 +107,9 @@ export function buildNotices(ds: OfficialDataset | null, port: { key: string; na
     elsewhere: elsewhere.sort(order),
     conflicts: ds.conflicts.filter((c) => !c.startsWith(DISCREPANCY_PREFIX)),
     review: { status: review.status, reviewedAt: review.reviewed_at ?? null, checkedAt: ds.watch.map((w) => w.checked_at).sort().at(-1) ?? null, method: review.method ?? null },
-    total: current.length + differ.length,
+    // the coast's current notices, by the same rule as every other count (lib/official currentRecords): a record an
+    // agency release appears to lift is listed under `differ`, never counted as in effect
+    total: current.length,
   };
 }
 

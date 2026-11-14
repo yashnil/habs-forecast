@@ -121,14 +121,16 @@ test("arrive from Explore, move the window, read the table, export exactly the w
   if (video) copyFileSync(await video.path(), path.join(MEDIA, "journey-research-1440.webm"));
 });
 
-test("v11 links still open: place, variable, start/end; the page names the nearest station and its distance", async ({ page }) => {
+test("v11 links still open: place, variable, start/end; the page names the station it chose, its distance, and the nearer one passed over", async ({ page }) => {
   await open(page, "place=port-592&variable=particulate_domoic&start=2020-01-01&end=2020-12-31");
-  await expect(page.getByTestId("research-arrived")).toContainText("Nearest station to Moss Landing");
+  // v15.1: the most useful station (recent pDA), not the nearer pier whose pDA stopped in 2022; both named
+  await expect(page.getByTestId("research-choice")).toContainText("Santa Cruz Wharf, 27 km northwest, pDA sampled");
+  await expect(page.getByTestId("research-choice")).toContainText("Monterey Wharf, nearer, pDA last sampled 2022");
   await expect(page.getByTestId("rail-pDA")).toHaveAttribute("aria-checked", "true");
   await expect(page.getByTestId("research-window")).toContainText("Jan 1–Dec 31, 2020");
   // the first choice rewrites the address in the page's terms, keeping the place
   await page.getByTestId("range-1y").click();
-  await expect.poll(() => params(page)).toMatchObject({ place: "port-592", station: "HABs-MontereyWharf", var: "pDA" });
+  await expect.poll(() => params(page)).toMatchObject({ place: "port-592", station: "HABs-SantaCruzWharf", var: "pDA" });
 });
 
 test("a quantity the station does not measure is said, not silently swapped", async ({ page }) => {

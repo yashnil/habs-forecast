@@ -137,3 +137,37 @@ export function fitBeside(b: Box, others: Box[], gap: number, minW: number): num
 
 const overlap = (a: Box, b: Box) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 export const boxesOverlap = overlap;
+
+/** True when the box overlaps any of the others. */
+export const hitsAny = (b: Box, others: Box[]) => others.some((o) => overlap(b, o));
+
+/**
+ * The box moved the least distance that clears every obstacle (the bar, the layer chips, the zoom buttons; on a
+ * viewport change, the other panels), kept inside the area. A box too tall to fit under an obstacle may give up
+ * height down to `minH` (its content scrolls). Returns the box unchanged when nothing is in the way; when no free
+ * place exists it returns the nearest try, and the caller decides (`hitsAny`).
+ */
+export function avoid(b: Box, obstacles: Box[], area: Area, minH = 200, gap = 8): Box {
+  const start = clampBox(b, area);
+  let cur = start;
+  const cost = (c: Box) => Math.abs(c.x - start.x) + Math.abs(c.y - start.y) + (start.h - c.h) * 0.75;
+  for (let i = 0; i < 4; i++) {
+    const hit = obstacles.filter((o) => overlap(cur, o));
+    if (!hit.length) return cur;
+    const tries: Box[] = [];
+    for (const o of hit) {
+      const below = o.y + o.h + gap;
+      tries.push({ ...cur, y: below }, { ...cur, y: o.y - gap - cur.h }, { ...cur, x: o.x + o.w + gap }, { ...cur, x: o.x - gap - cur.w });
+      // under the obstacle, shorter: a tall panel keeps its column and scrolls
+      const room = area.bottom - below;
+      if (room >= Math.min(minH, cur.h) && room < cur.h) tries.push({ ...cur, y: below, h: Math.round(room) });
+    }
+    const clamped = tries.map((t) => clampBox(t, area));
+    const free = clamped.filter((t) => !hitsAny(t, obstacles));
+    const pool = free.length ? free : clamped;
+    pool.sort((p, q) => cost(p) - cost(q));
+    cur = pool[0];
+    if (free.length) return cur;
+  }
+  return cur;
+}
