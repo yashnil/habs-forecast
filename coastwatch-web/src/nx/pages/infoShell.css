@@ -1,0 +1,48 @@
+/* An informational page in the shell (src/nx/pages/InfoPage.tsx): About, Sources, the legal pages, Fisheries, kept
+   briefings, not found. It declares the desk layout and marks itself [data-nx-info]; these rules turn the desk into a
+   reading sheet. The chart stays mounted behind it (one MapLibre instance for the whole route group) and shows as a quiet
+   edge: a band to the right on a wide screen, a strip under the bar on a phone. The layer chips and the dock step back,
+   since nothing on a reading page is drawn on the chart. Selectors carry the desk marker as well, so they outrank the
+   shell's desk rules (src/nx/shell/shell.css) whatever order the stylesheets load in. Tokens only. */
+
+.n12-app:has([data-nx-info]) .nx-layers,
+.n12-app:has([data-nx-info]) .n12-dock-slot { display: none; }
+
+@media (min-width: 641px) {
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-margin {
+    top: calc(var(--bar-top) + var(--bar-h) + var(--s-16));
+    width: min(1040px, calc(100% - 2 * var(--gutter) - 240px));
+  }
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-margin-scroll { padding: 0 var(--s-48); scroll-padding-top: var(--s-24); }
+}
+/* a narrower screen: the sheet has the width (the chart shows only at the gutters) */
+@media (min-width: 641px) and (max-width: 1099px) {
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-margin { width: calc(100% - 2 * var(--gutter)); }
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-margin-scroll { padding: 0 var(--s-32); }
+  .n12-app:has([data-nx-info]) :is(.n12-controls, .n12-scale) { display: none; }
+}
+
+/* a phone: the chart is a thin strip under the bar (the bar floats on water, not on text) and the page reads under it */
+@media (max-width: 640px) {
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-work,
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-work[data-pane-open] {
+    --strip-h: calc(var(--bar-top) + var(--bar-h) + var(--s-12));
+    --strip-bar: var(--strip-h);
+    --desk-sticky-top: var(--strip-h);
+  }
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-pane-bar,
+  .n12-app:has([data-nx-info]) :is(.n12-controls, .n12-scale) { display: none; }
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-map { pointer-events: none; }
+  .n12-app:has([data-nx-layout="desk"]):has([data-nx-info]) .n12-margin-scroll { padding: 0 var(--gutter); }
+}
+
+/* printed (a kept briefing, a policy): the page alone, in the document's flow */
+@media print {
+  .n12-app:has([data-nx-info]) { position: static; overflow: visible; background: none; }
+  .n12-app:has([data-nx-info]) :is(.n12-bar, .n12-tabs, .n12-pane, .nx-layers, .n12-skip, .nx-ghosts, .n12-sheet-top) { display: none !important; }
+  .n12-app:has([data-nx-info]) :is(.n12-work, .n12-margin, .n12-margin-scroll, .n12-margin-page) {
+    position: static !important; inset: auto !important; width: auto !important; height: auto !important; margin: 0 !important; padding: 0 !important;
+    overflow: visible !important; transform: none !important; box-shadow: none !important;
+    border-radius: var(--r-0); display: block !important;
+  }
+}
