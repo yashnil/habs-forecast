@@ -246,3 +246,13 @@
   .head { order: -4; }
   .unpublished { order: -3; }
 }
+
+/* "About this layer": the method, dates' detail and caveats, one tap away (a native disclosure) */
+.about { border-top: var(--hair) solid var(--rule-soft); padding-top: var(--s-4); }
+.about > summary { display: flex; align-items: center; min-height: var(--target); font-size: var(--fs-13); font-weight: var(--w7); color: var(--ultra); cursor: pointer; list-style: none; }
+.about > summary::-webkit-details-marker { display: none; }
+.about > summary::after { content: "+"; margin-left: var(--s-8); font-weight: var(--w6); }
+.about[open] > summary::after { content: "−"; }
+.about > summary:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; border-radius: var(--r-sm); }
+.aboutBody { display: grid; gap: var(--s-8); padding-bottom: var(--s-4); }
+.aboutBody p { margin: 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }

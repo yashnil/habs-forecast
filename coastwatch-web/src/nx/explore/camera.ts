@@ -50,9 +50,7 @@ export const MEXICO_BORDER = 32.53;
  */
 export const STATE_BOUNDS: Bounds = [
   [-125.2, MEXICO_BORDER - 0.08],
-  // the floating bar (brand, port, menu) is not part of the chart's covered insets: a degree of sea and Oregon to
-  // the north keeps the border itself below it at phone widths
-  [-117.0, OREGON_BORDER + 0.9],
+  [-117.0, OREGON_BORDER + 0.08],
 ];
 
 /**
@@ -97,4 +95,14 @@ export function exploreBounds(port: { lon: number; lat: number } | null, extent:
     [box[0], box[1]],
     [box[2], box[3]],
   ];
+}
+
+/**
+ * The phone statewide view's extra top padding: the floating bar and its port control stand over the chart's top
+ * edge without being a measured cover, so the fit keeps the Oregon border below the lower of the two, with a margin.
+ * `pad` is the fit's own top padding (ChartHost sceneInsets: 20 px on a phone).
+ */
+export function barPadTop(barBottoms: number[], pad = 20, margin = 14): number {
+  const bottom = Math.max(0, ...barBottoms.filter((b) => Number.isFinite(b)));
+  return Math.max(0, Math.round(bottom + margin - pad));
 }

@@ -21,7 +21,7 @@ import { createFlowLayer, type FlowController } from "@/nx/chart/layers/FlowLaye
 import { persistence } from "@/nx/chart/layers/grid";
 import { savePort, useCurrentPort } from "@/nx/shell/port";
 import { loadCodes, boxAround } from "./codes";
-import { COAST_ZOOM, coversPort, EXPLORE_ZOOM, exploreBounds, STATE_BOUNDS, withinFor } from "./camera";
+import { barPadTop, COAST_ZOOM, coversPort, EXPLORE_ZOOM, exploreBounds, STATE_BOUNDS, withinFor } from "./camera";
 import { backLink, readFrom, readView, type ExploreView } from "./links";
 import { cellKmOf, chipWords, layerMetas, notPublished, resolutionNote, speedStats, speedWords } from "./layers";
 import { StationPoints, type StationPick } from "./StationPoints";
@@ -36,7 +36,7 @@ import { cellGeometry, cellSizeWords, coastHref, compassWord, gapPosition, isoth
 import { nextOf, playFrames, playHours, qualityHours } from "./timeline";
 import { TimeHead, TimeRail } from "./TimeRail";
 import { Transect } from "./Transect";
-import { aboutWords, CHL_DOMAIN, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
+import { aboutWords, CHL_DOMAIN, coverageNote, currentsByDefault, currentsStill, currentsToggleWords, isOld, ISO_F, LAYER_LABEL, layerKindWord, leadSentence, noValueWords, oldMark as oldWord, shortLine, oldMark, readingStamp, readoutTitle, unitOf, valueWords, type CurrentsState } from "./words";
 import s from "./explore.module.css";
 
 /** What a layer's nearest pier measurement is called, in a sentence. */
@@ -137,6 +137,22 @@ export function Explore({ model }: { model: ExploreModel }) {
   const reduce = useReducedMotion() ?? false;
   const phone = usePhone();
   const narrow = useMedia("(max-width: 340px)");
+  // phone: how far the floating bar and port control reach down over the chart (measured; the statewide fit stays below)
+  const [barPad, setBarPad] = useState(0);
+  useEffect(() => {
+    if (!phone) return setBarPad(0);
+    const measure = () => {
+      const frame = document.querySelector<HTMLElement>("[data-testid=nx-sheet]")?.getBoundingClientRect().top ?? 0;
+      const bottoms = ["[data-testid=nx-bar]", "[data-testid=nx-port-control]", ".nx-bar-end", ".nx-layers"].map((q) => {
+        const r = document.querySelector<HTMLElement>(q)?.getBoundingClientRect();
+        return r && r.height ? r.bottom - frame : NaN;
+      });
+      setBarPad(barPadTop(bottoms));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [phone]);
   const product = model.products.find((p) => p.id === productId) ?? null;
   const frame = product?.frames.find((f) => f.id === frameId) ?? null;
   const current = model.currents?.frames.find((f) => f.id === hourId) ?? null;
@@ -485,7 +501,7 @@ export function Explore({ model }: { model: ExploreModel }) {
         ? {
             // the whole coast, Oregon border to Mexico, at every screen shape; the port stays marked, so the way back is in view
             id: "explore:state",
-            view: { bounds: STATE_BOUNDS },
+            view: { bounds: STATE_BOUNDS, ...(barPad ? { padTop: barPad } : {}) },
             focus: port ? { key: port.key, name: port.name, lon: port.lon, lat: port.lat } : null,
             zoomRange: COAST_ZOOM,
             refitLabel: "Whole coast",
@@ -501,7 +517,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       // the chart's own buttons, with a way back to everything the layers hold
       controls: extent ? { fit: { label: "Fit the data", bounds: [[extent[0], extent[1]], [extent[2], extent[3]]] as [[number, number], [number, number]] } } : undefined,
           },
-    [port, extent, view],
+    [port, extent, view, barPad],
   );
   const back = backLink(from, key);
   const metas = useMemo(() => layerMetas(model), [model]);
@@ -751,8 +767,9 @@ export function Explore({ model }: { model: ExploreModel }) {
               </Button>
             </div>
           </div>
+          {/* one short line in view; the full sentence, the method and the caveats are in "About this layer" */}
           <p className={s.lead} data-testid="nx-explore-lead">
-            {leadSentence(product, frame)}
+            {shortLine(product)}
           </p>
           {/* the layer has no cells at the reader's port: said in words, with where it does have them */}
           {port && frame.grid && !coversPort(gridBounds(frame.grid), { lon: port.lon, lat: port.lat }) ? (
@@ -794,11 +811,6 @@ export function Explore({ model }: { model: ExploreModel }) {
               </button>
             ) : null}
           </div>
-          {unpublished.length ? (
-            <p className={s.unpublished} data-testid="nx-not-published">
-              Not published yet: {unpublished.join(" and ")}.
-            </p>
-          ) : null}
           {/* phone: what is on show and Play sit with the layers at the top of the sheet (review F-01) */}
           {phone ? (
             <div className={s.timeBar}>
@@ -809,21 +821,41 @@ export function Explore({ model }: { model: ExploreModel }) {
         </TicketMain>
         <TicketStub>
           <div data-testid="nx-legend-sticky">
-            <ExploreLegend product={product} frame={frame} currents={currentsState === "on" ? current : null} />
-            {currentsState === "on" && speeds ? (
-              <p className={s.speedKey} data-testid="nx-currents-speed">
-                <b>Speed this {current?.mean ? "24 h mean" : "hour"}</b> median {speedWords(speeds.median)}, fastest tenth above {speedWords(speeds.p90)}, top {speedWords(speeds.max)}; {speeds.cells.toLocaleString("en-US")} cells measured. Streaks move faster where the water does.
-              </p>
-            ) : null}
+            <ExploreLegend
+              product={product}
+              frame={frame}
+              currents={currentsState === "on" ? current : null}
+              currentsLine={
+                current ? (
+                  <>
+                    Measured currents · {current.mean ? current.label : current.stamp}
+                    {oldWord(current.fresh)}
+                    {speeds ? (
+                      <span data-testid="nx-currents-speed">
+                        {" "}
+                        · median {speedWords(speeds.median)}, top {sig(speeds.max * KNOTS, 2)} kn
+                      </span>
+                    ) : null}
+                  </>
+                ) : undefined
+              }
+              about={
+                <>
+                  <p data-testid="nx-lead-full">{leadSentence(product, frame)}</p>
+                  {currentsState === "on" && speeds ? (
+                    <p>
+                      Speed this {current?.mean ? "24 h mean" : "hour"}: median {speedWords(speeds.median)}, fastest tenth above {speedWords(speeds.p90)}, top {speedWords(speeds.max)}; {speeds.cells.toLocaleString("en-US")} cells measured. Streaks move faster where the water does.
+                    </p>
+                  ) : null}
+                  {resNote ? <p data-testid="nx-resolution-note">{resNote}</p> : null}
+                  {unpublished.length ? <p data-testid="nx-not-published">Not published yet: {unpublished.join(" and ")}.</p> : null}
+                </>
+              }
+            />
             {stationsOn ? (
               <p className={s.stationKey} data-testid="nx-stations-key">
-                <span className={s.stationKeyShore} aria-hidden="true" /> CalHABMAP shore stations, sampled weekly at best
-                <span className={s.stationKeyBuoy} aria-hidden="true" /> NDBC buoys, read live. Tap one for its own dated values.
-              </p>
-            ) : null}
-            {resNote ? (
-              <p className={s.resNote} data-testid="nx-resolution-note">
-                {resNote}
+                <span className={s.stationKeyShore} aria-hidden="true" /> Piers
+                <span className={s.stationKeyBuoy} aria-hidden="true" /> Buoys · tap one for its dated values
               </p>
             ) : null}
           </div>
@@ -839,7 +871,7 @@ export function Explore({ model }: { model: ExploreModel }) {
               </p>
             )
           ) : null}
-          {!readout ? <p className={s.prompt}>Tap the water for its value, its date and a transect along its latitude.</p> : null}
+          {!readout ? <p className={s.prompt}>Tap the water to read one cell.</p> : null}
         </TicketStub>
       </Ticket>
 

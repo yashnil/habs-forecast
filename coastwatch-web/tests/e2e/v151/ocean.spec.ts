@@ -69,6 +69,30 @@ for (const [name, size] of [
   });
 }
 
+for (const size of [SIZES.phone, SIZES.small]) {
+  test(`statewide at ${size.width}: the Oregon border and the Mexican border are uncovered`, async ({ browser }) => {
+    const { ctx, page } = await newContext(browser, size);
+    await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+    await mapReady(page);
+    const at = (lon: number, lat: number) => page.evaluate(([lo, la]) => (window as unknown as { __cwMap: { project: (x: [number, number]) => { x: number; y: number } } }).__cwMap.project([lo, la]), [lon, lat]);
+    const sheet = (await page.getByTestId("nx-sheet").boundingBox())!;
+    await expect
+      .poll(async () => {
+        const n = await at(-124.21, 42.0), s = await at(-117.12, 32.53);
+        const p = { x: sheet.x + n.x, y: sheet.y + n.y };
+        for (const id of ["nx-bar", "nx-port-control", "nx-menu-button"]) {
+          const r = await page.getByTestId(id).boundingBox();
+          if (r && p.x >= r.x - 4 && p.x <= r.x + r.width + 4 && p.y >= r.y - 4 && p.y <= r.y + r.height + 4) return `under ${id}`;
+        }
+        const pane = await page.locator(".n12-margin").first().boundingBox();
+        if (pane && sheet.y + s.y > pane.y) return "Mexico under the sheet";
+        return "clear";
+      }, { timeout: 15_000 })
+      .toBe("clear");
+    await ctx.close();
+  });
+}
+
 test("Explore is in the navigation, its own section, and opens on the whole coast", async ({ browser }) => {
   const { ctx, page } = await newContext(browser, SIZES.desk);
   await page.goto(`${OK}/today?place=${MOSS}`);
@@ -90,13 +114,19 @@ test("every live layer shows its legend, units and dates; what is not live is ne
   await expect(legend).toContainText("mg/m³");
   await expect(legend).toContainText(/Oct \d/);
   await expect(legend).toContainText("Algae, not toxin");
+  // one short line in view, the rest one tap away in "About this layer"
+  await expect(page.getByTestId("nx-explore-lead")).toHaveText("Algae seen from space · not toxin");
+  await expect(page.getByTestId("nx-resolution-note")).toBeHidden();
+  await page.getByTestId("nx-about").locator("summary").click();
   // statewide, the 300 m grid is finer than the screen: said with the numbers
   await expect(page.getByTestId("nx-resolution-note")).toContainText(/cells of 278 m/);
+  await expect(page.getByTestId("nx-about")).toContainText("Sentinel-3 OLCI");
   // C-HARM: a model probability with its run and valid dates
   await page.getByTestId("nx-layer-charm").click();
   await expect(page.getByTestId("nx-layer-charm")).toHaveAttribute("data-class", "model");
   await expect(page.getByTestId("nx-layer-charm")).toContainText(/Model · run of .+, valid/);
   await expect(legend).toHaveAttribute("data-product", "charm");
+  await expect(page.getByTestId("nx-explore-lead")).toContainText("not measured toxin");
   await expect(legend).toContainText("P(pDA > 500 ng/L)");
   await expect(legend).toContainText(/valid Oct \d+, run of Oct \d+/);
   await expect(legend).toContainText("not toxin in seafood");

@@ -121,6 +121,7 @@ export function cameraFor(scene: ChartScene, vp: Viewport, cover: Insets, anchor
     return { center: unproject(c, free, free.width / 2, free.height / 2 + cover.bottom / 2), zoom: c.zoom };
   }
   const ins = sceneInsets(vp, cover);
+  if (scene.view.padTop) ins.top += scene.view.padTop;
   // a tall, narrow free area (a desk page's chart pane) takes the view's own box for that shape when it has one
   const freeW = vp.width - ins.left - ins.right, freeH = vp.height - ins.top - ins.bottom;
   const box = scene.view.tall && freeH >= freeW * 1.25 ? scene.view.tall : scene.view.bounds;
