@@ -31,6 +31,13 @@ function loadFixture(dir: string): Promise<Fixture> {
   return fixture.p;
 }
 
+/** In fixture mode, is this upstream URL recorded? (Everywhere else: true; nothing is filtered.) */
+export async function recorded(url: string): Promise<boolean> {
+  const dir = fixtureDir();
+  if (!dir) return true;
+  return !!(await loadFixture(dir)).files[url];
+}
+
 /** Now, for the ocean routes (see fixture mode above). */
 export async function oceanNow(): Promise<Date> {
   if (process.env.CW_OCEAN_FIXED_NOW) return new Date(process.env.CW_OCEAN_FIXED_NOW);

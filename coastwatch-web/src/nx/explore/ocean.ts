@@ -32,7 +32,9 @@ export function wcofsTracks(ix: WcofsIndex | null): { nowcast: WcofsStep[]; fore
 export const stepWhen = (s: Pick<WcofsStep, "valid_time">) => `${day(s.valid_time)}, ${time(s.valid_time)}`;
 
 /** One line of a WCOFS index's state: what it holds, or why there is nothing (never a substitute). */
-export function wcofsStateWords(ix: WcofsIndex | null, loaded: boolean): string {
+export const NEEDS_CONNECTION = "Needs a connection: live model data is read when online.";
+export function wcofsStateWords(ix: WcofsIndex | null, loaded: boolean, offline = false): string {
+  if (offline) return NEEDS_CONNECTION;
   if (!loaded) return "Reading NOAA WCOFS…";
   if (!ix || ix.status === "unavailable" || !ix.cycle) return `NOAA WCOFS is unavailable${ix?.reason ? `: ${ix.reason}` : ""}.`;
   const v = ix.valid ? ` · valid ${stepWhen({ valid_time: ix.valid.start })} to ${stepWhen({ valid_time: ix.valid.end })}` : "";
@@ -40,7 +42,8 @@ export function wcofsStateWords(ix: WcofsIndex | null, loaded: boolean): string 
 }
 
 /** One line of the chlorophyll estimate's state: its day, and how old it is. */
-export function chlEstimateStateWords(ix: ChlEstimateIndex | null, loaded: boolean): string {
+export function chlEstimateStateWords(ix: ChlEstimateIndex | null, loaded: boolean, offline = false): string {
+  if (offline) return NEEDS_CONNECTION;
   if (!loaded) return "Reading the gap-filled estimate…";
   if (!ix || ix.status === "unavailable" || !ix.date) return `The gap-filled estimate is unavailable${ix?.reason ? `: ${ix.reason}` : ""}.`;
   return `Gap-filled estimate (NOAA DINEOF), ${day(ix.date)}${ix.status === "stale" ? `, stale: ${ix.age_days} days old, no newer day published` : ""}. Reconstructed where satellites saw nothing, not observed.`;

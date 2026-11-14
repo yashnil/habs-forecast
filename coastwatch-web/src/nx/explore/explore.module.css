@@ -346,3 +346,15 @@
 .isoMajorWarm { fill: none; stroke: var(--sst-6); stroke-width: 1.9; }
 .isoMinorWarm { fill: none; stroke: var(--sst-6); stroke-width: 1.1; opacity: 0.7; }
 .isoLabelWarm { color: var(--sst-6); }
+
+/* a model's steps: ticks drawn only, one slider control over the row (every target its own, at every width) */
+.axisTick { fill: var(--ink-3); opacity: 0.55; }
+.axisTickOn { fill: var(--ultra); }
+.axisTickFailed { fill: none; stroke: var(--ink-3); stroke-dasharray: 2 2; }
+.axisSlider { position: absolute; inset: 0; cursor: pointer; touch-action: pan-y; }
+.axisSlider:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: var(--r-1); }
+.barSelHour { fill: var(--ultra); }
+.meanHit { display: block; min-height: var(--s-24); padding: 0; border: 0; background: none; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ultra); text-decoration: underline dashed; text-underline-offset: 3px; cursor: pointer; text-align: left; }
+.meanHit[aria-checked="true"] { color: var(--ultra-deep); text-decoration-style: solid; }
+/* the open timeline never covers half the chart: it scrolls inside a capped height (the camera fits the rest) */
+.timeDock[data-open="1"] .railBody { max-height: min(17.5rem, 32vh); overflow-y: auto; overscroll-behavior: contain; }

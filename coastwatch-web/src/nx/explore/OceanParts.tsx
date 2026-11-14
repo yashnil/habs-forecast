@@ -40,7 +40,7 @@ export function StepRow({ label, steps, selected, failed, onStep, testid }: { la
   );
 }
 
-export function EstimateRow({ ix, loaded, on, onChoose }: { ix: ChlEstimateIndex | null; loaded: boolean; on: boolean; onChoose: () => void }) {
+export function EstimateRow({ ix, loaded, on, onChoose, offline = false }: { ix: ChlEstimateIndex | null; loaded: boolean; on: boolean; onChoose: () => void; offline?: boolean }) {
   return (
     <div className={s.oceanRow} data-testid="nx-rail-chl-estimate">
       <span className={s.railLabel}>Chl estimate</span>
@@ -50,16 +50,16 @@ export function EstimateRow({ ix, loaded, on, onChoose }: { ix: ChlEstimateIndex
           {chlEstimateStateWords(ix, loaded)}
         </button>
       ) : (
-        <span className={s.oceanNote}>{chlEstimateStateWords(ix, loaded)}</span>
+        <span className={s.oceanNote}>{chlEstimateStateWords(ix, loaded, offline)}</span>
       )}
     </div>
   );
 }
 
-export function WcofsNote({ ix, loaded }: { ix: WcofsIndex | null; loaded: boolean }) {
+export function WcofsNote({ ix, loaded, offline = false }: { ix: WcofsIndex | null; loaded: boolean; offline?: boolean }) {
   return (
     <p className={s.oceanNote} data-testid="nx-wcofs-state">
-      {wcofsStateWords(ix, loaded)}
+      {wcofsStateWords(ix, loaded, offline)}
     </p>
   );
 }

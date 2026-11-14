@@ -2,7 +2,7 @@ import { PromiseLru } from "@/lib/ocean/cache";
 import { cycleName, wcofsLabel, type OceanSource, type WcofsIndex, type WcofsStep, type WcofsVar } from "@/lib/ocean/contract";
 import { decodeDods } from "@/lib/ocean/dap";
 import { gridRecord, gzipCodes, isFill, packCodes, PACK_MASK, PACK_TEMPERATURE, PACK_VELOCITY, shoreMask } from "@/lib/ocean/pack";
-import { errMsg, getBytes, getText, oceanNow } from "@/lib/ocean/upstream";
+import { errMsg, getBytes, getText, oceanNow, recorded } from "@/lib/ocean/upstream";
 
 /**
  * NOAA WCOFS (West Coast Operational Forecast System) surface currents and temperature, read live from the CO-OPS
@@ -182,7 +182,10 @@ export async function wcofsIndex(): Promise<WcofsIndex> {
   const wall = Date.now();
   if (!indexCache || wall - indexCache.at > indexCache.ttl) {
     try {
-      const c = await discoverCycle(now);
+      const found = await discoverCycle(now);
+      // a recorded fixture advertises only the steps it serves, so no step reads "could not be read" in tests; live
+      // every step the catalog lists is served (recorded() is always true there)
+      const c = found ? { ...found, steps: (await Promise.all(found.steps.map(async (s) => ((await recorded(stepUrl(found.cycleId, s))) ? s : null)))).filter((s): s is string => !!s) } : null;
       const todays = c?.cycleId.startsWith(ymd(now));
       indexCache = { at: wall, ttl: todays ? 3600e3 : 900e3, c, err: null };
       if (c) lastGood = c;

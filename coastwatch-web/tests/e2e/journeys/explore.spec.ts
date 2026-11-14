@@ -85,7 +85,7 @@ async function journey(page: Page) {
   await expect.poll(async () => (await hook(page))?.flowSegments ?? 0, { timeout: 10_000 }).toBeGreaterThan(0);
   expect((await hook(page))!.flowRunning).toBe(false);
   const hourId = "hfr2km_currents_20261008T02Z";
-  await page.getByTestId(`nx-hour-${hourId}`).click();
+  await page.getByTestId(`nx-hour-${hourId}`).click({ force: true }); // an hour is drawn; the row is one slider
   await expect.poll(async () => (await hook(page))?.flowField).toBe(hourId);
   await expect(page.getByTestId("nx-frame-stamp")).toContainText("Currents: Oct 7, 7:00 PM PT (old)");
   await page.waitForTimeout(1200);
@@ -249,7 +249,7 @@ test.describe("review media", () => {
     await mapReady(page);
     await page.evaluate(() => (window as unknown as { __cwMap: { jumpTo: (o: object) => void } }).__cwMap.jumpTo({ center: [-122.0, 36.82], zoom: 10.2 }));
     await page.waitForTimeout(4000);
-    await page.getByTestId("nx-hour-hfr2km_currents_20261007T20Z").click();
+    await page.getByTestId("nx-hour-hfr2km_currents_20261007T20Z").click({ force: true }); // an hour is drawn; the row is one slider
     await page.waitForTimeout(3000);
     await page.getByTestId("nx-frame-olci:2026-10-05").click();
     await page.waitForTimeout(2500);

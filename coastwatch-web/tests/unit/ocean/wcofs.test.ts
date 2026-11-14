@@ -156,8 +156,10 @@ describe("WCOFS routes in fixture mode (no network)", () => {
     const r = await indexGET();
     const idx = await r.json();
     expect(idx.status).toBe("current");
-    expect(idx.cycle).toEqual({ id: "2026111403", issued: "2026-11-14T03:00:00.000Z", steps_available: 32, steps_expected: 32 });
-    expect(idx.default_step).toBe("f006"); // recorded 10:20Z; f006 is valid at 09:00Z
+    // a recorded fixture advertises only the steps it serves (n024, f024), so nothing reads "could not be read"
+    expect(idx.cycle).toEqual({ id: "2026111403", issued: "2026-11-14T03:00:00.000Z", steps_available: 2, steps_expected: 32 });
+    expect(idx.steps.map((s: { id: string }) => s.id)).toEqual(["n024", "f024"]);
+    expect(idx.default_step).toBe("n024"); // recorded 10:20Z; n024 is valid at 03:00Z, f024 the next day
     expect(idx.steps[0].track).toBe("estimates");
     expect(idx.steps.at(-1).track).toBe("forecasts");
     expect(idx.families["currents.predicted"].vars).toEqual(["u", "v"]);

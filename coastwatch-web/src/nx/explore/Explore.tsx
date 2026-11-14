@@ -10,6 +10,7 @@ import { shoreLon } from "@/nx/chart/shore";
 import { setMapLayer, useMapLayer } from "@/nx/chart/mapLayers";
 import { ChartRegulation, RAMP_ZONES, rampZoneAt } from "@/nx/chart/regulation";
 import { readPrefs, writePrefs } from "./prefs";
+import { useOnline, useSavedMark } from "@/nx/offline/useOffline";
 import { asValueGrid, loadChlEstimateIndex, loadOceanCodes, loadWcofsCurrents, loadWcofsIndex } from "@/lib/ocean/client";
 import { wcofsLabel, type ChlEstimateIndex, type OceanGrid, type WcofsIndex } from "@/lib/ocean/contract";
 import { chlEstimateStateWords, chlEstimateUsable, extendAxis, maskedCodes, maskedVectors, pickServedStep, playableSteps, stepsAxis, stepWhen, wcofsTracks, wcofsUsable } from "./ocean";
@@ -22,7 +23,7 @@ import { clearIsotherms, recolourIsotherms, showIsotherms } from "@/nx/chart/lay
 /** Isotherms shorter than this are dropped (tiny closed rings and specks of a 4 km model grid), km. */
 const ISO_MIN_KM = 12;
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, MapLayers, type Provenance } from "@/nx/ds";
+import { age, Button, day, range, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, MapLayers, type Provenance } from "@/nx/ds";
 import { getFrame, onFrame } from "@/nx/chart/runtime";
 import { capability, type GraphicsTier } from "@/lib/capability";
 import type { CurrentField } from "@/lib/currents";
@@ -150,7 +151,11 @@ export function Explore({ model }: { model: ExploreModel }) {
   chartOnlyRef.current = chartOnly;
   const [opacity, setOpacity] = useState(1);
   // round 2 (B, D): the live model and estimate layers (lib/ocean), read from the app's own routes after mount
-  const [ocean, setOcean] = useState<{ wcofs: WcofsIndex | null; chl: ChlEstimateIndex | null; loaded: boolean }>({ wcofs: null, chl: null, loaded: false });
+  const [ocean, setOcean] = useState<{ wcofs: WcofsIndex | null; chl: ChlEstimateIndex | null; loaded: boolean; offline?: boolean }>({ wcofs: null, chl: null, loaded: false });
+  // offline or a saved copy: the live model routes are not in the field pack, so they are never asked for (and a
+  // cached model run is never shown as current); the layers say they need a connection
+  const online = useOnline();
+  const savedCopy = useSavedMark();
   const [oceanField, setOceanField] = useState<null | "sst" | "chlest">(null);
   const oceanFieldRef = useRef(oceanField);
   oceanFieldRef.current = oceanField;
@@ -159,6 +164,12 @@ export function Explore({ model }: { model: ExploreModel }) {
   const [failedSteps, setFailedSteps] = useState<Set<string>>(() => new Set());
   useEffect(() => {
     let live = true;
+    if (navigator.onLine === false || (window as unknown as { __NERITIC_SAVED__?: unknown }).__NERITIC_SAVED__ || !online || savedCopy) {
+      setOcean({ wcofs: null, chl: null, loaded: true, offline: true });
+      setOceanField((f) => (f ? null : f));
+      setCurSource("measured");
+      return;
+    }
     Promise.allSettled([loadWcofsIndex(), loadChlEstimateIndex()]).then(([w, c]) => {
       if (!live) return;
       const wcofs = w.status === "fulfilled" ? w.value : null;
@@ -181,7 +192,7 @@ export function Explore({ model }: { model: ExploreModel }) {
     };
     // once, on arrival (the clock is the page's own)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [online, savedCopy]);
   const wtracks = useMemo(() => wcofsTracks(ocean.wcofs), [ocean.wcofs]);
   const stepRef = useRef(stepId);
   stepRef.current = stepId;
@@ -273,9 +284,10 @@ export function Explore({ model }: { model: ExploreModel }) {
     if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(window.history.state, "", next);
   }, [productId, frame, product, currentsOn, hourId, at, model, view, stationsOn, chartOnly]);
 
-  // the reader's own choices from an earlier visit, where the address does not name them (prefs.ts)
+  // the reader's own choices from an earlier visit, where the address does not name them (prefs.ts). The address as
+  // it ARRIVED decides (the URL sync above drops `layer=chl`, the default, before this runs): a link always wins
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search);
+    const q = new URLSearchParams(sp.toString());
     const pr = readPrefs();
     if (!q.has("layer")) {
       if (pr.base === "chart") setChartOnly(true);
@@ -819,6 +831,18 @@ export function Explore({ model }: { model: ExploreModel }) {
   const back = backLink(from, key);
   const metas = useMemo(() => layerMetas(model), [model]);
   const unpublished = useMemo(() => notPublished(model), [model]);
+  // the chlorophyll chip names the view on show (round 2 review): observed day, recent composite or the estimate
+  const chlChipWords =
+    oceanField === "chlest" && ocean.chl?.date
+      ? `Estimate · ${day(ocean.chl.date)}${ocean.chl.status === "stale" ? " (stale)" : ""}`
+      : frame && product?.id === "chl"
+        ? chlViewOf(frame) === "composite"
+          ? `Composite · ${frame.start !== frame.end ? range(frame.start, frame.end) : day(frame.end)}${oldMark(frame.fresh)}`
+          : `Observation · ${day(frame.end)}${oldMark(frame.fresh)}`
+        : (() => {
+            const m = metas.find((x) => x.id === "chl");
+            return m ? chipWords(m) : "";
+          })();
   const goView = (v: ExploreView) => {
     setView(v);
     setPlaying(false);
@@ -920,8 +944,13 @@ export function Explore({ model }: { model: ExploreModel }) {
         stale: rf.fresh === "stale" || rf.fresh === "historical",
       };
       const cur = nearCurrent;
+      // the nearest current says which it is: a predicted (model) current is never worded as the measured radar
       const curLine =
-        streaks && current && fieldState.status === "ready"
+        streaks && predicted && wstep && fieldState.status === "ready"
+          ? cur
+            ? `Predicted current (NOAA WCOFS model, developmental) · valid ${stepWhen(wstep)} · ${sig(cur.speed * KNOTS, 2)} kt toward the ${compassWord(cur.dirTo)}${cur.km < 1 ? "" : `, nearest model cell ${sig(cur.km, 2)} km away`} · a model forecast, not a measurement.`
+            : `No predicted current within 6 km (the model leaves out the near-shore band).`
+          : streaks && current && fieldState.status === "ready"
           ? cur
             ? `Nearest measured current ${cur.km < 1 ? "here" : `${sig(cur.km, 2)} km away`}: ${sig(cur.speed * KNOTS, 2)} kt toward the ${compassWord(cur.dirTo)} (HF radar, ${current.mean ? current.label : current.stamp}${oldMark(current.fresh)}).`
             : `No measured current within 6 km in ${current.mean ? "the 24 h mean" : "this hour"}.`
@@ -1056,8 +1085,8 @@ export function Explore({ model }: { model: ExploreModel }) {
   // the rail's axis holds everything shown at its true time (WCOFS forecasts run days past today)
   const railModel: ExploreModel = { ...model, axis: extendAxis(model.axis, wcofsOk ? (ocean.wcofs?.steps ?? []).map((x) => x.valid_time) : [], oceanRail.estimate ? [oceanRail.estimate.date] : []) };
   const oceanExtra = {
-    est: !chlEstimateUsable(ocean.chl) ? <EstimateRow ix={ocean.chl} loaded={ocean.loaded} on={false} onChoose={chooseEstimate} /> : null,
-    fc: wcofsOk ? null : <WcofsNote ix={ocean.wcofs} loaded={ocean.loaded} />,
+    est: !chlEstimateUsable(ocean.chl) ? <EstimateRow ix={ocean.chl} loaded={ocean.loaded} on={false} onChoose={chooseEstimate} offline={ocean.offline} /> : null,
+    fc: wcofsOk ? null : <WcofsNote ix={ocean.wcofs} loaded={ocean.loaded} offline={ocean.offline} />,
   };
   const pickAt = pick ? ((pick.kind === "shore" ? model.stations.find((x) => x.id === pick.id) : model.buoys.find((x) => x.id === pick.id)) ?? null) : null;
   const stationSlot =
@@ -1161,7 +1190,7 @@ export function Explore({ model }: { model: ExploreModel }) {
                 <button key={p.id} type="button" role="radio" aria-checked={!chartOnly && oceanField !== "sst" && p.id === product.id} className={s.switchItem} onClick={() => chooseProduct(p.id)} data-testid={`nx-layer-${p.id}`} data-class={meta?.productClass}>
                   <span>{LAYER_LABEL[p.id]}</span>
                   {/* observation or model, then its own dates ("Model · run of Nov 3, valid Nov 2–5 (past run)") */}
-                  <small>{meta ? chipWords(meta) : p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
+                  <small>{p.id === "chl" && !chartOnly && oceanField !== "sst" ? chlChipWords : meta ? chipWords(meta) : p.pastRun && p.kind !== "measured" && p.kind !== "analysis" ? "past run" : layerKindWord(p)}</small>
                 </button>
               );
             })}
@@ -1170,7 +1199,7 @@ export function Explore({ model }: { model: ExploreModel }) {
               // design-lint-allow raw-button: one radio of the data-layer group (see above)
               <button type="button" role="radio" aria-checked={oceanField === "sst"} disabled={!wcofsUsable(ocean.wcofs)} data-missing={wcofsUsable(ocean.wcofs) ? undefined : "1"} className={s.switchItem} onClick={chooseSstModel} data-testid="nx-layer-sst-model" data-class="model">
                 <span>Sea temp</span>
-                <small>{wcofsUsable(ocean.wcofs) ? `Model · WCOFS${ocean.wcofs?.status === "expired" ? " (expired)" : ", developmental"}` : "model unavailable"}</small>
+                <small>{wcofsUsable(ocean.wcofs) ? `Model · WCOFS${ocean.wcofs?.status === "expired" ? " (expired)" : ", developmental"}` : ocean.offline ? "needs a connection" : "model unavailable"}</small>
               </button>
             ) : null}
             {/* a layer this data run does not hold stays in the group, disabled, with the reason (never dropped silently) */}
@@ -1189,7 +1218,7 @@ export function Explore({ model }: { model: ExploreModel }) {
                 const target = v === "estimate" ? (chlEstimateUsable(ocean.chl) ? "estimate" : null) : frameForView(product, v, frame.track);
                 const on = v === "estimate" ? oceanField === "chlest" : !oceanField && chlViewOf(frame) === v;
                 const label = v === "observed" ? "Observed" : v === "composite" ? "Composite" : "Estimate";
-                const sub = v === "observed" ? "one day, gaps kept" : v === "composite" ? "recent, pixel ages" : chlEstimateUsable(ocean.chl) ? `gap-filled · ${ocean.chl?.status === "stale" ? "stale" : "estimate"}` : "not available";
+                const sub = v === "observed" ? "one day, gaps kept" : v === "composite" ? "recent, pixel ages" : chlEstimateUsable(ocean.chl) ? `gap-filled · ${ocean.chl?.status === "stale" ? "stale" : "estimate"}` : ocean.offline ? "needs a connection" : "not available";
                 return (
                   // design-lint-allow raw-button: one radio of a three-way view switch with a second line per item (as the data-layer chips)
                   <button key={v} type="button" role="radio" aria-label={v === "observed" ? "Observed: one day, gaps kept" : v === "composite" ? "Recent composite: each pixel's latest clear day, with its age" : chlEstimateUsable(ocean.chl) ? `Gap-filled estimate: reconstructed, not observed${ocean.chl?.status === "stale" ? ", stale" : ""}` : "Gap-filled estimate: not available"} aria-checked={on} disabled={!target} className={s.viewItem} data-missing={!target ? "1" : undefined} onClick={() => {
@@ -1223,7 +1252,7 @@ export function Explore({ model }: { model: ExploreModel }) {
             {model.currents ? (
               <button type="button" role="switch" aria-checked={currentsOn} className={s.switchItem} data-on={currentsOn ? "1" : "0"} onClick={() => setCurrentsOn((v) => { writePrefs({ currents: !v }); return !v; })} data-testid="nx-currents-toggle">
                 <span>Currents</span>
-                <small data-state={currentsState}>{currentsToggleWords(currentsState, current)}</small>
+                <small data-state={currentsState}>{predicted && currentsState === "on" ? "on, predicted (model)" : currentsToggleWords(currentsState, current)}</small>
               </button>
             ) : null}
             {model.stations.length || model.buoys.length ? (
@@ -1240,7 +1269,7 @@ export function Explore({ model }: { model: ExploreModel }) {
                 <span>Measured</span>
               </button>
               {/* design-lint-allow raw-button: one radio of the currents' two sources */}
-              <button type="button" role="radio" aria-checked={curSource === "predicted"} disabled={!wcofsUsable(ocean.wcofs)} data-missing={wcofsUsable(ocean.wcofs) ? undefined : "1"} className={s.viewItem} onClick={() => setCurSource("predicted")} data-testid="nx-currents-predicted" aria-label="Predicted currents: NOAA WCOFS model, developmental">
+              <button type="button" role="radio" aria-checked={curSource === "predicted"} disabled={!wcofsUsable(ocean.wcofs)} data-missing={wcofsUsable(ocean.wcofs) ? undefined : "1"} className={s.viewItem} onClick={() => setCurSource("predicted")} data-testid="nx-currents-predicted" aria-label={ocean.offline ? "Predicted currents: needs a connection, live model data is read when online" : "Predicted currents: NOAA WCOFS model, developmental"}>
                 <span>Predicted (model)</span>
               </button>
             </div>
