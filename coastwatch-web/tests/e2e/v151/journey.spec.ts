@@ -321,6 +321,45 @@ test.describe("v15.1 journey: accessibility of the new states", () => {
     });
   }
 
+  // round 2: the plain chart, the chlorophyll views, the model sea temperature with predicted currents, the timeline open
+  for (const size of [SIZES.desk, SIZES.phone]) {
+    test(`round 2 Explore states (chart only, composite, estimate, model temperature + predicted currents, timeline) at ${size.width} px`, async ({ browser }) => {
+      test.setTimeout(90_000);
+      const { ctx, page } = await runningContext(browser, size);
+      await page.goto(`${OK}/explore?view=coast&place=${MOSS}`);
+      await mapReady(page);
+      await onScreen(page, "nx-explore-panel");
+      const pick = async (id: string) => {
+        const el = page.getByTestId(id).first();
+        if (!(await el.count()) || (await el.isDisabled())) return false;
+        await el.scrollIntoViewIfNeeded();
+        if ((await el.getAttribute("aria-checked")) !== "true") await el.click();
+        return true;
+      };
+      const states: Array<[string, string[]]> = [
+        ["chart only", ["nx-layer-chart"]],
+        ["composite", ["nx-layer-chl", "nx-chl-composite"]],
+        ["estimate", ["nx-layer-chl", "nx-chl-estimate"]],
+        ["model temperature + predicted currents", ["nx-layer-sst-model", "nx-currents-toggle", "nx-currents-predicted"]],
+      ];
+      const seen: string[] = [];
+      for (const [name, ids] of states) {
+        let ok = true;
+        for (const id of ids) ok = (await pick(id)) && ok;
+        if (!ok) continue;
+        await page.waitForTimeout(600);
+        seen.push(name);
+        expect(await serious(page), `axe: ${name}`).toEqual([]);
+      }
+      expect(seen, "the plain chart is always offered").toContain("chart only");
+      test.info().annotations.push({ type: "axe states", description: seen.join(", ") });
+      const toggle = page.getByTestId("nx-rail-toggle").first();
+      if ((await toggle.count()) && (await toggle.innerText()).trim() === "Timeline") await toggle.click();
+      expect(await serious(page), "axe: timeline open").toEqual([]);
+      await ctx.close();
+    });
+  }
+
   test("My Coast with a panel moved away from its rest (Reset layout showing)", async ({ browser }) => {
     const { ctx, page } = await runningContext(browser);
     await page.goto(`${OK}/coast?place=${MOSS}`);
