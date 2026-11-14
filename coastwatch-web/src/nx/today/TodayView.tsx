@@ -33,6 +33,7 @@ import type { ChangeLine } from "./change";
 import { useChangeLine } from "./useChangeLine";
 import { conditionsUrl, useConditions, useTodayInputs, type Initial } from "./data";
 import { FisheryChooser } from "./FisheryChooser";
+import { ExploreEntry } from "./ExploreEntry";
 import { GateList, type GateItem } from "@/nx/ds/GateList";
 import { gateHrefs, type Gate } from "./gates";
 import { buildToday, ppmWords, scopeWords, type TodayInputs, type TodayView as View } from "./model";
@@ -75,7 +76,7 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
   const scene = <ChartScene scene={{ id: `today:${port.key}`, view: { bounds: portWater(port) }, focus: { key: port.key, name: port.name, lon: port.lon, lat: port.lat } }} />;
   return (
     <MotionConfig reducedMotion="user">
-      <PageLayout mode="stage" phoneMap={0.27} />
+      <PageLayout mode="stage" phoneMap={0.27} panels="today" />
       <MapLayers page="today" defaults={{ regulation: true, depth: true, sea: true }} />
       {!assembled ? <ChartRegulation spec={ramp ? { zones: { highlight: rampZoneAt(port.lat) } } : null} /> : null}
       <section className={s.today} data-testid="nx-today" aria-labelledby="nx-today-title">
@@ -90,7 +91,8 @@ export function TodayView({ port, initial, arriving = false }: TodayProps) {
             {!arriving ? scene : null}
             <Ticket key={port.key} at={arriving ? null : at} anchorY={110} width={TICKET_W} labelledBy="nx-today-title">
               <TicketMain>
-                <FisheryChooser port={port} inputs={data.state === "loading" ? undefined : inputs} onChoose={chooseFishery} />
+                {/* v15.1: the way to the whole coast never waits for a fishery, and sits above the list, in view */}
+                <FisheryChooser port={port} inputs={data.state === "loading" ? undefined : inputs} onChoose={chooseFishery} lead={<ExploreEntry place={port.key} lon={port.lon} lat={port.lat} />} />
               </TicketMain>
             </Ticket>
           </>
@@ -322,6 +324,7 @@ function Assembled({ port, inputs, fishery, bands }: { port: NonNullable<TodayPr
           )}
           {/* what changed since the last visit sits with the status it may have changed */}
           <Change line={change} />
+          <ExploreEntry place={port.key} lon={port.lon} lat={port.lat} />
           {/* a phone: the advisories in force above the fold, in the ticket (the dock follows below) */}
           {phone && v.advisories.length ? (
             <div className={s.advStrip} data-testid="advisories">

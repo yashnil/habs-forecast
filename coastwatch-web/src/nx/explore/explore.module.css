@@ -149,7 +149,8 @@
 /* with the cell outlined, the ring steps back to the dot at its centre */
 .chartPoint[data-cell="outlined"] .chartPointRing { display: none; }
 /* top right: inland, clear of the water and the coastal town names the bottom corner covered (critic 12) */
-.locator { position: absolute; top: calc(var(--nx-cover-top, 0px) + var(--s-8)); right: calc(var(--nx-cover-right, 0px) + var(--s-8)); display: block; pointer-events: none; }
+/* below the floating bar and its menu (v15.1 review: it collided with Menu at 320) */
+.locator { position: absolute; top: calc(var(--nx-cover-top, 0px) + var(--s-64) + var(--s-8)); right: calc(var(--nx-cover-right, 0px) + var(--s-8)); display: block; pointer-events: none; }
 .locatorGround { fill: var(--paper); stroke: var(--ink); stroke-width: 1; }
 .locatorCoast { fill: none; stroke: var(--ink-2); stroke-width: 1; stroke-linejoin: round; }
 .locatorView { fill: none; stroke: var(--ink); stroke-width: 1.5; }
@@ -187,3 +188,92 @@
   .readoutSlot[data-open="1"] { order: -1; }
   .readoutSlot[data-open="0"] { display: none; }
 }
+
+/* ---------------------------------------------------------------- v15.1: Explore California Waters */
+/* the panel's head: where this is, the name, and the two ways back (the port's water, the page the reader came from) */
+.head { display: grid; gap: var(--s-2); }
+.title { margin: 0; font: 500 var(--t-22) / 1.15 var(--font-serif); letter-spacing: -0.01em; color: var(--ink); }
+.nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s-16); margin: calc(-1 * var(--s-6)) 0; }
+/* what is not published: one quiet line under the switch, never a disabled chip that looks live */
+.unpublished { margin: calc(-1 * var(--s-4)) 0 0; font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.switchItem[data-on="1"] { color: var(--ultra-deep); background: var(--ultra-wash); }
+
+/* the legend's added lines: the radar's real speeds, the station marks, the resolution at this scale */
+.speedKey, .stationKey, .resNote { margin: var(--s-12) 0 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink); }
+.speedKey b { font-weight: var(--w7); margin-right: var(--s-4); }
+.resNote { color: var(--ink-2); padding-top: var(--s-10); border-top: var(--hair) solid var(--rule-soft); }
+.stationKeyShore, .stationKeyBuoy { display: inline-block; width: 12px; height: 12px; margin: 0 var(--s-6) 0 0; vertical-align: -1px; background: var(--paper); border: 2px solid var(--ink); }
+.stationKeyShore { border-radius: 50%; }
+.stationKeyBuoy { transform: rotate(45deg) scale(0.85); margin-left: var(--s-10); }
+
+/* the stations on the chart: real targets (44 px) around a small mark, following the camera */
+.stations { position: absolute; inset: 0; pointer-events: none; }
+.stationPt {
+  position: absolute; left: 0; top: 0; width: 28px; height: 28px; margin: -14px 0 0 -14px; padding: 0;
+  display: grid; place-items: center; background: none; border: 0; cursor: pointer; pointer-events: auto; visibility: hidden;
+}
+.stationPt::before { content: ""; position: absolute; inset: -8px; }
+.stationPt > span { width: 11px; height: 11px; background: var(--paper); border: 2px solid var(--ink); box-shadow: 0 0 0 1.5px var(--halo); transition: transform var(--dur-hover) linear; }
+.stationPt[data-kind="shore"] > span { border-radius: 50%; width: 13px; height: 13px; border-color: var(--ultra-deep); }
+.stationPt[data-kind="buoy"] > span { transform: rotate(45deg); width: 9px; height: 9px; }
+.stationPt:hover > span, .stationPt[data-on="1"] > span { background: var(--ink); }
+.stationPt[data-kind="shore"]:hover > span, .stationPt[data-kind="shore"][data-on="1"] > span { background: var(--ultra-deep); }
+.stationPt:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; border-radius: 50%; }
+.stationName {
+  position: absolute; left: 22px; top: 50%; transform: translateY(-50%); white-space: nowrap;
+  font-size: var(--fs-13); font-weight: var(--w7); color: var(--ink);
+  text-shadow: 0 0 1px var(--halo), 1.5px 0 0 var(--halo), -1.5px 0 0 var(--halo), 0 1.5px 0 var(--halo), 0 -1.5px 0 var(--halo), 0 0 3px var(--halo);
+}
+
+/* one station's own dated values */
+.stationCard { display: grid; gap: var(--s-10); }
+.stationHead { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-8); }
+.stationKind { margin: 0; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); }
+.stationTitle { margin: var(--s-2) 0 0; font: 500 var(--fs-18) / 1.2 var(--font-serif); color: var(--ink); }
+.stationClose { flex: none; width: var(--target); height: var(--target); margin: calc(-1 * var(--s-8)) calc(-1 * var(--s-8)) 0 0; display: grid; place-items: center; font-size: var(--fs-25); line-height: 1; color: var(--ink-2); background: none; border: 0; border-radius: 50%; cursor: pointer; }
+.stationClose:hover { color: var(--ink); background: var(--paper-2); }
+.stationClose:focus-visible { outline: 2.5px solid var(--focus); outline-offset: -2px; }
+.stationRows { margin: 0; display: grid; gap: var(--s-8); }
+.stationRows > div { display: grid; gap: var(--s-2); padding-top: var(--s-8); border-top: var(--hair) solid var(--rule-soft); }
+.stationRows dt { font-size: var(--fs-13); color: var(--ink-2); }
+.stationRows dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-10); }
+.stationRows dd b { font-size: var(--fs-18); font-weight: var(--w7); font-variant-numeric: tabular-nums; color: var(--ink); }
+.stationRows dd span { font-size: var(--fs-13); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.stationOld { color: var(--coral-ink) !important; font-weight: var(--w6); }
+.stationNote { margin: 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
+
+@media (max-width: 640px) {
+  .title { font-size: var(--fs-18); }
+  .head { order: -4; }
+  .unpublished { order: -3; }
+}
+
+/* "About this layer": the method, dates' detail and caveats, one tap away (a native disclosure) */
+.about { border-top: var(--hair) solid var(--rule-soft); padding-top: var(--s-4); }
+.about > summary { display: flex; align-items: center; min-height: var(--target); font-size: var(--fs-13); font-weight: var(--w7); color: var(--ultra); cursor: pointer; list-style: none; }
+.about > summary::-webkit-details-marker { display: none; }
+.about > summary::after { content: "+"; margin-left: var(--s-8); font-weight: var(--w6); }
+.about[open] > summary::after { content: "−"; }
+.about > summary:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; border-radius: var(--r-sm); }
+.aboutBody { display: grid; gap: var(--s-8); padding-bottom: var(--s-4); }
+.aboutBody p { margin: 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink-2); }
+
+/* the whole coast arriving: words and a thin bar, nothing hatched meanwhile */
+.fieldLoading { display: grid; gap: var(--s-4); margin: 0; font-size: var(--fs-13); font-weight: var(--w6); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.fieldBar { display: block; height: 3px; border-radius: var(--r-pill); background: var(--paper-2); overflow: hidden; }
+.fieldBar > span { display: block; height: 100%; background: var(--ultra); transform-origin: 0 50%; transition: transform var(--dur-hover) linear; }
+.swatchArea { fill: var(--depth-5); fill-opacity: 0.6; stroke: var(--ink-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+/* the timeline's own toggle, top right of the dock, beside Play */
+.railToggle { position: absolute; top: var(--s-10); right: calc(var(--s-20) + 64px); z-index: 1; }
+.timeDock[data-open="0"] .railHead { padding-right: calc(3 * var(--s-64) - var(--s-12)); }
+
+/* v15.1 review: in Explore its own switch is the one set of layer controls (Today's chips step aside), and with a
+   field on the chart the water's names never sit on the data */
+:global(html:has([data-nx-explore-field="1"])) :global(.nx-layers),
+:global(html:has([data-nx-explore-field="1"])) :global(.n12-water-name),
+:global(html:has([data-nx-explore-field="1"])) :global(.n12-water-name-svg) { display: none; }
+/* the radar's hours: their own dated axis, set apart from the days and their Now; old hours step back */
+.hoursBlock { margin-top: var(--s-10); }
+.railRow[data-old="1"] .barMeasured { opacity: 0.38; }
+.railOld { font-weight: var(--w7); color: var(--coral-ink); }
+.zoomHint { font-weight: var(--w7); color: var(--ink); }

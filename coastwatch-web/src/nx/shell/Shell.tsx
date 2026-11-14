@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 import { CHART_MODE_KEY, type ChartMode } from "./entry";
 import { openPortFinder } from "./finder";
 import { FieldPack } from "@/nx/offline/FieldPack";
 import { useCurrentPort, useSavedPortKey, type ShellPort } from "./port";
-import { DESTINATIONS, activeDestination, withPlace } from "./destinations";
+import { DESTINATIONS, activeDestination, destinationHref, withPlace } from "./destinations";
 import { alertsHref } from "./unread";
 import { useUnread } from "@/nx/alerts/useInbox";
 import { Icon } from "@/nx/ds/Icon";
 import { navPill } from "@/nx/ds/motion";
+import { getPanelsPage, layoutChanged, loadLayout, panelsRev, resetLayout, subscribePanels } from "@/nx/ds/panels/store";
 import { LayerChips } from "@/nx/ds/synth/Chips";
 import { usePortLabel } from "./portLabel";
 
@@ -86,7 +87,7 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
       {open ? (
         <div className="n12-menu-panel" id={id}>
           <nav className="n12-menu-links" aria-label="More">
-            <Link href={withPlace("/explore", key)}>Explore the water</Link>
+            <Link href={destinationHref("/explore", key)}>Explore the water</Link>
             <Link href={withPlace("/ask", key)}>Ask</Link>
             <Link href="/account">Your data</Link>
             <Link href="/sources">Sources</Link>
@@ -104,6 +105,7 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
               </label>
             ))}
           </fieldset>
+          <ResetLayout onDone={() => setOpen(false)} />
           <FieldPack port={port ? { key: port.key, name: port.name, lat: port.lat, lon: port.lon } : null} />
           <p className="n12-menu-note">
             Chart: depth from NOAA ETOPO 2022 and the Coastal Relief Model; coast © OpenStreetMap contributors, OpenMapTiles. Not for navigation.
@@ -111,6 +113,26 @@ function ChartModeMenu({ port }: { port: ShellPort | null }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Menu > Reset layout: shown only on a page whose panels the reader has moved, resized or collapsed (ds/panels). */
+function ResetLayout({ onDone }: { onDone: () => void }) {
+  useSyncExternalStore(subscribePanels, panelsRev, () => 0);
+  const page = getPanelsPage();
+  if (!page || !layoutChanged(loadLayout(page))) return null;
+  return (
+    <button
+      type="button"
+      className="n12-menu-reset"
+      data-testid="nx-menu-reset-layout"
+      onClick={() => {
+        resetLayout(page);
+        onDone();
+      }}
+    >
+      Reset layout <small>Put this page&rsquo;s panels back</small>
+    </button>
   );
 }
 
@@ -151,7 +173,7 @@ export function Shell() {
   // until then the stylesheet fills the current link
   const [live, setLive] = useState(false);
   useEffect(() => setLive(true), []);
-  const href = (path: string) => (path === "/alerts" ? alertsHref(key) : withPlace(path, key));
+  const href = (path: string) => (path === "/alerts" ? alertsHref(key) : destinationHref(path, key));
   return (
     <>
       <a className="n12-skip" href="#nx-margin">
@@ -173,7 +195,7 @@ export function Shell() {
         <div className="nx-bar-end">
           <nav className="nx-nav" aria-label="Destinations">
             {DESTINATIONS.map((d) => (
-              <Section key={d.path} path={d.path} label={d.label} href={href(d.path)} current={active === d.path} unread={unread} live={live} pillId="nx-dest" testid={d.path === "/alerts" ? "nx-alerts-link" : undefined} />
+              <Section key={d.path} path={d.path} label={d.label} href={href(d.path)} current={active === d.path} unread={unread} live={live} pillId="nx-dest" testid={d.path === "/alerts" ? "nx-alerts-link" : d.path === "/explore" ? "nx-nav-explore" : undefined} />
             ))}
           </nav>
           <ChartModeMenu port={port} />
@@ -182,7 +204,7 @@ export function Shell() {
       <LayerChips className="nx-layers" />
       <nav className="n12-tabs" aria-label="Destinations" data-testid="nx-tabs">
         {DESTINATIONS.map((d) => (
-          <Section key={d.path} path={d.path} label={d.label} href={href(d.path)} current={active === d.path} unread={unread} live={live} pillId="nx-tab" />
+          <Section key={d.path} path={d.path} label={d.label} href={href(d.path)} current={active === d.path} unread={unread} live={live} pillId="nx-tab" testid={d.path === "/explore" ? "nx-tab-explore" : undefined} />
         ))}
       </nav>
     </>

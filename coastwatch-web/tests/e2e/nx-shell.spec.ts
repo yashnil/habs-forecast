@@ -34,7 +34,8 @@ test.describe("one chart across the four destinations", () => {
     // other three are the nav pill's sections
     // each page's own scene: My Coast opens on its brief (B's v14 id); Research on its station near the port (A's)
     const visits: Array<[string, RegExp, RegExp, string]> = [
-      ["Explore", /\/explore\?place=port-592$/, /^explore:port-592$/, "Today"],
+      // v15.1: Explore is a section of its own and opens on the whole coast (Explore California Waters), port kept
+      ["Explore", /\/explore\?view=coast&place=port-592$/, /^explore:state$/, "Explore"],
       ["My Coast", /\/coast\?place=port-592$/, /^coast:port-592(:zone-\d+)?$/, "My Coast"],
       ["Research", /\/research\?place=port-592(&|$)/, /^research[:-]/, "Research"],
       ["Today", /\/today\?place=port-592$/, /^today:port-592$/, "Today"],
@@ -212,12 +213,13 @@ test.describe("addresses", () => {
       await page.goto(`${OK}${path}`);
       await expect(page.getByTestId(id)).toBeVisible();
     }
-    // v13: /ask, /account and /alerts moved into the shell (tests/e2e/v13/personal.spec.ts, alerts.spec.ts)
+    // v13: /ask, /account and /alerts moved into the shell (tests/e2e/v13/personal.spec.ts, alerts.spec.ts);
+    // v15.1: the informational pages too, on the ds page layout (tests/e2e/v151/routes.spec.ts)
     for (const path of ["/about", "/privacy", "/terms", "/sources", "/sms-terms", "/fisheries", "/coast/kept"]) {
       const r = await page.goto(`${OK}${path}`);
       expect(r!.status(), path).toBe(200);
-      await expect(page.getByTestId("nx-app"), path).toHaveCount(0);
-      await expect(page.locator("main, h1").first(), path).toBeVisible();
+      await expect(page.getByTestId("nx-app"), path).toHaveCount(1);
+      await expect(page.getByTestId("nx-info-page"), path).toBeVisible();
     }
   });
 });

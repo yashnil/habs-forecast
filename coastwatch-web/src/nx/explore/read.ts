@@ -251,3 +251,20 @@ export function isothermLabels(g: FieldGrid, codes: Uint16Array, every = 2, rows
   }
   return out;
 }
+
+/**
+ * v15.1 review (j10): is a cell without a value outside the observed layer's area (land, or water the coastal
+ * product does not cover) rather than a gap in the view? Never cloud for: a cell west of the westernmost pixel the
+ * week's latest view holds in its row; a cell the week's latest view never saw that lies east of the mainland shore
+ * (inland: the Sierra, the valleys) or north or south of California. A cell the latest view never saw out at sea
+ * stays "no view" (persistent cloud is cloud).
+ */
+export function outsideObservedArea(o: { lat: number; lon: number; col: number; row: number; compositeEmpty: boolean; westmost: Int32Array | null; shoreLon: (lat: number) => number | null }): boolean {
+  if (o.westmost && o.row >= 0 && o.row < o.westmost.length) {
+    const w = o.westmost[o.row];
+    if (w < 0 || o.col < w) return true;
+  }
+  if (!o.compositeEmpty) return false;
+  const shore = o.shoreLon(o.lat);
+  return shore == null || o.lon > shore;
+}

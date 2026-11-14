@@ -34,7 +34,7 @@ export type FieldStyle =
   | { kind: "isolines"; step: number; index: number; scale?: number; offset?: number };
 
 /** `adjacentCode`: the marker `markAdjacent` (adjacent.ts) wrote for cells left out beside land; null or absent: none */
-export type FieldData = { grid: FieldGrid; codes: Uint16Array; aux?: { grid: FieldGrid; codes: Uint16Array } | null; adjacentCode?: number | null };
+export type FieldData = { grid: FieldGrid; codes: Uint16Array; aux?: { grid: FieldGrid; codes: Uint16Array } | null; adjacentCode?: number | null; outCode?: number | null; loadingCode?: number | null };
 
 const VS = `#version 300 es
 uniform mat4 u_matrix;
@@ -69,6 +69,9 @@ uniform float u_step;
 uniform float u_index;
 uniform float u_past;
 uniform float u_adj;
+uniform float u_out;
+uniform float u_loading;
+uniform float u_fade;
 uniform vec2 u_iso;
 in vec2 v_merc;
 out vec4 o;
@@ -119,13 +122,25 @@ float rampT(float v) {
   return (x - u_domain.x) / (u_domain.y - u_domain.x);
 }
 
-void main() {
+void field();
+// the whole layer fades in once, whole (v15.1: never chunk by chunk)
+void main() { field(); o *= u_fade; }
+// v15.1 "outside this layer's area": the chart's own water, untouched (neither the cloud hatch nor a value). No
+// tint at all, so no edge of a tint can ever draw a seam across the sea (review: a seam beside the panel)
+vec4 outsideArea() { return vec4(0.0); }
+
+void field() {
   vec2 f = cellf();
   ivec2 c = ivec2(floor(f + 0.5));
   bool within = inside(c);
   // an observed layer is drawn past its grid (the quad covers the chart): there is no view there either; a model
   // or an outlook is too, with its own "outside the model" mark; isotherms stop at their grid
   if (!within && u_variant == 3) discard;
+  // past an observed grid: outside the layer's area
+  if (!within && u_variant == 0) { o = outsideArea(); return; }
+  // a chunk on its way: nothing (the page says it is loading); west of the week's westernmost pixel: outside
+  if (within && u_variant == 0 && u_loading >= 0.0 && codeAt(c) == uint(u_loading)) discard;
+  if (within && u_variant == 0 && u_out >= 0.0 && codeAt(c) == uint(u_out)) { o = outsideArea(); return; }
   // left out beside land (an observed layer only): a flat pale band along the shore, its own mark: no hatch, so
   // it is never read as cloud, and no ramp colour, so it is never read as a value
   if (within && u_variant == 0 && u_adj >= 0.0 && codeAt(c) == uint(u_adj)) {
@@ -137,9 +152,8 @@ void main() {
 
   if (u_variant == 0) {
     if (nodata) {
-      // "no view" (T19): a quiet hatch over a light paper veil, so measured water dominates. The same mark inside
-      // the grid (cloud, a gap) and outside it (beyond the sensor's footprint), continuous in screen space, so the
-      // grid's edge is never a line across the sea and no blank water reads as data
+      // "no view" (T19): a quiet hatch over a light paper veil, so measured water dominates; only inside the area
+      // the sensor saw (v15.1: past it, the plain "outside this layer's area" tint above)
       vec4 veil = pm(u_paper, 0.22);
       o = over(pm(u_hatch, 0.32 * hatch(11.0, 1.0)), veil);
       return;
@@ -185,6 +199,7 @@ void main() {
   float hw = (major ? 0.95 : 0.55) * u_dpr;
   float line = 1.0 - smoothstep(hw - 0.5, hw + 0.5, d);
   o = pm(u_ink, (major ? 0.9 : 0.55) * line);
+  return;
 }`;
 
 function compile(gl: WebGL2RenderingContext, vs: string, fs: string) {
@@ -230,6 +245,8 @@ export type FieldController = CustomLayerInterface & {
   /** A new frame (a cut) or the same frame with more of it loaded. */
   setData: (d: FieldData | null, style: FieldStyle) => void;
   setColours: (c: ModeColours) => void;
+  /** the whole layer's opacity, 0..1 (a fade in once the frame is whole) */
+  setFade: (a: number) => void;
   /** frames drawn since added (the e2e hook) */
   draws: () => number;
 };
@@ -250,6 +267,7 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
   let size: [number, number] = [0, 0];
   let dirty = true;
   let drawn = 0;
+  let fade = 1;
   const mat = new Float32Array(16);
 
   const upload = (g: WebGL2RenderingContext, t: WebGLTexture, codes: Uint16Array, w: number, h: number) => {
@@ -300,11 +318,15 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       cols = c;
       map?.triggerRepaint();
     },
+    setFade(a) {
+      fade = Math.max(0, Math.min(1, a));
+      map?.triggerRepaint();
+    },
     onAdd(m, ctx) {
       map = m;
       gl = ctx as WebGL2RenderingContext;
       prog = compile(gl, VS, FIELD_FS);
-      for (const k of ["u_matrix", "u_data", "u_aux", "u_hasAux", "u_geo", "u_size", "u_stride", "u_dec", "u_decAux", "u_adj", "u_takeLog", "u_variant", "u_ramp", "u_prob", "u_domain", "u_ink", "u_ink2", "u_hatch", "u_paper", "u_dpr", "u_opacity", "u_step", "u_index", "u_past", "u_adj", "u_iso"]) u[k] = gl.getUniformLocation(prog, k);
+      for (const k of ["u_matrix", "u_data", "u_aux", "u_hasAux", "u_geo", "u_size", "u_stride", "u_dec", "u_decAux", "u_adj", "u_takeLog", "u_variant", "u_ramp", "u_prob", "u_domain", "u_ink", "u_ink2", "u_hatch", "u_paper", "u_dpr", "u_opacity", "u_step", "u_index", "u_past", "u_adj", "u_iso", "u_out", "u_loading", "u_fade"]) u[k] = gl.getUniformLocation(prog, k);
       vao = gl.createVertexArray();
       gl.bindVertexArray(vao);
       quad = gl.createBuffer();
@@ -379,6 +401,9 @@ export function createFieldLayer(id: string, colours: ModeColours): FieldControl
       g.uniform1f(u.u_index, style.kind === "isolines" ? style.index : 1);
       g.uniform1f(u.u_past, style.kind === "classes" && style.past ? 1 : 0);
       g.uniform1f(u.u_adj, style.kind === "ramp" && data.adjacentCode != null ? data.adjacentCode : -1);
+      g.uniform1f(u.u_out, style.kind === "ramp" && data.outCode != null ? data.outCode : -1);
+      g.uniform1f(u.u_loading, style.kind === "ramp" && data.loadingCode != null ? data.loadingCode : -1);
+      g.uniform1f(u.u_fade, fade);
       g.uniform2f(u.u_iso, style.kind === "isolines" ? (style.scale ?? 1) : 1, style.kind === "isolines" ? (style.offset ?? 0) : 0);
       g.bindVertexArray(vao);
       g.drawArrays(g.TRIANGLE_STRIP, 0, 4);

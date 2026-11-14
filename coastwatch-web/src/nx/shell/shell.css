@@ -90,6 +90,9 @@
 .n12-mode-option { display: flex; align-items: center; gap: var(--s-12); min-height: var(--target); margin: 0 calc(-1 * var(--s-10)); padding: 0 var(--s-10); border-radius: var(--r-sm); cursor: pointer; }
 .n12-mode-option input { width: 18px; height: 18px; accent-color: var(--ultra); margin: 0; }
 .n12-mode-option small { font-size: var(--fs-13); color: var(--ink-2); }
+.n12-menu-reset { display: flex; align-items: baseline; gap: var(--s-12); width: calc(100% + 2 * var(--s-10)); min-height: var(--target); margin: 0 calc(-1 * var(--s-10)); padding: 0 var(--s-10); border: 0; border-radius: var(--r-sm); background: none; color: var(--ink); font: inherit; font-weight: var(--w6); text-align: left; cursor: pointer; }
+.n12-menu-reset:hover { background: var(--paper-2); }
+.n12-menu-reset small { font-size: var(--fs-13); font-weight: var(--w5); color: var(--ink-2); }
 .n12-menu-note { margin: var(--s-8) var(--s-10) var(--s-4); font-size: var(--fs-11); color: var(--ink-2); }
 
 /* the layer chips, under the brand, first in tab order after the nav */
