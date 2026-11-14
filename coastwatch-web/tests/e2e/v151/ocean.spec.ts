@@ -423,20 +423,30 @@ test("final pass: opening or closing the timeline refits with a short ease, neve
   await mapReady(page);
   await expect.poll(() => moving(page), { timeout: 10_000 }).toBe(false);
   await page.waitForTimeout(800);
+  // what the camera is asked to do, not how long a (software-rendered) machine takes to draw it: record every camera
+  // call's requested duration while the timeline is toggled; the refit must be a short ease, never the 1.5 s flight
   const refit = () =>
     page.evaluate(async () => {
-      const m = (window as unknown as { __cwMap: { once: (e: string, f: () => void) => void } }).__cwMap;
-      const t0 = performance.now();
-      const done = new Promise<number>((r) => m.once("moveend", () => r(performance.now() - t0)));
+      type Cam = { easeTo: (o: { duration?: number }) => unknown; flyTo: (o: { duration?: number }) => unknown; jumpTo: (o: unknown) => unknown; once: (e: string, f: () => void) => void };
+      const m = (window as unknown as { __cwMap: Cam }).__cwMap;
+      const asked: { kind: string; ms: number }[] = [];
+      const orig = { easeTo: m.easeTo, flyTo: m.flyTo, jumpTo: m.jumpTo };
+      m.easeTo = function (o) { asked.push({ kind: "ease", ms: o?.duration ?? 0 }); return orig.easeTo.call(this, o); };
+      m.flyTo = function (o) { asked.push({ kind: "fly", ms: o?.duration ?? 0 }); return orig.flyTo.call(this, o); };
+      m.jumpTo = function (o) { asked.push({ kind: "jump", ms: 0 }); return orig.jumpTo.call(this, o); };
       (document.querySelector("[data-testid=nx-rail-toggle]") as HTMLElement).click();
-      return Promise.race([done, new Promise<number>((r) => setTimeout(() => r(9999), 3000))]);
+      await new Promise((r) => setTimeout(r, 1500));
+      Object.assign(m, orig);
+      return asked;
     });
-  // a 350 ms ease: under 600 ms on a GPU; a software-rendered chart (CI's reduced tier) draws fewer frames per second,
-  // so it gets more room, still well under the 1.5 s flight this guards against
-  const tier = await page.getByTestId("nx-sheet").getAttribute("data-tier");
-  const limit = tier === "full" ? 600 : 1300;
-  expect(await refit()).toBeLessThan(limit);
-  await page.waitForTimeout(500);
-  expect(await refit()).toBeLessThan(limit);
+  for (let k = 0; k < 2; k++) {
+    const asked = await refit();
+    expect(asked.length, "a timeline toggle refits the camera").toBeGreaterThan(0);
+    for (const a of asked) {
+      expect(a.kind, "never a flight").not.toBe("fly");
+      expect(a.ms, "a short ease (≈350 ms)").toBeLessThanOrEqual(400);
+    }
+    await page.waitForTimeout(500);
+  }
   await ctx.close();
 });
