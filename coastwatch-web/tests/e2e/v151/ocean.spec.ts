@@ -322,6 +322,9 @@ test("round 2 (D): WCOFS model temperature and predicted currents, steps on the 
   // a step the fixture serves draws; its label is the model's own, a forecast not a measurement
   await page.getByTestId("nx-step-f024").click();
   await expect.poll(async () => (await hook2(page)).oceanStep, { timeout: 15_000 }).toBe("f024");
+  // isotherms as their own warm map lines (traced on the CPU, never along the mask), labelled in °F
+  await expect.poll(() => page.evaluate(() => !!(window as unknown as { __cwMap: { getLayer: (id: string) => unknown } }).__cwMap.getLayer("nx-isotherms-line")), { timeout: 10_000 }).toBe(true);
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __nxExplore?: { isotherms?: number } }).__nxExplore?.isotherms ?? 0)).toBeGreaterThan(0);
   await expect(page.getByTestId("nx-model-label")).toContainText(/NOAA WCOFS model guidance \(developmental\) · cycle Nov 14 03z · valid .* · a model forecast, not a measurement; not a bloom or toxin prediction/);
   await page.getByTestId("nx-step-n024").click();
   await expect(page.getByTestId("nx-model-label")).toContainText("a model nowcast");
@@ -331,6 +334,7 @@ test("round 2 (D): WCOFS model temperature and predicted currents, steps on the 
   await expect(page.getByTestId("nx-step-f048")).toHaveAttribute("data-failed", "1");
   // predicted currents: a sub-switch beside the measured radar, their own key
   await page.getByTestId("nx-layer-chl").click();
+  await expect.poll(() => page.evaluate(() => !!(window as unknown as { __cwMap: { getLayer: (id: string) => unknown } }).__cwMap.getLayer("nx-isotherms-line"))).toBe(false);
   await page.getByTestId("nx-currents-toggle").click();
   await page.getByTestId("nx-currents-predicted").click();
   await page.getByTestId("nx-step-f024").click();

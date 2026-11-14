@@ -75,10 +75,10 @@ export function SstModelLegend({ ix, step, failed, about }: { ix: WcofsIndex; st
         </figcaption>
         <div className={s.isoKey} aria-hidden="true">
           <svg viewBox="0 0 120 24" className={s.isoSvg}>
-            <path d="M2,18 C30,4 60,22 118,8" className={s.isoMajor} />
-            <path d="M2,22 C34,12 64,26 118,15" className={s.isoMinor} />
+            <path d="M2,18 C30,4 60,22 118,8" className={s.isoMajorWarm} />
+            <path d="M2,22 C34,12 64,26 118,15" className={s.isoMinorWarm} />
           </svg>
-          <span>every 1 °F, heavier every 2 °F</span>
+          <span>every 1 °F, heavier and labelled every 2 °F</span>
         </div>
       </figure>
       <p className={s.caption} data-testid="nx-model-label">

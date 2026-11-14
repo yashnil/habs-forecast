@@ -261,3 +261,34 @@ describe("round 2: one shared, true axis; served steps only", () => {
     expect(playableSteps(s, new Set(["f003"])).map((x) => x.id)).toEqual(["f006"]);
   });
 });
+
+import { isolineLabels, traceIsolines } from "@/nx/chart/layers/contours";
+
+describe("isotherms traced on the CPU: nothing along a mask or the grid's edge, no tiny rings", () => {
+  const N = 65535;
+  const grid = (w: number, h: number) => ({ width: w, height: h, lat_first: 36, lat_step: 0.04, lon_first: -123, lon_step: 0.04, scale_factor: 1, add_offset: 0, nodata: N, transform: "none" as const });
+  it("a cell with a missing corner emits no segment", () => {
+    // a west-east gradient 0..4 with the middle column masked: no line may cross the masked column
+    const w = 5, h = 5;
+    const codes = new Uint16Array(w * h);
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) codes[r * w + c] = c === 2 ? N : c;
+    const lines = traceIsolines(grid(w, h), codes, { step: 1, index: 2, toValue: (k) => k });
+    for (const l of lines) for (const [lon] of l.coords) expect(Math.abs(lon - (-123 + 2 * 0.04))).toBeGreaterThan(0.039);
+    expect(lines.some((l) => l.level === 0.5 || l.level === 1)).toBe(true);
+  });
+  it("a tiny closed ring is dropped below the minimum length", () => {
+    const w = 6, h = 6;
+    const codes = new Uint16Array(w * h).fill(10);
+    codes[2 * w + 2] = 20; // one warm cell: a ring of about one cell
+    expect(traceIsolines(grid(w, h), codes, { step: 5, index: 2, toValue: (k) => k }).length).toBeGreaterThan(0);
+    expect(traceIsolines(grid(w, h), codes, { step: 5, index: 2, toValue: (k) => k, minKm: 12 }).length).toBe(0);
+  });
+  it("labels the longest line of a few major levels in degrees", () => {
+    const w = 8, h = 8;
+    const codes = new Uint16Array(w * h);
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) codes[r * w + c] = 60 + c;
+    const labels = isolineLabels(traceIsolines(grid(w, h), codes, { step: 1, index: 2, toValue: (k) => k }));
+    expect(labels.length).toBeGreaterThan(0);
+    expect(labels.every((l) => /^\d+°$/.test(l.text) && Number(l.text.replace("°", "")) % 2 === 0)).toBe(true);
+  });
+});

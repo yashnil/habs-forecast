@@ -16,6 +16,11 @@ import { chlEstimateStateWords, chlEstimateUsable, extendAxis, maskedCodes, mask
 import { ChlEstimateLegend, EstimateRow, SstModelLegend, WcofsNote } from "./OceanParts";
 import { token } from "@/nx/chart/layers/colors";
 import type { FieldGrid } from "@/nx/chart/layers/grid";
+import { isolineLabels, traceIsolines } from "@/nx/chart/layers/contours";
+import { clearIsotherms, recolourIsotherms, showIsotherms } from "@/nx/chart/layers/isotherms";
+
+/** Isotherms shorter than this are dropped (tiny closed rings and specks of a 4 km model grid), km. */
+const ISO_MIN_KM = 12;
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { age, Button, day, fixed, latLon, plainError, sig, useMedia, usePhone, Readout, Unavailable, PageLayout, Ticket, TicketMain, TicketStub, Dock, MapLayers, type Provenance } from "@/nx/ds";
 import { getFrame, onFrame } from "@/nx/chart/runtime";
@@ -417,19 +422,29 @@ export function Explore({ model }: { model: ExploreModel }) {
         if (!live) return;
         const codes = maskedCodes(pick.g, c, m);
         const grid = asValueGrid(pick.g) as unknown as FieldGrid;
-        layer.setData({ grid, codes }, st);
+        if (oceanField === "sst") {
+          // isotherms traced on the CPU: no segment along the mask or the grid's edge, no tiny rings; their own warm
+          // colour, labelled in °F (contours.ts, isotherms.ts)
+          const lines = traceIsolines(grid, codes, { step: ISO_F.step, index: ISO_F.index, toValue: (k) => (k * grid.scale_factor + grid.add_offset) * ISO_F.scale + ISO_F.offset, minKm: ISO_MIN_KM });
+          showIsotherms(map, lines);
+          setIsoLabels(isolineLabels(lines));
+          (window as Win).__nxExplore = { ...(window as Win).__nxExplore, isotherms: lines.length };
+        } else layer.setData({ grid, codes }, st);
         oceanCodesRef.current = { grid: pick.g, codes };
         setOceanState("ready");
-        if (oceanField === "sst") setIsoLabels(isothermLabels(grid, codes, ISO_F.index));
         (window as Win).__nxExplore = { ...(window as Win).__nxExplore, ocean: oceanField, oceanStep: oceanField === "sst" ? wstep?.id ?? null : ocean.chl?.date ?? null, fieldDraws: layer.draws };
       })
       .catch(() => {
         if (!live) return;
         setOceanState("failed");
+        clearIsotherms(map);
         if (oceanField === "sst" && wstep) setFailedSteps((f) => new Set(f).add(wstep.id));
       });
+    const offMode = onModeChange(() => recolourIsotherms(map));
     return () => {
       live = false;
+      offMode();
+      clearIsotherms(map);
     };
   }, [map, oceanField, wstep, ocean.chl]);
   // the reader's opacity for the field: the chart's contours show beneath it
@@ -1085,7 +1100,7 @@ export function Explore({ model }: { model: ExploreModel }) {
       {/* the whole coast is its own locator: the inset only at a port */}
       {phone && view !== "coast" ? <Locator /> : null}
       {stationsOn ? <StationPoints stations={model.stations} buoys={model.buoys} selected={pick} onSelect={choosePick} /> : null}
-      {(product.id === "sst" || oceanField === "sst") && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
+      {(product.id === "sst" || oceanField === "sst") && isoLabels.length ? <ChartMarks marks={isoLabels.map((l) => ({ id: l.id, lon: l.lon, lat: l.lat, priority: 12, anchors: ["center" as const], content: <span className={oceanField === "sst" ? `${s.isoLabel} ${s.isoLabelWarm}` : s.isoLabel}>{l.text}</span>, label: `${l.text} F isotherm` }))} /> : null}
 
       {/* the layer group: what this view is, the data layers as chips, the legend (a ticket standing west, with no place) */}
       <Ticket at={null} side="west" edge="gutter" width={348} labelledBy="nx-explore-title" className={s.panel} data-testid="nx-explore-panel">
