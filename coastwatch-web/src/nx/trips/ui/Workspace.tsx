@@ -27,6 +27,7 @@ import { RecheckPanel } from "./RecheckPanel";
 import { SnapshotView } from "./SnapshotView";
 import { timelineOf } from "../feed";
 import { tripsStore } from "../useTripsData";
+import { exploreHref } from "@/nx/explore/links";
 import s from "./trips.module.css";
 
 type Sheet = null | "changes" | "snapshot" | "edit" | "outcome" | "money";
@@ -244,6 +245,10 @@ export function Workspace({ model }: { model: TripModel }) {
       ) : null}
       <Button variant="quiet" className={s.inline} href={`/coast/trips?id=${encodeURIComponent(trip.id)}&view=briefing`} data-testid="trip-open-briefing">
         Briefing
+      </Button>
+      {/* the coast's ocean science, coming back to this trip ("Back to your trip" in Explore) */}
+      <Button variant="quiet" className={s.inline} href={exploreHref({ view: "coast", place: trip.placeKey, from: "trip", trip: trip.id })} data-testid="trip-open-explore">
+        Explore the water
       </Button>
       {phone ? (
         rare(() => {})
