@@ -114,7 +114,7 @@ test.describe("Explore", () => {
     await page.goto(`${OK}/explore?place=port-592`);
     const m = margin(page);
     // v15.1: Explore California Waters, the layer named in its switch
-    await expect(m).toContainText("Explore California Waters");
+    await expect(m.getByRole("heading", { level: 1, name: "Explore California Waters: Chlorophyll" })).toBeVisible();
     await expect(m).toContainText("No view");
     // the newest pixel is Oct 6, past OLCI's 3-day limit on Oct 12: "(old)" beside the dates (T17)
     await expect(m).toContainText("Measured · Sentinel-3 OLCI, 300 m · latest view, pixels Oct 1–6, each its own latest day seen (old). Algae, not toxin.");
