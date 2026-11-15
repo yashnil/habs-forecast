@@ -249,7 +249,7 @@ def test_cli_writes_state_report_and_github_outputs(tmp_path, monkeypatch, capsy
     from coastwatch_pipeline import cli
 
     monkeypatch.setattr(cli, "RunContext", lambda out_dir: fixture_context(tmp_path / "o", now=T[0]))
-    state, md, gh = tmp_path / "official-watch.json", tmp_path / "report.md", tmp_path / "gh.txt"
+    state, md, gh = tmp_path / "watch-official.json", tmp_path / "report.md", tmp_path / "gh.txt"
     args = ["watch-official", "--state", str(state), "--markdown", str(md), "--github-output", str(gh), "--run-url", "https://example.test/run"]
     assert cli.main(args) == 0
     out = json.loads(capsys.readouterr().out)
@@ -263,6 +263,24 @@ def test_cli_writes_state_report_and_github_outputs(tmp_path, monkeypatch, capsy
     gh.unlink()
     assert cli.main(args) == 0
     assert gh.read_text().startswith("notify=false\nconditions=1\n")
+
+
+def test_state_survives_a_pipeline_run_and_prune_in_the_same_dataset(tmp_path):
+    """The state lives in the published dataset next to the pipeline's own files. A full pipeline
+    run (which prunes official-*.json files it does not reference) must leave it alone, or every
+    run starts without memory (staging run 40466460080, 2026-10-27)."""
+    from coastwatch_pipeline.pipeline import prune, run_pipeline
+
+    out = tmp_path / "v1"
+    state = out / wo.STATE_FILE
+    s1 = wo.run_watch(fixture_context(out, now=T[0]), official.REGISTRY, state)
+    m = run_pipeline(fixture_context(out, now=T[1]))
+    prune(out, m, m)
+    assert state.exists(), "the pipeline run removed the watcher state"
+    s2 = wo.run_watch(fixture_context(out, now=T[2]), official.REGISTRY, state)
+    assert s2["notify"] is False and s2["marker"] == s1["marker"]
+    assert s2["conditions"]["review_pending"]["first_seen"] == s1["conditions"]["review_pending"]["first_seen"]
+    assert not any(wo.STATE_FILE.startswith(pfx) for pfx in ("official-", "ports", "port-intel-", "observations-", "fisheries-"))
 
 
 def test_corrupt_or_old_state_is_ignored_not_fatal(tmp_path):
@@ -355,7 +373,7 @@ def test_issue_script_closes_the_issue_when_nothing_is_left_for_a_person(tmp_pat
 
 def test_workflow_wires_the_watcher_state_report_and_script():
     wf = (REPO / ".github" / "workflows" / "coastwatch-data.yml").read_text()
-    assert "--state ../publish/v1/official-watch.json" in wf and "--markdown ../watch-report.md" in wf
+    assert "--state ../publish/v1/watch-official.json" in wf and "--markdown ../watch-report.md" in wf
     assert "official_notify: ${{ steps.watch.outputs.notify }}" in wf
     assert "bash .github/scripts/official-review-issue.sh" in wf
     assert "name: watch-report" in wf
