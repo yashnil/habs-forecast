@@ -42,6 +42,9 @@ and never alter commit timestamps.
 - **Squash merge** ordinary feature PRs by default, so `main` gets one well-described commit per PR.
 - Use a **merge commit** only when the individual commits matter, for example several independently
   revertible fixes. Say which method you intend in the PR description.
+- **Always squash a release PR over a stacked chain.** On 2026-11-14, #107 was merged with a merge commit and
+  pulled 419 intermediate commits into `main`, which needed a history cleanup.
+  Repository settings now allow squash merges only, and `main` requires linear history.
 - Avoid back-merges of `main` into feature branches ("Merge origin/main into …"). Rebase while the branch
   is unpushed; once pushed, merge `main` in only when a conflict or a needed change requires it.
 
@@ -51,18 +54,21 @@ Claude may manage the normal Git/GitHub workflow for this repository. On a featu
 full workflow without asking, unless an action is destructive or needs a product/design decision.
 
 Allowed without asking:
-- inspect git status/history; create and switch feature branches; stage; make meaningful commits;
+- inspect git status/history; create and switch feature branches; stage;
+- make meaningful local commits, grouping related changes. Never commit after every small change;
 - clean up obvious WIP/microcommits before the first push (see commit hygiene above);
-- push feature branches;
-- use the authenticated `gh` CLI: `gh pr create`, `gh pr edit`, `gh pr view`, `gh pr diff`,
-  `gh pr checks`, `gh pr comment`;
-- create draft PRs and write/update their titles and descriptions as the work changes.
+- read-only `gh` commands: `gh pr view`, `gh pr diff`, `gh pr checks`.
 
-Do not ask the user to run routine Git or `gh` commands that Claude can safely run itself.
+**Requires the user's explicit authorization each time:**
+- any `git push`, including feature branches. First show the commits that would be pushed;
+- `gh pr create`, `gh pr edit`, `gh pr comment`, and anything else that writes to GitHub.
+
+Do not ask the user to run routine Git or `gh` commands that Claude can safely run itself. Once authorized, run them yourself.
 
 ### PR workflow
 
-- When a coherent feature/design milestone is ready, push the branch and create or update a **draft** PR.
+- When a coherent feature/design milestone is ready, ask to push. Once authorized, push the branch and create or
+  update a **draft** PR.
 - The PR is the review hub. Include: concise summary; what changed; what did not change; testing/status;
   important screenshots/docs; decisions the user needs to make; known limitations/follow-ups.
 - Link directly to relevant files (clickable GitHub links), not bare paths.
